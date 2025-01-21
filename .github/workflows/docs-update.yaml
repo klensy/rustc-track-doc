@@ -1,0 +1,54 @@
+name: Update rust docs
+
+on:
+  schedule:
+    - cron: '15 8 * * *'
+  workflow_dispatch: # Allow manual trigger of the workflow
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set date variable
+        id: set-date
+        run: echo "DOC_DATE=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Download archive
+        run: |
+          curl -L -o docs.tar.xz "https://static.rust-lang.org/dist/$DOC_DATE/rust-docs-nightly-x86_64-unknown-linux-gnu.tar.xz"
+
+      - name: Clean previous docs
+        run: |
+          rm -rf rust-docs-nightly-x86_64-unknown-linux-gnu
+
+      - name: Unpack docs and remove archive
+        run: |
+          tar -xJf docs.tar.xz
+          rm docs.tar.xz
+
+      - name: Build commit message
+        run: |
+          echo "$DOC_DATE" >> commitmessage.txt
+          cat rust-docs-nightly-x86_64-unknown-linux-gnu/version >> commitmessage.txt
+
+      - name: Set commit message
+        id: commit_message_step
+        run: |
+          echo 'commit_message<<EOF' >> $GITHUB_OUTPUT
+          cat commitmessage.txt >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+          rm -rf commitmessage.txt
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        id: commit
+        with:
+          commit_message: ${{ steps.commit_message_step.outputs.commit_message }}
