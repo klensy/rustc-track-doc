@@ -1241,7 +1241,6 @@ the <code>cargo locate-project</code> section for more detail on how cargo finds
 <pre><code class="language-toml">[package]
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
-authors = ["Alice &lt;a@example.com&gt;", "Bob &lt;b@example.com&gt;"]
 </code></pre>
 <p>The only field required by Cargo is <a href="reference/manifest.html#the-name-field"><code>name</code></a>. If publishing to
 a registry, the registry may require additional fields. See the notes below and
@@ -1281,23 +1280,18 @@ resolve dependencies.</p>
 <p><strong>MSRV:</strong> Before 1.75, this field was required</p>
 </blockquote>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
+<blockquote>
+<p><strong>Warning</strong>: This field is deprecated</p>
+</blockquote>
 <p>The optional <code>authors</code> field lists in an array the people or organizations that are considered
-the “authors” of the package. The exact meaning is open to interpretation — it
-may list the original or primary authors, current maintainers, or owners of the
-package. An optional email address may be included within angled brackets at
+the “authors” of the package. An optional email address may be included within angled brackets at
 the end of each author entry.</p>
 <pre><code class="language-toml">[package]
 # ...
 authors = ["Graydon Hoare", "Fnu Lnu &lt;no-reply@rust-lang.org&gt;"]
 </code></pre>
-<p>This field is only surfaced in package metadata and in the <code>CARGO_PKG_AUTHORS</code>
-environment variable within <code>build.rs</code>. It is not displayed in the <a href="https://crates.io/">crates.io</a>
-user interface.</p>
-<blockquote>
-<p><strong>Warning</strong>: Package manifests cannot be changed once published, so this
-field cannot be changed or removed in already-published versions of a
-package.</p>
-</blockquote>
+<p>This field is surfaced in package metadata and in the <code>CARGO_PKG_AUTHORS</code>
+environment variable within <code>build.rs</code> for backwards compatibility.</p>
 <h3 id="the-edition-field"><a class="header" href="#the-edition-field">The <code>edition</code> field</a></h3>
 <p>The <code>edition</code> key is an optional key that affects which <a href="reference/../../edition-guide/index.html">Rust Edition</a> your package
 is compiled with. Setting the <code>edition</code> key in <code>[package]</code> will affect all
@@ -2195,7 +2189,6 @@ where the workspace’s <code>Cargo.toml</code> is located.</p>
 [package]
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
-authors = ["Alice &lt;a@example.com&gt;", "Bob &lt;b@example.com&gt;"]
 </code></pre>
 <h3 id="virtual-workspace"><a class="header" href="#virtual-workspace">Virtual workspace</a></h3>
 <p>Alternatively, a <code>Cargo.toml</code> file can be created with a <code>[workspace]</code> section
@@ -2212,7 +2205,6 @@ resolver = "2"
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
 edition = "2024"     # the edition, will have no effect on a resolver used in the workspace
-authors = ["Alice &lt;a@example.com&gt;", "Bob &lt;b@example.com&gt;"]
 </code></pre>
 <p>By having a workspace without a root package,</p>
 <ul>
@@ -2686,7 +2678,7 @@ bitflags = { path = "my-bitflags", version = "1.0" }
 # version 1.0 from crates.io when published.
 smallvec = { git = "https://github.com/servo/rust-smallvec.git", version = "1.0" }
 
-# N.B. that if a version doesn't match, Cargo will fail to compile!
+# Note: if a version doesn't match, Cargo will fail to compile!
 </code></pre>
 <p>One example where this can be useful is when you have split up a library into
 multiple packages within the same workspace. You can then use <code>path</code>
@@ -6534,6 +6526,10 @@ variables like <code>CC</code> and such, it is not possible to use this for envi
 variables like <code>TARGET</code> that <a href="reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts">Cargo sets for build scripts</a>. The
 environment variables in use are those received by <code>cargo</code> invocations, not
 those received by the executable of the build script.</p>
+<p>As of 1.46, using <a href="reference/../../std/macro.env.html"><code>env!</code></a> and <a href="reference/../../std/macro.option_env.html"><code>option_env!</code></a> in
+source code will automatically detect changes and trigger rebuilds.
+<code>rerun-if-env-changed</code> is no longer needed for variables already referenced by
+these macros.</p>
 <h2 id="the-links-manifest-key"><a class="header" href="#the-links-manifest-key">The <code>links</code> Manifest Key</a></h2>
 <p>The <code>package.links</code> key may be set in the <code>Cargo.toml</code> manifest to declare
 that the package links with the given native library. The purpose of this
@@ -13773,7 +13769,7 @@ details on environment variables that Cargo reads.</p>
 <p><a href="commands/cargo.html">cargo(1)</a>, <a href="commands/cargo-build.html">cargo-build(1)</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cargo-clippy1"><a class="header" href="#cargo-clippy1">cargo-clippy(1)</a></h1>
 <h2 id="name-7"><a class="header" href="#name-7">NAME</a></h2>
-<p>cargo-miri — Checks a package to catch common mistakes and improve your Rust code</p>
+<p>cargo-clippy — Checks a package to catch common mistakes and improve your Rust code</p>
 <h2 id="description-7"><a class="header" href="#description-7">DESCRIPTION</a></h2>
 <p>This is an external command distributed with the Rust toolchain as an optional component.
 It is not built into Cargo, and may require additional installation.</p>
@@ -19067,9 +19063,9 @@ will ignore the path key for dependencies in published packages.
 <li>The original <code>Cargo.toml</code> file is rewritten and normalized.</li>
 <li><code>[patch]</code>, <code>[replace]</code>, and <code>[workspace]</code> sections are removed from the
 manifest.</li>
-<li><code>Cargo.lock</code> is automatically included if the package contains an
-executable binary or example target. <a href="commands/cargo-install.html">cargo-install(1)</a> will use the
-packaged lock file if the <code>--locked</code> flag is used.</li>
+<li><code>Cargo.lock</code> is always included. When missing, a new lock file will be
+generated. <a href="commands/cargo-install.html">cargo-install(1)</a> will use the packaged lock file if
+the <code>--locked</code> flag is used.</li>
 <li>A <code>.cargo_vcs_info.json</code> file is included that contains information
 about the current VCS checkout hash if available, as well as a flag if the
 worktree is dirty.</li>
