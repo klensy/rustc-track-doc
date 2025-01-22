@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/local.rs`."><title>local.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5d1d17d0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f3d1d47fd 2025-01-20)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>local.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/local.rs`."><title>local.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5d1d17d0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (ed43cbcb8 2025-01-21)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>local.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -635,7 +635,15 @@
 <a href="#634" id="634">634</a>
 <a href="#635" id="635">635</a>
 <a href="#636" id="636">636</a>
-<a href="#637" id="637">637</a></pre></div><pre class="rust"><code><span class="doccomment">//! Thread local storage
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a></pre></div><pre class="rust"><code><span class="doccomment">//! Thread local storage
 
 </span><span class="attr">#![unstable(feature = <span class="string">"thread_local_internals"</span>, issue = <span class="string">"none"</span>)]
 
@@ -867,6 +875,14 @@
 <span class="attr">#[stable(feature = <span class="string">"thread_local_try_with"</span>, since = <span class="string">"1.26.0"</span>)]
 </span><span class="kw">impl </span>Error <span class="kw">for </span>AccessError {}
 
+<span class="comment">// This ensures the panicking code is outlined from `with` for `LocalKey`.
+</span><span class="attr">#[cfg_attr(not(feature = <span class="string">"panic_immediate_abort"</span>), inline(never))]
+#[track_caller]
+#[cold]
+</span><span class="kw">fn </span>panic_access_error(err: AccessError) -&gt; ! {
+    <span class="macro">panic!</span>(<span class="string">"cannot access a Thread Local Storage value during or after destruction: {err:?}"</span>)
+}
+
 <span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; LocalKey&lt;T&gt; {
     <span class="attr">#[doc(hidden)]
     #[unstable(
@@ -906,10 +922,10 @@
     <span class="kw">where
         </span>F: FnOnce(<span class="kw-2">&amp;</span>T) -&gt; R,
     {
-        <span class="self">self</span>.try_with(f).expect(
-            <span class="string">"cannot access a Thread Local Storage value \
-             during or after destruction"</span>,
-        )
+        <span class="kw">match </span><span class="self">self</span>.try_with(f) {
+            <span class="prelude-val">Ok</span>(r) =&gt; r,
+            <span class="prelude-val">Err</span>(err) =&gt; panic_access_error(err),
+        }
     }
 
     <span class="doccomment">/// Acquires a reference to the value in this TLS key.
@@ -964,10 +980,10 @@
         <span class="kw">let </span><span class="kw-2">mut </span>init = <span class="prelude-val">Some</span>(init);
 
         <span class="kw">let </span>reference = <span class="kw">unsafe </span>{
-            (<span class="self">self</span>.inner)(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>init)).as_ref().expect(
-                <span class="string">"cannot access a Thread Local Storage value \
-                 during or after destruction"</span>,
-            )
+            <span class="kw">match </span>(<span class="self">self</span>.inner)(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>init)).as_ref() {
+                <span class="prelude-val">Some</span>(r) =&gt; r,
+                <span class="prelude-val">None </span>=&gt; panic_access_error(AccessError),
+            }
         };
 
         f(init, reference)
