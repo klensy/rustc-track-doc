@@ -291,6 +291,7 @@
 <li><a href="#unused-unsafe"><code>unused_unsafe</code></a></li>
 <li><a href="#unused-variables"><code>unused_variables</code></a></li>
 <li><a href="#useless-ptr-null-checks"><code>useless_ptr_null_checks</code></a></li>
+<li><a href="#uses-power-alignment"><code>uses_power_alignment</code></a></li>
 <li><a href="#warnings"><code>warnings</code></a></li>
 <li><a href="#while-true"><code>while_true</code></a></li>
 </ul>
@@ -979,6 +980,8 @@ of a temporary that will immediately get dropped.</p>
   |                        this `Vec&lt;u8&gt;` is deallocated at the end of the statement, bind it to a variable to extend its lifetime
   |
   = note: pointers do not have a lifetime; when calling `as_ptr` the `Vec&lt;u8&gt;` will be deallocated at the end of the statement because nothing is referencing it as far as the type system is concerned
+  = help: you must make sure that the variable you bind the `Vec&lt;u8&gt;` to lives at least as long as the pointer returned by the call to `as_ptr`
+  = help: in particular, if this pointer is returned from the current function, binding the `Vec&lt;u8&gt;` inside the function will not suffice
   = help: for more information, see &lt;https://doc.rust-lang.org/reference/destructors.html&gt;
   = note: `#[warn(dangling_pointers_from_temporaries)]` on by default
 
@@ -3613,7 +3616,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-01-22; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-01-23; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -3860,7 +3863,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-01-22; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-01-23; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -4273,10 +4276,50 @@ if (fn_ptr as *const ()).is_null() { /* ... */ }</code></pre>
 <h3 id="explanation-120"><a class="header" href="#explanation-120">Explanation</a></h3>
 <p>Function pointers and references are assumed to be non-null, checking them for null
 will always return false.</p>
+<h2 id="uses-power-alignment"><a class="header" href="#uses-power-alignment">uses-power-alignment</a></h2>
+<p>The <code>uses_power_alignment</code> lint detects specific <code>repr(C)</code>
+aggregates on AIX.
+In its platform C ABI, AIX uses the "power" (as in PowerPC) alignment
+rule (detailed in https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes#alignment),
+which can also be set for XLC by <code>#pragma align(power)</code> or
+<code>-qalign=power</code>. Aggregates with a floating-point type as the
+recursively first field (as in "at offset 0") modify the layout of
+<em>subsequent</em> fields of the associated structs to use an alignment value
+where the floating-point type is aligned on a 4-byte boundary.</p>
+<p>The power alignment rule for structs needed for C compatibility is
+unimplementable within <code>repr(C)</code> in the compiler without building in
+handling of references to packed fields and infectious nested layouts,
+so a warning is produced in these situations.</p>
+<h3 id="example-120"><a class="header" href="#example-120">Example</a></h3>
+<pre><code class="language-rust ignore (fails on non-powerpc64-ibm-aix)">#[repr(C)]
+pub struct Floats {
+    a: f64,
+    b: u8,
+    c: f64,
+}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">warning: repr(C) does not follow the power alignment rule. This may affect platform C ABI compatibility for this type
+ --&gt; &lt;source&gt;:5:3
+  |
+5 |   c: f64,
+  |   ^^^^^^
+  |
+  = note: `#[warn(uses_power_alignment)]` on by default
+</code></pre>
+<h3 id="explanation-121"><a class="header" href="#explanation-121">Explanation</a></h3>
+<p>The power alignment rule specifies that the above struct has the
+following alignment:</p>
+<ul>
+<li>offset_of!(Floats, a) == 0</li>
+<li>offset_of!(Floats, b) == 8</li>
+<li>offset_of!(Floats, c) == 12
+However, rust currently aligns <code>c</code> at offset_of!(Floats, c) == 16.
+Thus, a warning should be produced for the above struct in this case.</li>
+</ul>
 <h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
 <p>The <code>warnings</code> lint allows you to change the level of other
 lints which produce warnings.</p>
-<h3 id="example-120"><a class="header" href="#example-120">Example</a></h3>
+<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
 <pre><code class="language-rust">#![deny(warnings)]
 fn foo() {}</code></pre>
 <p>This will produce:</p>
@@ -4294,14 +4337,14 @@ note: the lint level is defined here
   = note: `#[deny(dead_code)]` implied by `#[deny(warnings)]`
 
 </code></pre>
-<h3 id="explanation-121"><a class="header" href="#explanation-121">Explanation</a></h3>
+<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
 <p>The <code>warnings</code> lint is a bit special; by changing its level, you
 change every other warning that would produce a warning to whatever
 value you'd like. As such, you won't ever trigger this lint in your
 code directly.</p>
 <h2 id="while-true"><a class="header" href="#while-true">while-true</a></h2>
 <p>The <code>while_true</code> lint detects <code>while true { }</code>.</p>
-<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
+<h3 id="example-122"><a class="header" href="#example-122">Example</a></h3>
 <pre><code class="language-rust no_run">while true {
 
 }</code></pre>
@@ -4315,7 +4358,7 @@ code directly.</p>
   = note: `#[warn(while_true)]` on by default
 
 </code></pre>
-<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
+<h3 id="explanation-123"><a class="header" href="#explanation-123">Explanation</a></h3>
 <p><code>while true</code> should be replaced with <code>loop</code>. A <code>loop</code> expression is
 the preferred way to write an infinite loop because it more directly
 expresses the intent of the loop.</p>
