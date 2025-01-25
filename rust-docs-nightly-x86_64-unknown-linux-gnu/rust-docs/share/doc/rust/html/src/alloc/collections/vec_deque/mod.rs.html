@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/vec_deque/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5d1d17d0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (99768c80a 2025-01-23)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/vec_deque/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/vec_deque/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5d1d17d0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (1e9b0177d 2025-01-24)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/vec_deque/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -3082,7 +3082,53 @@
 <a href="#3081" id="3081">3081</a>
 <a href="#3082" id="3082">3082</a>
 <a href="#3083" id="3083">3083</a>
-<a href="#3084" id="3084">3084</a></pre></div><pre class="rust"><code><span class="doccomment">//! A double-ended queue (deque) implemented with a growable ring buffer.
+<a href="#3084" id="3084">3084</a>
+<a href="#3085" id="3085">3085</a>
+<a href="#3086" id="3086">3086</a>
+<a href="#3087" id="3087">3087</a>
+<a href="#3088" id="3088">3088</a>
+<a href="#3089" id="3089">3089</a>
+<a href="#3090" id="3090">3090</a>
+<a href="#3091" id="3091">3091</a>
+<a href="#3092" id="3092">3092</a>
+<a href="#3093" id="3093">3093</a>
+<a href="#3094" id="3094">3094</a>
+<a href="#3095" id="3095">3095</a>
+<a href="#3096" id="3096">3096</a>
+<a href="#3097" id="3097">3097</a>
+<a href="#3098" id="3098">3098</a>
+<a href="#3099" id="3099">3099</a>
+<a href="#3100" id="3100">3100</a>
+<a href="#3101" id="3101">3101</a>
+<a href="#3102" id="3102">3102</a>
+<a href="#3103" id="3103">3103</a>
+<a href="#3104" id="3104">3104</a>
+<a href="#3105" id="3105">3105</a>
+<a href="#3106" id="3106">3106</a>
+<a href="#3107" id="3107">3107</a>
+<a href="#3108" id="3108">3108</a>
+<a href="#3109" id="3109">3109</a>
+<a href="#3110" id="3110">3110</a>
+<a href="#3111" id="3111">3111</a>
+<a href="#3112" id="3112">3112</a>
+<a href="#3113" id="3113">3113</a>
+<a href="#3114" id="3114">3114</a>
+<a href="#3115" id="3115">3115</a>
+<a href="#3116" id="3116">3116</a>
+<a href="#3117" id="3117">3117</a>
+<a href="#3118" id="3118">3118</a>
+<a href="#3119" id="3119">3119</a>
+<a href="#3120" id="3120">3120</a>
+<a href="#3121" id="3121">3121</a>
+<a href="#3122" id="3122">3122</a>
+<a href="#3123" id="3123">3123</a>
+<a href="#3124" id="3124">3124</a>
+<a href="#3125" id="3125">3125</a>
+<a href="#3126" id="3126">3126</a>
+<a href="#3127" id="3127">3127</a>
+<a href="#3128" id="3128">3128</a>
+<a href="#3129" id="3129">3129</a>
+<a href="#3130" id="3130">3130</a></pre></div><pre class="rust"><code><span class="doccomment">//! A double-ended queue (deque) implemented with a growable ring buffer.
 //!
 //! This queue has *O*(1) amortized inserts and removals from both ends of the
 //! container. It also has *O*(1) indexing like a vector. The contained elements
@@ -4817,6 +4863,52 @@
                 <span class="prelude-val">Some</span>(<span class="self">self</span>.buffer_read(<span class="self">self</span>.to_physical_idx(<span class="self">self</span>.len)))
             }
         }
+    }
+
+    <span class="doccomment">/// Removes and returns the first element from the deque if the predicate
+    /// returns `true`, or [`None`] if the predicate returns false or the deque
+    /// is empty (the predicate will not be called in that case).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(vec_deque_pop_if)]
+    /// use std::collections::VecDeque;
+    ///
+    /// let mut deque: VecDeque&lt;i32&gt; = vec![0, 1, 2, 3, 4].into();
+    /// let pred = |x: &amp;mut i32| *x % 2 == 0;
+    ///
+    /// assert_eq!(deque.pop_front_if(pred), Some(0));
+    /// assert_eq!(deque, [1, 2, 3, 4]);
+    /// assert_eq!(deque.pop_front_if(pred), None);
+    /// ```
+    </span><span class="attr">#[unstable(feature = <span class="string">"vec_deque_pop_if"</span>, issue = <span class="string">"135889"</span>)]
+    </span><span class="kw">pub fn </span>pop_front_if(<span class="kw-2">&amp;mut </span><span class="self">self</span>, predicate: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; bool) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">let </span>first = <span class="self">self</span>.front_mut()<span class="question-mark">?</span>;
+        <span class="kw">if </span>predicate(first) { <span class="self">self</span>.pop_front() } <span class="kw">else </span>{ <span class="prelude-val">None </span>}
+    }
+
+    <span class="doccomment">/// Removes and returns the last element from the deque if the predicate
+    /// returns `true`, or [`None`] if the predicate returns false or the deque
+    /// is empty (the predicate will not be called in that case).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(vec_deque_pop_if)]
+    /// use std::collections::VecDeque;
+    ///
+    /// let mut deque: VecDeque&lt;i32&gt; = vec![0, 1, 2, 3, 4].into();
+    /// let pred = |x: &amp;mut i32| *x % 2 == 0;
+    ///
+    /// assert_eq!(deque.pop_back_if(pred), Some(4));
+    /// assert_eq!(deque, [0, 1, 2, 3]);
+    /// assert_eq!(deque.pop_back_if(pred), None);
+    /// ```
+    </span><span class="attr">#[unstable(feature = <span class="string">"vec_deque_pop_if"</span>, issue = <span class="string">"135889"</span>)]
+    </span><span class="kw">pub fn </span>pop_back_if(<span class="kw-2">&amp;mut </span><span class="self">self</span>, predicate: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; bool) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">let </span>first = <span class="self">self</span>.back_mut()<span class="question-mark">?</span>;
+        <span class="kw">if </span>predicate(first) { <span class="self">self</span>.pop_back() } <span class="kw">else </span>{ <span class="prelude-val">None </span>}
     }
 
     <span class="doccomment">/// Prepends an element to the deque.
