@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/intrinsics/simd.rs`."><title>simd.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-faa87aeb.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f7cc13af8 2025-01-25)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/intrinsics/</div>simd.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/intrinsics/simd.rs`."><title>simd.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f85c6de55 2025-01-26)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/intrinsics/</div>simd.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -668,674 +668,1214 @@
 <a href="#667" id="667">667</a>
 <a href="#668" id="668">668</a>
 <a href="#669" id="669">669</a>
-<a href="#670" id="670">670</a></pre></div><pre class="rust"><code><span class="doccomment">//! SIMD compiler intrinsics.
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a></pre></div><pre class="rust"><code><span class="doccomment">//! SIMD compiler intrinsics.
 //!
 //! In this module, a "vector" is any `repr(simd)` type.
 
-</span><span class="kw">extern </span><span class="string">"rust-intrinsic" </span>{
-    <span class="doccomment">/// Inserts an element into a vector, returning the updated vector.
-    ///
-    /// `T` must be a vector with element type `U`.
-    ///
-    /// # Safety
-    ///
-    /// `idx` must be in-bounds of the vector.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_insert&lt;T, U&gt;(x: T, idx: u32, val: U) -&gt; T;
-
-    <span class="doccomment">/// Extracts an element from a vector.
-    ///
-    /// `T` must be a vector with element type `U`.
-    ///
-    /// # Safety
-    ///
-    /// `idx` must be in-bounds of the vector.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_extract&lt;T, U&gt;(x: T, idx: u32) -&gt; U;
-
-    <span class="doccomment">/// Adds two simd vectors elementwise.
-    ///
-    /// `T` must be a vector of integer or floating point primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_add&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Subtracts `rhs` from `lhs` elementwise.
-    ///
-    /// `T` must be a vector of integer or floating point primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_sub&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// Multiplies two simd vectors elementwise.
-    ///
-    /// `T` must be a vector of integer or floating point primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_mul&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Divides `lhs` by `rhs` elementwise.
-    ///
-    /// `T` must be a vector of integer or floating point primitive types.
-    ///
-    /// # Safety
-    /// For integers, `rhs` must not contain any zero elements.
-    /// Additionally for signed integers, `&lt;int&gt;::MIN / -1` is undefined behavior.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_div&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// Returns remainder of two vectors elementwise.
-    ///
-    /// `T` must be a vector of integer or floating point primitive types.
-    ///
-    /// # Safety
-    /// For integers, `rhs` must not contain any zero elements.
-    /// Additionally for signed integers, `&lt;int&gt;::MIN / -1` is undefined behavior.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_rem&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// Shifts vector left elementwise, with UB on overflow.
-    ///
-    /// Shifts `lhs` left by `rhs`, shifting in sign bits for signed types.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    ///
-    /// # Safety
-    ///
-    /// Each element of `rhs` must be less than `&lt;int&gt;::BITS`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_shl&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// Shifts vector right elementwise, with UB on overflow.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    ///
-    /// Shifts `lhs` right by `rhs`, shifting in sign bits for signed types.
-    ///
-    /// # Safety
-    ///
-    /// Each element of `rhs` must be less than `&lt;int&gt;::BITS`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_shr&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// "Ands" vectors elementwise.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_and&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// "Ors" vectors elementwise.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_or&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// "Exclusive ors" vectors elementwise.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_xor&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Numerically casts a vector, elementwise.
-    ///
-    /// `T` and `U` must be vectors of integer or floating point primitive types, and must have the
-    /// same length.
-    ///
-    /// When casting floats to integers, the result is truncated. Out-of-bounds result lead to UB.
-    /// When casting integers to floats, the result is rounded.
-    /// Otherwise, truncates or extends the value, maintaining the sign for signed integers.
-    ///
-    /// # Safety
-    /// Casting from integer types is always safe.
-    /// Casting between two float types is also always safe.
-    ///
-    /// Casting floats to integers truncates, following the same rules as `to_int_unchecked`.
-    /// Specifically, each element must:
-    /// * Not be `NaN`
-    /// * Not be infinite
-    /// * Be representable in the return type, after truncating off its fractional part
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_cast&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Numerically casts a vector, elementwise.
-    ///
-    /// `T` and `U` be a vectors of integer or floating point primitive types, and must have the
-    /// same length.
-    ///
-    /// Like `simd_cast`, but saturates float-to-integer conversions (NaN becomes 0).
-    /// This matches regular `as` and is always safe.
-    ///
-    /// When casting floats to integers, the result is truncated.
-    /// When casting integers to floats, the result is rounded.
-    /// Otherwise, truncates or extends the value, maintaining the sign for signed integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_as&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Negates a vector elementwise.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// Rust panics for `-&lt;int&gt;::Min` due to overflow, but it is not UB with this intrinsic.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_neg&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Returns absolute value of a vector, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fabs&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Returns the minimum of two vectors, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// Follows IEEE-754 `minNum` semantics.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fmin&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Returns the maximum of two vectors, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// Follows IEEE-754 `maxNum` semantics.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fmax&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Tests elementwise equality of two vectors.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_eq&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Tests elementwise inequality equality of two vectors.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_ne&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Tests if `x` is less than `y`, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_lt&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Tests if `x` is less than or equal to `y`, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_le&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Tests if `x` is greater than `y`, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_gt&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Tests if `x` is greater than or equal to `y`, elementwise.
-    ///
-    /// `T` must be a vector of floating-point primitive types.
-    ///
-    /// `U` must be a vector of integers with the same number of elements and element size as `T`.
-    ///
-    /// Returns `0` for false and `!0` for true.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_ge&lt;T, U&gt;(x: T, y: T) -&gt; U;
-
-    <span class="doccomment">/// Shuffles two vectors by const indices.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// `U` must be a **const** vector of `u32`s. This means it must either refer to a named
-    /// const or be given as an inline const expression (`const { ... }`).
-    ///
-    /// `V` must be a vector with the same element type as `T` and the same length as `U`.
-    ///
-    /// Returns a new vector such that element `i` is selected from `xy[idx[i]]`, where `xy`
-    /// is the concatenation of `x` and `y`. It is a compile-time error if `idx[i]` is out-of-bounds
-    /// of `xy`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_shuffle&lt;T, U, V&gt;(x: T, y: T, idx: U) -&gt; V;
-
-    <span class="doccomment">/// Reads a vector of pointers.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// `U` must be a vector of pointers to the element type of `T`, with the same length as `T`.
-    ///
-    /// `V` must be a vector of integers with the same length as `T` (but any element size).
-    ///
-    /// For each pointer in `ptr`, if the corresponding value in `mask` is `!0`, read the pointer.
-    /// Otherwise if the corresponding value in `mask` is `0`, return the corresponding value from
-    /// `val`.
-    ///
-    /// # Safety
-    /// Unmasked values in `T` must be readable as if by `&lt;ptr&gt;::read` (e.g. aligned to the element
-    /// type).
-    ///
-    /// `mask` must only contain `0` or `!0` values.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_gather&lt;T, U, V&gt;(val: T, ptr: U, mask: V) -&gt; T;
-
-    <span class="doccomment">/// Writes to a vector of pointers.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// `U` must be a vector of pointers to the element type of `T`, with the same length as `T`.
-    ///
-    /// `V` must be a vector of integers with the same length as `T` (but any element size).
-    ///
-    /// For each pointer in `ptr`, if the corresponding value in `mask` is `!0`, write the
-    /// corresponding value in `val` to the pointer.
-    /// Otherwise if the corresponding value in `mask` is `0`, do nothing.
-    ///
-    /// The stores happen in left-to-right order.
-    /// (This is relevant in case two of the stores overlap.)
-    ///
-    /// # Safety
-    /// Unmasked values in `T` must be writeable as if by `&lt;ptr&gt;::write` (e.g. aligned to the element
-    /// type).
-    ///
-    /// `mask` must only contain `0` or `!0` values.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_scatter&lt;T, U, V&gt;(val: T, ptr: U, mask: V);
-
-    <span class="doccomment">/// Reads a vector of pointers.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// `U` must be a pointer to the element type of `T`
-    ///
-    /// `V` must be a vector of integers with the same length as `T` (but any element size).
-    ///
-    /// For each element, if the corresponding value in `mask` is `!0`, read the corresponding
-    /// pointer offset from `ptr`.
-    /// The first element is loaded from `ptr`, the second from `ptr.wrapping_offset(1)` and so on.
-    /// Otherwise if the corresponding value in `mask` is `0`, return the corresponding value from
-    /// `val`.
-    ///
-    /// # Safety
-    /// Unmasked values in `T` must be readable as if by `&lt;ptr&gt;::read` (e.g. aligned to the element
-    /// type).
-    ///
-    /// `mask` must only contain `0` or `!0` values.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_masked_load&lt;V, U, T&gt;(mask: V, ptr: U, val: T) -&gt; T;
-
-    <span class="doccomment">/// Writes to a vector of pointers.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// `U` must be a pointer to the element type of `T`
-    ///
-    /// `V` must be a vector of integers with the same length as `T` (but any element size).
-    ///
-    /// For each element, if the corresponding value in `mask` is `!0`, write the corresponding
-    /// value in `val` to the pointer offset from `ptr`.
-    /// The first element is written to `ptr`, the second to `ptr.wrapping_offset(1)` and so on.
-    /// Otherwise if the corresponding value in `mask` is `0`, do nothing.
-    ///
-    /// # Safety
-    /// Unmasked values in `T` must be writeable as if by `&lt;ptr&gt;::write` (e.g. aligned to the element
-    /// type).
-    ///
-    /// `mask` must only contain `0` or `!0` values.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_masked_store&lt;V, U, T&gt;(mask: V, ptr: U, val: T);
-
-    <span class="doccomment">/// Adds two simd vectors elementwise, with saturation.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_saturating_add&lt;T&gt;(x: T, y: T) -&gt; T;
-
-    <span class="doccomment">/// Subtracts two simd vectors elementwise, with saturation.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    ///
-    /// Subtract `rhs` from `lhs`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_saturating_sub&lt;T&gt;(lhs: T, rhs: T) -&gt; T;
-
-    <span class="doccomment">/// Adds elements within a vector from left to right.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    ///
-    /// Starting with the value `y`, add the elements of `x` and accumulate.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_add_ordered&lt;T, U&gt;(x: T, y: U) -&gt; U;
-
-    <span class="doccomment">/// Adds elements within a vector in arbitrary order. May also be re-associated with
-    /// unordered additions on the inputs/outputs.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_add_unordered&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Multiplies elements within a vector from left to right.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    ///
-    /// Starting with the value `y`, multiply the elements of `x` and accumulate.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_mul_ordered&lt;T, U&gt;(x: T, y: U) -&gt; U;
-
-    <span class="doccomment">/// Multiplies elements within a vector in arbitrary order. May also be re-associated with
-    /// unordered additions on the inputs/outputs.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_mul_unordered&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Checks if all mask values are true.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    ///
-    /// # Safety
-    /// `x` must contain only `0` or `!0`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_all&lt;T&gt;(x: T) -&gt; bool;
-
-    <span class="doccomment">/// Checks if any mask value is true.
-    ///
-    /// `T` must be a vector of integer primitive types.
-    ///
-    /// # Safety
-    /// `x` must contain only `0` or `!0`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_any&lt;T&gt;(x: T) -&gt; bool;
-
-    <span class="doccomment">/// Returns the maximum element of a vector.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    ///
-    /// For floating-point values, uses IEEE-754 `maxNum`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_max&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Returns the minimum element of a vector.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    ///
-    /// For floating-point values, uses IEEE-754 `minNum`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_min&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Logical "ands" all elements together.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_and&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Logical "ors" all elements together.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_or&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Logical "exclusive ors" all elements together.
-    ///
-    /// `T` must be a vector of integer or floating-point primitive types.
-    ///
-    /// `U` must be the element type of `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_reduce_xor&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Truncates an integer vector to a bitmask.
-    ///
-    /// `T` must be an integer vector.
-    ///
-    /// `U` must be either the smallest unsigned integer with at least as many bits as the length
-    /// of `T`, or the smallest array of `u8` with at least as many bits as the length of `T`.
-    ///
-    /// Each element is truncated to a single bit and packed into the result.
-    ///
-    /// No matter whether the output is an array or an unsigned integer, it is treated as a single
-    /// contiguous list of bits. The bitmask is always packed on the least-significant side of the
-    /// output, and padded with 0s in the most-significant bits. The order of the bits depends on
-    /// endianness:
-    ///
-    /// * On little endian, the least significant bit corresponds to the first vector element.
-    /// * On big endian, the least significant bit corresponds to the last vector element.
-    ///
-    /// For example, `[!0, 0, !0, !0]` packs to
-    /// - `0b1101u8` or `[0b1101]` on little endian, and
-    /// - `0b1011u8` or `[0b1011]` on big endian.
-    ///
-    /// To consider a larger example,
-    /// `[!0, 0, 0, 0, 0, 0, 0, 0, !0, !0, 0, 0, 0, 0, !0, 0]` packs to
-    /// - `0b0100001100000001u16` or `[0b00000001, 0b01000011]` on little endian, and
-    /// - `0b1000000011000010u16` or `[0b10000000, 0b11000010]` on big endian.
-    ///
-    /// And finally, a non-power-of-2 example with multiple bytes:
-    /// `[!0, !0, 0, !0, 0, 0, !0, 0, !0, 0]` packs to
-    /// - `0b0101001011u16` or `[0b01001011, 0b01]` on little endian, and
-    /// - `0b1101001010u16` or `[0b11, 0b01001010]` on big endian.
-    ///
-    /// # Safety
-    /// `x` must contain only `0` and `!0`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_bitmask&lt;T, U&gt;(x: T) -&gt; U;
-
-    <span class="doccomment">/// Selects elements from a mask.
-    ///
-    /// `M` must be an integer vector.
-    ///
-    /// `T` must be a vector with the same number of elements as `M`.
-    ///
-    /// For each element, if the corresponding value in `mask` is `!0`, select the element from
-    /// `if_true`.  If the corresponding value in `mask` is `0`, select the element from
-    /// `if_false`.
-    ///
-    /// # Safety
-    /// `mask` must only contain `0` and `!0`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_select&lt;M, T&gt;(mask: M, if_true: T, if_false: T) -&gt; T;
-
-    <span class="doccomment">/// Selects elements from a bitmask.
-    ///
-    /// `M` must be an unsigned integer or array of `u8`, matching `simd_bitmask`.
-    ///
-    /// `T` must be a vector.
-    ///
-    /// For each element, if the bit in `mask` is `1`, select the element from
-    /// `if_true`.  If the corresponding bit in `mask` is `0`, select the element from
-    /// `if_false`.
-    ///
-    /// The bitmask bit order matches `simd_bitmask`.
-    ///
-    /// # Safety
-    /// Padding bits must be all zero.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_select_bitmask&lt;M, T&gt;(m: M, yes: T, no: T) -&gt; T;
-
-    <span class="doccomment">/// Calculates the offset from a pointer vector elementwise, potentially
-    /// wrapping.
-    ///
-    /// `T` must be a vector of pointers.
-    ///
-    /// `U` must be a vector of `isize` or `usize` with the same number of elements as `T`.
-    ///
-    /// Operates as if by `&lt;ptr&gt;::wrapping_offset`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_arith_offset&lt;T, U&gt;(ptr: T, offset: U) -&gt; T;
-
-    <span class="doccomment">/// Casts a vector of pointers.
-    ///
-    /// `T` and `U` must be vectors of pointers with the same number of elements.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_cast_ptr&lt;T, U&gt;(ptr: T) -&gt; U;
-
-    <span class="doccomment">/// Exposes a vector of pointers as a vector of addresses.
-    ///
-    /// `T` must be a vector of pointers.
-    ///
-    /// `U` must be a vector of `usize` with the same length as `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_expose_provenance&lt;T, U&gt;(ptr: T) -&gt; U;
-
-    <span class="doccomment">/// Creates a vector of pointers from a vector of addresses.
-    ///
-    /// `T` must be a vector of `usize`.
-    ///
-    /// `U` must be a vector of pointers, with the same length as `T`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_with_exposed_provenance&lt;T, U&gt;(addr: T) -&gt; U;
-
-    <span class="doccomment">/// Swaps bytes of each element.
-    ///
-    /// `T` must be a vector of integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_bswap&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Reverses bits of each element.
-    ///
-    /// `T` must be a vector of integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_bitreverse&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Counts the leading zeros of each element.
-    ///
-    /// `T` must be a vector of integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_ctlz&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Counts the number of ones in each element.
-    ///
-    /// `T` must be a vector of integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_ctpop&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Counts the trailing zeros of each element.
-    ///
-    /// `T` must be a vector of integers.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_cttz&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Rounds up each element to the next highest integer-valued float.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_ceil&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Rounds down each element to the next lowest integer-valued float.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_floor&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Rounds each element to the closest integer-valued float.
-    /// Ties are resolved by rounding away from 0.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_round&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Returns the integer part of each element as an integer-valued float.
-    /// In other words, non-integer values are truncated towards zero.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_trunc&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Takes the square root of each element.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fsqrt&lt;T&gt;(x: T) -&gt; T;
-
-    <span class="doccomment">/// Computes `(x*y) + z` for each element, but without any intermediate rounding.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fma&lt;T&gt;(x: T, y: T, z: T) -&gt; T;
-
-    <span class="doccomment">/// Computes `(x*y) + z` for each element, non-deterministically executing either
-    /// a fused multiply-add or two operations with rounding of the intermediate result.
-    ///
-    /// The operation is fused if the code generator determines that target instruction
-    /// set has support for a fused operation, and that the fused operation is more efficient
-    /// than the equivalent, separate pair of mul and add instructions. It is unspecified
-    /// whether or not a fused operation is selected, and that may depend on optimization
-    /// level and context, for example. It may even be the case that some SIMD lanes get fused
-    /// and others do not.
-    ///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_relaxed_fma&lt;T&gt;(x: T, y: T, z: T) -&gt; T;
-
-    <span class="comment">// Computes the sine of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fsin&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes the cosine of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fcos&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes the exponential function of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fexp&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes 2 raised to the power of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_fexp2&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes the base 10 logarithm of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_flog10&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes the base 2 logarithm of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_flog2&lt;T&gt;(a: T) -&gt; T;
-
-    <span class="comment">// Computes the natural logarithm of each element.
-    </span><span class="doccomment">///
-    /// `T` must be a vector of floats.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">pub fn </span>simd_flog&lt;T&gt;(a: T) -&gt; T;
+/// Inserts an element into a vector, returning the updated vector.
+///
+/// `T` must be a vector with element type `U`.
+///
+/// # Safety
+///
+/// `idx` must be in-bounds of the vector.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_insert&lt;T, U&gt;(_x: T, _idx: u32, _val: U) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Extracts an element from a vector.
+///
+/// `T` must be a vector with element type `U`.
+///
+/// # Safety
+///
+/// `idx` must be in-bounds of the vector.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_extract&lt;T, U&gt;(_x: T, _idx: u32) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Adds two simd vectors elementwise.
+///
+/// `T` must be a vector of integer or floating point primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_add&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Subtracts `rhs` from `lhs` elementwise.
+///
+/// `T` must be a vector of integer or floating point primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_sub&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Multiplies two simd vectors elementwise.
+///
+/// `T` must be a vector of integer or floating point primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_mul&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Divides `lhs` by `rhs` elementwise.
+///
+/// `T` must be a vector of integer or floating point primitive types.
+///
+/// # Safety
+/// For integers, `rhs` must not contain any zero elements.
+/// Additionally for signed integers, `&lt;int&gt;::MIN / -1` is undefined behavior.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_div&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns remainder of two vectors elementwise.
+///
+/// `T` must be a vector of integer or floating point primitive types.
+///
+/// # Safety
+/// For integers, `rhs` must not contain any zero elements.
+/// Additionally for signed integers, `&lt;int&gt;::MIN / -1` is undefined behavior.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_rem&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Shifts vector left elementwise, with UB on overflow.
+///
+/// Shifts `lhs` left by `rhs`, shifting in sign bits for signed types.
+///
+/// `T` must be a vector of integer primitive types.
+///
+/// # Safety
+///
+/// Each element of `rhs` must be less than `&lt;int&gt;::BITS`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_shl&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Shifts vector right elementwise, with UB on overflow.
+///
+/// `T` must be a vector of integer primitive types.
+///
+/// Shifts `lhs` right by `rhs`, shifting in sign bits for signed types.
+///
+/// # Safety
+///
+/// Each element of `rhs` must be less than `&lt;int&gt;::BITS`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_shr&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// "Ands" vectors elementwise.
+///
+/// `T` must be a vector of integer primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_and&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// "Ors" vectors elementwise.
+///
+/// `T` must be a vector of integer primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_or&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// "Exclusive ors" vectors elementwise.
+///
+/// `T` must be a vector of integer primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_xor&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Numerically casts a vector, elementwise.
+///
+/// `T` and `U` must be vectors of integer or floating point primitive types, and must have the
+/// same length.
+///
+/// When casting floats to integers, the result is truncated. Out-of-bounds result lead to UB.
+/// When casting integers to floats, the result is rounded.
+/// Otherwise, truncates or extends the value, maintaining the sign for signed integers.
+///
+/// # Safety
+/// Casting from integer types is always safe.
+/// Casting between two float types is also always safe.
+///
+/// Casting floats to integers truncates, following the same rules as `to_int_unchecked`.
+/// Specifically, each element must:
+/// * Not be `NaN`
+/// * Not be infinite
+/// * Be representable in the return type, after truncating off its fractional part
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_cast&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Numerically casts a vector, elementwise.
+///
+/// `T` and `U` be a vectors of integer or floating point primitive types, and must have the
+/// same length.
+///
+/// Like `simd_cast`, but saturates float-to-integer conversions (NaN becomes 0).
+/// This matches regular `as` and is always safe.
+///
+/// When casting floats to integers, the result is truncated.
+/// When casting integers to floats, the result is rounded.
+/// Otherwise, truncates or extends the value, maintaining the sign for signed integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_as&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Negates a vector elementwise.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// Rust panics for `-&lt;int&gt;::Min` due to overflow, but it is not UB with this intrinsic.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_neg&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns absolute value of a vector, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fabs&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns the minimum of two vectors, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// Follows IEEE-754 `minNum` semantics.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fmin&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns the maximum of two vectors, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// Follows IEEE-754 `maxNum` semantics.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fmax&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests elementwise equality of two vectors.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_eq&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests elementwise inequality equality of two vectors.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_ne&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests if `x` is less than `y`, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_lt&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests if `x` is less than or equal to `y`, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_le&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests if `x` is greater than `y`, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_gt&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Tests if `x` is greater than or equal to `y`, elementwise.
+///
+/// `T` must be a vector of floating-point primitive types.
+///
+/// `U` must be a vector of integers with the same number of elements and element size as `T`.
+///
+/// Returns `0` for false and `!0` for true.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_ge&lt;T, U&gt;(_x: T, _y: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Shuffles two vectors by const indices.
+///
+/// `T` must be a vector.
+///
+/// `U` must be a **const** vector of `u32`s. This means it must either refer to a named
+/// const or be given as an inline const expression (`const { ... }`).
+///
+/// `V` must be a vector with the same element type as `T` and the same length as `U`.
+///
+/// Returns a new vector such that element `i` is selected from `xy[idx[i]]`, where `xy`
+/// is the concatenation of `x` and `y`. It is a compile-time error if `idx[i]` is out-of-bounds
+/// of `xy`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_shuffle&lt;T, U, V&gt;(_x: T, _y: T, _idx: U) -&gt; V {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Reads a vector of pointers.
+///
+/// `T` must be a vector.
+///
+/// `U` must be a vector of pointers to the element type of `T`, with the same length as `T`.
+///
+/// `V` must be a vector of integers with the same length as `T` (but any element size).
+///
+/// For each pointer in `ptr`, if the corresponding value in `mask` is `!0`, read the pointer.
+/// Otherwise if the corresponding value in `mask` is `0`, return the corresponding value from
+/// `val`.
+///
+/// # Safety
+/// Unmasked values in `T` must be readable as if by `&lt;ptr&gt;::read` (e.g. aligned to the element
+/// type).
+///
+/// `mask` must only contain `0` or `!0` values.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_gather&lt;T, U, V&gt;(_val: T, _ptr: U, _mask: V) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Writes to a vector of pointers.
+///
+/// `T` must be a vector.
+///
+/// `U` must be a vector of pointers to the element type of `T`, with the same length as `T`.
+///
+/// `V` must be a vector of integers with the same length as `T` (but any element size).
+///
+/// For each pointer in `ptr`, if the corresponding value in `mask` is `!0`, write the
+/// corresponding value in `val` to the pointer.
+/// Otherwise if the corresponding value in `mask` is `0`, do nothing.
+///
+/// The stores happen in left-to-right order.
+/// (This is relevant in case two of the stores overlap.)
+///
+/// # Safety
+/// Unmasked values in `T` must be writeable as if by `&lt;ptr&gt;::write` (e.g. aligned to the element
+/// type).
+///
+/// `mask` must only contain `0` or `!0` values.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_scatter&lt;T, U, V&gt;(_val: T, _ptr: U, _mask: V) {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Reads a vector of pointers.
+///
+/// `T` must be a vector.
+///
+/// `U` must be a pointer to the element type of `T`
+///
+/// `V` must be a vector of integers with the same length as `T` (but any element size).
+///
+/// For each element, if the corresponding value in `mask` is `!0`, read the corresponding
+/// pointer offset from `ptr`.
+/// The first element is loaded from `ptr`, the second from `ptr.wrapping_offset(1)` and so on.
+/// Otherwise if the corresponding value in `mask` is `0`, return the corresponding value from
+/// `val`.
+///
+/// # Safety
+/// Unmasked values in `T` must be readable as if by `&lt;ptr&gt;::read` (e.g. aligned to the element
+/// type).
+///
+/// `mask` must only contain `0` or `!0` values.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_masked_load&lt;V, U, T&gt;(_mask: V, _ptr: U, _val: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Writes to a vector of pointers.
+///
+/// `T` must be a vector.
+///
+/// `U` must be a pointer to the element type of `T`
+///
+/// `V` must be a vector of integers with the same length as `T` (but any element size).
+///
+/// For each element, if the corresponding value in `mask` is `!0`, write the corresponding
+/// value in `val` to the pointer offset from `ptr`.
+/// The first element is written to `ptr`, the second to `ptr.wrapping_offset(1)` and so on.
+/// Otherwise if the corresponding value in `mask` is `0`, do nothing.
+///
+/// # Safety
+/// Unmasked values in `T` must be writeable as if by `&lt;ptr&gt;::write` (e.g. aligned to the element
+/// type).
+///
+/// `mask` must only contain `0` or `!0` values.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_masked_store&lt;V, U, T&gt;(_mask: V, _ptr: U, _val: T) {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Adds two simd vectors elementwise, with saturation.
+///
+/// `T` must be a vector of integer primitive types.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_saturating_add&lt;T&gt;(_x: T, _y: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Subtracts two simd vectors elementwise, with saturation.
+///
+/// `T` must be a vector of integer primitive types.
+///
+/// Subtract `rhs` from `lhs`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_saturating_sub&lt;T&gt;(_lhs: T, _rhs: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Adds elements within a vector from left to right.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+///
+/// Starting with the value `y`, add the elements of `x` and accumulate.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_add_ordered&lt;T, U&gt;(_x: T, _y: U) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Adds elements within a vector in arbitrary order. May also be re-associated with
+/// unordered additions on the inputs/outputs.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_add_unordered&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Multiplies elements within a vector from left to right.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+///
+/// Starting with the value `y`, multiply the elements of `x` and accumulate.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_mul_ordered&lt;T, U&gt;(_x: T, _y: U) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Multiplies elements within a vector in arbitrary order. May also be re-associated with
+/// unordered additions on the inputs/outputs.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_mul_unordered&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Checks if all mask values are true.
+///
+/// `T` must be a vector of integer primitive types.
+///
+/// # Safety
+/// `x` must contain only `0` or `!0`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_all&lt;T&gt;(_x: T) -&gt; bool {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Checks if any mask value is true.
+///
+/// `T` must be a vector of integer primitive types.
+///
+/// # Safety
+/// `x` must contain only `0` or `!0`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_any&lt;T&gt;(_x: T) -&gt; bool {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns the maximum element of a vector.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+///
+/// For floating-point values, uses IEEE-754 `maxNum`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_max&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns the minimum element of a vector.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+///
+/// For floating-point values, uses IEEE-754 `minNum`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_min&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Logical "ands" all elements together.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_and&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Logical "ors" all elements together.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_or&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Logical "exclusive ors" all elements together.
+///
+/// `T` must be a vector of integer or floating-point primitive types.
+///
+/// `U` must be the element type of `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_reduce_xor&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Truncates an integer vector to a bitmask.
+///
+/// `T` must be an integer vector.
+///
+/// `U` must be either the smallest unsigned integer with at least as many bits as the length
+/// of `T`, or the smallest array of `u8` with at least as many bits as the length of `T`.
+///
+/// Each element is truncated to a single bit and packed into the result.
+///
+/// No matter whether the output is an array or an unsigned integer, it is treated as a single
+/// contiguous list of bits. The bitmask is always packed on the least-significant side of the
+/// output, and padded with 0s in the most-significant bits. The order of the bits depends on
+/// endianness:
+///
+/// * On little endian, the least significant bit corresponds to the first vector element.
+/// * On big endian, the least significant bit corresponds to the last vector element.
+///
+/// For example, `[!0, 0, !0, !0]` packs to
+/// - `0b1101u8` or `[0b1101]` on little endian, and
+/// - `0b1011u8` or `[0b1011]` on big endian.
+///
+/// To consider a larger example,
+/// `[!0, 0, 0, 0, 0, 0, 0, 0, !0, !0, 0, 0, 0, 0, !0, 0]` packs to
+/// - `0b0100001100000001u16` or `[0b00000001, 0b01000011]` on little endian, and
+/// - `0b1000000011000010u16` or `[0b10000000, 0b11000010]` on big endian.
+///
+/// And finally, a non-power-of-2 example with multiple bytes:
+/// `[!0, !0, 0, !0, 0, 0, !0, 0, !0, 0]` packs to
+/// - `0b0101001011u16` or `[0b01001011, 0b01]` on little endian, and
+/// - `0b1101001010u16` or `[0b11, 0b01001010]` on big endian.
+///
+/// # Safety
+/// `x` must contain only `0` and `!0`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_bitmask&lt;T, U&gt;(_x: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Selects elements from a mask.
+///
+/// `M` must be an integer vector.
+///
+/// `T` must be a vector with the same number of elements as `M`.
+///
+/// For each element, if the corresponding value in `mask` is `!0`, select the element from
+/// `if_true`.  If the corresponding value in `mask` is `0`, select the element from
+/// `if_false`.
+///
+/// # Safety
+/// `mask` must only contain `0` and `!0`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_select&lt;M, T&gt;(_mask: M, _if_true: T, _if_false: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Selects elements from a bitmask.
+///
+/// `M` must be an unsigned integer or array of `u8`, matching `simd_bitmask`.
+///
+/// `T` must be a vector.
+///
+/// For each element, if the bit in `mask` is `1`, select the element from
+/// `if_true`.  If the corresponding bit in `mask` is `0`, select the element from
+/// `if_false`.
+///
+/// The bitmask bit order matches `simd_bitmask`.
+///
+/// # Safety
+/// Padding bits must be all zero.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_select_bitmask&lt;M, T&gt;(_m: M, _yes: T, _no: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Calculates the offset from a pointer vector elementwise, potentially
+/// wrapping.
+///
+/// `T` must be a vector of pointers.
+///
+/// `U` must be a vector of `isize` or `usize` with the same number of elements as `T`.
+///
+/// Operates as if by `&lt;ptr&gt;::wrapping_offset`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_arith_offset&lt;T, U&gt;(_ptr: T, _offset: U) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Casts a vector of pointers.
+///
+/// `T` and `U` must be vectors of pointers with the same number of elements.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_cast_ptr&lt;T, U&gt;(_ptr: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Exposes a vector of pointers as a vector of addresses.
+///
+/// `T` must be a vector of pointers.
+///
+/// `U` must be a vector of `usize` with the same length as `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_expose_provenance&lt;T, U&gt;(_ptr: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Creates a vector of pointers from a vector of addresses.
+///
+/// `T` must be a vector of `usize`.
+///
+/// `U` must be a vector of pointers, with the same length as `T`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_with_exposed_provenance&lt;T, U&gt;(_addr: T) -&gt; U {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Swaps bytes of each element.
+///
+/// `T` must be a vector of integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_bswap&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Reverses bits of each element.
+///
+/// `T` must be a vector of integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_bitreverse&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Counts the leading zeros of each element.
+///
+/// `T` must be a vector of integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_ctlz&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Counts the number of ones in each element.
+///
+/// `T` must be a vector of integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_ctpop&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Counts the trailing zeros of each element.
+///
+/// `T` must be a vector of integers.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_cttz&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Rounds up each element to the next highest integer-valued float.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_ceil&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Rounds down each element to the next lowest integer-valued float.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_floor&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Rounds each element to the closest integer-valued float.
+/// Ties are resolved by rounding away from 0.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_round&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Returns the integer part of each element as an integer-valued float.
+/// In other words, non-integer values are truncated towards zero.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_trunc&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Takes the square root of each element.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fsqrt&lt;T&gt;(_x: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Computes `(x*y) + z` for each element, but without any intermediate rounding.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fma&lt;T&gt;(_x: T, _y: T, _z: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="doccomment">/// Computes `(x*y) + z` for each element, non-deterministically executing either
+/// a fused multiply-add or two operations with rounding of the intermediate result.
+///
+/// The operation is fused if the code generator determines that target instruction
+/// set has support for a fused operation, and that the fused operation is more efficient
+/// than the equivalent, separate pair of mul and add instructions. It is unspecified
+/// whether or not a fused operation is selected, and that may depend on optimization
+/// level and context, for example. It may even be the case that some SIMD lanes get fused
+/// and others do not.
+///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_relaxed_fma&lt;T&gt;(_x: T, _y: T, _z: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the sine of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fsin&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the cosine of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fcos&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the exponential function of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fexp&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes 2 raised to the power of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_fexp2&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the base 10 logarithm of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_flog10&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the base 2 logarithm of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_flog2&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
+}
+
+<span class="comment">// Computes the natural logarithm of each element.
+</span><span class="doccomment">///
+/// `T` must be a vector of floats.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">pub unsafe fn </span>simd_flog&lt;T&gt;(_a: T) -&gt; T {
+    <span class="macro">unreachable!</span>()
 }
 </code></pre></div></section></main></body></html>

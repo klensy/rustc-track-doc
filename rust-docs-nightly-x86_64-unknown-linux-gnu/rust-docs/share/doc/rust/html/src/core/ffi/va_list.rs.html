@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/va_list.rs`."><title>va_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-faa87aeb.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f7cc13af8 2025-01-25)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>va_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/va_list.rs`."><title>va_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f85c6de55 2025-01-26)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>va_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -317,7 +317,17 @@
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
 <a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a></pre></div><pre class="rust"><code><span class="doccomment">//! C's "variable arguments"
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a></pre></div><pre class="rust"><code><span class="doccomment">//! C's "variable arguments"
 //!
 //! Better known as "varargs".
 
@@ -621,19 +631,29 @@
     </span>}
 }
 
-<span class="kw">extern </span><span class="string">"rust-intrinsic" </span>{
-    <span class="doccomment">/// Destroy the arglist `ap` after initialization with `va_start` or
-    /// `va_copy`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">fn </span>va_end(ap: <span class="kw-2">&amp;mut </span>VaListImpl&lt;<span class="lifetime">'_</span>&gt;);
+<span class="doccomment">/// Destroy the arglist `ap` after initialization with `va_start` or
+/// `va_copy`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">unsafe fn </span>va_end(_ap: <span class="kw-2">&amp;mut </span>VaListImpl&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="macro">unreachable!</span>()
+}
 
-    <span class="doccomment">/// Copies the current location of arglist `src` to the arglist `dst`.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">fn </span>va_copy&lt;<span class="lifetime">'f</span>&gt;(dest: <span class="kw-2">*mut </span>VaListImpl&lt;<span class="lifetime">'f</span>&gt;, src: <span class="kw-2">&amp;</span>VaListImpl&lt;<span class="lifetime">'f</span>&gt;);
+<span class="doccomment">/// Copies the current location of arglist `src` to the arglist `dst`.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">unsafe fn </span>va_copy&lt;<span class="lifetime">'f</span>&gt;(_dest: <span class="kw-2">*mut </span>VaListImpl&lt;<span class="lifetime">'f</span>&gt;, _src: <span class="kw-2">&amp;</span>VaListImpl&lt;<span class="lifetime">'f</span>&gt;) {
+    <span class="macro">unreachable!</span>()
+}
 
-    <span class="doccomment">/// Loads an argument of type `T` from the `va_list` `ap` and increment the
-    /// argument `ap` points to.
-    </span><span class="attr">#[rustc_nounwind]
-    </span><span class="kw">fn </span>va_arg&lt;T: sealed_trait::VaArgSafe&gt;(ap: <span class="kw-2">&amp;mut </span>VaListImpl&lt;<span class="lifetime">'_</span>&gt;) -&gt; T;
+<span class="doccomment">/// Loads an argument of type `T` from the `va_list` `ap` and increment the
+/// argument `ap` points to.
+</span><span class="attr">#[rustc_intrinsic]
+#[rustc_intrinsic_must_be_overridden]
+#[rustc_nounwind]
+</span><span class="kw">unsafe fn </span>va_arg&lt;T: sealed_trait::VaArgSafe&gt;(_ap: <span class="kw-2">&amp;mut </span>VaListImpl&lt;<span class="lifetime">'_</span>&gt;) -&gt; T {
+    <span class="macro">unreachable!</span>()
 }
 </code></pre></div></section></main></body></html>
