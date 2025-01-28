@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/mpmc/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f85c6de55 2025-01-26)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/mpmc/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/mpmc/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (2f348cb7c 2025-01-27)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/mpmc/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -1374,7 +1374,15 @@
 <a href="#1373" id="1373">1373</a>
 <a href="#1374" id="1374">1374</a>
 <a href="#1375" id="1375">1375</a>
-<a href="#1376" id="1376">1376</a></pre></div><pre class="rust"><code><span class="doccomment">//! Multi-producer, multi-consumer FIFO queue communication primitives.
+<a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
+<a href="#1379" id="1379">1379</a>
+<a href="#1380" id="1380">1380</a>
+<a href="#1381" id="1381">1381</a>
+<a href="#1382" id="1382">1382</a>
+<a href="#1383" id="1383">1383</a>
+<a href="#1384" id="1384">1384</a></pre></div><pre class="rust"><code><span class="doccomment">//! Multi-producer, multi-consumer FIFO queue communication primitives.
 //!
 //! This module provides message-based communication over channels, concretely
 //! defined by two types:
@@ -1394,7 +1402,7 @@
 //!    infinite buffer.
 //!
 //! 2. A synchronous, bounded channel. The [`sync_channel`] function will
-//!    return a `(SyncSender, Receiver)` tuple where the storage for pending
+//!    return a `(Sender, Receiver)` tuple where the storage for pending
 //!    messages is a pre-allocated buffer of a fixed size. All sends will be
 //!    **synchronous** by blocking until there is buffer space available. Note
 //!    that a bound of 0 is allowed, causing the channel to become a "rendezvous"
@@ -1736,9 +1744,17 @@
     /// that a return value of [`Err`] means that the data will never be
     /// received, but a return value of [`Ok`] does *not* mean that the data
     /// will be received. It is possible for the corresponding receiver to
-    /// hang up immediately after this function returns [`Ok`].
+    /// hang up immediately after this function returns [`Ok`]. However, if
+    /// the channel is zero-capacity, it acts as a rendezvous channel and a
+    /// return value of [`Ok`] means that the data has been received.
     ///
-    /// This method will never block the current thread.
+    /// If the channel is full and not disconnected, this call will block until
+    /// the send operation can proceed. If the channel becomes disconnected,
+    /// this call will wake up and return an error. The returned error contains
+    /// the original message.
+    ///
+    /// If called on a zero-capacity channel, this method will wait for a receive
+    /// operation to appear on the other side of the channel.
     ///
     /// # Examples
     ///
@@ -2026,7 +2042,7 @@
 }
 
 <span class="doccomment">/// The receiving half of Rust's [`channel`] (or [`sync_channel`]) type.
-/// Different threads can share this [`Sender`] by cloning it.
+/// Different threads can share this [`Receiver`] by cloning it.
 ///
 /// Messages sent to the channel can be retrieved using [`recv`].
 ///

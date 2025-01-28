@@ -186,6 +186,7 @@
 <li><a href="#deprecated-where-clause-location"><code>deprecated_where_clause_location</code></a></li>
 <li><a href="#deref-into-dyn-supertrait"><code>deref_into_dyn_supertrait</code></a></li>
 <li><a href="#deref-nullptr"><code>deref_nullptr</code></a></li>
+<li><a href="#double-negations"><code>double_negations</code></a></li>
 <li><a href="#drop-bounds"><code>drop_bounds</code></a></li>
 <li><a href="#dropping-copy-types"><code>dropping_copy_types</code></a></li>
 <li><a href="#dropping-references"><code>dropping_references</code></a></li>
@@ -213,7 +214,6 @@
 <li><a href="#large-assignments"><code>large_assignments</code></a></li>
 <li><a href="#late-bound-lifetime-arguments"><code>late_bound_lifetime_arguments</code></a></li>
 <li><a href="#legacy-derive-helpers"><code>legacy_derive_helpers</code></a></li>
-<li><a href="#linker-messages"><code>linker_messages</code></a></li>
 <li><a href="#map-unit-fn"><code>map_unit_fn</code></a></li>
 <li><a href="#missing-abi"><code>missing_abi</code></a></li>
 <li><a href="#mixed-script-confusables"><code>mixed_script_confusables</code></a></li>
@@ -1190,7 +1190,7 @@ note: the lint level is defined here
 <p>The dyn upcasting coercion feature adds new coercion rules, taking priority
 over certain other coercion rules, which will cause some behavior change.</p>
 <h2 id="deref-nullptr"><a class="header" href="#deref-nullptr">deref-nullptr</a></h2>
-<p>The <code>deref_nullptr</code> lint detects when an null pointer is dereferenced,
+<p>The <code>deref_nullptr</code> lint detects when a null pointer is dereferenced,
 which causes <a href="https://doc.rust-lang.org/reference/behavior-considered-undefined.html">undefined behavior</a>.</p>
 <h3 id="example-23"><a class="header" href="#example-23">Example</a></h3>
 <pre><code class="language-rust no_run"><span class="boring">#![allow(unused)]
@@ -1220,10 +1220,39 @@ warning: dereferencing a null pointer
 <h3 id="explanation-23"><a class="header" href="#explanation-23">Explanation</a></h3>
 <p>Dereferencing a null pointer causes <a href="https://doc.rust-lang.org/reference/behavior-considered-undefined.html">undefined behavior</a> if it is accessed
 (loaded from or stored to).</p>
+<h2 id="double-negations"><a class="header" href="#double-negations">double-negations</a></h2>
+<p>The <code>double_negations</code> lint detects expressions of the form <code>--x</code>.</p>
+<h3 id="example-24"><a class="header" href="#example-24">Example</a></h3>
+<pre><code class="language-rust">fn main() {
+    let x = 1;
+    let _b = --x;
+}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">warning: use of a double negation
+ --&gt; lint_example.rs:3:14
+  |
+3 |     let _b = --x;
+  |              ^^^
+  |
+  = note: the prefix `--` could be misinterpreted as a decrement operator which exists in other languages
+  = note: use `-= 1` if you meant to decrement the value
+  = note: `#[warn(double_negations)]` on by default
+help: add parentheses for clarity
+  |
+3 |     let _b = -(-x);
+  |               +  +
+
+</code></pre>
+<h3 id="explanation-24"><a class="header" href="#explanation-24">Explanation</a></h3>
+<p>Negating something twice is usually the same as not negating it at all.
+However, a double negation in Rust can easily be confused with the
+prefix decrement operator that exists in many languages derived from C.
+Use <code>-(-x)</code> if you really wanted to negate the value twice.</p>
+<p>To decrement a value, use <code>x -= 1</code> instead.</p>
 <h2 id="drop-bounds"><a class="header" href="#drop-bounds">drop-bounds</a></h2>
 <p>The <code>drop_bounds</code> lint checks for generics with <code>std::ops::Drop</code> as
 bounds.</p>
-<h3 id="example-24"><a class="header" href="#example-24">Example</a></h3>
+<h3 id="example-25"><a class="header" href="#example-25">Example</a></h3>
 <pre><code class="language-rust">fn foo&lt;T: Drop&gt;() {}</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: bounds on `T: Drop` are most likely incorrect, consider instead using `std::mem::needs_drop` to detect whether a type can be trivially dropped
@@ -1235,7 +1264,7 @@ bounds.</p>
   = note: `#[warn(drop_bounds)]` on by default
 
 </code></pre>
-<h3 id="explanation-24"><a class="header" href="#explanation-24">Explanation</a></h3>
+<h3 id="explanation-25"><a class="header" href="#explanation-25">Explanation</a></h3>
 <p>A generic trait bound of the form <code>T: Drop</code> is most likely misleading
 and not what the programmer intended (they probably should have used
 <code>std::mem::needs_drop</code> instead).</p>
@@ -1255,7 +1284,7 @@ some obscure corner cases, which can use <code>#[allow(drop_bounds)]</code>.</p>
 <h2 id="dropping-copy-types"><a class="header" href="#dropping-copy-types">dropping-copy-types</a></h2>
 <p>The <code>dropping_copy_types</code> lint checks for calls to <code>std::mem::drop</code> with a value
 that derives the Copy trait.</p>
-<h3 id="example-25"><a class="header" href="#example-25">Example</a></h3>
+<h3 id="example-26"><a class="header" href="#example-26">Example</a></h3>
 <pre><code class="language-rust">let x: i32 = 42; // i32 implements Copy
 std::mem::drop(x); // A copy of x is passed to the function, leaving the
                    // original unaffected</code></pre>
@@ -1276,14 +1305,14 @@ help: use `let _ = ...` to ignore the expression or result
   |
 
 </code></pre>
-<h3 id="explanation-25"><a class="header" href="#explanation-25">Explanation</a></h3>
+<h3 id="explanation-26"><a class="header" href="#explanation-26">Explanation</a></h3>
 <p>Calling <code>std::mem::drop</code> <a href="https://doc.rust-lang.org/std/mem/fn.drop.html">does nothing for types that
 implement Copy</a>, since the
 value will be copied and moved into the function on invocation.</p>
 <h2 id="dropping-references"><a class="header" href="#dropping-references">dropping-references</a></h2>
 <p>The <code>dropping_references</code> lint checks for calls to <code>std::mem::drop</code> with a reference
 instead of an owned value.</p>
-<h3 id="example-26"><a class="header" href="#example-26">Example</a></h3>
+<h3 id="example-27"><a class="header" href="#example-27">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">fn operation_that_requires_mutex_to_be_unlocked() {} // just to make it compile
 </span><span class="boring">let mutex = std::sync::Mutex::new(1); // just to make it compile
 </span>let mut lock_guard = mutex.lock();
@@ -1307,7 +1336,7 @@ help: use `let _ = ...` to ignore the expression or result
   |
 
 </code></pre>
-<h3 id="explanation-26"><a class="header" href="#explanation-26">Explanation</a></h3>
+<h3 id="explanation-27"><a class="header" href="#explanation-27">Explanation</a></h3>
 <p>Calling <code>drop</code> on a reference will only drop the
 reference itself, which is a no-op. It will not call the <code>drop</code> method (from
 the <code>Drop</code> trait implementation) on the underlying referenced value, which
@@ -1316,7 +1345,7 @@ is likely what was intended.</p>
 <p>The <code>duplicate_macro_attributes</code> lint detects when a <code>#[test]</code>-like built-in macro
 attribute is duplicated on an item. This lint may trigger on <code>bench</code>, <code>cfg_eval</code>, <code>test</code>
 and <code>test_case</code>.</p>
-<h3 id="example-27"><a class="header" href="#example-27">Example</a></h3>
+<h3 id="example-28"><a class="header" href="#example-28">Example</a></h3>
 <pre><code class="language-rust ignore (needs --test)">#[test]
 #[test]
 fn foo() {}</code></pre>
@@ -1329,14 +1358,14 @@ fn foo() {}</code></pre>
   |
   = note: `#[warn(duplicate_macro_attributes)]` on by default
 </code></pre>
-<h3 id="explanation-27"><a class="header" href="#explanation-27">Explanation</a></h3>
+<h3 id="explanation-28"><a class="header" href="#explanation-28">Explanation</a></h3>
 <p>A duplicated attribute may erroneously originate from a copy-paste and the effect of it
 being duplicated may not be obvious or desirable.</p>
 <p>For instance, doubling the <code>#[test]</code> attributes registers the test to be run twice with no
 change to its environment.</p>
 <h2 id="dyn-drop"><a class="header" href="#dyn-drop">dyn-drop</a></h2>
 <p>The <code>dyn_drop</code> lint checks for trait objects with <code>std::ops::Drop</code>.</p>
-<h3 id="example-28"><a class="header" href="#example-28">Example</a></h3>
+<h3 id="example-29"><a class="header" href="#example-29">Example</a></h3>
 <pre><code class="language-rust">fn foo(_x: Box&lt;dyn Drop&gt;) {}</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: types that do not implement `Drop` can still have drop glue, consider instead using `std::mem::needs_drop` to detect whether a type is trivially dropped
@@ -1348,7 +1377,7 @@ change to its environment.</p>
   = note: `#[warn(dyn_drop)]` on by default
 
 </code></pre>
-<h3 id="explanation-28"><a class="header" href="#explanation-28">Explanation</a></h3>
+<h3 id="explanation-29"><a class="header" href="#explanation-29">Explanation</a></h3>
 <p>A trait object bound of the form <code>dyn Drop</code> is most likely misleading
 and not what the programmer intended.</p>
 <p><code>Drop</code> bounds do not actually indicate whether a type can be trivially
@@ -1367,7 +1396,7 @@ fn foo(_x: Box&lt;dyn Placeholder&gt;) {}</code></pre>
 <p>The <code>elided_named_lifetimes</code> lint detects when an elided
 lifetime ends up being a named lifetime, such as <code>'static</code>
 or some lifetime parameter <code>'a</code>.</p>
-<h3 id="example-29"><a class="header" href="#example-29">Example</a></h3>
+<h3 id="example-30"><a class="header" href="#example-30">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(elided_named_lifetimes)]
 struct Foo;
 impl Foo {
@@ -1393,7 +1422,7 @@ help: consider specifying it explicitly
   |                                                   +++++++
 
 </code></pre>
-<h3 id="explanation-29"><a class="header" href="#explanation-29">Explanation</a></h3>
+<h3 id="explanation-30"><a class="header" href="#explanation-30">Explanation</a></h3>
 <p>Lifetime elision is quite useful, because it frees you from having
 to give each lifetime its own name, but sometimes it can produce
 somewhat surprising resolutions. In safe code, it is mostly okay,
@@ -1403,7 +1432,7 @@ But with <code>unsafe</code> code, such unexpected resolutions may lead to unsou
 <h2 id="ellipsis-inclusive-range-patterns"><a class="header" href="#ellipsis-inclusive-range-patterns">ellipsis-inclusive-range-patterns</a></h2>
 <p>The <code>ellipsis_inclusive_range_patterns</code> lint detects the <a href="https://doc.rust-lang.org/reference/patterns.html#range-patterns"><code>...</code> range
 pattern</a>, which is deprecated.</p>
-<h3 id="example-30"><a class="header" href="#example-30">Example</a></h3>
+<h3 id="example-31"><a class="header" href="#example-31">Example</a></h3>
 <pre><code class="language-rust edition2018">let x = 123;
 match x {
     0...100 =&gt; {}
@@ -1421,13 +1450,13 @@ match x {
   = note: `#[warn(ellipsis_inclusive_range_patterns)]` on by default
 
 </code></pre>
-<h3 id="explanation-30"><a class="header" href="#explanation-30">Explanation</a></h3>
+<h3 id="explanation-31"><a class="header" href="#explanation-31">Explanation</a></h3>
 <p>The <code>...</code> range pattern syntax was changed to <code>..=</code> to avoid potential
 confusion with the <a href="https://doc.rust-lang.org/reference/expressions/range-expr.html"><code>..</code> range expression</a>. Use the new form instead.</p>
 <h2 id="exported-private-dependencies"><a class="header" href="#exported-private-dependencies">exported-private-dependencies</a></h2>
 <p>The <code>exported_private_dependencies</code> lint detects private dependencies
 that are exposed in a public interface.</p>
-<h3 id="example-31"><a class="header" href="#example-31">Example</a></h3>
+<h3 id="example-32"><a class="header" href="#example-32">Example</a></h3>
 <pre><code class="language-rust ignore (needs-dependency)">pub fn foo() -&gt; Option&lt;some_private_dependency::Thing&gt; {
     None
 }</code></pre>
@@ -1440,7 +1469,7 @@ that are exposed in a public interface.</p>
   |
   = note: `#[warn(exported_private_dependencies)]` on by default
 </code></pre>
-<h3 id="explanation-31"><a class="header" href="#explanation-31">Explanation</a></h3>
+<h3 id="explanation-32"><a class="header" href="#explanation-32">Explanation</a></h3>
 <p>Dependencies can be marked as "private" to indicate that they are not
 exposed in the public interface of a crate. This can be used by Cargo
 to independently resolve those dependencies because it can assume it
@@ -1453,7 +1482,7 @@ Or, switch the dependency to a public dependency.</p>
 See <a href="https://github.com/rust-lang/rfcs/blob/master/text/1977-public-private-dependencies.md">RFC 1977</a> for more details, as well as the <a href="https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#public-dependency">Cargo documentation</a>.</p>
 <h2 id="for-loops-over-fallibles"><a class="header" href="#for-loops-over-fallibles">for-loops-over-fallibles</a></h2>
 <p>The <code>for_loops_over_fallibles</code> lint checks for <code>for</code> loops over <code>Option</code> or <code>Result</code> values.</p>
-<h3 id="example-32"><a class="header" href="#example-32">Example</a></h3>
+<h3 id="example-33"><a class="header" href="#example-33">Example</a></h3>
 <pre><code class="language-rust">let opt = Some(1);
 for x in opt { /* ... */}</code></pre>
 <p>This will produce:</p>
@@ -1474,7 +1503,7 @@ help: consider using `if let` to clear intent
   | ~~~~~~~~~~~~ ~~~
 
 </code></pre>
-<h3 id="explanation-32"><a class="header" href="#explanation-32">Explanation</a></h3>
+<h3 id="explanation-33"><a class="header" href="#explanation-33">Explanation</a></h3>
 <p>Both <code>Option</code> and <code>Result</code> implement <code>IntoIterator</code> trait, which allows using them in a <code>for</code> loop.
 <code>for</code> loop over <code>Option</code> or <code>Result</code> will iterate either 0 (if the value is <code>None</code>/<code>Err(_)</code>)
 or 1 time (if the value is <code>Some(_)</code>/<code>Ok(_)</code>). This is not very useful and is more clearly expressed
@@ -1488,7 +1517,7 @@ to optionally add a value to an iterator.</p>
 <p>The <code>forbidden_lint_groups</code> lint detects violations of
 <code>forbid</code> applied to a lint group. Due to a bug in the compiler,
 these used to be overlooked entirely. They now generate a warning.</p>
-<h3 id="example-33"><a class="header" href="#example-33">Example</a></h3>
+<h3 id="example-34"><a class="header" href="#example-34">Example</a></h3>
 <pre><code class="language-rust">#![forbid(warnings)]
 #![warn(bad_style)]
 
@@ -1510,7 +1539,7 @@ fn main() {}</code></pre>
 <h3 id="recommended-fix"><a class="header" href="#recommended-fix">Recommended fix</a></h3>
 <p>If your crate is using <code>#![forbid(warnings)]</code>,
 we recommend that you change to <code>#![deny(warnings)]</code>.</p>
-<h3 id="explanation-33"><a class="header" href="#explanation-33">Explanation</a></h3>
+<h3 id="explanation-34"><a class="header" href="#explanation-34">Explanation</a></h3>
 <p>Due to a compiler bug, applying <code>forbid</code> to lint groups
 previously had no effect. The bug is now fixed but instead of
 enforcing <code>forbid</code> we issue this future-compatibility warning
@@ -1518,7 +1547,7 @@ to avoid breaking existing crates.</p>
 <h2 id="forgetting-copy-types"><a class="header" href="#forgetting-copy-types">forgetting-copy-types</a></h2>
 <p>The <code>forgetting_copy_types</code> lint checks for calls to <code>std::mem::forget</code> with a value
 that derives the Copy trait.</p>
-<h3 id="example-34"><a class="header" href="#example-34">Example</a></h3>
+<h3 id="example-35"><a class="header" href="#example-35">Example</a></h3>
 <pre><code class="language-rust">let x: i32 = 42; // i32 implements Copy
 std::mem::forget(x); // A copy of x is passed to the function, leaving the
                      // original unaffected</code></pre>
@@ -1539,7 +1568,7 @@ help: use `let _ = ...` to ignore the expression or result
   |
 
 </code></pre>
-<h3 id="explanation-34"><a class="header" href="#explanation-34">Explanation</a></h3>
+<h3 id="explanation-35"><a class="header" href="#explanation-35">Explanation</a></h3>
 <p>Calling <code>std::mem::forget</code> <a href="https://doc.rust-lang.org/std/mem/fn.drop.html">does nothing for types that
 implement Copy</a> since the
 value will be copied and moved into the function on invocation.</p>
@@ -1549,7 +1578,7 @@ destructor, there is nothing for <code>std::mem::forget</code> to ignore.</p>
 <h2 id="forgetting-references"><a class="header" href="#forgetting-references">forgetting-references</a></h2>
 <p>The <code>forgetting_references</code> lint checks for calls to <code>std::mem::forget</code> with a reference
 instead of an owned value.</p>
-<h3 id="example-35"><a class="header" href="#example-35">Example</a></h3>
+<h3 id="example-36"><a class="header" href="#example-36">Example</a></h3>
 <pre><code class="language-rust">let x = Box::new(1);
 std::mem::forget(&amp;x); // Should have been forget(x), x will still be dropped</code></pre>
 <p>This will produce:</p>
@@ -1569,14 +1598,14 @@ help: use `let _ = ...` to ignore the expression or result
   |
 
 </code></pre>
-<h3 id="explanation-35"><a class="header" href="#explanation-35">Explanation</a></h3>
+<h3 id="explanation-36"><a class="header" href="#explanation-36">Explanation</a></h3>
 <p>Calling <code>forget</code> on a reference will only forget the
 reference itself, which is a no-op. It will not forget the underlying
 referenced value, which is likely what was intended.</p>
 <h2 id="function-item-references"><a class="header" href="#function-item-references">function-item-references</a></h2>
 <p>The <code>function_item_references</code> lint detects function references that are
 formatted with <a href="https://doc.rust-lang.org/std/fmt/trait.Pointer.html"><code>fmt::Pointer</code></a> or transmuted.</p>
-<h3 id="example-36"><a class="header" href="#example-36">Example</a></h3>
+<h3 id="example-37"><a class="header" href="#example-37">Example</a></h3>
 <pre><code class="language-rust">fn foo() { }
 
 fn main() {
@@ -1592,7 +1621,7 @@ fn main() {
   = note: `#[warn(function_item_references)]` on by default
 
 </code></pre>
-<h3 id="explanation-36"><a class="header" href="#explanation-36">Explanation</a></h3>
+<h3 id="explanation-37"><a class="header" href="#explanation-37">Explanation</a></h3>
 <p>Taking a reference to a function may be mistaken as a way to obtain a
 pointer to that function. This can give unexpected results when
 formatting the reference as a pointer or transmuting it. This lint is
@@ -1601,7 +1630,7 @@ arguments bound by <a href="https://doc.rust-lang.org/std/fmt/trait.Pointer.html
 <h2 id="hidden-glob-reexports"><a class="header" href="#hidden-glob-reexports">hidden-glob-reexports</a></h2>
 <p>The <code>hidden_glob_reexports</code> lint detects cases where glob re-export items are shadowed by
 private items.</p>
-<h3 id="example-37"><a class="header" href="#example-37">Example</a></h3>
+<h3 id="example-38"><a class="header" href="#example-38">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(hidden_glob_reexports)]
 
 pub mod upstream {
@@ -1641,7 +1670,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-37"><a class="header" href="#explanation-37">Explanation</a></h3>
+<h3 id="explanation-38"><a class="header" href="#explanation-38">Explanation</a></h3>
 <p>This was previously accepted without any errors or warnings but it could silently break a
 crate's downstream user code. If the <code>struct Foo</code> was added, <code>dep::inner::Foo</code> would
 silently become inaccessible and trigger a "<code>struct </code>Foo<code> is private</code>" visibility error at
@@ -1649,7 +1678,7 @@ the downstream use site.</p>
 <h2 id="improper-ctypes"><a class="header" href="#improper-ctypes">improper-ctypes</a></h2>
 <p>The <code>improper_ctypes</code> lint detects incorrect use of types in foreign
 modules.</p>
-<h3 id="example-38"><a class="header" href="#example-38">Example</a></h3>
+<h3 id="example-39"><a class="header" href="#example-39">Example</a></h3>
 <pre><code class="language-rust">extern "C" {
     static STATIC: String;
 }</code></pre>
@@ -1665,7 +1694,7 @@ modules.</p>
   = note: `#[warn(improper_ctypes)]` on by default
 
 </code></pre>
-<h3 id="explanation-38"><a class="header" href="#explanation-38">Explanation</a></h3>
+<h3 id="explanation-39"><a class="header" href="#explanation-39">Explanation</a></h3>
 <p>The compiler has several checks to verify that types used in <code>extern</code>
 blocks are safe and follow certain rules to ensure proper
 compatibility with the foreign interfaces. This lint is issued when it
@@ -1675,7 +1704,7 @@ to resolve it.</p>
 <h2 id="improper-ctypes-definitions"><a class="header" href="#improper-ctypes-definitions">improper-ctypes-definitions</a></h2>
 <p>The <code>improper_ctypes_definitions</code> lint detects incorrect use of
 <a href="https://doc.rust-lang.org/reference/items/functions.html#extern-function-qualifier"><code>extern</code> function</a> definitions.</p>
-<h3 id="example-39"><a class="header" href="#example-39">Example</a></h3>
+<h3 id="example-40"><a class="header" href="#example-40">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>pub extern "C" fn str_type(p: &amp;str) { }</code></pre>
 <p>This will produce:</p>
@@ -1690,7 +1719,7 @@ to resolve it.</p>
   = note: `#[warn(improper_ctypes_definitions)]` on by default
 
 </code></pre>
-<h3 id="explanation-39"><a class="header" href="#explanation-39">Explanation</a></h3>
+<h3 id="explanation-40"><a class="header" href="#explanation-40">Explanation</a></h3>
 <p>There are many parameter and return types that may be specified in an
 <code>extern</code> function that are not compatible with the given ABI. This
 lint is an alert that these types should not be used. The lint usually
@@ -1700,7 +1729,7 @@ on how to resolve it.</p>
 <p>The <code>incomplete_features</code> lint detects unstable features enabled with
 the <a href="https://doc.rust-lang.org/nightly/unstable-book/"><code>feature</code> attribute</a> that may function improperly in some or all
 cases.</p>
-<h3 id="example-40"><a class="header" href="#example-40">Example</a></h3>
+<h3 id="example-41"><a class="header" href="#example-41">Example</a></h3>
 <pre><code class="language-rust">#![feature(generic_const_exprs)]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: the feature `generic_const_exprs` is incomplete and may not be safe to use and/or cause compiler crashes
@@ -1713,7 +1742,7 @@ cases.</p>
   = note: `#[warn(incomplete_features)]` on by default
 
 </code></pre>
-<h3 id="explanation-40"><a class="header" href="#explanation-40">Explanation</a></h3>
+<h3 id="explanation-41"><a class="header" href="#explanation-41">Explanation</a></h3>
 <p>Although it is encouraged for people to experiment with unstable
 features, some of them are known to be incomplete or faulty. This lint
 is a signal that the feature has not yet been finished, and you may
@@ -1721,7 +1750,7 @@ experience problems with it.</p>
 <h2 id="inline-no-sanitize"><a class="header" href="#inline-no-sanitize">inline-no-sanitize</a></h2>
 <p>The <code>inline_no_sanitize</code> lint detects incompatible use of
 <a href="https://doc.rust-lang.org/reference/attributes/codegen.html#the-inline-attribute"><code>#[inline(always)]</code></a> and <a href="https://doc.rust-lang.org/nightly/unstable-book/language-features/no-sanitize.html"><code>#[no_sanitize(...)]</code></a>.</p>
-<h3 id="example-41"><a class="header" href="#example-41">Example</a></h3>
+<h3 id="example-42"><a class="header" href="#example-42">Example</a></h3>
 <pre><code class="language-rust">#![feature(no_sanitize)]
 
 #[inline(always)]
@@ -1746,7 +1775,7 @@ note: inlining requested here
   = note: `#[warn(inline_no_sanitize)]` on by default
 
 </code></pre>
-<h3 id="explanation-41"><a class="header" href="#explanation-41">Explanation</a></h3>
+<h3 id="explanation-42"><a class="header" href="#explanation-42">Explanation</a></h3>
 <p>The use of the <a href="https://doc.rust-lang.org/reference/attributes/codegen.html#the-inline-attribute"><code>#[inline(always)]</code></a> attribute prevents the
 the <a href="https://doc.rust-lang.org/nightly/unstable-book/language-features/no-sanitize.html"><code>#[no_sanitize(...)]</code></a> attribute from working.
 Consider temporarily removing <code>inline</code> attribute.</p>
@@ -1754,7 +1783,7 @@ Consider temporarily removing <code>inline</code> attribute.</p>
 <p>The <code>internal_features</code> lint detects unstable features enabled with
 the <a href="https://doc.rust-lang.org/nightly/unstable-book/"><code>feature</code> attribute</a> that are internal to the compiler or standard
 library.</p>
-<h3 id="example-42"><a class="header" href="#example-42">Example</a></h3>
+<h3 id="example-43"><a class="header" href="#example-43">Example</a></h3>
 <pre><code class="language-rust">#![feature(rustc_attrs)]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: the feature `rustc_attrs` is internal to the compiler or standard library
@@ -1767,14 +1796,14 @@ library.</p>
   = note: `#[warn(internal_features)]` on by default
 
 </code></pre>
-<h3 id="explanation-42"><a class="header" href="#explanation-42">Explanation</a></h3>
+<h3 id="explanation-43"><a class="header" href="#explanation-43">Explanation</a></h3>
 <p>These features are an implementation detail of the compiler and standard
 library and are not supposed to be used in user code.</p>
 <h2 id="invalid-from-utf8"><a class="header" href="#invalid-from-utf8">invalid-from-utf8</a></h2>
 <p>The <code>invalid_from_utf8</code> lint checks for calls to
 <code>std::str::from_utf8</code> and <code>std::str::from_utf8_mut</code>
 with a known invalid UTF-8 value.</p>
-<h3 id="example-43"><a class="header" href="#example-43">Example</a></h3>
+<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">#[allow(unused)]
 </span>std::str::from_utf8(b"Ru\x82st");</code></pre>
 <p>This will produce:</p>
@@ -1789,12 +1818,12 @@ with a known invalid UTF-8 value.</p>
   = note: `#[warn(invalid_from_utf8)]` on by default
 
 </code></pre>
-<h3 id="explanation-43"><a class="header" href="#explanation-43">Explanation</a></h3>
+<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
 <p>Trying to create such a <code>str</code> would always return an error as per documentation
 for <code>std::str::from_utf8</code> and <code>std::str::from_utf8_mut</code>.</p>
 <h2 id="invalid-macro-export-arguments"><a class="header" href="#invalid-macro-export-arguments">invalid-macro-export-arguments</a></h2>
 <p>The <code>invalid_macro_export_arguments</code> lint detects cases where <code>#[macro_export]</code> is being used with invalid arguments.</p>
-<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
+<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(invalid_macro_export_arguments)]
 
 #[macro_export(invalid_parameter)]
@@ -1819,13 +1848,13 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
+<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
 <p>The only valid argument is <code>#[macro_export(local_inner_macros)]</code> or no argument (<code>#[macro_export]</code>).
 You can't have multiple arguments in a <code>#[macro_export(..)]</code>, or mention arguments other than <code>local_inner_macros</code>.</p>
 <h2 id="invalid-nan-comparisons"><a class="header" href="#invalid-nan-comparisons">invalid-nan-comparisons</a></h2>
 <p>The <code>invalid_nan_comparisons</code> lint checks comparison with <code>f32::NAN</code> or <code>f64::NAN</code>
 as one of the operand.</p>
-<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
+<h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
 <pre><code class="language-rust">let a = 2.3f32;
 if a == f32::NAN {}</code></pre>
 <p>This will produce:</p>
@@ -1843,13 +1872,13 @@ help: use `f32::is_nan()` or `f64::is_nan()` instead
   |
 
 </code></pre>
-<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
+<h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
 <p>NaN does not compare meaningfully to anything – not
 even itself – so those comparisons are always false.</p>
 <h2 id="invalid-value"><a class="header" href="#invalid-value">invalid-value</a></h2>
 <p>The <code>invalid_value</code> lint detects creating a value that is not valid,
 such as a null reference.</p>
-<h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
+<h3 id="example-47"><a class="header" href="#example-47">Example</a></h3>
 <pre><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span>unsafe {
     let x: &amp;'static i32 = std::mem::zeroed();
@@ -1868,7 +1897,7 @@ such as a null reference.</p>
   = note: `#[warn(invalid_value)]` on by default
 
 </code></pre>
-<h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
+<h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
 <p>In some situations the compiler can detect that the code is creating
 an invalid value, which should be avoided.</p>
 <p>In particular, this lint will check for improper use of
@@ -1879,7 +1908,7 @@ and a possible solution.</p>
 <h2 id="irrefutable-let-patterns"><a class="header" href="#irrefutable-let-patterns">irrefutable-let-patterns</a></h2>
 <p>The <code>irrefutable_let_patterns</code> lint detects <a href="https://doc.rust-lang.org/reference/patterns.html#refutability">irrefutable patterns</a>
 in <a href="https://doc.rust-lang.org/reference/expressions/if-expr.html#if-let-expressions"><code>if let</code></a>s, <a href="https://doc.rust-lang.org/reference/expressions/loop-expr.html#predicate-pattern-loops"><code>while let</code></a>s, and <code>if let</code> guards.</p>
-<h3 id="example-47"><a class="header" href="#example-47">Example</a></h3>
+<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
 <pre><code class="language-rust">if let _ = 123 {
     println!("always runs!");
 }</code></pre>
@@ -1895,7 +1924,7 @@ in <a href="https://doc.rust-lang.org/reference/expressions/if-expr.html#if-let-
   = note: `#[warn(irrefutable_let_patterns)]` on by default
 
 </code></pre>
-<h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
+<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
 <p>There usually isn't a reason to have an irrefutable pattern in an
 <code>if let</code> or <code>while let</code> statement, because the pattern will always match
 successfully. A <a href="https://doc.rust-lang.org/reference/statements.html#let-statements"><code>let</code></a> or <a href="https://doc.rust-lang.org/reference/expressions/loop-expr.html#infinite-loops"><code>loop</code></a> statement will suffice. However,
@@ -1908,7 +1937,7 @@ use in normal code.</p>
 <h2 id="large-assignments"><a class="header" href="#large-assignments">large-assignments</a></h2>
 <p>The <code>large_assignments</code> lint detects when objects of large
 types are being moved around.</p>
-<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
+<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
 <pre><code class="language-rust ignore (can crash on some platforms)">let x = [0; 50000];
 let y = x;</code></pre>
 <p>produces:</p>
@@ -1917,7 +1946,7 @@ let y = x;</code></pre>
   let y = x;
           - Copied large value here
 </code></pre>
-<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
+<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
 <p>When using a large type in a plain assignment or in a function
 argument, idiomatic code can be inefficient.
 Ideally appropriate optimizations would resolve this, but such
@@ -1927,7 +1956,7 @@ user to resolve them in code.</p>
 <h2 id="late-bound-lifetime-arguments"><a class="header" href="#late-bound-lifetime-arguments">late-bound-lifetime-arguments</a></h2>
 <p>The <code>late_bound_lifetime_arguments</code> lint detects generic lifetime
 arguments in path segments with late bound lifetime parameters.</p>
-<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
+<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
 <pre><code class="language-rust">struct S;
 
 impl S {
@@ -1952,7 +1981,7 @@ fn main() {
   = note: `#[warn(late_bound_lifetime_arguments)]` on by default
 
 </code></pre>
-<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
+<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
 <p>It is not clear how to provide arguments for early-bound lifetime
 parameters if they are intermixed with late-bound parameters in the
 same list. For now, providing any explicit arguments will trigger this
@@ -1964,7 +1993,7 @@ of the difference between early and late-bound parameters.</p>
 <h2 id="legacy-derive-helpers"><a class="header" href="#legacy-derive-helpers">legacy-derive-helpers</a></h2>
 <p>The <code>legacy_derive_helpers</code> lint detects derive helper attributes
 that are used before they are introduced.</p>
-<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
+<h3 id="example-51"><a class="header" href="#example-51">Example</a></h3>
 <pre><code class="language-rust ignore (needs extern crate)">#[serde(rename_all = "camelCase")]
 #[derive(Deserialize)]
 struct S { /* fields */ }</code></pre>
@@ -1978,7 +2007,7 @@ struct S { /* fields */ }</code></pre>
  2 | #[derive(Deserialize)]
    |          ----------- the attribute is introduced here
 </code></pre>
-<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
+<h3 id="explanation-51"><a class="header" href="#explanation-51">Explanation</a></h3>
 <p>Attributes like this work for historical reasons, but attribute expansion works in
 left-to-right order in general, so, to resolve <code>#[serde]</code>, compiler has to try to "look
 into the future" at not yet expanded part of the item , but such attempts are not always
@@ -1987,25 +2016,6 @@ reliable.</p>
 <pre><code class="language-rust ignore (needs extern crate)">#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct S { /* fields */ }</code></pre>
-<h2 id="linker-messages"><a class="header" href="#linker-messages">linker-messages</a></h2>
-<p>The <code>linker_messages</code> lint forwards warnings from the linker.</p>
-<h3 id="example-51"><a class="header" href="#example-51">Example</a></h3>
-<pre><code class="language-rust ignore (needs CLI args  platform-specific)">extern "C" {
-  fn foo();
-}
-fn main () { unsafe { foo(); } }</code></pre>
-<p>On Linux, using <code>gcc -Wl,--warn-unresolved-symbols</code> as a linker, this will produce</p>
-<pre><code class="language-text">warning: linker stderr: rust-lld: undefined symbol: foo
-         &gt;&gt;&gt; referenced by rust_out.69edbd30df4ae57d-cgu.0
-         &gt;&gt;&gt;               rust_out.rust_out.69edbd30df4ae57d-cgu.0.rcgu.o:(rust_out::main::h3a90094b06757803)
-  |
-  = note: `#[warn(linker_messages)]` on by default
-
-warning: 1 warning emitted
-</code></pre>
-<h3 id="explanation-51"><a class="header" href="#explanation-51">Explanation</a></h3>
-<p>Linkers emit platform-specific and program-specific warnings that cannot be predicted in advance by the rust compiler.
-They are forwarded by default, but can be disabled by adding <code>#![allow(linker_messages)]</code> at the crate root.</p>
 <h2 id="map-unit-fn"><a class="header" href="#map-unit-fn">map-unit-fn</a></h2>
 <p>The <code>map_unit_fn</code> lint checks for <code>Iterator::map</code> receive
 a callable that returns <code>()</code>.</p>
@@ -3636,7 +3646,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-01-26; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-01-27; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -3883,7 +3893,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-01-26; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-01-27; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
