@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/btree/fix.rs`."><title>fix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (2f348cb7c 2025-01-27)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/btree/</div>fix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/btree/fix.rs`."><title>fix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (bf1b174e7 2025-01-28)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/btree/</div>fix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -180,7 +180,10 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::alloc::Allocator;
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::alloc::Allocator;
 
 <span class="kw">use </span><span class="kw">super</span>::map::MIN_LEN;
 <span class="kw">use </span><span class="kw">super</span>::node::ForceResult::<span class="kw-2">*</span>;
@@ -239,7 +242,10 @@
     ///
     /// This method does not expect ancestors to already be underfull upon entry
     /// and panics if it encounters an empty ancestor.
-    </span><span class="kw">pub fn </span>fix_node_and_affected_ancestors&lt;A: Allocator + Clone&gt;(<span class="kw-2">mut </span><span class="self">self</span>, alloc: A) -&gt; bool {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fix_node_and_affected_ancestors&lt;A: Allocator + Clone&gt;(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        alloc: A,
+    ) -&gt; bool {
         <span class="kw">loop </span>{
             <span class="kw">match </span><span class="self">self</span>.fix_node_through_parent(alloc.clone()) {
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(parent)) =&gt; <span class="self">self </span>= parent.forget_type(),
@@ -252,7 +258,7 @@
 
 <span class="kw">impl</span>&lt;K, V&gt; Root&lt;K, V&gt; {
     <span class="doccomment">/// Removes empty levels on the top, but keeps an empty leaf if the entire tree is empty.
-    </span><span class="kw">pub fn </span>fix_top&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fix_top&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
         <span class="kw">while </span><span class="self">self</span>.height() &gt; <span class="number">0 </span>&amp;&amp; <span class="self">self</span>.len() == <span class="number">0 </span>{
             <span class="self">self</span>.pop_internal_level(alloc.clone());
         }
@@ -261,7 +267,7 @@
     <span class="doccomment">/// Stocks up or merge away any underfull nodes on the right border of the
     /// tree. The other nodes, those that are not the root nor a rightmost edge,
     /// must already have at least MIN_LEN elements.
-    </span><span class="kw">pub fn </span>fix_right_border&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fix_right_border&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
         <span class="self">self</span>.fix_top(alloc.clone());
         <span class="kw">if </span><span class="self">self</span>.len() &gt; <span class="number">0 </span>{
             <span class="self">self</span>.borrow_mut().last_kv().fix_right_border_of_right_edge(alloc.clone());
@@ -270,7 +276,7 @@
     }
 
     <span class="doccomment">/// The symmetric clone of `fix_right_border`.
-    </span><span class="kw">pub fn </span>fix_left_border&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fix_left_border&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
         <span class="self">self</span>.fix_top(alloc.clone());
         <span class="kw">if </span><span class="self">self</span>.len() &gt; <span class="number">0 </span>{
             <span class="self">self</span>.borrow_mut().first_kv().fix_left_border_of_left_edge(alloc.clone());
@@ -281,7 +287,7 @@
     <span class="doccomment">/// Stocks up any underfull nodes on the right border of the tree.
     /// The other nodes, those that are neither the root nor a rightmost edge,
     /// must be prepared to have up to MIN_LEN elements stolen.
-    </span><span class="kw">pub fn </span>fix_right_border_of_plentiful(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fix_right_border_of_plentiful(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span><span class="kw-2">mut </span>cur_node = <span class="self">self</span>.borrow_mut();
         <span class="kw">while let </span>Internal(internal) = cur_node.force() {
             <span class="comment">// Check if rightmost child is underfull.

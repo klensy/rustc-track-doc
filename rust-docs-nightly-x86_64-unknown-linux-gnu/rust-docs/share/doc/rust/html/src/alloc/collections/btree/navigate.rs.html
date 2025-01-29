@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/btree/navigate.rs`."><title>navigate.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (2f348cb7c 2025-01-27)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/btree/</div>navigate.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/btree/navigate.rs`."><title>navigate.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e7950ecc.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (bf1b174e7 2025-01-28)" data-channel="nightly" data-search-js="search-ccb196c1.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/btree/</div>navigate.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -779,7 +779,13 @@
 <a href="#778" id="778">778</a>
 <a href="#779" id="779">779</a>
 <a href="#780" id="780">780</a>
-<a href="#781" id="781">781</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::borrow::Borrow;
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::borrow::Borrow;
 <span class="kw">use </span>core::ops::RangeBounds;
 <span class="kw">use </span>core::{hint, ptr};
 
@@ -788,7 +794,7 @@
 <span class="kw">use </span><span class="kw">super</span>::search::SearchBound;
 <span class="kw">use </span><span class="kw">crate</span>::alloc::Allocator;
 <span class="comment">// `front` and `back` are always both `None` or both `Some`.
-</span><span class="kw">pub struct </span>LeafRange&lt;BorrowType, K, V&gt; {
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>LeafRange&lt;BorrowType, K, V&gt; {
     front: <span class="prelude-ty">Option</span>&lt;Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt;&gt;,
     back: <span class="prelude-ty">Option</span>&lt;Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt;&gt;,
 }
@@ -806,7 +812,7 @@
 }
 
 <span class="kw">impl</span>&lt;BorrowType, K, V&gt; LeafRange&lt;BorrowType, K, V&gt; {
-    <span class="kw">pub fn </span>none() -&gt; <span class="self">Self </span>{
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>none() -&gt; <span class="self">Self </span>{
         LeafRange { front: <span class="prelude-val">None</span>, back: <span class="prelude-val">None </span>}
     }
 
@@ -815,7 +821,7 @@
     }
 
     <span class="doccomment">/// Temporarily takes out another, immutable equivalent of the same range.
-    </span><span class="kw">pub fn </span>reborrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LeafRange&lt;marker::Immut&lt;<span class="lifetime">'_</span>&gt;, K, V&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>reborrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LeafRange&lt;marker::Immut&lt;<span class="lifetime">'_</span>&gt;, K, V&gt; {
         LeafRange {
             front: <span class="self">self</span>.front.as_ref().map(|f| f.reborrow()),
             back: <span class="self">self</span>.back.as_ref().map(|b| b.reborrow()),
@@ -825,24 +831,24 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V&gt; LeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>next_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; {
         <span class="self">self</span>.perform_next_checked(|kv| kv.into_kv())
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>next_back_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_back_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; {
         <span class="self">self</span>.perform_next_back_checked(|kv| kv.into_kv())
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V&gt; LeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>next_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt; {
         <span class="self">self</span>.perform_next_checked(|kv| <span class="kw">unsafe </span>{ ptr::read(kv) }.into_kv_valmut())
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>next_back_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_back_checked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt; {
         <span class="self">self</span>.perform_next_back_checked(|kv| <span class="kw">unsafe </span>{ ptr::read(kv) }.into_kv_valmut())
     }
 }
@@ -905,7 +911,7 @@
 }
 
 <span class="comment">// `front` and `back` are always both `None` or both `Some`.
-</span><span class="kw">pub struct </span>LazyLeafRange&lt;BorrowType, K, V&gt; {
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>LazyLeafRange&lt;BorrowType, K, V&gt; {
     front: <span class="prelude-ty">Option</span>&lt;LazyLeafHandle&lt;BorrowType, K, V&gt;&gt;,
     back: <span class="prelude-ty">Option</span>&lt;LazyLeafHandle&lt;BorrowType, K, V&gt;&gt;,
 }
@@ -923,12 +929,12 @@
 }
 
 <span class="kw">impl</span>&lt;BorrowType, K, V&gt; LazyLeafRange&lt;BorrowType, K, V&gt; {
-    <span class="kw">pub fn </span>none() -&gt; <span class="self">Self </span>{
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>none() -&gt; <span class="self">Self </span>{
         LazyLeafRange { front: <span class="prelude-val">None</span>, back: <span class="prelude-val">None </span>}
     }
 
     <span class="doccomment">/// Temporarily takes out another, immutable equivalent of the same range.
-    </span><span class="kw">pub fn </span>reborrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Immut&lt;<span class="lifetime">'_</span>&gt;, K, V&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>reborrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Immut&lt;<span class="lifetime">'_</span>&gt;, K, V&gt; {
         LazyLeafRange {
             front: <span class="self">self</span>.front.as_ref().map(|f| f.reborrow()),
             back: <span class="self">self</span>.back.as_ref().map(|b| b.reborrow()),
@@ -938,24 +944,24 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V&gt; LazyLeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>next_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>next_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V) {
         <span class="kw">unsafe </span>{ <span class="self">self</span>.init_front().unwrap().next_unchecked() }
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>next_back_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>next_back_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V) {
         <span class="kw">unsafe </span>{ <span class="self">self</span>.init_back().unwrap().next_back_unchecked() }
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V&gt; LazyLeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>next_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>next_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V) {
         <span class="kw">unsafe </span>{ <span class="self">self</span>.init_front().unwrap().next_unchecked() }
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>next_back_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>next_back_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V) {
         <span class="kw">unsafe </span>{ <span class="self">self</span>.init_back().unwrap().next_back_unchecked() }
     }
 }
@@ -971,7 +977,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>deallocating_next_unchecked&lt;A: Allocator + Clone&gt;(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>deallocating_next_unchecked&lt;A: Allocator + Clone&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         alloc: A,
     ) -&gt; Handle&lt;NodeRef&lt;marker::Dying, K, V, marker::LeafOrInternal&gt;, marker::KV&gt; {
@@ -981,7 +987,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub unsafe fn </span>deallocating_next_back_unchecked&lt;A: Allocator + Clone&gt;(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>deallocating_next_back_unchecked&lt;A: Allocator + Clone&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         alloc: A,
     ) -&gt; Handle&lt;NodeRef&lt;marker::Dying, K, V, marker::LeafOrInternal&gt;, marker::KV&gt; {
@@ -991,7 +997,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>deallocating_end&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>deallocating_end&lt;A: Allocator + Clone&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: A) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(front) = <span class="self">self</span>.take_front() {
             front.deallocating_end(alloc)
         }
@@ -1094,7 +1100,7 @@
     ///
     /// The result is meaningful only if the tree is ordered by key, like the tree
     /// in a `BTreeMap` is.
-    </span><span class="kw">pub fn </span>range_search&lt;Q, R&gt;(<span class="self">self</span>, range: R) -&gt; LeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt;
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>range_search&lt;Q, R&gt;(<span class="self">self</span>, range: R) -&gt; LeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt;
     <span class="kw">where
         </span>Q: <span class="question-mark">?</span>Sized + Ord,
         K: Borrow&lt;Q&gt;,
@@ -1105,7 +1111,7 @@
     }
 
     <span class="doccomment">/// Finds the pair of leaf edges delimiting an entire tree.
-    </span><span class="kw">pub fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
         full_range(<span class="self">self</span>, <span class="self">self</span>)
     }
 }
@@ -1120,7 +1126,7 @@
     ///
     /// # Safety
     /// Do not use the duplicate handles to visit the same KV twice.
-    </span><span class="kw">pub fn </span>range_search&lt;Q, R&gt;(<span class="self">self</span>, range: R) -&gt; LeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt;
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>range_search&lt;Q, R&gt;(<span class="self">self</span>, range: R) -&gt; LeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt;
     <span class="kw">where
         </span>Q: <span class="question-mark">?</span>Sized + Ord,
         K: Borrow&lt;Q&gt;,
@@ -1132,7 +1138,7 @@
     <span class="doccomment">/// Splits a unique reference into a pair of leaf edges delimiting the full range of the tree.
     /// The results are non-unique references allowing mutation (of values only), so must be used
     /// with care.
-    </span><span class="kw">pub fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::ValMut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt; {
         <span class="comment">// We duplicate the root NodeRef here -- we will never visit the same KV
         // twice, and never end up with overlapping value references.
         </span><span class="kw">let </span>self2 = <span class="kw">unsafe </span>{ ptr::read(<span class="kw-2">&amp;</span><span class="self">self</span>) };
@@ -1144,7 +1150,7 @@
     <span class="doccomment">/// Splits a unique reference into a pair of leaf edges delimiting the full range of the tree.
     /// The results are non-unique references allowing massively destructive mutation, so must be
     /// used with the utmost care.
-    </span><span class="kw">pub fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Dying, K, V&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>full_range(<span class="self">self</span>) -&gt; LazyLeafRange&lt;marker::Dying, K, V&gt; {
         <span class="comment">// We duplicate the root NodeRef here -- we will never access it in a way
         // that overlaps references obtained from the root.
         </span><span class="kw">let </span>self2 = <span class="kw">unsafe </span>{ ptr::read(<span class="kw-2">&amp;</span><span class="self">self</span>) };
@@ -1158,7 +1164,7 @@
     <span class="doccomment">/// Given a leaf edge handle, returns [`Result::Ok`] with a handle to the neighboring KV
     /// on the right side, which is either in the same leaf node or in an ancestor node.
     /// If the leaf edge is the last one in the tree, returns [`Result::Err`] with the root node.
-    </span><span class="kw">pub fn </span>next_kv(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_kv(
         <span class="self">self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;
         Handle&lt;NodeRef&lt;BorrowType, K, V, marker::LeafOrInternal&gt;, marker::KV&gt;,
@@ -1179,7 +1185,7 @@
     <span class="doccomment">/// Given a leaf edge handle, returns [`Result::Ok`] with a handle to the neighboring KV
     /// on the left side, which is either in the same leaf node or in an ancestor node.
     /// If the leaf edge is the first one in the tree, returns [`Result::Err`] with the root node.
-    </span><span class="kw">pub fn </span>next_back_kv(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_back_kv(
         <span class="self">self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;
         Handle&lt;NodeRef&lt;BorrowType, K, V, marker::LeafOrInternal&gt;, marker::KV&gt;,
@@ -1408,7 +1414,9 @@
     <span class="doccomment">/// Returns the leftmost leaf edge in or underneath a node - in other words, the edge
     /// you need first when navigating forward (or last when navigating backward).
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>first_leaf_edge(<span class="self">self</span>) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>first_leaf_edge(
+        <span class="self">self</span>,
+    ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>node = <span class="self">self</span>;
         <span class="kw">loop </span>{
             <span class="kw">match </span>node.force() {
@@ -1421,7 +1429,9 @@
     <span class="doccomment">/// Returns the rightmost leaf edge in or underneath a node - in other words, the edge
     /// you need last when navigating forward (or first when navigating backward).
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>last_leaf_edge(<span class="self">self</span>) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>last_leaf_edge(
+        <span class="self">self</span>,
+    ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>node = <span class="self">self</span>;
         <span class="kw">loop </span>{
             <span class="kw">match </span>node.force() {
@@ -1432,7 +1442,7 @@
     }
 }
 
-<span class="kw">pub enum </span>Position&lt;BorrowType, K, V&gt; {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum </span>Position&lt;BorrowType, K, V&gt; {
     Leaf(NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;),
     Internal(NodeRef&lt;BorrowType, K, V, marker::Internal&gt;),
     InternalKV,
@@ -1442,7 +1452,7 @@
     <span class="doccomment">/// Visits leaf nodes and internal KVs in order of ascending keys, and also
     /// visits internal nodes as a whole in a depth first order, meaning that
     /// internal nodes precede their individual KVs and their child nodes.
-    </span><span class="kw">pub fn </span>visit_nodes_in_order&lt;F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>visit: F)
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>visit_nodes_in_order&lt;F&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>visit: F)
     <span class="kw">where
         </span>F: FnMut(Position&lt;marker::Immut&lt;<span class="lifetime">'a</span>&gt;, K, V&gt;),
     {
@@ -1474,7 +1484,7 @@
     }
 
     <span class="doccomment">/// Calculates the number of elements in a (sub)tree.
-    </span><span class="kw">pub fn </span>calc_length(<span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>calc_length(<span class="self">self</span>) -&gt; usize {
         <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="number">0</span>;
         <span class="self">self</span>.visit_nodes_in_order(|pos| <span class="kw">match </span>pos {
             Position::Leaf(node) =&gt; result += node.len(),
@@ -1489,7 +1499,9 @@
     Handle&lt;NodeRef&lt;BorrowType, K, V, marker::LeafOrInternal&gt;, marker::KV&gt;
 {
     <span class="doccomment">/// Returns the leaf edge closest to a KV for forward navigation.
-    </span><span class="kw">pub fn </span>next_leaf_edge(<span class="self">self</span>) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_leaf_edge(
+        <span class="self">self</span>,
+    ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
         <span class="kw">match </span><span class="self">self</span>.force() {
             Leaf(leaf_kv) =&gt; leaf_kv.right_edge(),
             Internal(internal_kv) =&gt; {
@@ -1500,7 +1512,7 @@
     }
 
     <span class="doccomment">/// Returns the leaf edge closest to a KV for backward navigation.
-    </span><span class="kw">pub fn </span>next_back_leaf_edge(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>next_back_leaf_edge(
         <span class="self">self</span>,
     ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt; {
         <span class="kw">match </span><span class="self">self</span>.force() {
@@ -1516,7 +1528,7 @@
 <span class="kw">impl</span>&lt;BorrowType: marker::BorrowType, K, V&gt; NodeRef&lt;BorrowType, K, V, marker::LeafOrInternal&gt; {
     <span class="doccomment">/// Returns the leaf edge corresponding to the first point at which the
     /// given bound is true.
-    </span><span class="kw">pub fn </span>lower_bound&lt;Q: <span class="question-mark">?</span>Sized&gt;(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>lower_bound&lt;Q: <span class="question-mark">?</span>Sized&gt;(
         <span class="self">self</span>,
         <span class="kw-2">mut </span>bound: SearchBound&lt;<span class="kw-2">&amp;</span>Q&gt;,
     ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt;
@@ -1539,7 +1551,7 @@
 
     <span class="doccomment">/// Returns the leaf edge corresponding to the last point at which the
     /// given bound is true.
-    </span><span class="kw">pub fn </span>upper_bound&lt;Q: <span class="question-mark">?</span>Sized&gt;(
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>upper_bound&lt;Q: <span class="question-mark">?</span>Sized&gt;(
         <span class="self">self</span>,
         <span class="kw-2">mut </span>bound: SearchBound&lt;<span class="kw-2">&amp;</span>Q&gt;,
     ) -&gt; Handle&lt;NodeRef&lt;BorrowType, K, V, marker::Leaf&gt;, marker::Edge&gt;
