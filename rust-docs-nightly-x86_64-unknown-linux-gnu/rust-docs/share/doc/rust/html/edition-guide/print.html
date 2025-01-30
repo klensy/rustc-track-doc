@@ -2327,6 +2327,238 @@ unsafe {
 <h2 id="alternatives"><a class="header" href="#alternatives">Alternatives</a></h2>
 <p>Wherever possible, it is <strong>strongly recommended</strong> to use instead an <em>immutable</em> <code>static</code> of a type that provides <em>interior mutability</em> behind some <em>locally-reasoned abstraction</em> (which greatly reduces the complexity of ensuring that Rust's mutability XOR aliasing requirement is upheld).</p>
 <p>In situations where no locally-reasoned abstraction is possible and you are therefore compelled still to reason globally about accesses to your <code>static</code> variable, you must now use raw pointers such as can be obtained via the <a href="rust-2024/../../reference/expressions/operator-expr.html#raw-borrow-operators"><code>&amp;raw const</code> or <code>&amp;raw mut</code> operators</a>.  By first obtaining a raw pointer rather than directly taking a reference, (the safety requirements of) accesses through that pointer will be more familiar to <code>unsafe</code> developers and can be deferred until/limited to smaller regions of code.</p>
+<p>Note that the following examples are just illustrations and are not intended as full-fledged implementations. Do not copy these as-is. There are details for your specific situation that may require alterations to fit your needs. These are intended to help you see different ways to approach your problem.</p>
+<p>It is recommended to read the documentation for the specific types in the standard library, the reference on <a href="rust-2024/../../reference/behavior-considered-undefined.html">undefined behavior</a>, the <a href="rust-2024/../../nomicon/index.html">Rustonomicon</a>, and if you are having questions to reach out on one of the Rust forums such as the <a href="https://users.rust-lang.org/">Users Forum</a>.</p>
+<h3 id="dont-use-globals"><a class="header" href="#dont-use-globals">Don't use globals</a></h3>
+<p>This is probably something you already know, but if possible it is best to avoid mutable global state. Of course this can be a little more awkward or difficult at times, particularly if you need to pass a mutable reference around between many functions.</p>
+<h3 id="atomics"><a class="header" href="#atomics">Atomics</a></h3>
+<p>The <a href="rust-2024/../../std/sync/atomic/index.html">atomic types</a> provide integers, pointers, and booleans that can be used in a <code>static</code> (without <code>mut</code>).</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use std::sync::atomic::Ordering;
+</span><span class="boring">use std::sync::atomic::AtomicU64;
+</span>
+// Chnage from this:
+//   static mut COUNTER: u64 = 0;
+// to this:
+static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+fn main() {
+    // Be sure to analyze your use case to determine the correct Ordering to use.
+    COUNTER.fetch_add(1, Ordering::Relaxed);
+}</code></pre></pre>
+<h3 id="mutex-or-rwlock"><a class="header" href="#mutex-or-rwlock">Mutex or RwLock</a></h3>
+<p>When your type is more complex than an atomic, consider using a <a href="rust-2024/../../std/sync/struct.Mutex.html"><code>Mutex</code></a> or <a href="rust-2024/../../std/sync/struct.RwLock.html"><code>RwLock</code></a> to ensure proper access to the global value.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use std::sync::Mutex;
+</span><span class="boring">use std::collections::VecDeque;
+</span>
+// Change from this:
+//     static mut QUEUE: VecDeque&lt;String&gt; = VecDeque::new();
+// to this:
+static QUEUE: Mutex&lt;VecDeque&lt;String&gt;&gt; = Mutex::new(VecDeque::new());
+
+fn main() {
+    QUEUE.lock().unwrap().push_back(String::from("abc"));
+    let first = QUEUE.lock().unwrap().pop_front();
+}</code></pre></pre>
+<h3 id="oncelock-or-lazylock"><a class="header" href="#oncelock-or-lazylock">OnceLock or LazyLock</a></h3>
+<p>If you are using a <code>static mut</code> because you need to do some one-time initialization that can't be <code>const</code>, you can instead reach for <a href="rust-2024/../../std/sync/struct.OnceLock.html"><code>OnceLock</code></a> or <a href="rust-2024/../../std/sync/struct.LazyLock.html"><code>LazyLock</code></a> instead.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use std::sync::LazyLock;
+</span><span class="boring">
+</span><span class="boring">struct GlobalState;
+</span><span class="boring">
+</span><span class="boring">impl GlobalState {
+</span><span class="boring">    fn new() -&gt; GlobalState {
+</span><span class="boring">        GlobalState
+</span><span class="boring">    }
+</span><span class="boring">    fn example(&amp;self) {}
+</span><span class="boring">}
+</span>
+// Instead of some temporary or uninitialized type like:
+//     static mut STATE: Option&lt;GlobalState&gt; = None;
+// use this instead:
+static STATE: LazyLock&lt;GlobalState&gt; = LazyLock::new(|| {
+    GlobalState::new()
+});
+
+fn main() {
+    STATE.example();
+}</code></pre></pre>
+<p><a href="rust-2024/../../std/sync/struct.OnceLock.html"><code>OnceLock</code></a> is similar to <a href="rust-2024/../../std/sync/struct.LazyLock.html"><code>LazyLock</code></a>, but can be used if you need to pass information into the constructor, which can work well with single initialization points (like <code>main</code>), or if the inputs are available wherever you access the global.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use std::sync::OnceLock;
+</span><span class="boring">
+</span><span class="boring">struct GlobalState;
+</span><span class="boring">
+</span><span class="boring">impl GlobalState {
+</span><span class="boring">    fn new(verbose: bool) -&gt; GlobalState {
+</span><span class="boring">        GlobalState
+</span><span class="boring">    }
+</span><span class="boring">    fn example(&amp;self) {}
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct Args {
+</span><span class="boring">    verbose: bool
+</span><span class="boring">}
+</span><span class="boring">fn parse_arguments() -&gt; Args {
+</span><span class="boring">    Args { verbose: true }
+</span><span class="boring">}
+</span>
+static STATE: OnceLock&lt;GlobalState&gt; = OnceLock::new();
+
+fn main() {
+    let args = parse_arguments();
+    let state = GlobalState::new(args.verbose);
+    let _ = STATE.set(state);
+    // ...
+    STATE.get().unwrap().example();
+}</code></pre></pre>
+<h3 id="no_std-one-time-initialization"><a class="header" href="#no_std-one-time-initialization"><code>no_std</code> one-time initialization</a></h3>
+<p>This example is similar to <a href="rust-2024/../../std/sync/struct.OnceLock.html"><code>OnceLock</code></a> in that it provides one-time initialization of a global, but it does not require <code>std</code> which is useful in a <code>no_std</code> context. Assuming your target supports atomics, then you can use an atomic to check for the initialization of the global. The pattern might look something like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use core::sync::atomic::AtomicUsize;
+</span><span class="boring">use core::sync::atomic::Ordering;
+</span><span class="boring">
+</span><span class="boring">struct Args {
+</span><span class="boring">    verbose: bool,
+</span><span class="boring">}
+</span><span class="boring">fn parse_arguments() -&gt; Args {
+</span><span class="boring">    Args { verbose: true }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct GlobalState {
+</span><span class="boring">    verbose: bool,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GlobalState {
+</span><span class="boring">    const fn default() -&gt; GlobalState {
+</span><span class="boring">        GlobalState { verbose: false }
+</span><span class="boring">    }
+</span><span class="boring">    fn new(verbose: bool) -&gt; GlobalState {
+</span><span class="boring">        GlobalState { verbose }
+</span><span class="boring">    }
+</span><span class="boring">    fn example(&amp;self) {}
+</span><span class="boring">}
+</span>
+const UNINITIALIZED: usize = 0;
+const INITIALIZING: usize = 1;
+const INITIALIZED: usize = 2;
+
+static STATE_INITIALIZED: AtomicUsize = AtomicUsize::new(UNINITIALIZED);
+static mut STATE: GlobalState = GlobalState::default();
+
+fn set_global_state(state: GlobalState) {
+    if STATE_INITIALIZED
+        .compare_exchange(
+            UNINITIALIZED,
+            INITIALIZING,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+        )
+        .is_ok()
+    {
+        // SAFETY: The reads and writes to STATE are guarded with the INITIALIZED guard.
+        unsafe {
+            STATE = state;
+        }
+        STATE_INITIALIZED.store(INITIALIZED, Ordering::SeqCst);
+    } else {
+        panic!("already initialized, or concurrent initialization");
+    }
+}
+
+fn get_state() -&gt; &amp;'static GlobalState {
+    if STATE_INITIALIZED.load(Ordering::Acquire) != INITIALIZED {
+        panic!("not initialized");
+    } else {
+        // SAFETY: Mutable access is not possible after state has been initialized.
+        unsafe { &amp;*&amp;raw const STATE }
+    }
+}
+
+fn main() {
+    let args = parse_arguments();
+    let state = GlobalState::new(args.verbose);
+    set_global_state(state);
+    // ...
+    let state = get_state();
+    state.example();
+}</code></pre></pre>
+<p>This example assumes you can put some default value in the static before it is initialized (the const <code>default</code> constructor in this example). If that is not possible, consider using either <a href="rust-2024/../../core/mem/union.MaybeUninit.html"><code>MaybeUninit</code></a>, or dynamic trait dispatch (with a dummy type that implements a trait), or some other approach to have a default placeholder.</p>
+<p>There are community-provided crates that can provide similar one-time initialization, such as the <a href="https://crates.io/crates/static_cell"><code>static-cell</code></a> crate (which supports targets that do not have atomics by using <a href="https://crates.io/crates/portable-atomic"><code>portable-atomic</code></a>).</p>
+<h3 id="raw-pointers"><a class="header" href="#raw-pointers">Raw pointers</a></h3>
+<p>In some cases you can continue to use <code>static mut</code>, but avoid creating references. For example, if you just need to pass <a href="rust-2024/../../reference/types/pointer.html#raw-pointers-const-and-mut">raw pointers</a> into a C library, don't create an intermediate reference. Instead you can use <a href="rust-2024/../../reference/expressions/operator-expr.html#raw-borrow-operators">raw borrow operators</a>, like in the following example:</p>
+<pre><pre class="playground"><code class="language-rust edition2024 no_run"><span class="boring">#[repr(C)]
+</span><span class="boring">struct GlobalState {
+</span><span class="boring">    value: i32
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GlobalState {
+</span><span class="boring">    const fn new() -&gt; GlobalState {
+</span><span class="boring">        GlobalState { value: 0 }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
+static mut STATE: GlobalState = GlobalState::new();
+
+unsafe extern "C" {
+    fn example_ffi(state: *mut GlobalState);
+}
+
+fn main() {
+    unsafe {
+        // Change from this:
+        //     example_ffi(&amp;mut STATE as *mut GlobalState);
+        // to this:
+        example_ffi(&amp;raw mut STATE);
+    }
+}</code></pre></pre>
+<p>Just beware that you still need to uphold the aliasing constraints around mutable pointers. This may require some internal or external synchronization or proofs about how it is used across threads, interrupt handlers, and reentrancy.</p>
+<h3 id="unsafecell-with-sync"><a class="header" href="#unsafecell-with-sync"><code>UnsafeCell</code> with <code>Sync</code></a></h3>
+<p><a href="rust-2024/../../std/cell/struct.UnsafeCell.html"><code>UnsafeCell</code></a> does not impl <code>Sync</code>, so it cannot be used in a <code>static</code>. You can create your own wrapper around <a href="rust-2024/../../std/cell/struct.UnsafeCell.html"><code>UnsafeCell</code></a> to add a <code>Sync</code> impl so that it can be used in a <code>static</code> to implement interior mutability. This approach can be useful if you have external locks or other guarantees that uphold the safety invariants required for mutable pointers.</p>
+<p>Note that this is largely the same as the <a href="rust-2024/static-mut-references.html#raw-pointers">raw pointers</a> example. The wrapper helps to emphasize how you are using the type, and focus on which safety requirements you should be careful of. But otherwise they are roughly the same.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::cell::UnsafeCell;
+</span><span class="boring">
+</span><span class="boring">fn with_interrupts_disabled&lt;T: Fn()&gt;(f: T) {
+</span><span class="boring">    // A real example would disable interrupts.
+</span><span class="boring">    f();
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[repr(C)]
+</span><span class="boring">struct GlobalState {
+</span><span class="boring">    value: i32,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GlobalState {
+</span><span class="boring">    const fn new() -&gt; GlobalState {
+</span><span class="boring">        GlobalState { value: 0 }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
+#[repr(transparent)]
+pub struct SyncUnsafeCell&lt;T&gt;(UnsafeCell&lt;T&gt;);
+
+unsafe impl&lt;T: Sync&gt; Sync for SyncUnsafeCell&lt;T&gt; {}
+
+static STATE: SyncUnsafeCell&lt;GlobalState&gt; = SyncUnsafeCell(UnsafeCell::new(GlobalState::new()));
+
+fn set_value(value: i32) {
+    with_interrupts_disabled(|| {
+        let state = STATE.0.get();
+        unsafe {
+            // SAFETY: This value is only ever read in our interrupt handler,
+            // and interrupts are disabled, and we only use this in one thread.
+            (*state).value = value;
+        }
+    });
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The standard library has a nightly-only (unstable) variant of <a href="rust-2024/../../std/cell/struct.UnsafeCell.html"><code>UnsafeCell</code></a> called <a href="rust-2024/../../std/cell/struct.SyncUnsafeCell.html"><code>SyncUnsafeCell</code></a>. This example above shows a very simplified version of the standard library type, but would be used roughly the same way. It can provide even better isolation, so do check out its implementation for more details.</p>
+<p>This example includes a fictional <code>with_interrupts_disabled</code> function which is the type of thing you might see in an embedded environment. For example, the <a href="https://crates.io/crates/critical-section"><code>critical-section</code></a> crate provides a similar kind of functionality that could be used for an embedded environment.</p>
+<h3 id="safe-references"><a class="header" href="#safe-references">Safe references</a></h3>
+<p>In some cases it may be safe to create a reference of a <code>static mut</code>. The whole point of the <a href="rust-2024/../../rustc/lints/listing/warn-by-default.html#static-mut-refs"><code>static_mut_refs</code></a> lint is that this is very hard to do correctly! However, that's not to say it is <em>impossible</em>. If you have a situation where you can guarantee that the aliasing requirements are upheld, such as guaranteeing the static is narrowly scoped (only used in a small module or function), has some internal or external synchronization, accounts for interrupt handlers and reentrancy, panic safety, drop handlers, etc., then taking a reference may be fine.</p>
+<p>There are two approaches you can take for this. You can either allow the <a href="rust-2024/../../rustc/lints/listing/warn-by-default.html#static-mut-refs"><code>static_mut_refs</code></a> lint (preferably as narrowly as you can), or convert raw pointers to a reference, as with <code>&amp;mut *&amp;raw mut MY_STATIC</code>.</p>
+<!-- TODO: Should we prefer one or the other here? -->
+<h4 id="short-lived-references"><a class="header" href="#short-lived-references">Short-lived references</a></h4>
+<p>If you must create a reference to a <code>static mut</code>, then it is recommended to minimize the scope of how long that reference exists. Avoid squirreling the reference away somewhere, or keeping it alive through a large section of code. Keeping it short-lived helps with auditing, and verifying that exclusive access is maintained for the duration. Using pointers should be your default unit, and only convert the pointer to a reference on demand when absolutely required.</p>
 <h2 id="migration-16"><a class="header" href="#migration-16">Migration</a></h2>
 <p>There is no automatic migration to fix these references to <code>static mut</code>. To avoid undefined behavior you must rewrite your code to use a different approach as recommended in the <a href="rust-2024/static-mut-references.html#alternatives">Alternatives</a> section.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="never-type-fallback-change"><a class="header" href="#never-type-fallback-change">Never type fallback change</a></h1>
