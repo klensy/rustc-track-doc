@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/mutex.rs`."><title>mutex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cf3c48c1.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (854f22563 2025-01-31)" data-channel="nightly" data-search-js="search-2d513d54.js" data-settings-js="settings-6dad6058.js" ><script src="../../../../static.files/storage-302de22f.js"></script><script defer src="../../../../static.files/src-script-8fee9dc5.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-9b5d7e41.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>mutex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/mutex.rs`."><title>mutex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cf3c48c1.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (8239a37f9 2025-02-01)" data-channel="nightly" data-search-js="search-2d513d54.js" data-settings-js="settings-6dad6058.js" ><script src="../../../../static.files/storage-302de22f.js"></script><script defer src="../../../../static.files/src-script-8fee9dc5.js"></script><script defer src="../../../../src-files1.86.0.js"></script><script defer src="../../../../static.files/main-9b5d7e41.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>mutex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -847,7 +847,35 @@
 <a href="#846" id="846">846</a>
 <a href="#847" id="847">847</a>
 <a href="#848" id="848">848</a>
-<a href="#849" id="849">849</a></pre></div><pre class="rust"><code><span class="attr">#[cfg(all(test, not(any(target_os = <span class="string">"emscripten"</span>, target_os = <span class="string">"wasi"</span>))))]
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a></pre></div><pre class="rust"><code><span class="attr">#[cfg(all(test, not(any(target_os = <span class="string">"emscripten"</span>, target_os = <span class="string">"wasi"</span>))))]
 </span><span class="kw">mod </span>tests;
 
 <span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
@@ -1030,11 +1058,30 @@
     data: UnsafeCell&lt;T&gt;,
 }
 
-<span class="comment">// these are the only places where `T: Send` matters; all other
-// functionality works fine on a single thread.
+<span class="doccomment">/// `T` must be `Send` for a [`Mutex`] to be `Send` because it is possible to acquire
+/// the owned `T` from the `Mutex` via [`into_inner`].
+///
+/// [`into_inner`]: Mutex::into_inner
 </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 </span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Send&gt; Send <span class="kw">for </span>Mutex&lt;T&gt; {}
-<span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+
+<span class="doccomment">/// `T` must be `Send` for [`Mutex`] to be `Sync`.
+/// This ensures that the protected data can be accessed safely from multiple threads
+/// without causing data races or other unsafe behavior.
+///
+/// [`Mutex&lt;T&gt;`] provides mutable access to `T` to one thread at a time. However, it's essential
+/// for `T` to be `Send` because it's not safe for non-`Send` structures to be accessed in
+/// this manner. For instance, consider [`Rc`], a non-atomic reference counted smart pointer,
+/// which is not `Send`. With `Rc`, we can have multiple copies pointing to the same heap
+/// allocation with a non-atomic reference count. If we were to use `Mutex&lt;Rc&lt;_&gt;&gt;`, it would
+/// only protect one instance of `Rc` from shared access, leaving other copies vulnerable
+/// to potential data races.
+///
+/// Also note that it is not necessary for `T` to be `Sync` as `&amp;T` is only made available
+/// to one thread at a time if `T` is not `Sync`.
+///
+/// [`Rc`]: crate::rc::Rc
+</span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 </span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Send&gt; Sync <span class="kw">for </span>Mutex&lt;T&gt; {}
 
 <span class="doccomment">/// An RAII implementation of a "scoped lock" of a mutex. When this structure is
@@ -1060,9 +1107,18 @@
     poison: poison::Guard,
 }
 
-<span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<span class="doccomment">/// A [`MutexGuard`] is not `Send` to maximize platform portablity.
+///
+/// On platforms that use POSIX threads (commonly referred to as pthreads) there is a requirement to
+/// release mutex locks on the same thread they were acquired.
+/// For this reason, [`MutexGuard`] must not implement `Send` to prevent it being dropped from
+/// another thread.
+</span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 </span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; !Send <span class="kw">for </span>MutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {}
-<span class="attr">#[stable(feature = <span class="string">"mutexguard"</span>, since = <span class="string">"1.19.0"</span>)]
+
+<span class="doccomment">/// `T` must be `Sync` for a [`MutexGuard&lt;T&gt;`] to be `Sync`
+/// because it is possible to get a `&amp;T` from `&amp;MutexGuard` (via `Deref`).
+</span><span class="attr">#[stable(feature = <span class="string">"mutexguard"</span>, since = <span class="string">"1.19.0"</span>)]
 </span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Sync&gt; Sync <span class="kw">for </span>MutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {}
 
 <span class="doccomment">/// An RAII mutex guard returned by `MutexGuard::map`, which can point to a
