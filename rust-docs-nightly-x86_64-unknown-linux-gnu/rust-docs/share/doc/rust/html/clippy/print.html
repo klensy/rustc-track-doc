@@ -2242,7 +2242,7 @@ is already in here (<a href="https://doc.rust-lang.org/nightly/nightly-rustc/cli
 <li><a href="https://github.com/rust-lang/rust-clippy/blob/master/clippy_utils/src/diagnostics.rs">Clippy diagnostics</a></li>
 <li><a href="https://github.com/rust-lang/rust/pull/94927">Let chains</a></li>
 <li><a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_span/struct.Span.html#method.from_expansion"><code>from_expansion</code></a> and
-<a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/lint/fn.in_external_macro.html"><code>in_external_macro</code></a></li>
+<a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_span/struct.Span.html#method.in_external_macro"><code>in_external_macro</code></a></li>
 <li><a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_span/struct.Span.html"><code>Span</code></a></li>
 <li><a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_errors/enum.Applicability.html"><code>Applicability</code></a></li>
 <li><a href="development/common_tools_writing_lints.html">Common tools for writing lints</a> helps with
@@ -3255,7 +3255,7 @@ we could assume that these two spans do not share the same context:</p>
 assert_ne!(x_is_some_span.ctxt(), x_unwrap_span.ctxt());
 <span class="boring">}</span></code></pre></pre>
 <h3 id="the-in_external_macro-function"><a class="header" href="#the-in_external_macro-function">The <code>in_external_macro</code> function</a></h3>
-<p><code>rustc_middle::lint</code> provides a function (<a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_middle/lint/fn.in_external_macro.html"><code>in_external_macro</code></a>) that can
+<p><code>Span</code> provides a method (<a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_span/struct.Span.html#method.in_external_macro"><code>in_external_macro</code></a>) that can
 detect if the given span is from a macro defined in a foreign crate.</p>
 <p>Therefore, if we really want a new lint to work with macro-generated code,
 this is the next line of defense to avoid macros not defined inside
@@ -3276,7 +3276,7 @@ foo!("bar");
 results in <code>true</code> (note that <code>cx</code> can be <code>EarlyContext</code> or <code>LateContext</code>):</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>if in_external_macro(cx.sess(), foo_span) {
+</span>if foo_span.in_external_macro(cx.sess().source_map()) {
     // We should ignore macro from a foreign crate.
     return;
 }
@@ -3488,7 +3488,7 @@ context. And so just using <code>span.from_expansion()</code> is often good enou
 </blockquote>
 </li>
 <li>
-<p><code>in_external_macro(span)</code>: detect if the given span is from a macro defined in
+<p><code>span.in_external_macro(sm)</code>: detect if the given span is from a macro defined in
 a foreign crate. If you want the lint to work with macro-generated code, this
 is the next line of defense to avoid macros not defined in the current crate.
 It doesn't make sense to lint code that the coder can't change.</p>
@@ -3496,15 +3496,13 @@ It doesn't make sense to lint code that the coder can't change.</p>
 crates</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use rustc_middle::lint::in_external_macro;
-
-use a_crate_with_macros::foo;
+</span>use a_crate_with_macros::foo;
 
 // `foo` is defined in `a_crate_with_macros`
 foo!("bar");
 
 // if we lint the `match` of `foo` call and test its span
-assert_eq!(in_external_macro(cx.sess(), match_span), true);
+assert_eq!(match_span.in_external_macro(cx.sess().source_map()), true);
 <span class="boring">}</span></code></pre></pre>
 </li>
 <li>
