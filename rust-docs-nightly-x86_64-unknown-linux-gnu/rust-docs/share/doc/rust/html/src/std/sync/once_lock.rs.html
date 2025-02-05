@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cf3c48c1.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (f027438f8 2025-02-03)" data-channel="nightly" data-search-js="search-2d513d54.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-302de22f.js"></script><script defer src="../../../static.files/src-script-8fee9dc5.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-9b5d7e41.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cf3c48c1.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (bef3c3b01 2025-02-04)" data-channel="nightly" data-search-js="search-1b520363.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-302de22f.js"></script><script defer src="../../../static.files/src-script-8fee9dc5.js"></script><script defer src="../../../src-files1.86.0.js"></script><script defer src="../../../static.files/main-ddbd176c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -677,7 +677,11 @@
 <a href="#676" id="676">676</a>
 <a href="#677" id="677">677</a>
 <a href="#678" id="678">678</a>
-<a href="#679" id="679">679</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
 <span class="kw">use </span><span class="kw">crate</span>::fmt;
 <span class="kw">use </span><span class="kw">crate</span>::marker::PhantomData;
 <span class="kw">use </span><span class="kw">crate</span>::mem::MaybeUninit;
@@ -691,6 +695,9 @@
 /// with less effort: `LazyLock&lt;T, F&gt;` "looks like" `&amp;T` because it initializes with `F` on deref!
 /// Where OnceLock shines is when LazyLock is too simple to support a given case, as LazyLock
 /// doesn't allow additional inputs to its function after you call [`LazyLock::new(|| ...)`].
+///
+/// A `OnceLock` can be thought of as a safe abstraction over uninitialized data that becomes
+/// initialized once written.
 ///
 /// [`OnceCell`]: crate::cell::OnceCell
 /// [`LazyLock&lt;T, F&gt;`]: crate::sync::LazyLock
@@ -805,7 +812,7 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; OnceLock&lt;T&gt; {
-    <span class="doccomment">/// Creates a new empty cell.
+    <span class="doccomment">/// Creates a new uninitialized cell.
     </span><span class="attr">#[inline]
     #[must_use]
     #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
@@ -820,8 +827,8 @@
 
     <span class="doccomment">/// Gets the reference to the underlying value.
     ///
-    /// Returns `None` if the cell is empty, or being initialized. This
-    /// method never blocks.
+    /// Returns `None` if the cell is uninitialized, or being initialized.
+    /// This method never blocks.
     </span><span class="attr">#[inline]
     #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
     </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt; {
@@ -835,7 +842,8 @@
 
     <span class="doccomment">/// Gets the mutable reference to the underlying value.
     ///
-    /// Returns `None` if the cell is empty. This method never blocks.
+    /// Returns `None` if the cell is uninitialized, or being initialized.
+    /// This method never blocks.
     </span><span class="attr">#[inline]
     #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
     </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
@@ -873,12 +881,13 @@
         <span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked() }
     }
 
-    <span class="doccomment">/// Sets the contents of this cell to `value`.
+    <span class="doccomment">/// Initializes the contents of the cell to `value`.
     ///
     /// May block if another thread is currently attempting to initialize the cell. The cell is
-    /// guaranteed to contain a value when set returns, though not necessarily the one provided.
+    /// guaranteed to contain a value when `set` returns, though not necessarily the one provided.
     ///
-    /// Returns `Ok(())` if the cell's value was set by this call.
+    /// Returns `Ok(())` if the cell was uninitialized and
+    /// `Err(value)` if the cell was already initialized.
     ///
     /// # Examples
     ///
@@ -907,13 +916,15 @@
         }
     }
 
-    <span class="doccomment">/// Sets the contents of this cell to `value` if the cell was empty, then
-    /// returns a reference to it.
+    <span class="doccomment">/// Initializes the contents of the cell to `value` if the cell was uninitialized,
+    /// then returns a reference to it.
     ///
     /// May block if another thread is currently attempting to initialize the cell. The cell is
-    /// guaranteed to contain a value when set returns, though not necessarily the one provided.
+    /// guaranteed to contain a value when `try_insert` returns, though not necessarily the
+    /// one provided.
     ///
-    /// Returns `Ok(&amp;value)` if the cell was empty and `Err(&amp;current_value, value)` if it was full.
+    /// Returns `Ok(&amp;value)` if the cell was uninitialized and
+    /// `Err((&amp;current_value, value))` if it was already initialized.
     ///
     /// # Examples
     ///
@@ -946,8 +957,8 @@
         }
     }
 
-    <span class="doccomment">/// Gets the contents of the cell, initializing it with `f` if the cell
-    /// was empty.
+    <span class="doccomment">/// Gets the contents of the cell, initializing it to `f()` if the cell
+    /// was uninitialized.
     ///
     /// Many threads may call `get_or_init` concurrently with different
     /// initializing functions, but it is guaranteed that only one function
@@ -955,7 +966,7 @@
     ///
     /// # Panics
     ///
-    /// If `f` panics, the panic is propagated to the caller, and the cell
+    /// If `f()` panics, the panic is propagated to the caller, and the cell
     /// remains uninitialized.
     ///
     /// It is an error to reentrantly initialize the cell from `f`. The
@@ -985,13 +996,13 @@
     }
 
     <span class="doccomment">/// Gets the mutable reference of the contents of the cell, initializing
-    /// it with `f` if the cell was empty.
+    /// it to `f()` if the cell was uninitialized.
     ///
     /// This method never blocks.
     ///
     /// # Panics
     ///
-    /// If `f` panics, the panic is propagated to the caller, and the cell
+    /// If `f()` panics, the panic is propagated to the caller, and the cell
     /// remains uninitialized.
     ///
     /// # Examples
@@ -1022,13 +1033,13 @@
         }
     }
 
-    <span class="doccomment">/// Gets the contents of the cell, initializing it with `f` if
-    /// the cell was empty. If the cell was empty and `f` failed, an
-    /// error is returned.
+    <span class="doccomment">/// Gets the contents of the cell, initializing it to `f()` if
+    /// the cell was uninitialized. If the cell was uninitialized
+    /// and `f()` failed, an error is returned.
     ///
     /// # Panics
     ///
-    /// If `f` panics, the panic is propagated to the caller, and
+    /// If `f()` panics, the panic is propagated to the caller, and
     /// the cell remains uninitialized.
     ///
     /// It is an error to reentrantly initialize the cell from `f`.
@@ -1074,14 +1085,14 @@
     }
 
     <span class="doccomment">/// Gets the mutable reference of the contents of the cell, initializing
-    /// it with `f` if the cell was empty. If the cell was empty and `f` failed,
-    /// an error is returned.
+    /// it to `f()` if the cell was uninitialized. If the cell was uninitialized
+    /// and `f()` failed, an error is returned.
     ///
     /// This method never blocks.
     ///
     /// # Panics
     ///
-    /// If `f` panics, the panic is propagated to the caller, and
+    /// If `f()` panics, the panic is propagated to the caller, and
     /// the cell remains uninitialized.
     ///
     /// # Examples
@@ -1093,7 +1104,7 @@
     ///
     /// let mut cell: OnceLock&lt;u32&gt; = OnceLock::new();
     ///
-    /// // Failed initializers do not change the value
+    /// // Failed attempts to initialize the cell do not change its contents
     /// assert!(cell.get_mut_or_try_init(|| "not a number!".parse()).is_err());
     /// assert!(cell.get().is_none());
     ///
@@ -1117,7 +1128,7 @@
     }
 
     <span class="doccomment">/// Consumes the `OnceLock`, returning the wrapped value. Returns
-    /// `None` if the cell was empty.
+    /// `None` if the cell was uninitialized.
     ///
     /// # Examples
     ///
@@ -1139,7 +1150,7 @@
 
     <span class="doccomment">/// Takes the value out of this `OnceLock`, moving it back to an uninitialized state.
     ///
-    /// Has no effect and returns `None` if the `OnceLock` hasn't been initialized.
+    /// Has no effect and returns `None` if the `OnceLock` was uninitialized.
     ///
     /// Safety is guaranteed by requiring a mutable reference.
     ///
@@ -1205,7 +1216,7 @@
 
     <span class="doccomment">/// # Safety
     ///
-    /// The value must be initialized
+    /// The cell must be initialized
     </span><span class="attr">#[inline]
     </span><span class="kw">unsafe fn </span>get_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_initialized());
@@ -1214,7 +1225,7 @@
 
     <span class="doccomment">/// # Safety
     ///
-    /// The value must be initialized
+    /// The cell must be initialized
     </span><span class="attr">#[inline]
     </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_initialized());
@@ -1239,7 +1250,7 @@
 
 <span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
 </span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>OnceLock&lt;T&gt; {
-    <span class="doccomment">/// Creates a new empty cell.
+    <span class="doccomment">/// Creates a new uninitialized cell.
     ///
     /// # Example
     ///
@@ -1353,7 +1364,4 @@
         }
     }
 }
-
-<span class="attr">#[cfg(test)]
-</span><span class="kw">mod </span>tests;
 </code></pre></div></section></main></body></html>
