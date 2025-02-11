@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>vec_pop_if - The Rust Unstable Book</title>
+        <title>amdgcn-amd-amdhsa - The rustc book</title>
 
 
         <!-- Custom HTML head -->
@@ -120,16 +120,16 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The Rust Unstable Book</h1>
+                    <h1 class="menu-title">The rustc book</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/rust-lang/rust/tree/master/src/doc/unstable-book" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/rust-lang/rust/tree/master/src/doc/rustc" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/rust-lang/rust/edit/master/src/doc/unstable-book/src/library-features/vec-pop-if.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/rust-lang/rust/edit/master/src/doc/rustc/src/platform-support/amdgcn-amd-amdhsa.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -158,19 +158,93 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="vec_pop_if"><a class="header" href="#vec_pop_if"><code>vec_pop_if</code></a></h1>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/122741">#122741</a></p>
-<hr />
+                        <h1 id="amdgcn-amd-amdhsa"><a class="header" href="#amdgcn-amd-amdhsa"><code>amdgcn-amd-amdhsa</code></a></h1>
+<p><strong>Tier: 3</strong></p>
+<p>AMD GPU target for compute/HSA (Heterogeneous System Architecture).</p>
+<h2 id="target-maintainers"><a class="header" href="#target-maintainers">Target maintainers</a></h2>
+<ul>
+<li><a href="https://github.com/Flakebi">@Flakebi</a></li>
+</ul>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<p>AMD GPUs can be targeted via cross-compilation.
+Supported GPUs depend on the LLVM version that is used by Rust.
+In general, most GPUs starting from gfx7 (Sea Islands/CI) are supported as compilation targets, though older GPUs are not supported by the latest host runtime.
+Details about supported GPUs can be found in <a href="https://llvm.org/docs/AMDGPUUsage.html#processors">LLVM’s documentation</a> and <a href="https://rocmdocs.amd.com">ROCm documentation</a>.</p>
+<p>Binaries can be loaded by <a href="https://rocm.docs.amd.com/projects/HIP/">HIP</a> or by the HSA runtime implemented in <a href="https://github.com/ROCm/ROCR-Runtime">ROCR-Runtime</a>.
+The format of binaries is a linked ELF.</p>
+<p>Binaries must be built with no-std.
+They can use <code>core</code> and <code>alloc</code> (<code>alloc</code> only if an allocator is supplied).
+At least one function needs to use the <code>"gpu-kernel"</code> calling convention and should be marked with <code>no_mangle</code> for simplicity.
+Functions using the <code>"gpu-kernel"</code> calling convention are kernel entrypoints and can be used from the host runtime.</p>
+<h2 id="building-the-target"><a class="header" href="#building-the-target">Building the target</a></h2>
+<p>The target is included in rustc.</p>
+<h2 id="building-rust-programs"><a class="header" href="#building-rust-programs">Building Rust programs</a></h2>
+<p>The amdgpu target supports many hardware generations, which need different binaries.
+The generations are exposed as different target-cpus in the backend.
+As there are many, Rust does not ship pre-compiled libraries for this target.
+Therefore, you have to build your own copy of <code>core</code> by using <code>cargo -Zbuild-std=core</code> or similar.</p>
+<p>To build a binary, create a no-std library:</p>
+<pre><code class="language-rust ignore (platform-specific)">// src/lib.rs
+#![feature(abi_gpu_kernel)]
+#![no_std]
+
+#[panic_handler]
+fn panic(_: &amp;core::panic::PanicInfo) -&gt; ! {
+    loop {}
+}
+
+#[no_mangle]
+pub extern "gpu-kernel" fn kernel(/* Arguments */) {
+    // Code
+}</code></pre>
+<p>Build the library as <code>cdylib</code>:</p>
+<pre><code class="language-toml"># Cargo.toml
+[lib]
+crate-type = ["cdylib"]
+
+[profile.dev]
+lto = true # LTO must be explicitly enabled for now
+[profile.release]
+lto = true
+</code></pre>
+<p>The target-cpu must be from the list <a href="https://llvm.org/docs/AMDGPUUsage.html#processors">supported by LLVM</a> (or printed with <code>rustc --target amdgcn-amd-amdhsa --print target-cpus</code>).
+The GPU version on the current system can be found e.g. with <a href="https://github.com/ROCm/rocminfo"><code>rocminfo</code></a>.</p>
+<p>Example <code>.cargo/config.toml</code> file to set the target and GPU generation:</p>
+<pre><code class="language-toml"># .cargo/config.toml
+[build]
+target = "amdgcn-amd-amdhsa"
+rustflags = ["-Ctarget-cpu=gfx1100"]
+
+[unstable]
+build-std = ["core"] # Optional: "alloc"
+</code></pre>
+<h2 id="running-rust-programs"><a class="header" href="#running-rust-programs">Running Rust programs</a></h2>
+<p>To run a binary on an AMD GPU, a host runtime is needed.
+On Linux and Windows, <a href="https://rocm.docs.amd.com/projects/HIP/">HIP</a> can be used to load and run binaries.
+Example code on how to load a compiled binary and run it is available in <a href="https://github.com/ROCm/rocm-examples/tree/ca8ef5b6f1390176616cd1c18fbc98785cbc73f6/HIP-Basic/module_api">ROCm examples</a>.</p>
+<p>On Linux, binaries can also run through the HSA runtime as implemented in <a href="https://github.com/ROCm/ROCR-Runtime">ROCR-Runtime</a>.</p>
+<!-- Mention an allocator once a suitable one exists for amdgpu -->
+<!--
+## Testing
+
+Does the target support running binaries, or do binaries have varying
+expectations that prevent having a standard way to run them? If users can run
+binaries, can they do so in some common emulator, or do they need native
+hardware? Does the target support running the Rust testsuite?
+
+-->
+<h2 id="additional-information"><a class="header" href="#additional-information">Additional information</a></h2>
+<p>More information can be found on the <a href="https://llvm.org/docs/AMDGPUUsage.html">LLVM page for amdgpu</a>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../library-features/vec-into-raw-parts.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../platform-support/aarch64-nintendo-switch-freestanding.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../library-features/vec-push-within-capacity.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../platform-support/armeb-unknown-linux-gnueabi.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -180,11 +254,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../library-features/vec-into-raw-parts.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../platform-support/aarch64-nintendo-switch-freestanding.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../library-features/vec-push-within-capacity.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../platform-support/armeb-unknown-linux-gnueabi.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
