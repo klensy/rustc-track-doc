@@ -10281,7 +10281,16 @@ reference types and <code>mut</code> or <code>const</code> in pointer types.</p>
 <tr><td>Closure ***</td><td>Function pointer</td><td>Closure to function pointer cast</td></tr>
 </tbody></table>
 </div>
-<p>* or <code>T</code> and <code>V</code> are compatible unsized types, e.g., both slices, both the same trait object.</p>
+<p>* or <code>T</code> and <code>V</code> are unsized types with compatible metadata:</p>
+<ul>
+<li>Both slice metadata (<code>*[u16]</code> -&gt; <code>*[u8]</code>, <code>*str</code> -&gt; <code>*(u8, [u32])</code>).</li>
+<li>Both the same trait object metadata, modulo dropping auto traits (<code>*dyn Debug</code> -&gt; <code>*(u16, dyn Debug)</code>, <code>*dyn Debug + Send</code> -&gt; <code>*dyn Debug</code>).
+<ul>
+<li><strong>Note</strong>: Adding auto traits is only allowed if the principal trait has the auto trait as a super trait (given <code>trait T: Send {}</code>, <code>*dyn T</code> -&gt; <code>*dyn T + Send</code> is valid, but <code>*dyn Debug</code> -&gt; <code>*dyn Debug + Send</code> is not).</li>
+<li><strong>Note</strong>: Generics (including lifetimes) must match (<code>*dyn T&lt;'a, A&gt;</code> -&gt; <code>*dyn T&lt;'b, B&gt;</code> requires <code>'a = 'b</code> and <code>A = B</code>).</li>
+</ul>
+</li>
+</ul>
 <p>** only when <code>m₁</code> is <code>mut</code> or <code>m₂</code> is <code>const</code>. Casting <code>mut</code> reference to
 <code>const</code> pointer is allowed.</p>
 <p>*** only for closures that do not capture (close over) any local variables</p>
@@ -10415,6 +10424,7 @@ number, preferring the one with an even least significant digit if exactly
 halfway between two floating point numbers.</p>
 <div class="rule" id="r-expr.as.enum"><a class="rule-link" href="expressions/operator-expr.html#r-expr.as.enum" title="expr.as.enum"><span>[expr<wbr>.as<wbr>.enum]<span/></a></div>
 <h4 id="enum-cast"><a class="header" href="#enum-cast">Enum cast</a></h4>
+<div class="rule" id="r-expr.as.enum.discriminant"><a class="rule-link" href="expressions/operator-expr.html#r-expr.as.enum.discriminant" title="expr.as.enum.discriminant"><span>[expr<wbr>.as<wbr>.enum<wbr>.discriminant]<span/></a></div>
 <p>Casts an enum to its discriminant, then uses a numeric cast if needed.
 Casting is limited to the following kinds of enumerations:</p>
 <ul>
@@ -10428,6 +10438,8 @@ assert_eq!(Enum::A as i32, 0);
 assert_eq!(Enum::B as i32, 1);
 assert_eq!(Enum::C as i32, 2);
 <span class="boring">}</span></code></pre></pre>
+<div class="rule" id="r-expr.as.enum.no-drop"><a class="rule-link" href="expressions/operator-expr.html#r-expr.as.enum.no-drop" title="expr.as.enum.no-drop"><span>[expr<wbr>.as<wbr>.enum<wbr>.no-drop]<span/></a></div>
+<p>Casting is not allowed if the enum implements <a href="expressions/../../core/ops/drop/trait.Drop.html"><code>Drop</code></a>.</p>
 <div class="rule" id="r-expr.as.bool-char-as-int"><a class="rule-link" href="expressions/operator-expr.html#r-expr.as.bool-char-as-int" title="expr.as.bool-char-as-int"><span>[expr<wbr>.as<wbr>.bool-char-as-int]<span/></a></div>
 <h4 id="primitive-to-integer-cast"><a class="header" href="#primitive-to-integer-cast">Primitive to integer cast</a></h4>
 <ul>
@@ -15923,7 +15935,7 @@ fn main() {
 <h3 id="unsized-coercions"><a class="header" href="#unsized-coercions">Unsized Coercions</a></h3>
 <div class="rule" id="r-coerce.unsize.intro"><a class="rule-link" href="type-coercions.html#r-coerce.unsize.intro" title="coerce.unsize.intro"><span>[coerce<wbr>.unsize<wbr>.intro]<span/></a></div>
 <p>The following coercions are called <code>unsized coercions</code>, since they
-relate to converting sized types to unsized types, and are permitted in a few
+relate to converting types to unsized types, and are permitted in a few
 cases where other coercions are not, as described above. They can still happen
 anywhere else a coercion can occur.</p>
 <div class="rule" id="r-coerce.unsize.trait"><a class="rule-link" href="type-coercions.html#r-coerce.unsize.trait" title="coerce.unsize.trait"><span>[coerce<wbr>.unsize<wbr>.trait]<span/></a></div>
@@ -15938,6 +15950,15 @@ an implementation of <code>Unsize&lt;U&gt;</code> for <code>T</code> will be pro
 <div class="rule" id="r-coerce.unsize.trait-object"><a class="rule-link" href="type-coercions.html#r-coerce.unsize.trait-object" title="coerce.unsize.trait-object"><span>[coerce<wbr>.unsize<wbr>.trait-object]<span/></a></div>
 <ul>
 <li><code>T</code> to <code>dyn U</code>, when <code>T</code> implements <code>U + Sized</code>, and <code>U</code> is <a href="items/traits.html#dyn-compatibility">dyn compatible</a>.</li>
+</ul>
+<div class="rule" id="r-coerce.unsize.trait-upcast"><a class="rule-link" href="type-coercions.html#r-coerce.unsize.trait-upcast" title="coerce.unsize.trait-upcast"><span>[coerce<wbr>.unsize<wbr>.trait-upcast]<span/></a></div>
+<ul>
+<li><code>dyn T</code> to <code>dyn U</code>, when <code>U</code> is one of <code>T</code>’s <a href="items/traits.html#supertraits">supertraits</a>.
+<ul>
+<li>This allows dropping auto traits, i.e. <code>dyn T + Auto</code> to <code>dyn U</code> is allowed.</li>
+<li>This allows adding auto traits if the principal trait has the auto trait as a super trait, i.e. given <code>trait T: U + Send {}</code>, <code>dyn T</code> to <code>dyn T + Send</code> or to <code>dyn U + Send</code> coercions are allowed.</li>
+</ul>
+</li>
 </ul>
 <div class="rule" id="r-coerce.unsized.composite"><a class="rule-link" href="type-coercions.html#r-coerce.unsized.composite" title="coerce.unsized.composite"><span>[coerce<wbr>.unsized<wbr>.composite]<span/></a></div>
 <ul>
@@ -22845,10 +22866,10 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="expressions/operator-expr.html">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8.2.4. Operator expressions</a></td>
-<td>110</td>
+<td>112</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(44);">110</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(44);">112</a>
 <div id="uncovered-44" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="expressions/operator-expr.html#r-expr.arith-logic">expr.arith-logic</a></li>
@@ -22859,6 +22880,8 @@ Uncovered rules
 <li><a href="expressions/operator-expr.html#r-expr.as.bool-char-as-int">expr.as.bool-char-as-int</a></li>
 <li><a href="expressions/operator-expr.html#r-expr.as.coercions">expr.as.coercions</a></li>
 <li><a href="expressions/operator-expr.html#r-expr.as.enum">expr.as.enum</a></li>
+<li><a href="expressions/operator-expr.html#r-expr.as.enum.discriminant">expr.as.enum.discriminant</a></li>
+<li><a href="expressions/operator-expr.html#r-expr.as.enum.no-drop">expr.as.enum.no-drop</a></li>
 <li><a href="expressions/operator-expr.html#r-expr.as.int-as-pointer">expr.as.int-as-pointer</a></li>
 <li><a href="expressions/operator-expr.html#r-expr.as.intro">expr.as.intro</a></li>
 <li><a href="expressions/operator-expr.html#r-expr.as.numeric">expr.as.numeric</a></li>
@@ -24113,10 +24136,10 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="type-coercions.html">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.7. Type coercions</a></td>
-<td>44</td>
+<td>45</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(86);">44</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(86);">45</a>
 <div id="uncovered-86" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="type-coercions.html#r-coerce">coerce</a></li>
@@ -24161,6 +24184,7 @@ Uncovered rules
 <li><a href="type-coercions.html#r-coerce.unsize.slice">coerce.unsize.slice</a></li>
 <li><a href="type-coercions.html#r-coerce.unsize.trait">coerce.unsize.trait</a></li>
 <li><a href="type-coercions.html#r-coerce.unsize.trait-object">coerce.unsize.trait-object</a></li>
+<li><a href="type-coercions.html#r-coerce.unsize.trait-upcast">coerce.unsize.trait-upcast</a></li>
 <li><a href="type-coercions.html#r-coerce.unsized.composite">coerce.unsized.composite</a></li>
 <li><a href="type-coercions.html#r-coerce.unsized.pointer">coerce.unsized.pointer</a></li>
 </ul></div></div></td>
@@ -24940,9 +24964,9 @@ Uncovered rules
 </tr>
 <tr>
 <td><b>Total:</b></td>
-<td>2537</td>
+<td>2540</td>
 <td>44</td>
-<td>2519</td>
+<td>2522</td>
 <td>0.8%</td>
 </tr>
 </table>

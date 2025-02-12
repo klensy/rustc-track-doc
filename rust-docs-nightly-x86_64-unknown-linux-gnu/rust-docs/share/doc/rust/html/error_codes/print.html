@@ -673,6 +673,7 @@
 <li><a href="./E0799.html">E0799</a></li>
 <li><a href="./E0800.html">E0800</a></li>
 <li><a href="./E0801.html">E0801</a></li>
+<li><a href="./E0802.html">E0802</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0001"><a class="header" href="#error-code-e0001">Error code E0001</a></h1>
 <h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler">Note: this error code is no longer emitted by the compiler.</a></h4>
@@ -15646,6 +15647,92 @@ impl Foo {
         // the pointer implements Deref&lt;Target=Self&gt;
 }
 <span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0802"><a class="header" href="#error-code-e0802">Error code E0802</a></h1>
+<p>The target of <code>derive(CoercePointee)</code> macro has inadmissible specification for
+a meaningful use.</p>
+<p>Erroneous code examples:</p>
+<p>The target data is not a <code>struct</code>.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+enum NotStruct&lt;'a, T: ?Sized&gt; {
+    Variant(&amp;'a T),
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The target data has a layout that is not transparent, or <code>repr(transparent)</code>
+in other words.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+struct NotTransparent&lt;'a, #[pointee] T: ?Sized&gt; {
+    ptr: &amp;'a T,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The target data has no data field.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+#[repr(transparent)]
+struct NoField&lt;'a, #[pointee] T: ?Sized&gt; {}
+<span class="boring">}</span></code></pre></pre>
+<p>The target data is not generic over any data, or has no generic type parameter.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+#[repr(transparent)]
+struct NoGeneric&lt;'a&gt;(&amp;'a u8);
+<span class="boring">}</span></code></pre></pre>
+<p>The target data has multiple generic type parameters, but none is designated as
+a pointee for coercion.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+#[repr(transparent)]
+struct AmbiguousPointee&lt;'a, T1: ?Sized, T2: ?Sized&gt; {
+    a: (&amp;'a T1, &amp;'a T2),
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The target data has multiple generic type parameters that are designated as
+pointees for coercion.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+#[repr(transparent)]
+struct TooManyPointees&lt;
+    'a,
+    #[pointee] A: ?Sized,
+    #[pointee] B: ?Sized&gt;
+((&amp;'a A, &amp;'a B));
+<span class="boring">}</span></code></pre></pre>
+<p>The type parameter that is designated as a pointee is not marked <code>?Sized</code>.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0802"><span class="boring">#![allow(unused)]
+</span>#![feature(coerce_pointee)]
+<span class="boring">fn main() {
+</span>use std::marker::CoercePointee;
+#[derive(CoercePointee)]
+#[repr(transparent)]
+struct NoMaybeSized&lt;'a, #[pointee] T&gt; {
+    ptr: &amp;'a T,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>In summary, the <code>CoercePointee</code> macro demands the type to be a <code>struct</code> that is
+generic over at least one type or over more types, one of which is marked with
+<code>#[pointee]</code>, and has at least one data field and adopts a <code>repr(transparent)</code>
+layout.
+The only generic type or the type marked with <code>#[pointee]</code> has to be also
+marked as <code>?Sized</code>.</p>
 
                     </main>
 

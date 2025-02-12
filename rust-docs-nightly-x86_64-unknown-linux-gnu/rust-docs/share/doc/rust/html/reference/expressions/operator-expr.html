@@ -579,7 +579,16 @@ reference types and <code>mut</code> or <code>const</code> in pointer types.</p>
 <tr><td>Closure ***</td><td>Function pointer</td><td>Closure to function pointer cast</td></tr>
 </tbody></table>
 </div>
-<p>* or <code>T</code> and <code>V</code> are compatible unsized types, e.g., both slices, both the same trait object.</p>
+<p>* or <code>T</code> and <code>V</code> are unsized types with compatible metadata:</p>
+<ul>
+<li>Both slice metadata (<code>*[u16]</code> -&gt; <code>*[u8]</code>, <code>*str</code> -&gt; <code>*(u8, [u32])</code>).</li>
+<li>Both the same trait object metadata, modulo dropping auto traits (<code>*dyn Debug</code> -&gt; <code>*(u16, dyn Debug)</code>, <code>*dyn Debug + Send</code> -&gt; <code>*dyn Debug</code>).
+<ul>
+<li><strong>Note</strong>: Adding auto traits is only allowed if the principal trait has the auto trait as a super trait (given <code>trait T: Send {}</code>, <code>*dyn T</code> -&gt; <code>*dyn T + Send</code> is valid, but <code>*dyn Debug</code> -&gt; <code>*dyn Debug + Send</code> is not).</li>
+<li><strong>Note</strong>: Generics (including lifetimes) must match (<code>*dyn T&lt;'a, A&gt;</code> -&gt; <code>*dyn T&lt;'b, B&gt;</code> requires <code>'a = 'b</code> and <code>A = B</code>).</li>
+</ul>
+</li>
+</ul>
 <p>** only when <code>m₁</code> is <code>mut</code> or <code>m₂</code> is <code>const</code>. Casting <code>mut</code> reference to
 <code>const</code> pointer is allowed.</p>
 <p>*** only for closures that do not capture (close over) any local variables</p>
@@ -713,6 +722,7 @@ number, preferring the one with an even least significant digit if exactly
 halfway between two floating point numbers.</p>
 <div class="rule" id="r-expr.as.enum"><a class="rule-link" href="#r-expr.as.enum" title="expr.as.enum"><span>[expr<wbr>.as<wbr>.enum]<span/></a></div>
 <h4 id="enum-cast"><a class="header" href="#enum-cast">Enum cast</a></h4>
+<div class="rule" id="r-expr.as.enum.discriminant"><a class="rule-link" href="#r-expr.as.enum.discriminant" title="expr.as.enum.discriminant"><span>[expr<wbr>.as<wbr>.enum<wbr>.discriminant]<span/></a></div>
 <p>Casts an enum to its discriminant, then uses a numeric cast if needed.
 Casting is limited to the following kinds of enumerations:</p>
 <ul>
@@ -726,6 +736,8 @@ assert_eq!(Enum::A as i32, 0);
 assert_eq!(Enum::B as i32, 1);
 assert_eq!(Enum::C as i32, 2);
 <span class="boring">}</span></code></pre></pre>
+<div class="rule" id="r-expr.as.enum.no-drop"><a class="rule-link" href="#r-expr.as.enum.no-drop" title="expr.as.enum.no-drop"><span>[expr<wbr>.as<wbr>.enum<wbr>.no-drop]<span/></a></div>
+<p>Casting is not allowed if the enum implements <a href="../../core/ops/drop/trait.Drop.html"><code>Drop</code></a>.</p>
 <div class="rule" id="r-expr.as.bool-char-as-int"><a class="rule-link" href="#r-expr.as.bool-char-as-int" title="expr.as.bool-char-as-int"><span>[expr<wbr>.as<wbr>.bool-char-as-int]<span/></a></div>
 <h4 id="primitive-to-integer-cast"><a class="header" href="#primitive-to-integer-cast">Primitive to integer cast</a></h4>
 <ul>

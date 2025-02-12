@@ -5440,6 +5440,53 @@ fn main() {
     // `_a`はここで`drop`されることは *ありません* 。なぜならば、上ですでに
     // （手動で）`drop`されているためです。
 }</code></pre></pre>
+<p>For a more practical example, here's how the <code>Drop</code> trait can be used to automatically clean up temporary files when they're no longer needed:</p>
+<pre><pre class="playground"><code class="language-rust editable edition2021">use std::fs::File;
+use std::path::PathBuf;
+
+struct TempFile {
+    file: File,
+    path: PathBuf,
+}
+
+impl TempFile {
+    fn new(path: PathBuf) -&gt; std::io::Result&lt;Self&gt; {
+        // Note: File::create() will overwrite existing files
+        let file = File::create(&amp;path)?;
+        
+        Ok(Self { file, path })
+    }
+}
+
+// When TempFile is dropped:
+// 1. First, the File will be automatically closed (Drop for File)
+// 2. Then our drop implementation will remove the file
+impl Drop for TempFile {
+    fn drop(&amp;mut self) {
+        // Note: File is already closed at this point
+        if let Err(e) = std::fs::remove_file(&amp;self.path) {
+            eprintln!("Failed to remove temporary file: {}", e);
+        }
+        println!("&gt; Dropped temporary file: {:?}", self.path);
+    }
+}
+
+fn main() -&gt; std::io::Result&lt;()&gt; {
+    // Create a new scope to demonstrate drop behavior
+    {
+        let temp = TempFile::new("test.txt".into())?;
+        println!("Temporary file created");
+        // File will be automatically cleaned up when temp goes out of scope
+    }
+    println!("End of scope - file should be cleaned up");
+
+    // We can also manually drop if needed
+    let temp2 = TempFile::new("another_test.txt".into())?;
+    drop(temp2); // Explicitly drop the file
+    println!("Manually dropped file");
+    
+    Ok(())
+}</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="イテレータ"><a class="header" href="#イテレータ">イテレータ</a></h1>
 <p><a href="https://doc.rust-lang.org/core/iter/trait.Iterator.html"><code>Iterator</code></a>トレイトは、例えば配列のような、要素の集合に対してイテレータを実装するためのトレイトです。</p>
 <p>このトレイトは<code>next</code>の要素に相当するものを決定するためのメソッドのみを要求します。このメソッドは<code>impl</code>ブロック内で手動で実装するか、あるいは（配列やrangeのように）自動で定義されます。</p>
