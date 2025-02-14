@@ -206,6 +206,8 @@ unless you set them to a higher lint level with a flag or attribute.</p>
 <li><a href="#rust-2024-prelude-collisions"><code>rust_2024_prelude_collisions</code></a></li>
 <li><a href="#single-use-lifetime"><code>single-use-lifetime</code></a></li>
 <li><a href="#single-use-lifetimes"><code>single_use_lifetimes</code></a></li>
+<li><a href="#supertrait-item-shadowing-definition"><code>supertrait_item_shadowing_definition</code></a></li>
+<li><a href="#supertrait-item-shadowing-usage"><code>supertrait_item_shadowing_usage</code></a></li>
 <li><a href="#tail-expr-drop-order"><code>tail_expr_drop_order</code></a></li>
 <li><a href="#trivial-casts"><code>trivial_casts</code></a></li>
 <li><a href="#trivial-numeric-casts"><code>trivial_numeric_casts</code></a></li>
@@ -1871,13 +1873,105 @@ when <code>'_</code> and elided lifetimes were first being introduced, and this
 lint would be too noisy. Also, there are some known false positives
 that it produces. See <a href="https://github.com/rust-lang/rfcs/blob/master/text/2115-argument-lifetimes.md">RFC 2115</a> for historical context, and <a href="https://github.com/rust-lang/rust/issues/44752">issue
 #44752</a> for more details.</p>
+<h2 id="supertrait-item-shadowing-definition"><a class="header" href="#supertrait-item-shadowing-definition">supertrait-item-shadowing-definition</a></h2>
+<p>The <code>supertrait_item_shadowing_definition</code> lint detects when the
+definition of an item that is provided by both a subtrait and
+supertrait is shadowed, preferring the subtrait.</p>
+<h3 id="example-37"><a class="header" href="#example-37">Example</a></h3>
+<pre><code class="language-rust compile_fail">#![feature(supertrait_item_shadowing)]
+#![deny(supertrait_item_shadowing_definition)]
+
+trait Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Upstream for T {}
+
+trait Downstream: Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Downstream for T {}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: trait item `hello` from `Downstream` shadows identically named item from supertrait
+  --&gt; lint_example.rs:11:5
+   |
+11 |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+   |
+note: item from `Upstream` is shadowed by a subtrait item
+  --&gt; lint_example.rs:6:5
+   |
+6  |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+note: the lint level is defined here
+  --&gt; lint_example.rs:2:9
+   |
+2  | #![deny(supertrait_item_shadowing_definition)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+</code></pre>
+<h3 id="explanation-39"><a class="header" href="#explanation-39">Explanation</a></h3>
+<p>RFC 3624 specified a heuristic in which a supertrait item would be
+shadowed by a subtrait item when ambiguity occurs during item
+selection. In order to mitigate side-effects of this happening
+silently, this lint detects these cases when users want to deny them
+or fix their trait definitions.</p>
+<h2 id="supertrait-item-shadowing-usage"><a class="header" href="#supertrait-item-shadowing-usage">supertrait-item-shadowing-usage</a></h2>
+<p>The <code>supertrait_item_shadowing_usage</code> lint detects when the
+usage of an item that is provided by both a subtrait and supertrait
+is shadowed, preferring the subtrait.</p>
+<h3 id="example-38"><a class="header" href="#example-38">Example</a></h3>
+<pre><code class="language-rust compile_fail">#![feature(supertrait_item_shadowing)]
+#![deny(supertrait_item_shadowing_usage)]
+
+trait Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Upstream for T {}
+
+trait Downstream: Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Downstream for T {}
+
+struct MyType;
+MyType.hello();</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: trait item `hello` from `Downstream` shadows identically named item from supertrait
+  --&gt; lint_example.rs:16:8
+   |
+16 | MyType.hello();
+   |        ^^^^^
+   |
+note: item from `Downstream` shadows a supertrait item
+  --&gt; lint_example.rs:11:5
+   |
+11 |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+note: item from `Upstream` is shadowed by a subtrait item
+  --&gt; lint_example.rs:6:5
+   |
+6  |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+note: the lint level is defined here
+  --&gt; lint_example.rs:2:9
+   |
+2  | #![deny(supertrait_item_shadowing_usage)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+</code></pre>
+<h3 id="explanation-40"><a class="header" href="#explanation-40">Explanation</a></h3>
+<p>RFC 3624 specified a heuristic in which a supertrait item would be
+shadowed by a subtrait item when ambiguity occurs during item
+selection. In order to mitigate side-effects of this happening
+silently, this lint detects these cases when users want to deny them
+or fix the call sites.</p>
 <h2 id="tail-expr-drop-order"><a class="header" href="#tail-expr-drop-order">tail-expr-drop-order</a></h2>
 <p>The <code>tail_expr_drop_order</code> lint looks for those values generated at the tail expression location,
 that runs a custom <code>Drop</code> destructor.
 Some of them may be dropped earlier in Edition 2024 that they used to in Edition 2021 and prior.
 This lint detects those cases and provides you information on those values and their custom destructor implementations.
 Your discretion on this information is required.</p>
-<h3 id="example-37"><a class="header" href="#example-37">Example</a></h3>
+<h3 id="example-39"><a class="header" href="#example-39">Example</a></h3>
 <pre><code class="language-rust edition2021">#![warn(tail_expr_drop_order)]
 struct Droppy(i32);
 impl Droppy {
@@ -1942,7 +2036,7 @@ note: the lint level is defined here
    |         ^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-39"><a class="header" href="#explanation-39">Explanation</a></h3>
+<h3 id="explanation-41"><a class="header" href="#explanation-41">Explanation</a></h3>
 <p>In tail expression of blocks or function bodies,
 values of type with significant <code>Drop</code> implementation has an ill-specified drop order
 before Edition 2024 so that they are dropped only after dropping local variables.
@@ -1974,7 +2068,7 @@ fn edition_2024() -&gt; i32 {
 <h2 id="trivial-casts"><a class="header" href="#trivial-casts">trivial-casts</a></h2>
 <p>The <code>trivial_casts</code> lint detects trivial casts which could be replaced
 with coercion, which may require a temporary variable.</p>
-<h3 id="example-38"><a class="header" href="#example-38">Example</a></h3>
+<h3 id="example-40"><a class="header" href="#example-40">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(trivial_casts)]
 let x: &amp;u32 = &amp;42;
 let y = x as *const u32;</code></pre>
@@ -1993,7 +2087,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-40"><a class="header" href="#explanation-40">Explanation</a></h3>
+<h3 id="explanation-42"><a class="header" href="#explanation-42">Explanation</a></h3>
 <p>A trivial cast is a cast <code>e as T</code> where <code>e</code> has type <code>U</code> and <code>U</code> is a
 subtype of <code>T</code>. This type of cast is usually unnecessary, as it can be
 usually be inferred.</p>
@@ -2008,7 +2102,7 @@ See <a href="https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.m
 <h2 id="trivial-numeric-casts"><a class="header" href="#trivial-numeric-casts">trivial-numeric-casts</a></h2>
 <p>The <code>trivial_numeric_casts</code> lint detects trivial numeric casts of types
 which could be removed.</p>
-<h3 id="example-39"><a class="header" href="#example-39">Example</a></h3>
+<h3 id="example-41"><a class="header" href="#example-41">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(trivial_numeric_casts)]
 let x = 42_i32 as i32;</code></pre>
 <p>This will produce:</p>
@@ -2026,7 +2120,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-41"><a class="header" href="#explanation-41">Explanation</a></h3>
+<h3 id="explanation-43"><a class="header" href="#explanation-43">Explanation</a></h3>
 <p>A trivial numeric cast is a cast of a numeric type to the same numeric
 type. This type of cast is usually unnecessary.</p>
 <p>This lint is "allow" by default because there are situations, such as
@@ -2042,7 +2136,7 @@ See <a href="https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.m
 the unit type <code>()</code> as their inferred type. The lint is suppressed if the user explicitly
 annotates the let binding with the unit type <code>()</code>, or if the let binding uses an underscore
 wildcard pattern, i.e. <code>let _ = expr</code>, or if the binding is produced from macro expansions.</p>
-<h3 id="example-40"><a class="header" href="#example-40">Example</a></h3>
+<h3 id="example-42"><a class="header" href="#example-42">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unit_bindings)]
 
 fn foo() {
@@ -2068,7 +2162,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-42"><a class="header" href="#explanation-42">Explanation</a></h3>
+<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
 <p>Creating a local binding with the unit type <code>()</code> does not do much and can be a sign of a
 user error, such as in this example:</p>
 <pre><code class="language-rust no_run">fn main() {
@@ -2080,7 +2174,7 @@ user error, such as in this example:</p>
 <h2 id="unnameable-types"><a class="header" href="#unnameable-types">unnameable-types</a></h2>
 <p>The <code>unnameable_types</code> lint detects types for which you can get objects of that type,
 but cannot name the type itself.</p>
-<h3 id="example-41"><a class="header" href="#example-41">Example</a></h3>
+<h3 id="example-43"><a class="header" href="#example-43">Example</a></h3>
 <pre><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![deny(unnameable_types)]
 mod m {
@@ -2103,7 +2197,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-43"><a class="header" href="#explanation-43">Explanation</a></h3>
+<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
 <p>It is often expected that if you can obtain an object of type <code>T</code>, then
 you can name the type <code>T</code> as well; this lint attempts to enforce this rule.
 The recommended action is to either reexport the type properly to make it nameable,
@@ -2113,7 +2207,7 @@ and you may obtain objects of their <code>dyn Trait</code> or <code>impl Trait</
 <h2 id="unqualified-local-imports"><a class="header" href="#unqualified-local-imports">unqualified-local-imports</a></h2>
 <p>The <code>unqualified_local_imports</code> lint checks for <code>use</code> items that import a local item using a
 path that does not start with <code>self::</code>, <code>super::</code>, or <code>crate::</code>.</p>
-<h3 id="example-42"><a class="header" href="#example-42">Example</a></h3>
+<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
 <pre><code class="language-rust edition2018">#![feature(unqualified_local_imports)]
 #![warn(unqualified_local_imports)]
 
@@ -2140,7 +2234,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
+<h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
 <p>This lint is meant to be used with the (unstable) rustfmt setting <code>group_imports = "StdExternalCrate"</code>.
 That setting makes rustfmt group <code>self::</code>, <code>super::</code>, and <code>crate::</code> imports separately from those
 referring to other crates. However, rustfmt cannot know whether <code>use c::S;</code> refers to a local module <code>c</code>
@@ -2151,7 +2245,7 @@ start with <code>self::</code>, <code>super::</code>, or <code>crate::</code>. T
 <p>The <code>unreachable_pub</code> lint triggers for <code>pub</code> items not reachable from other crates - that
 means neither directly accessible, nor reexported (with <code>pub use</code>), nor leaked through
 things like return types (which the <a href="#unnameable-types"><code>unnameable_types</code></a> lint can detect if desired).</p>
-<h3 id="example-43"><a class="header" href="#example-43">Example</a></h3>
+<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unreachable_pub)]
 mod foo {
     pub mod bar {
@@ -2175,7 +2269,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
+<h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
 <p>The <code>pub</code> keyword both expresses an intent for an item to be publicly available, and also
 signals to the compiler to make the item publicly accessible. The intent can only be
 satisfied, however, if all items which contain this item are <em>also</em> publicly accessible.
@@ -2188,7 +2282,7 @@ Eventually it is desired for this to become warn-by-default.</p>
 <h2 id="unsafe-attr-outside-unsafe"><a class="header" href="#unsafe-attr-outside-unsafe">unsafe-attr-outside-unsafe</a></h2>
 <p>The <code>unsafe_attr_outside_unsafe</code> lint detects a missing unsafe keyword
 on attributes considered unsafe.</p>
-<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
+<h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
 <pre><code class="language-rust">#![warn(unsafe_attr_outside_unsafe)]
 
 #[no_mangle]
@@ -2215,7 +2309,7 @@ help: wrap the attribute in `unsafe(...)`
   |   +++++++         +
 
 </code></pre>
-<h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
+<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
 <p>Some attributes (e.g. <code>no_mangle</code>, <code>export_name</code>, <code>link_section</code> -- see
 <a href="https://github.com/rust-lang/rust/issues/82499">issue #82499</a> for a more complete list) are considered "unsafe" attributes.
 An unsafe attribute must only be used inside unsafe(...).</p>
@@ -2228,7 +2322,7 @@ future.</p>
 <p>The <code>unsafe_code</code> lint catches usage of <code>unsafe</code> code and other
 potentially unsound constructs like <code>no_mangle</code>, <code>export_name</code>,
 and <code>link_section</code>.</p>
-<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
+<h3 id="example-47"><a class="header" href="#example-47">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unsafe_code)]
 fn main() {
     unsafe {
@@ -2297,7 +2391,7 @@ error: declaration of a static with `link_section`
    = note: the program's behavior with overridden link sections on items is unpredictable and Rust cannot provide guarantees when you manually override them
 
 </code></pre>
-<h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
+<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
 <p>This lint is intended to restrict the usage of <code>unsafe</code> blocks and other
 constructs (including, but not limited to <code>no_mangle</code>, <code>link_section</code>
 and <code>export_name</code> attributes) wrong usage of which causes undefined
@@ -2305,7 +2399,7 @@ behavior.</p>
 <h2 id="unsafe-op-in-unsafe-fn"><a class="header" href="#unsafe-op-in-unsafe-fn">unsafe-op-in-unsafe-fn</a></h2>
 <p>The <code>unsafe_op_in_unsafe_fn</code> lint detects unsafe operations in unsafe
 functions without an explicit unsafe block.</p>
-<h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
+<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unsafe_op_in_unsafe_fn)]
 
 unsafe fn foo() {}
@@ -2336,7 +2430,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
+<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
 <p>Currently, an <a href="https://doc.rust-lang.org/reference/unsafe-functions.html"><code>unsafe fn</code></a> allows any <a href="https://doc.rust-lang.org/reference/unsafety.html">unsafe</a> operation within its
 body. However, this can increase the surface area of code that needs
 to be scrutinized for proper behavior. The <a href="https://doc.rust-lang.org/reference/expressions/block-expr.html#unsafe-blocks"><code>unsafe</code> block</a> provides a
@@ -2351,7 +2445,7 @@ still being considered. See <a href="https://github.com/rust-lang/rfcs/blob/mast
 details.</p>
 <h2 id="unstable-features"><a class="header" href="#unstable-features">unstable-features</a></h2>
 <p>The <code>unstable_features</code> lint detects uses of <code>#![feature]</code>.</p>
-<h3 id="example-47"><a class="header" href="#example-47">Example</a></h3>
+<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unstable_features)]
 #![feature(test)]</code></pre>
 <p>This will produce:</p>
@@ -2368,7 +2462,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
+<h3 id="explanation-51"><a class="header" href="#explanation-51">Explanation</a></h3>
 <p>In larger nightly-based projects which</p>
 <ul>
 <li>consist of a multitude of crates where a subset of crates has to compile on
@@ -2380,7 +2474,7 @@ allow stable users to depend on them,</li>
 <h2 id="unused-crate-dependencies"><a class="header" href="#unused-crate-dependencies">unused-crate-dependencies</a></h2>
 <p>The <code>unused_crate_dependencies</code> lint detects crate dependencies that
 are never used.</p>
-<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
+<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
 <pre><code class="language-rust ignore (needs extern crate)">#![deny(unused_crate_dependencies)]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">error: extern crate `regex` is unused in crate `lint_example`
@@ -2392,7 +2486,7 @@ note: the lint level is defined here
 1 | #![deny(unused_crate_dependencies)]
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
 </code></pre>
-<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
+<h3 id="explanation-52"><a class="header" href="#explanation-52">Explanation</a></h3>
 <p>After removing the code that uses a dependency, this usually also
 requires removing the dependency from the build configuration.
 However, sometimes that step can be missed, which leads to time wasted
@@ -2410,7 +2504,7 @@ in the library.</p>
 <h2 id="unused-extern-crates"><a class="header" href="#unused-extern-crates">unused-extern-crates</a></h2>
 <p>The <code>unused_extern_crates</code> lint guards against <code>extern crate</code> items
 that are never used.</p>
-<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
+<h3 id="example-51"><a class="header" href="#example-51">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unused_extern_crates)]
 #![deny(warnings)]
 extern crate proc_macro;</code></pre>
@@ -2428,7 +2522,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-51"><a class="header" href="#explanation-51">Explanation</a></h3>
+<h3 id="explanation-53"><a class="header" href="#explanation-53">Explanation</a></h3>
 <p><code>extern crate</code> items that are unused have no effect and should be
 removed. Note that there are some cases where specifying an <code>extern crate</code> is desired for the side effect of ensuring the given crate is
 linked, even though it is not otherwise directly referenced. The lint
@@ -2443,7 +2537,7 @@ is recommended to remove it from the build configuration (such as
 <h2 id="unused-import-braces"><a class="header" href="#unused-import-braces">unused-import-braces</a></h2>
 <p>The <code>unused_import_braces</code> lint catches unnecessary braces around an
 imported item.</p>
-<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
+<h3 id="example-52"><a class="header" href="#example-52">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unused_import_braces)]
 use test::{A};
 
@@ -2465,7 +2559,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-52"><a class="header" href="#explanation-52">Explanation</a></h3>
+<h3 id="explanation-54"><a class="header" href="#explanation-54">Explanation</a></h3>
 <p>If there is only a single item, then remove the braces (<code>use test::A;</code>
 for example).</p>
 <p>This lint is "allow" by default because it is only enforcing a
@@ -2473,7 +2567,7 @@ stylistic choice.</p>
 <h2 id="unused-lifetimes"><a class="header" href="#unused-lifetimes">unused-lifetimes</a></h2>
 <p>The <code>unused_lifetimes</code> lint detects lifetime parameters that are never
 used.</p>
-<h3 id="example-51"><a class="header" href="#example-51">Example</a></h3>
+<h3 id="example-53"><a class="header" href="#example-53">Example</a></h3>
 <pre><code class="language-rust compile_fail">#[deny(unused_lifetimes)]
 
 pub fn foo&lt;'a&gt;() {}</code></pre>
@@ -2491,7 +2585,7 @@ note: the lint level is defined here
   |        ^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-53"><a class="header" href="#explanation-53">Explanation</a></h3>
+<h3 id="explanation-55"><a class="header" href="#explanation-55">Explanation</a></h3>
 <p>Unused lifetime parameters may signal a mistake or unfinished code.
 Consider removing the parameter.</p>
 <h2 id="unused-macro-rules"><a class="header" href="#unused-macro-rules">unused-macro-rules</a></h2>
@@ -2500,7 +2594,7 @@ Consider removing the parameter.</p>
 fires if the entire macro is never called, while this lint fires for
 single unused rules of the macro that is otherwise used.
 <code>unused_macro_rules</code> fires only if <code>unused_macros</code> wouldn't fire.</p>
-<h3 id="example-52"><a class="header" href="#example-52">Example</a></h3>
+<h3 id="example-54"><a class="header" href="#example-54">Example</a></h3>
 <pre><code class="language-rust">#[warn(unused_macro_rules)]
 macro_rules! unused_empty {
     (hello) =&gt; { println!("Hello, world!") }; // This rule is unused
@@ -2524,7 +2618,7 @@ note: the lint level is defined here
   |        ^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-54"><a class="header" href="#explanation-54">Explanation</a></h3>
+<h3 id="explanation-56"><a class="header" href="#explanation-56">Explanation</a></h3>
 <p>Unused macro rules may signal a mistake or unfinished code. Furthermore,
 they slow down compilation. Right now, silencing the warning is not
 supported on a single rule level, so you have to add an allow to the
@@ -2534,7 +2628,7 @@ available outside of the crate, use the <a href="https://doc.rust-lang.org/refer
 <h2 id="unused-qualifications"><a class="header" href="#unused-qualifications">unused-qualifications</a></h2>
 <p>The <code>unused_qualifications</code> lint detects unnecessarily qualified
 names.</p>
-<h3 id="example-53"><a class="header" href="#example-53">Example</a></h3>
+<h3 id="example-55"><a class="header" href="#example-55">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unused_qualifications)]
 mod foo {
     pub fn bar() {}
@@ -2564,7 +2658,7 @@ help: remove the unnecessary path segments
   |
 
 </code></pre>
-<h3 id="explanation-55"><a class="header" href="#explanation-55">Explanation</a></h3>
+<h3 id="explanation-57"><a class="header" href="#explanation-57">Explanation</a></h3>
 <p>If an item from another module is already brought into scope, then
 there is no need to qualify it in this case. You can call <code>bar()</code>
 directly, without the <code>foo::</code>.</p>
@@ -2574,7 +2668,7 @@ can be noisy when refactoring or moving around code.</p>
 <h2 id="unused-results"><a class="header" href="#unused-results">unused-results</a></h2>
 <p>The <code>unused_results</code> lint checks for the unused result of an
 expression in a statement.</p>
-<h3 id="example-54"><a class="header" href="#example-54">Example</a></h3>
+<h3 id="example-56"><a class="header" href="#example-56">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(unused_results)]
 fn foo&lt;T&gt;() -&gt; T { panic!() }
 
@@ -2595,7 +2689,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-56"><a class="header" href="#explanation-56">Explanation</a></h3>
+<h3 id="explanation-58"><a class="header" href="#explanation-58">Explanation</a></h3>
 <p>Ignoring the return value of a function may indicate a mistake. In
 cases were it is almost certain that the result should be used, it is
 recommended to annotate the function with the <a href="https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute"><code>must_use</code> attribute</a>.
@@ -2610,7 +2704,7 @@ values.</p>
 <h2 id="variant-size-differences"><a class="header" href="#variant-size-differences">variant-size-differences</a></h2>
 <p>The <code>variant_size_differences</code> lint detects enums with widely varying
 variant sizes.</p>
-<h3 id="example-55"><a class="header" href="#example-55">Example</a></h3>
+<h3 id="example-57"><a class="header" href="#example-57">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(variant_size_differences)]
 enum En {
     V0(u8),
@@ -2630,7 +2724,7 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-57"><a class="header" href="#explanation-57">Explanation</a></h3>
+<h3 id="explanation-59"><a class="header" href="#explanation-59">Explanation</a></h3>
 <p>It can be a mistake to add a variant to an enum that is much larger
 than the other variants, bloating the overall size required for all
 variants. This can impact performance and memory usage. This is
