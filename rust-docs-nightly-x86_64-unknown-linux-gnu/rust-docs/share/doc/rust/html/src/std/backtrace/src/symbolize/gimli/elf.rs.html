@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/../../backtrace/src/symbolize/gimli/elf.rs`."><title>elf.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-88e6a092.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (a567209da 2025-02-13)" data-channel="nightly" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../../../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../../src-files1.86.0.js"></script><script defer src="../../../../../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/backtrace/src/symbolize/gimli/</div>elf.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(clippy::useless_conversion)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/../../backtrace/src/symbolize/gimli/elf.rs`."><title>elf.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.86.0" data-rustdoc-version="1.86.0-nightly (d8810e3e2 2025-02-14)" data-channel="nightly" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../../../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../../src-files1.86.0.js"></script><script defer src="../../../../../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/backtrace/src/symbolize/gimli/</div>elf.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(clippy::useless_conversion)]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::mystd::ffi::OsStr;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::mystd::fs;
@@ -317,7 +317,7 @@
 <a href=#317 id=317 data-nosnippet>317</a>        <span class="kw">let </span>section = <span class="self">self</span>.section_header(<span class="string">".gnu_debuglink"</span>)<span class="question-mark">?</span>;
 <a href=#318 id=318 data-nosnippet>318</a>        <span class="kw">let </span>data = section.data(<span class="self">self</span>.endian, <span class="self">self</span>.data).ok()<span class="question-mark">?</span>;
 <a href=#319 id=319 data-nosnippet>319</a>        <span class="kw">let </span>len = data.iter().position(|x| <span class="kw-2">*</span>x == <span class="number">0</span>)<span class="question-mark">?</span>;
-<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>filename = <span class="kw-2">&amp;</span>data[..len];
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>filename = OsStr::from_bytes(<span class="kw-2">&amp;</span>data[..len]);
 <a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>offset = (len + <span class="number">1 </span>+ <span class="number">3</span>) &amp; !<span class="number">3</span>;
 <a href=#322 id=322 data-nosnippet>322</a>        <span class="kw">let </span>crc_bytes = data
 <a href=#323 id=323 data-nosnippet>323</a>            .get(offset..offset + <span class="number">4</span>)
@@ -332,7 +332,7 @@
 <a href=#332 id=332 data-nosnippet>332</a>        <span class="kw">let </span>section = <span class="self">self</span>.section_header(<span class="string">".gnu_debugaltlink"</span>)<span class="question-mark">?</span>;
 <a href=#333 id=333 data-nosnippet>333</a>        <span class="kw">let </span>data = section.data(<span class="self">self</span>.endian, <span class="self">self</span>.data).ok()<span class="question-mark">?</span>;
 <a href=#334 id=334 data-nosnippet>334</a>        <span class="kw">let </span>len = data.iter().position(|x| <span class="kw-2">*</span>x == <span class="number">0</span>)<span class="question-mark">?</span>;
-<a href=#335 id=335 data-nosnippet>335</a>        <span class="kw">let </span>filename = <span class="kw-2">&amp;</span>data[..len];
+<a href=#335 id=335 data-nosnippet>335</a>        <span class="kw">let </span>filename = OsStr::from_bytes(<span class="kw-2">&amp;</span>data[..len]);
 <a href=#336 id=336 data-nosnippet>336</a>        <span class="kw">let </span>build_id = <span class="kw-2">&amp;</span>data[len + <span class="number">1</span>..];
 <a href=#337 id=337 data-nosnippet>337</a>        <span class="kw">let </span>path_sup = locate_debugaltlink(path, filename, build_id)<span class="question-mark">?</span>;
 <a href=#338 id=338 data-nosnippet>338</a>        <span class="prelude-val">Some</span>((path_sup, build_id))
@@ -460,12 +460,12 @@
 <a href=#460 id=460 data-nosnippet>460</a>/// gdb also allows the user to customize the debug search path, but we don't.
 <a href=#461 id=461 data-nosnippet>461</a>///
 <a href=#462 id=462 data-nosnippet>462</a>/// gdb also supports debuginfod, but we don't yet.
-<a href=#463 id=463 data-nosnippet>463</a></span><span class="kw">fn </span>locate_debuglink(path: <span class="kw-2">&amp;</span>Path, filename: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;PathBuf&gt; {
+<a href=#463 id=463 data-nosnippet>463</a></span><span class="kw">fn </span>locate_debuglink(path: <span class="kw-2">&amp;</span>Path, filename: <span class="kw-2">&amp;</span>OsStr) -&gt; <span class="prelude-ty">Option</span>&lt;PathBuf&gt; {
 <a href=#464 id=464 data-nosnippet>464</a>    <span class="kw">let </span>path = fs::canonicalize(path).ok()<span class="question-mark">?</span>;
 <a href=#465 id=465 data-nosnippet>465</a>    <span class="kw">let </span>parent = path.parent()<span class="question-mark">?</span>;
 <a href=#466 id=466 data-nosnippet>466</a>    <span class="kw">let </span><span class="kw-2">mut </span>f =
 <a href=#467 id=467 data-nosnippet>467</a>        PathBuf::with_capacity(DEBUG_PATH.len() + parent.as_os_str().len() + filename.len() + <span class="number">2</span>);
-<a href=#468 id=468 data-nosnippet>468</a>    <span class="kw">let </span>filename = Path::new(OsStr::from_bytes(filename));
+<a href=#468 id=468 data-nosnippet>468</a>    <span class="kw">let </span>filename = Path::new(filename);
 <a href=#469 id=469 data-nosnippet>469</a>
 <a href=#470 id=470 data-nosnippet>470</a>    <span class="comment">// Try "/parent/filename" if it differs from "path"
 <a href=#471 id=471 data-nosnippet>471</a>    </span>f.push(parent);
@@ -509,8 +509,8 @@
 <a href=#509 id=509 data-nosnippet>509</a>/// gdb also allows the user to customize the debug search path, but we don't.
 <a href=#510 id=510 data-nosnippet>510</a>///
 <a href=#511 id=511 data-nosnippet>511</a>/// gdb also supports debuginfod, but we don't yet.
-<a href=#512 id=512 data-nosnippet>512</a></span><span class="kw">fn </span>locate_debugaltlink(path: <span class="kw-2">&amp;</span>Path, filename: <span class="kw-2">&amp;</span>[u8], build_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;PathBuf&gt; {
-<a href=#513 id=513 data-nosnippet>513</a>    <span class="kw">let </span>filename = Path::new(OsStr::from_bytes(filename));
+<a href=#512 id=512 data-nosnippet>512</a></span><span class="kw">fn </span>locate_debugaltlink(path: <span class="kw-2">&amp;</span>Path, filename: <span class="kw-2">&amp;</span>OsStr, build_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;PathBuf&gt; {
+<a href=#513 id=513 data-nosnippet>513</a>    <span class="kw">let </span>filename = Path::new(filename);
 <a href=#514 id=514 data-nosnippet>514</a>    <span class="kw">if </span>filename.is_absolute() {
 <a href=#515 id=515 data-nosnippet>515</a>        <span class="kw">if </span>filename.is_file() {
 <a href=#516 id=516 data-nosnippet>516</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(filename.into());
@@ -528,46 +528,41 @@
 <a href=#528 id=528 data-nosnippet>528</a>    locate_build_id(build_id)
 <a href=#529 id=529 data-nosnippet>529</a>}
 <a href=#530 id=530 data-nosnippet>530</a>
-<a href=#531 id=531 data-nosnippet>531</a><span class="kw">fn </span>convert_path&lt;R: gimli::Reader&gt;(r: <span class="kw-2">&amp;</span>R) -&gt; <span class="prelude-ty">Result</span>&lt;PathBuf, gimli::Error&gt; {
-<a href=#532 id=532 data-nosnippet>532</a>    <span class="kw">let </span>bytes = r.to_slice()<span class="question-mark">?</span>;
-<a href=#533 id=533 data-nosnippet>533</a>    <span class="prelude-val">Ok</span>(PathBuf::from(OsStr::from_bytes(<span class="kw-2">&amp;</span>bytes)))
-<a href=#534 id=534 data-nosnippet>534</a>}
-<a href=#535 id=535 data-nosnippet>535</a>
-<a href=#536 id=536 data-nosnippet>536</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>handle_split_dwarf&lt;<span class="lifetime">'data</span>&gt;(
-<a href=#537 id=537 data-nosnippet>537</a>    package: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>gimli::DwarfPackage&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;&gt;,
-<a href=#538 id=538 data-nosnippet>538</a>    stash: <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Stash,
-<a href=#539 id=539 data-nosnippet>539</a>    load: addr2line::SplitDwarfLoad&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;,
-<a href=#540 id=540 data-nosnippet>540</a>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;gimli::Dwarf&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;&gt;&gt; {
-<a href=#541 id=541 data-nosnippet>541</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(dwp) = package.as_ref() {
-<a href=#542 id=542 data-nosnippet>542</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cu)) = dwp.find_cu(load.dwo_id, <span class="kw-2">&amp;</span>load.parent) {
-<a href=#543 id=543 data-nosnippet>543</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(Arc::new(cu));
-<a href=#544 id=544 data-nosnippet>544</a>        }
+<a href=#531 id=531 data-nosnippet>531</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>handle_split_dwarf&lt;<span class="lifetime">'data</span>&gt;(
+<a href=#532 id=532 data-nosnippet>532</a>    package: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>gimli::DwarfPackage&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;&gt;,
+<a href=#533 id=533 data-nosnippet>533</a>    stash: <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Stash,
+<a href=#534 id=534 data-nosnippet>534</a>    load: addr2line::SplitDwarfLoad&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;,
+<a href=#535 id=535 data-nosnippet>535</a>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;gimli::Dwarf&lt;EndianSlice&lt;<span class="lifetime">'data</span>, Endian&gt;&gt;&gt;&gt; {
+<a href=#536 id=536 data-nosnippet>536</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(dwp) = package.as_ref() {
+<a href=#537 id=537 data-nosnippet>537</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cu)) = dwp.find_cu(load.dwo_id, <span class="kw-2">&amp;</span>load.parent) {
+<a href=#538 id=538 data-nosnippet>538</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(Arc::new(cu));
+<a href=#539 id=539 data-nosnippet>539</a>        }
+<a href=#540 id=540 data-nosnippet>540</a>    }
+<a href=#541 id=541 data-nosnippet>541</a>
+<a href=#542 id=542 data-nosnippet>542</a>    <span class="kw">let </span><span class="kw-2">mut </span>path = PathBuf::new();
+<a href=#543 id=543 data-nosnippet>543</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = load.comp_dir.as_ref() {
+<a href=#544 id=544 data-nosnippet>544</a>        path.push(OsStr::from_bytes(<span class="kw-2">&amp;</span>p));
 <a href=#545 id=545 data-nosnippet>545</a>    }
 <a href=#546 id=546 data-nosnippet>546</a>
-<a href=#547 id=547 data-nosnippet>547</a>    <span class="kw">let </span><span class="kw-2">mut </span>path = PathBuf::new();
-<a href=#548 id=548 data-nosnippet>548</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = load.comp_dir.as_ref() {
-<a href=#549 id=549 data-nosnippet>549</a>        path.push(convert_path(p).ok()<span class="question-mark">?</span>);
-<a href=#550 id=550 data-nosnippet>550</a>    }
-<a href=#551 id=551 data-nosnippet>551</a>
-<a href=#552 id=552 data-nosnippet>552</a>    path.push(convert_path(load.path.as_ref()<span class="question-mark">?</span>).ok()<span class="question-mark">?</span>);
-<a href=#553 id=553 data-nosnippet>553</a>
-<a href=#554 id=554 data-nosnippet>554</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(map_dwo) = <span class="kw">super</span>::mmap(<span class="kw-2">&amp;</span>path) {
-<a href=#555 id=555 data-nosnippet>555</a>        <span class="kw">let </span>map_dwo = stash.cache_mmap(map_dwo);
-<a href=#556 id=556 data-nosnippet>556</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(dwo) = Object::parse(map_dwo) {
-<a href=#557 id=557 data-nosnippet>557</a>            <span class="kw">return </span>gimli::Dwarf::load(|id| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, ()&gt; {
-<a href=#558 id=558 data-nosnippet>558</a>                <span class="kw">let </span>data = id
-<a href=#559 id=559 data-nosnippet>559</a>                    .dwo_name()
-<a href=#560 id=560 data-nosnippet>560</a>                    .and_then(|name| dwo.section(stash, name))
-<a href=#561 id=561 data-nosnippet>561</a>                    .unwrap_or(<span class="kw-2">&amp;</span>[]);
-<a href=#562 id=562 data-nosnippet>562</a>                <span class="prelude-val">Ok</span>(EndianSlice::new(data, Endian))
-<a href=#563 id=563 data-nosnippet>563</a>            })
-<a href=#564 id=564 data-nosnippet>564</a>            .ok()
-<a href=#565 id=565 data-nosnippet>565</a>            .map(|<span class="kw-2">mut </span>dwo_dwarf| {
-<a href=#566 id=566 data-nosnippet>566</a>                dwo_dwarf.make_dwo(<span class="kw-2">&amp;</span>load.parent);
-<a href=#567 id=567 data-nosnippet>567</a>                Arc::new(dwo_dwarf)
-<a href=#568 id=568 data-nosnippet>568</a>            });
-<a href=#569 id=569 data-nosnippet>569</a>        }
-<a href=#570 id=570 data-nosnippet>570</a>    }
-<a href=#571 id=571 data-nosnippet>571</a>
-<a href=#572 id=572 data-nosnippet>572</a>    <span class="prelude-val">None
-<a href=#573 id=573 data-nosnippet>573</a></span>}</code></pre></div></section></main></body></html>
+<a href=#547 id=547 data-nosnippet>547</a>    path.push(OsStr::from_bytes(<span class="kw-2">&amp;</span>load.path.as_ref()<span class="question-mark">?</span>));
+<a href=#548 id=548 data-nosnippet>548</a>
+<a href=#549 id=549 data-nosnippet>549</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(map_dwo) = <span class="kw">super</span>::mmap(<span class="kw-2">&amp;</span>path) {
+<a href=#550 id=550 data-nosnippet>550</a>        <span class="kw">let </span>map_dwo = stash.cache_mmap(map_dwo);
+<a href=#551 id=551 data-nosnippet>551</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(dwo) = Object::parse(map_dwo) {
+<a href=#552 id=552 data-nosnippet>552</a>            <span class="kw">return </span>gimli::Dwarf::load(|id| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, ()&gt; {
+<a href=#553 id=553 data-nosnippet>553</a>                <span class="kw">let </span>data = id
+<a href=#554 id=554 data-nosnippet>554</a>                    .dwo_name()
+<a href=#555 id=555 data-nosnippet>555</a>                    .and_then(|name| dwo.section(stash, name))
+<a href=#556 id=556 data-nosnippet>556</a>                    .unwrap_or(<span class="kw-2">&amp;</span>[]);
+<a href=#557 id=557 data-nosnippet>557</a>                <span class="prelude-val">Ok</span>(EndianSlice::new(data, Endian))
+<a href=#558 id=558 data-nosnippet>558</a>            })
+<a href=#559 id=559 data-nosnippet>559</a>            .ok()
+<a href=#560 id=560 data-nosnippet>560</a>            .map(|<span class="kw-2">mut </span>dwo_dwarf| {
+<a href=#561 id=561 data-nosnippet>561</a>                dwo_dwarf.make_dwo(<span class="kw-2">&amp;</span>load.parent);
+<a href=#562 id=562 data-nosnippet>562</a>                Arc::new(dwo_dwarf)
+<a href=#563 id=563 data-nosnippet>563</a>            });
+<a href=#564 id=564 data-nosnippet>564</a>        }
+<a href=#565 id=565 data-nosnippet>565</a>    }
+<a href=#566 id=566 data-nosnippet>566</a>
+<a href=#567 id=567 data-nosnippet>567</a>    <span class="prelude-val">None
+<a href=#568 id=568 data-nosnippet>568</a></span>}</code></pre></div></section></main></body></html>
