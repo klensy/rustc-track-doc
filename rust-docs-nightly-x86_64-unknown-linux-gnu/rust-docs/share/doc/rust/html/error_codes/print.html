@@ -674,6 +674,7 @@
 <li><a href="./E0800.html">E0800</a></li>
 <li><a href="./E0801.html">E0801</a></li>
 <li><a href="./E0802.html">E0802</a></li>
+<li><a href="./E0803.html">E0803</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0001"><a class="header" href="#error-code-e0001">Error code E0001</a></h1>
 <h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler">Note: this error code is no longer emitted by the compiler.</a></h4>
@@ -15733,6 +15734,52 @@ generic over at least one type or over more types, one of which is marked with
 layout.
 The only generic type or the type marked with <code>#[pointee]</code> has to be also
 marked as <code>?Sized</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0803"><a class="header" href="#error-code-e0803">Error code E0803</a></h1>
+<p>A trait implementation returns a reference without an
+explicit lifetime linking it to <code>self</code>.
+It commonly arises in generic trait implementations
+requiring explicit lifetime bounds.</p>
+<p>Erroneous code example:</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0803"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait DataAccess&lt;T&gt; {
+    fn get_ref(&amp;self) -&gt; T;
+}
+
+struct Container&lt;'a&gt; {
+    value: &amp;'a f64,
+}
+
+// Attempting to implement reference return
+impl&lt;'a&gt; DataAccess&lt;&amp;f64&gt; for Container&lt;'a&gt; {
+    fn get_ref(&amp;self) -&gt; &amp;f64 { // Error: Lifetime mismatch
+        self.value
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>The trait method returns &amp;f64 requiring an independent lifetime
+The struct Container&lt;'a&gt; carries lifetime parameter 'a
+The compiler cannot verify if the returned reference satisfies 'a constraints
+Solution
+Explicitly bind lifetimes to clarify constraints:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Modified trait with explicit lifetime binding
+trait DataAccess&lt;'a, T&gt; {
+    fn get_ref(&amp;'a self) -&gt; T;
+}
+
+struct Container&lt;'a&gt; {
+    value: &amp;'a f64,
+}
+
+// Correct implementation (bound lifetimes)
+impl&lt;'a&gt; DataAccess&lt;'a, &amp;'a f64&gt; for Container&lt;'a&gt; {
+    fn get_ref(&amp;'a self) -&gt; &amp;'a f64 {
+        self.value
+    }
+}
+<span class="boring">}</span></code></pre></pre>
 
                     </main>
 
