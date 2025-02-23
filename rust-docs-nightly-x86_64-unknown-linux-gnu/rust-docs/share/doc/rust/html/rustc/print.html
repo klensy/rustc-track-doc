@@ -1970,7 +1970,7 @@ false positives that can cause confusion.</p>
 <h3 id="example-8"><a class="header" href="#example-8">Example</a></h3>
 <pre><code class="language-rust">#![warn(ffi_unwind_calls)]
 
-extern "C-unwind" {
+unsafe extern "C-unwind" {
     fn foo();
 }
 
@@ -2192,22 +2192,21 @@ If precise-capturing <code>use&lt;...&gt;</code> syntax is used, and the set of 
 that are captures are <em>equal</em> to the set of parameters in scope, then
 the syntax is redundant, and can be removed.</p>
 <h3 id="example-12"><a class="header" href="#example-12">Example</a></h3>
-<pre><code class="language-rust compile_fail"><span class="boring">#![feature(lifetime_capture_rules_2024)]
-</span><span class="boring">#![deny(impl_trait_redundant_captures)]
+<pre><code class="language-rust edition2024 compile_fail"><span class="boring">#![deny(impl_trait_redundant_captures)]
 </span>fn test&lt;'a&gt;(x: &amp;'a i32) -&gt; impl Sized + use&lt;'a&gt; { x }</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">error: all possible in-scope parameters are already captured, so `use&lt;...&gt;` syntax is redundant
- --&gt; lint_example.rs:4:28
+ --&gt; lint_example.rs:3:28
   |
-4 | fn test&lt;'a&gt;(x: &amp;'a i32) -&gt; impl Sized + use&lt;'a&gt; { x }
+3 | fn test&lt;'a&gt;(x: &amp;'a i32) -&gt; impl Sized + use&lt;'a&gt; { x }
   |                            ^^^^^^^^^^^^^-------
   |                                         |
   |                                         help: remove the `use&lt;...&gt;` syntax
   |
 note: the lint level is defined here
- --&gt; lint_example.rs:2:9
+ --&gt; lint_example.rs:1:9
   |
-2 | #![deny(impl_trait_redundant_captures)]
+1 | #![deny(impl_trait_redundant_captures)]
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
@@ -2583,7 +2582,7 @@ projects may want to enforce everything to be documented.</p>
 <h2 id="missing-unsafe-on-extern"><a class="header" href="#missing-unsafe-on-extern">missing-unsafe-on-extern</a></h2>
 <p>The <code>missing_unsafe_on_extern</code> lint detects missing unsafe keyword on extern declarations.</p>
 <h3 id="example-23"><a class="header" href="#example-23">Example</a></h3>
-<pre><code class="language-rust">#![warn(missing_unsafe_on_extern)]
+<pre><code class="language-rust edition2021">#![warn(missing_unsafe_on_extern)]
 #![allow(dead_code)]
 
 extern "C" {
@@ -3649,7 +3648,7 @@ Eventually it is desired for this to become warn-by-default.</p>
 <p>The <code>unsafe_attr_outside_unsafe</code> lint detects a missing unsafe keyword
 on attributes considered unsafe.</p>
 <h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
-<pre><code class="language-rust">#![warn(unsafe_attr_outside_unsafe)]
+<pre><code class="language-rust edition2021">#![warn(unsafe_attr_outside_unsafe)]
 
 #[no_mangle]
 extern "C" fn foo() {}
@@ -4728,12 +4727,12 @@ in parentheses.</p>
 has been declared with the same name but different types.</p>
 <h3 id="example-70"><a class="header" href="#example-70">Example</a></h3>
 <pre><code class="language-rust">mod m {
-    extern "C" {
+    unsafe extern "C" {
         fn foo();
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     fn foo(_: u32);
 }</code></pre>
 <p>This will produce:</p>
@@ -5600,7 +5599,7 @@ the downstream use site.</p>
 <p>The <code>improper_ctypes</code> lint detects incorrect use of types in foreign
 modules.</p>
 <h3 id="example-96"><a class="header" href="#example-96">Example</a></h3>
-<pre><code class="language-rust">extern "C" {
+<pre><code class="language-rust">unsafe extern "C" {
     static STATIC: String;
 }</code></pre>
 <p>This will produce:</p>
@@ -6146,20 +6145,16 @@ unsound. Instead of depending on the fallback, you should specify the type expli
 <p>The <code>no_mangle_generic_items</code> lint detects generic items that must be
 mangled.</p>
 <h3 id="example-114"><a class="header" href="#example-114">Example</a></h3>
-<pre><code class="language-rust">#[no_mangle]
-fn foo&lt;T&gt;(t: T) {
-
-}</code></pre>
+<pre><code class="language-rust">#[unsafe(no_mangle)]
+fn foo&lt;T&gt;(t: T) {}</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: functions generic over types or consts must be mangled
  --&gt; lint_example.rs:3:1
   |
-2 |   #[no_mangle]
-  |   ------------ help: remove this attribute
-3 | / fn foo&lt;T&gt;(t: T) {
-4 | |
-5 | | }
-  | |_^
+2 | #[unsafe(no_mangle)]
+  | -------------------- help: remove this attribute
+3 | fn foo&lt;T&gt;(t: T) {}
+  | ^^^^^^^^^^^^^^^^^^
   |
   = note: `#[warn(no_mangle_generic_items)]` on by default
 
@@ -7571,7 +7566,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-02-21; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-02-22; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -7583,7 +7578,7 @@ annotation will function as a no-op.</p>
 <p>The <code>uninhabited_static</code> lint detects uninhabited statics.</p>
 <h3 id="example-153"><a class="header" href="#example-153">Example</a></h3>
 <pre><code class="language-rust">enum Void {}
-extern {
+unsafe extern {
     static EXTERN: Void;
 }</code></pre>
 <p>This will produce:</p>
@@ -7819,7 +7814,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-02-21; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-02-22; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -9363,7 +9358,7 @@ the future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-02-21; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-02-22; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
