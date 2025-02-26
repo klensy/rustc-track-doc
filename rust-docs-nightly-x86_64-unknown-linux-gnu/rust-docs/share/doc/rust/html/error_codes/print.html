@@ -2333,12 +2333,8 @@ fn main() {
 
 <span class="boring">fn main() {
 </span>#[rustc_intrinsic]
-#[rustc_intrinsic_must_be_overridden]
-fn size_of&lt;T, U&gt;() -&gt; usize // error: intrinsic has wrong number
-                            //        of type parameters
-{
-    loop {}
-}
+fn size_of&lt;T, U&gt;() -&gt; usize; // error: intrinsic has wrong number
+                             //        of type parameters
 <span class="boring">}</span></code></pre></pre>
 <p>Please check that you provided the right number of type parameters
 and verify with the function declaration in the Rust source code.
@@ -2349,11 +2345,7 @@ Example:</p>
 
 <span class="boring">fn main() {
 </span>#[rustc_intrinsic]
-#[rustc_intrinsic_must_be_overridden]
-fn size_of&lt;T&gt;() -&gt; usize // ok!
-{
-    loop {}
-}
+fn size_of&lt;T&gt;() -&gt; usize; // ok!
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0106"><a class="header" href="#error-code-e0106">Error code E0106</a></h1>
 <p>This error indicates that a lifetime is missing from a type. If it is an error
@@ -6135,8 +6127,8 @@ fn spawn&lt;F: Future + Send + 'static&gt;(future: F) {
 capture closed-over data by reference. For more information, see
 <a href="https://rust-lang.github.io/async-book/03_async_await/01_chapter.html">https://rust-lang.github.io/async-book/03_async_await/01_chapter.html</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0374"><a class="header" href="#error-code-e0374">Error code E0374</a></h1>
-<p><code>CoerceUnsized</code> was implemented on a struct which does not contain a field with
-an unsized type.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> was implemented on a struct which does not
+contain a field that is being unsized.</p>
 <p>Example of erroneous code:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0374"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
@@ -6147,47 +6139,23 @@ struct Foo&lt;T: ?Sized&gt; {
     a: i32,
 }
 
-// error: Struct `Foo` has no unsized fields that need `CoerceUnsized`.
+// error: Struct `Foo` has no unsized fields that need to be coerced.
 impl&lt;T, U&gt; CoerceUnsized&lt;Foo&lt;U&gt;&gt; for Foo&lt;T&gt;
     where T: CoerceUnsized&lt;U&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p>An <a href="https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait">unsized type</a> is any type where the compiler does not know the length or
-alignment of at compile time. Any struct containing an unsized type is also
-unsized.</p>
-<p><code>CoerceUnsized</code> is used to coerce one struct containing an unsized type
-into another struct containing a different unsized type. If the struct
-doesn't have any fields of unsized types then you don't need explicit
-coercion to get the types you want. To fix this you can either
-not try to implement <code>CoerceUnsized</code> or you can add a field that is
-unsized to the struct.</p>
-<p>Example:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![feature(coerce_unsized)]
-<span class="boring">fn main() {
-</span>use std::ops::CoerceUnsized;
-
-// We don't need to impl `CoerceUnsized` here.
-struct Foo {
-    a: i32,
-}
-
-// We add the unsized type field to the struct.
-struct Bar&lt;T: ?Sized&gt; {
-    a: i32,
-    b: T,
-}
-
-// The struct has an unsized field so we can implement
-// `CoerceUnsized` for it.
-impl&lt;T, U&gt; CoerceUnsized&lt;Bar&lt;U&gt;&gt; for Bar&lt;T&gt;
-    where T: CoerceUnsized&lt;U&gt; {}
-<span class="boring">}</span></code></pre></pre>
-<p>Note that <code>CoerceUnsized</code> is mainly used by smart pointers like <code>Box</code>, <code>Rc</code>
-and <code>Arc</code> to be able to mark that they can coerce unsized types that they
-are pointing at.</p>
+<p><code>CoerceUnsized</code> is used to coerce structs that have a field that can be unsized,
+like a custom <code>MyBox&lt;T&gt;</code> being unsized to <code>MyBox&lt;dyn Trait&gt;</code>. <code>DispatchFromDyn</code>
+is used to dispatch from <code>MyBox&lt;dyn Trait&gt;</code> to <code>MyBox&lt;Self&gt;</code> in a dyn-compatible
+trait.</p>
+<p>If the struct doesn't have any fields of unsized types then there is no
+meaningful way to implement <code>CoerceUnsized</code> or <code>DispatchFromDyn</code>, since
+there is no coercion taking place.</p>
+<p>Note that <code>CoerceUnsized</code> and <code>DispatchFromDyn</code> is mainly used by smart pointers
+like <code>Box</code>, <code>Rc</code> and <code>Arc</code> to be able to mark that they can coerce unsized types
+that they are pointing at.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0375"><a class="header" href="#error-code-e0375">Error code E0375</a></h1>
-<p><code>CoerceUnsized</code> was implemented on a struct which contains more than one field
-with an unsized type.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> was implemented on a struct which contains
+more than one field that is being unsized.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0375"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
@@ -6203,42 +6171,21 @@ struct Foo&lt;T: ?Sized, U: ?Sized&gt; {
 // error: Struct `Foo` has more than one unsized field.
 impl&lt;T, U&gt; CoerceUnsized&lt;Foo&lt;U, T&gt;&gt; for Foo&lt;T, U&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p>A struct with more than one field containing an unsized type cannot implement
-<code>CoerceUnsized</code>. This only occurs when you are trying to coerce one of the
-types in your struct to another type in the struct. In this case we try to
-impl <code>CoerceUnsized</code> from <code>T</code> to <code>U</code> which are both types that the struct
-takes. An <a href="https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait">unsized type</a> is any type that the compiler doesn't know the
-length or alignment of at compile time. Any struct containing an unsized type
-is also unsized.</p>
-<p><code>CoerceUnsized</code> only allows for coercion from a structure with a single
-unsized type field to another struct with a single unsized type field.
-In fact Rust only allows for a struct to have one unsized type in a struct
-and that unsized type must be the last field in the struct. So having two
-unsized types in a single struct is not allowed by the compiler. To fix this
-use only one field containing an unsized type in the struct and then use
-multiple structs to manage each unsized type field you need.</p>
-<p>Example:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![feature(coerce_unsized)]
-<span class="boring">fn main() {
-</span>use std::ops::CoerceUnsized;
-
-struct Foo&lt;T: ?Sized&gt; {
-    a: i32,
-    b: T,
-}
-
-impl &lt;T, U&gt; CoerceUnsized&lt;Foo&lt;U&gt;&gt; for Foo&lt;T&gt;
-    where T: CoerceUnsized&lt;U&gt; {}
-
-fn coerce_foo&lt;T: CoerceUnsized&lt;U&gt;, U&gt;(t: T) -&gt; Foo&lt;U&gt; {
-    Foo { a: 12i32, b: t } // we use coercion to get the `Foo&lt;U&gt;` type we need
-}
-<span class="boring">}</span></code></pre></pre>
+<p><code>CoerceUnsized</code> is used to coerce structs that have a field that can be unsized,
+like a custom <code>MyBox&lt;T&gt;</code> being unsized to <code>MyBox&lt;dyn Trait&gt;</code>. <code>DispatchFromDyn</code>
+is used to dispatch from <code>MyBox&lt;dyn Trait&gt;</code> to <code>MyBox&lt;Self&gt;</code> in a dyn-compatible
+trait.</p>
+<p>If the struct has multiple fields that must be unsized, then the compiler has no
+way to generate a valid implementation of <code>CoerceUnsized</code> or <code>DispatchFromDyn</code>.</p>
+<p>Note that <code>CoerceUnsized</code> and <code>DispatchFromDyn</code> is mainly used by smart pointers
+like <code>Box</code>, <code>Rc</code> and <code>Arc</code> to be able to mark that they can coerce unsized types
+that they are pointing at.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0376"><a class="header" href="#error-code-e0376">Error code E0376</a></h1>
-<p><code>CoerceUnsized</code> was implemented on something that isn't a struct.</p>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-38"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-38">Note: this error code is no longer emitted by the compiler.</a></h4>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> was implemented between two types that
+are not structs.</p>
 <p>Erroneous code example:</p>
-<pre><pre class="playground"><code class="language-rust compile_fail E0376"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust compile_fail E0377"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
 <span class="boring">fn main() {
 </span>use std::ops::CoerceUnsized;
@@ -6250,34 +6197,10 @@ struct Foo&lt;T: ?Sized&gt; {
 // error: The type `U` is not a struct
 impl&lt;T, U&gt; CoerceUnsized&lt;U&gt; for Foo&lt;T&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p><code>CoerceUnsized</code> can only be implemented for a struct. Unsized types are
-already able to be coerced without an implementation of <code>CoerceUnsized</code>
-whereas a struct containing an unsized type needs to know the unsized type
-field it's containing is able to be coerced. An <a href="https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait">unsized type</a>
-is any type that the compiler doesn't know the length or alignment of at
-compile time. Any struct containing an unsized type is also unsized.</p>
-<p>The <code>CoerceUnsized</code> trait takes a struct type. Make sure the type you are
-providing to <code>CoerceUnsized</code> is a struct with only the last field containing an
-unsized type.</p>
-<p>Example:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![feature(coerce_unsized)]
-<span class="boring">fn main() {
-</span>use std::ops::CoerceUnsized;
-
-struct Foo&lt;T&gt; {
-    a: T,
-}
-
-// The `Foo&lt;U&gt;` is a struct so `CoerceUnsized` can be implemented
-impl&lt;T, U&gt; CoerceUnsized&lt;Foo&lt;U&gt;&gt; for Foo&lt;T&gt; where T: CoerceUnsized&lt;U&gt; {}
-<span class="boring">}</span></code></pre></pre>
-<p>Note that in Rust, structs can only contain an unsized type if the field
-containing the unsized type is the last and only unsized type field in the
-struct.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> can only be implemented between structs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0377"><a class="header" href="#error-code-e0377">Error code E0377</a></h1>
-<p>The trait <code>CoerceUnsized</code> may only be implemented for a coercion between
-structures with the same definition.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> may only be implemented between structs
+of the same type.</p>
 <p>Example of erroneous code:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0377"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
@@ -6296,13 +6219,16 @@ pub struct Bar&lt;T: ?Sized&gt; {
 //        between structures with the same definition
 impl&lt;T, U&gt; CoerceUnsized&lt;Bar&lt;U&gt;&gt; for Foo&lt;T&gt; where T: CoerceUnsized&lt;U&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p>When attempting to implement <code>CoerceUnsized</code>, the <code>impl</code> signature must look
-like: <code>impl CoerceUnsized&lt;Type&lt;U&gt;&gt; for Type&lt;T&gt; where T: CoerceUnsized&lt;U&gt;</code>;
-the <em>implementer</em> and <em><code>CoerceUnsized</code> type parameter</em> must be the same
-type. In this example, <code>Bar</code> and <code>Foo</code> (even though structurally identical)
-are <em>not</em> the same type and are rejected. Learn more about the <code>CoerceUnsized</code>
-trait and DST coercion in
-<a href="../std/ops/trait.CoerceUnsized.html">the <code>CoerceUnsized</code> docs</a>.</p>
+<p><code>CoerceUnsized</code> is used to coerce structs that have a field that can be unsized,
+like a custom <code>MyBox&lt;T&gt;</code> being unsized to <code>MyBox&lt;dyn Trait&gt;</code>. <code>DispatchFromDyn</code>
+is used to dispatch from <code>MyBox&lt;dyn Trait&gt;</code> to <code>MyBox&lt;Self&gt;</code> in a dyn-compatible
+trait.</p>
+<p>The compiler cannot support coercions between structs of different types, so
+a valid implementation of <code>CoerceUnsized</code> or <code>DispatchFromDyn</code> should be
+implemented between the same struct with different generic parameters.</p>
+<p>Note that <code>CoerceUnsized</code> and <code>DispatchFromDyn</code> is mainly used by smart pointers
+like <code>Box</code>, <code>Rc</code> and <code>Arc</code> to be able to mark that they can coerce unsized types
+that they are pointing at.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0378"><a class="header" href="#error-code-e0378">Error code E0378</a></h1>
 <p>The <code>DispatchFromDyn</code> trait was implemented on something which is not a pointer
 or a newtype wrapper around a pointer.</p>
@@ -6481,7 +6407,7 @@ that at most one writer or multiple readers can access the data at any one time.
 <p>If you wish to learn more about ownership in Rust, start with the
 <a href="https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html">Understanding Ownership</a> chapter in the Book.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0383"><a class="header" href="#error-code-e0383">Error code E0383</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-38"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-38">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-39"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-39">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>This error occurs when an attempt is made to partially reinitialize a
 structure that is currently uninitialized.</p>
 <p>For example, this can happen when a drop has taken place:</p>
@@ -6533,7 +6459,7 @@ For example:</p>
     let x = 5;
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0386"><a class="header" href="#error-code-e0386">Error code E0386</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-39"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-39">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-40"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-40">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>This error occurs when an attempt is made to mutate the target of a mutable
 reference stored inside an immutable container.</p>
 <p>For example, this can happen when storing a <code>&amp;mut</code> inside an immutable <code>Box</code>:</p>
@@ -6561,7 +6487,7 @@ let y: Box&lt;Cell&lt;_&gt;&gt; = Box::new(Cell::new(x));
 y.set(2);
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0387"><a class="header" href="#error-code-e0387">Error code E0387</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-40"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-40">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-41"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-41">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>This error occurs when an attempt is made to mutate or mutably reference data
 that a closure has captured immutably.</p>
 <p>Erroneous code example:</p>
@@ -6611,9 +6537,9 @@ fn mutable() {
 <span class="boring">}</span></code></pre></pre>
 <p>You can read more in the API documentation for <a href="https://doc.rust-lang.org/std/cell/">Cell</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0388"><a class="header" href="#error-code-e0388">Error code E0388</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-41"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-41">Note: this error code is no longer emitted by the compiler.</a></h4>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0389"><a class="header" href="#error-code-e0389">Error code E0389</a></h1>
 <h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-42"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-42">Note: this error code is no longer emitted by the compiler.</a></h4>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0389"><a class="header" href="#error-code-e0389">Error code E0389</a></h1>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-43"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-43">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An attempt was made to mutate data using a non-mutable reference. This
 commonly occurs when attempting to assign to a non-mutable reference of a
 mutable reference (<code>&amp;(&amp;mut T)</code>).</p>
@@ -6805,7 +6731,7 @@ defaulted parameter will fix this issue. Fixed example:</p>
 fn together_we_will_rule_the_galaxy(son: &amp;dyn A&lt;i32&gt;) {} // Ok!
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0398"><a class="header" href="#error-code-e0398">Error code E0398</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-43"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-43">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-44"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-44">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>In Rust 1.3, the default object lifetime bounds are expected to change, as
 described in <a href="https://github.com/rust-lang/rfcs/blob/master/text/1156-adjust-default-object-bounds.md">RFC 1156</a>. You are getting a warning because the compiler
 thinks it is possible that this change will cause a compilation error in your
@@ -6834,7 +6760,7 @@ and <code>foo</code> is defined as follows:</p>
 <p>This explicitly states that you expect the trait object <code>SomeTrait</code> to contain
 references (with a maximum lifetime of <code>'a</code>).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0399"><a class="header" href="#error-code-e0399">Error code E0399</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-44"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-44">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-45"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-45">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>You implemented a trait, overriding one or more of its associated types but did
 not reimplement its default methods.</p>
 <p>Example of erroneous code:</p>
@@ -7767,7 +7693,7 @@ members of the trait in question.</p>
 impl Foo for i32 {}
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0439"><a class="header" href="#error-code-e0439">Error code E0439</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-45"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-45">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-46"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-46">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The length of the platform-intrinsic function <code>simd_shuffle</code> wasn't specified.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">#![feature(platform_intrinsics)]
@@ -7784,7 +7710,7 @@ extern "platform-intrinsic" {
     fn simd_shuffle8&lt;A,B&gt;(a: A, b: A, c: [u32; 8]) -&gt; B;
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0445"><a class="header" href="#error-code-e0445">Error code E0445</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-46"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-46">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-47"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-47">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A private trait was used on a public type parameter bound.</p>
 <p>Previously erroneous code examples:</p>
 <pre><pre class="playground"><code class="language-rust">trait Foo {
@@ -7852,7 +7778,7 @@ impl PubTr for u8 {
 
 fn main() {}</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0447"><a class="header" href="#error-code-e0447">Error code E0447</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-47"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-47">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-48"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-48">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The <code>pub</code> keyword was used inside a function.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -7865,7 +7791,7 @@ fn main() {}</code></pre></pre>
 items does not impact outer code. So using the <code>pub</code> keyword in this context
 is invalid.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0448"><a class="header" href="#error-code-e0448">Error code E0448</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-48"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-48">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-49"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-49">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The <code>pub</code> keyword was used inside a public enum.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -8058,7 +7984,7 @@ extern "C" {}
 <p>Learn more in the <a href="https://doc.rust-lang.org/reference/attributes.html#conditional-compilation">Conditional Compilation</a> section
 of the Reference.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0457"><a class="header" href="#error-code-e0457">Error code E0457</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-49"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-49">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-50"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-50">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>Plugin <code>..</code> only found in rlib format, but must be available in dylib format.</p>
 <p>Erroneous code example:</p>
 <p><code>rlib-plugin.rs</code></p>
@@ -8395,7 +8321,7 @@ subtype of <code>'a</code>. This error can currently only be encountered with th
 <code>CoerceUnsized</code> trait which allows custom coercions of unsized types behind a
 smart pointer to be implemented.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0477"><a class="header" href="#error-code-e0477">Error code E0477</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-50"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-50">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-51"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-51">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The type does not fulfill the required lifetime.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -8466,7 +8392,7 @@ struct Prince&lt;'kiss, 'SnowWhite: 'kiss&gt; { // You say here that 'SnowWhite
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0482"><a class="header" href="#error-code-e0482">Error code E0482</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-51"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-51">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-52"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-52">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A lifetime of a returned value does not outlive the function call.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0700"><span class="boring">#![allow(unused)]
@@ -8670,7 +8596,7 @@ static FOO: Foo = Foo { field1: DropType::A }; // We initialize all fields
                                                // by hand.
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0495"><a class="header" href="#error-code-e0495">Error code E0495</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-52"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-52">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-53"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-53">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A lifetime cannot be determined in the given situation.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -8735,7 +8661,7 @@ impl&lt;'a&gt; Foo&lt;'a&gt; {
 fn main() {
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0497"><a class="header" href="#error-code-e0497">Error code E0497</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-53"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-53">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-54"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-54">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A stability attribute was used outside of the standard library.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -8747,7 +8673,7 @@ fn foo() {}
 <p>It is not possible to use stability attributes outside of the standard library.
 Also, for now, it is not possible to write deprecation messages either.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0498"><a class="header" href="#error-code-e0498">Error code E0498</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-54"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-54">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-55"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-55">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The <code>plugin</code> attribute was malformed.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (E0498 is no longer emitted)">#![feature(plugin)]
@@ -8964,7 +8890,7 @@ the value:</p>
 <p>For more information on Rust's ownership system, take a look at the
 <a href="https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html">References &amp; Borrowing</a> section of the Book.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0504"><a class="header" href="#error-code-e0504">Error code E0504</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-55"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-55">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-56"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-56">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>This error occurs when an attempt is made to move a borrowed variable into a
 closure.</p>
 <p>Erroneous code example:</p>
@@ -9755,7 +9681,7 @@ Rust itself. This includes special traits (like <code>Copy</code> and <code>Size
 how the compiler behaves, as well as special functions that may be automatically
 invoked (such as the handler for out-of-bounds accesses when indexing a slice).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0523"><a class="header" href="#error-code-e0523">Error code E0523</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-56"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-56">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-57"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-57">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The compiler found multiple library files with the requested crate name.</p>
 <pre><pre class="playground"><code class="language-rust compile_fail">// aux-build:crateresolve-1.rs
 // aux-build:crateresolve-2.rs
@@ -10517,7 +10443,7 @@ fn _deprecated_fn() {}
 of the Book and the <a href="https://rustc-dev-guide.rust-lang.org/stability.html">Stability attributes</a> section of the
 Rustc Dev Guide for more details.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0550"><a class="header" href="#error-code-e0550">Error code E0550</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-57"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-57">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-58"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-58">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>More than one <code>deprecated</code> attribute has been put on an item.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -10533,7 +10459,7 @@ fn the_banished() {}
 fn the_banished() {} // ok!
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0551"><a class="header" href="#error-code-e0551">Error code E0551</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-58"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-58">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-59"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-59">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>An invalid meta-item was used inside an attribute.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0539"><span class="boring">#![allow(unused)]
@@ -11419,7 +11345,7 @@ let mut ss = SolarSystem { earth: 3 }; // declaring `ss` as mutable
 ss.earth = 2; // ok!
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0595"><a class="header" href="#error-code-e0595">Error code E0595</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-59"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-59">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-60"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-60">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>Closures cannot mutate immutable captured variables.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0594"><span class="boring">#![allow(unused)]
@@ -11892,7 +11818,7 @@ fn i_am_a_function() {}
 i_am_a_function();
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0619"><a class="header" href="#error-code-e0619">Error code E0619</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-60"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-60">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-61"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-61">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The type-checker needed to know the type of an expression, but that type had not
 yet been inferred.</p>
 <p>Erroneous code example:</p>
@@ -12316,7 +12242,7 @@ fn main() {
     foo(|x: i32| {});
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0632"><a class="header" href="#error-code-e0632">Error code E0632</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-61"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-61">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-62"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-62">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An explicit generic argument was provided when calling a function that
 uses <code>impl Trait</code> in argument position.</p>
 <p>Erroneous code example:</p>
@@ -12338,7 +12264,7 @@ bar::&lt;_, _&gt;(0i32, "abc".to_string());
 bar(0i32, "abc".to_string());
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0633"><a class="header" href="#error-code-e0633">Error code E0633</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-62"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-62">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-63"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-63">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The <code>unwind</code> attribute was malformed.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail">#![feature(unwind_attributes)]
@@ -12511,7 +12437,7 @@ let ns = NormalStruct { first_field: 640, second_field: 480 }; // error!</code><
 crate's documentation.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0640"><a class="header" href="#error-code-e0640">Error code E0640</a></h1>
 <h4 id="this-error-code-is-internal-to-the-compiler-and-will-not-be-emitted-with-normal-rust-code-1"><a class="header" href="#this-error-code-is-internal-to-the-compiler-and-will-not-be-emitted-with-normal-rust-code-1">This error code is internal to the compiler and will not be emitted with normal Rust code.</a></h4>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-63"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-63">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-64"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-64">Note: this error code is no longer emitted by the compiler.</a></h4>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0641"><a class="header" href="#error-code-e0641">Error code E0641</a></h1>
 <p>Attempted to cast to/from a pointer with an unknown kind.</p>
 <p>Erroneous code example:</p>
@@ -12591,7 +12517,7 @@ reference its own <em>type</em>.</p>
                             // a where clause
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0647"><a class="header" href="#error-code-e0647">Error code E0647</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-64"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-64">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-65"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-65">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The <code>start</code> function was defined with a where clause.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0648"><a class="header" href="#error-code-e0648">Error code E0648</a></h1>
 <p>An <code>export_name</code> attribute contains null characters (<code>\0</code>).</p>
@@ -12699,18 +12625,18 @@ fn main() {
     crate::collider::earth::foo(); // ok!
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0660"><a class="header" href="#error-code-e0660">Error code E0660</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-65"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-65">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-66"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-66">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>The argument to the <code>llvm_asm</code> macro is not well-formed.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">llvm_asm!("nop" "nop");</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0661"><a class="header" href="#error-code-e0661">Error code E0661</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-66"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-66">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-67"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-67">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An invalid syntax was passed to the second argument of an <code>llvm_asm</code> macro line.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">let a;
 llvm_asm!("nop" : "r"(a));</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0662"><a class="header" href="#error-code-e0662">Error code E0662</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-67"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-67">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-68"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-68">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An invalid input operand constraint was passed to the <code>llvm_asm</code> macro
 (third line).</p>
 <p>Erroneous code example:</p>
@@ -12719,7 +12645,7 @@ llvm_asm!("nop" : "r"(a));</code></pre>
           : "=test"("a")
          );</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0663"><a class="header" href="#error-code-e0663">Error code E0663</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-68"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-68">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-69"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-69">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An invalid input operand constraint was passed to the <code>llvm_asm</code> macro
 (third line).</p>
 <p>Erroneous code example:</p>
@@ -12728,7 +12654,7 @@ llvm_asm!("nop" : "r"(a));</code></pre>
           : "+test"("a")
          );</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0664"><a class="header" href="#error-code-e0664">Error code E0664</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-69"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-69">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-70"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-70">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A clobber was surrounded by braces in the <code>llvm_asm</code> macro.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">llvm_asm!("mov $$0x200, %eax"
@@ -12802,7 +12728,7 @@ fn foo&lt;T: MyInnerTrait&gt;(
 ) {}
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0667"><a class="header" href="#error-code-e0667">Error code E0667</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-70"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-70">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-71"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-71">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>impl Trait</code> is not allowed in path parameters.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (removed error code)">fn some_fn(mut x: impl Iterator) -&gt; &lt;impl Iterator&gt;::Item { // error!
@@ -12814,7 +12740,7 @@ equivalent, you can do this instead:</p>
     x.next().unwrap()
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0668"><a class="header" href="#error-code-e0668">Error code E0668</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-71"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-71">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-72"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-72">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>Malformed inline assembly rejected by LLVM.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">#![feature(llvm_asm)]
@@ -12832,7 +12758,7 @@ assembly call.</p>
 <p>In particular, it can happen if you forgot the closing bracket of a register
 constraint (see issue #51430), like in the previous code example.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0669"><a class="header" href="#error-code-e0669">Error code E0669</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-72"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-72">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-73"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-73">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>Cannot convert inline assembly operand to a single LLVM value.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">#![feature(llvm_asm)]
@@ -12857,7 +12783,7 @@ coerced into a register and thus we must fail with an error.</p>
 <span class="boring">}</span></code></pre></pre>
 <p>Switch to the Rust 2018 edition to use <code>async fn</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0671"><a class="header" href="#error-code-e0671">Error code E0671</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-73"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-73">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-74"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-74">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>Const parameters cannot depend on type parameters.
 The following is therefore invalid:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0770"><span class="boring">#![allow(unused)]
@@ -12867,7 +12793,7 @@ The following is therefore invalid:</p>
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0687"><a class="header" href="#error-code-e0687">Error code E0687</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-74"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-74">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-75"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-75">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>In-band lifetimes cannot be used in <code>fn</code>/<code>Fn</code> syntax.</p>
 <p>Erroneous code examples:</p>
 <pre><code class="language-rust ignore (feature got removed)">#![feature(in_band_lifetimes)]
@@ -12900,7 +12826,7 @@ impl&lt;'a&gt; Foo&lt;'a&gt; {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0688"><a class="header" href="#error-code-e0688">Error code E0688</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-75"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-75">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-76"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-76">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>In-band lifetimes were mixed with explicit lifetime binders.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (feature got removed)">#![feature(in_band_lifetimes)]
@@ -12990,7 +12916,7 @@ struct LengthWithUnit&lt;U&gt; {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0691"><a class="header" href="#error-code-e0691">Error code E0691</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-76"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-76">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-77"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-77">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A struct, enum, or union with the <code>repr(transparent)</code> representation hint
 contains a zero-sized field that requires non-trivial alignment.</p>
 <p>Erroneous code example:</p>
@@ -13184,7 +13110,7 @@ which would consist only of variables with a static lifetime. Given
 this it would be better to use a proper function. The easiest fix
 is to remove the <code>static</code> keyword.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0698"><a class="header" href="#error-code-e0698">Error code E0698</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-77"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-77">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-78"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-78">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>When using coroutines (or async) all type variables must be bound so a
 coroutine can be constructed.</p>
 <p>Erroneous code example:</p>
@@ -13209,7 +13135,7 @@ async fn foo() {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0699"><a class="header" href="#error-code-e0699">Error code E0699</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-78"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-78">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-79"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-79">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A method was called on a raw pointer whose inner type wasn't completely known.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail edition2018"><span class="boring">#![deny(warnings)]
@@ -13326,7 +13252,7 @@ used:</p>
 <span class="boring">fn main() {}</span></code></pre></pre>
 <p>For more information see the Rust Reference on <a href="https://doc.rust-lang.org/reference/visibility-and-privacy.html">Visibility</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0705"><a class="header" href="#error-code-e0705">Error code E0705</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-79"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-79">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-80"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-80">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A <code>#![feature]</code> attribute was used for a feature that is stable in the
 current edition, but not in all editions.</p>
 <p>Erroneous code example:</p>
@@ -13338,7 +13264,7 @@ current edition, but not in all editions.</p>
                                // included in the Rust 2018 edition
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0706"><a class="header" href="#error-code-e0706">Error code E0706</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-80"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-80">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-81"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-81">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>async fn</code>s are not yet supported in traits in Rust.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore edition2018">trait T {
@@ -13379,7 +13305,7 @@ functionality in the public API of a low-level function that is expected to be
 called millions of times a second.</p>
 <p>You might be interested in visiting the <a href="https://rust-lang.github.io/async-book/07_workarounds/05_async_in_traits.html">async book</a> for further information.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0708"><a class="header" href="#error-code-e0708">Error code E0708</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-81"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-81">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-82"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-82">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>async</code> non-<code>move</code> closures with parameters are currently not supported.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">fn main() {
@@ -13689,7 +13615,7 @@ pub fn something() {}
 <span class="boring">}</span></code></pre></pre>
 <p>See <a href="https://rust-lang.github.io/rfcs/2412-optimize-attr.html">RFC 2412</a> for more details.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0724"><a class="header" href="#error-code-e0724">Error code E0724</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-82"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-82">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-83"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-83">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>#[ffi_returns_twice]</code> was used on something other than a foreign function
 declaration.</p>
 <p>Erroneous code example:</p>
@@ -13851,7 +13777,7 @@ fn bar(x: u8) -&gt; impl Future&lt;Output = u8&gt; {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0729"><a class="header" href="#error-code-e0729">Error code E0729</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-83"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-83">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-84"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-84">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>Support for Non-Lexical Lifetimes (NLL) has been included in the Rust compiler
 since 1.31, and has been enabled on the 2015 edition since 1.36. The new borrow
 checker for NLL uncovered some bugs in the old borrow checker, which in some
@@ -14136,7 +14062,7 @@ fn main() {}</code></pre></pre>
 function (like <code>printf</code> in C). The equivalent in Rust would be to use macros
 directly (like <code>println!</code> for example).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0744"><a class="header" href="#error-code-e0744">Error code E0744</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-84"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-84">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-85"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-85">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>An unsupported expression was used inside a const context.</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (removed error code)">const _: i32 = {
@@ -14513,7 +14439,7 @@ about <a href="https://doc.rust-lang.org/nightly/unstable-book/language-features
 /*! I am also terminated! */
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0759"><a class="header" href="#error-code-e0759">Error code E0759</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-85"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-85">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-86"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-86">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>Return type involving a trait did not require <code>'static</code> lifetime.</p>
 <p>Erroneous code examples:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
@@ -14568,7 +14494,7 @@ fn bar&lt;'a&gt;(x: &amp;'a i32) -&gt; Box&lt;dyn Debug + 'a&gt; {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0760"><a class="header" href="#error-code-e0760">Error code E0760</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-86"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-86">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-87"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-87">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>async fn</code>/<code>impl trait</code> return type cannot contain a projection
 or <code>Self</code> that references lifetimes from a parent scope.</p>
 <p>Erroneous code example:</p>
@@ -14775,7 +14701,7 @@ names and binding them to new identifiers:</p>
 </span>fn foo&lt;T, const N: usize&gt;() {}
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0771"><a class="header" href="#error-code-e0771">Error code E0771</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-87"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-87">Note: this error code is no longer emitted by the compiler</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-88"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-88">Note: this error code is no longer emitted by the compiler</a></h4>
 <p>A non-<code>'static</code> lifetime was used in a const generic. This is currently not
 allowed.</p>
 <p>Erroneous code example:</p>
@@ -14795,7 +14721,7 @@ allowed.</p>
 <span class="boring">}</span></code></pre></pre>
 <p>For more information, see <a href="https://github.com/rust-lang/rust/issues/74052">GitHub issue #74052</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0772"><a class="header" href="#error-code-e0772">Error code E0772</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-88"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-88">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-89"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-89">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>A trait object has some specific lifetime <code>'1</code>, but it was used in a way that
 requires it to have a <code>'static</code> lifetime.</p>
 <p>Example of erroneous code:</p>
@@ -14931,7 +14857,7 @@ struct Bar {
 <span class="boring">}</span></code></pre></pre>
 <p>You can find more information about <code>derive</code> in the <a href="https://doc.rust-lang.org/book/appendix-03-derivable-traits.html">Rust Book</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0775"><a class="header" href="#error-code-e0775">Error code E0775</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-89"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-89">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-90"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-90">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>#[cmse_nonsecure_entry]</code> is only valid for targets with the TrustZone-M
 extension.</p>
 <p>Erroneous code example:</p>
@@ -14946,7 +14872,7 @@ TrustZone-M extension. The current possible targets are:</p>
 <li><code>thumbv8m.base-none-eabi</code></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0776"><a class="header" href="#error-code-e0776">Error code E0776</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-90"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-90">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-91"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-91">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p><code>#[cmse_nonsecure_entry]</code> functions require a C ABI</p>
 <p>Erroneous code example:</p>
 <pre><code class="language-rust ignore (no longer emitted)">#![feature(cmse_nonsecure_entry)]
@@ -15500,7 +15426,7 @@ but this is not always a value physically present within the enum.</p>
 <p>Further information about enum layout may be found at
 https://rust-lang.github.io/unsafe-code-guidelines/layout/enums.html.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0796"><a class="header" href="#error-code-e0796">Error code E0796</a></h1>
-<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-91"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-91">Note: this error code is no longer emitted by the compiler.</a></h4>
+<h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler-92"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler-92">Note: this error code is no longer emitted by the compiler.</a></h4>
 <p>You have created a reference to a mutable static.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]

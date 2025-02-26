@@ -157,8 +157,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="error-code-e0377"><a class="header" href="#error-code-e0377">Error code E0377</a></h1>
-<p>The trait <code>CoerceUnsized</code> may only be implemented for a coercion between
-structures with the same definition.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> may only be implemented between structs
+of the same type.</p>
 <p>Example of erroneous code:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0377"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
@@ -177,13 +177,16 @@ pub struct Bar&lt;T: ?Sized&gt; {
 //        between structures with the same definition
 impl&lt;T, U&gt; CoerceUnsized&lt;Bar&lt;U&gt;&gt; for Foo&lt;T&gt; where T: CoerceUnsized&lt;U&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p>When attempting to implement <code>CoerceUnsized</code>, the <code>impl</code> signature must look
-like: <code>impl CoerceUnsized&lt;Type&lt;U&gt;&gt; for Type&lt;T&gt; where T: CoerceUnsized&lt;U&gt;</code>;
-the <em>implementer</em> and <em><code>CoerceUnsized</code> type parameter</em> must be the same
-type. In this example, <code>Bar</code> and <code>Foo</code> (even though structurally identical)
-are <em>not</em> the same type and are rejected. Learn more about the <code>CoerceUnsized</code>
-trait and DST coercion in
-<a href="../std/ops/trait.CoerceUnsized.html">the <code>CoerceUnsized</code> docs</a>.</p>
+<p><code>CoerceUnsized</code> is used to coerce structs that have a field that can be unsized,
+like a custom <code>MyBox&lt;T&gt;</code> being unsized to <code>MyBox&lt;dyn Trait&gt;</code>. <code>DispatchFromDyn</code>
+is used to dispatch from <code>MyBox&lt;dyn Trait&gt;</code> to <code>MyBox&lt;Self&gt;</code> in a dyn-compatible
+trait.</p>
+<p>The compiler cannot support coercions between structs of different types, so
+a valid implementation of <code>CoerceUnsized</code> or <code>DispatchFromDyn</code> should be
+implemented between the same struct with different generic parameters.</p>
+<p>Note that <code>CoerceUnsized</code> and <code>DispatchFromDyn</code> is mainly used by smart pointers
+like <code>Box</code>, <code>Rc</code> and <code>Arc</code> to be able to mark that they can coerce unsized types
+that they are pointing at.</p>
 
                     </main>
 

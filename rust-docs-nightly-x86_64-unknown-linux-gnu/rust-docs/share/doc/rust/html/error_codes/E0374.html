@@ -157,8 +157,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="error-code-e0374"><a class="header" href="#error-code-e0374">Error code E0374</a></h1>
-<p><code>CoerceUnsized</code> was implemented on a struct which does not contain a field with
-an unsized type.</p>
+<p><code>CoerceUnsized</code> or <code>DispatchFromDyn</code> was implemented on a struct which does not
+contain a field that is being unsized.</p>
 <p>Example of erroneous code:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0374"><span class="boring">#![allow(unused)]
 </span>#![feature(coerce_unsized)]
@@ -169,44 +169,20 @@ struct Foo&lt;T: ?Sized&gt; {
     a: i32,
 }
 
-// error: Struct `Foo` has no unsized fields that need `CoerceUnsized`.
+// error: Struct `Foo` has no unsized fields that need to be coerced.
 impl&lt;T, U&gt; CoerceUnsized&lt;Foo&lt;U&gt;&gt; for Foo&lt;T&gt;
     where T: CoerceUnsized&lt;U&gt; {}
 <span class="boring">}</span></code></pre></pre>
-<p>An <a href="https://doc.rust-lang.org/book/ch19-04-advanced-types.html#dynamically-sized-types-and-the-sized-trait">unsized type</a> is any type where the compiler does not know the length or
-alignment of at compile time. Any struct containing an unsized type is also
-unsized.</p>
-<p><code>CoerceUnsized</code> is used to coerce one struct containing an unsized type
-into another struct containing a different unsized type. If the struct
-doesn't have any fields of unsized types then you don't need explicit
-coercion to get the types you want. To fix this you can either
-not try to implement <code>CoerceUnsized</code> or you can add a field that is
-unsized to the struct.</p>
-<p>Example:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![feature(coerce_unsized)]
-<span class="boring">fn main() {
-</span>use std::ops::CoerceUnsized;
-
-// We don't need to impl `CoerceUnsized` here.
-struct Foo {
-    a: i32,
-}
-
-// We add the unsized type field to the struct.
-struct Bar&lt;T: ?Sized&gt; {
-    a: i32,
-    b: T,
-}
-
-// The struct has an unsized field so we can implement
-// `CoerceUnsized` for it.
-impl&lt;T, U&gt; CoerceUnsized&lt;Bar&lt;U&gt;&gt; for Bar&lt;T&gt;
-    where T: CoerceUnsized&lt;U&gt; {}
-<span class="boring">}</span></code></pre></pre>
-<p>Note that <code>CoerceUnsized</code> is mainly used by smart pointers like <code>Box</code>, <code>Rc</code>
-and <code>Arc</code> to be able to mark that they can coerce unsized types that they
-are pointing at.</p>
+<p><code>CoerceUnsized</code> is used to coerce structs that have a field that can be unsized,
+like a custom <code>MyBox&lt;T&gt;</code> being unsized to <code>MyBox&lt;dyn Trait&gt;</code>. <code>DispatchFromDyn</code>
+is used to dispatch from <code>MyBox&lt;dyn Trait&gt;</code> to <code>MyBox&lt;Self&gt;</code> in a dyn-compatible
+trait.</p>
+<p>If the struct doesn't have any fields of unsized types then there is no
+meaningful way to implement <code>CoerceUnsized</code> or <code>DispatchFromDyn</code>, since
+there is no coercion taking place.</p>
+<p>Note that <code>CoerceUnsized</code> and <code>DispatchFromDyn</code> is mainly used by smart pointers
+like <code>Box</code>, <code>Rc</code> and <code>Arc</code> to be able to mark that they can coerce unsized types
+that they are pointing at.</p>
 
                     </main>
 
