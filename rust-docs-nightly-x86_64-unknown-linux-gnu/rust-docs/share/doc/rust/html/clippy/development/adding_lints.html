@@ -304,7 +304,7 @@ the lint.</li>
 <code>TESTNAME</code> variable to <code>cargo uitest</code> works too.</p>
 <h2 id="rustfix-tests"><a class="header" href="#rustfix-tests">Rustfix tests</a></h2>
 <p>If the lint you are working on is making use of structured suggestions, the test
-will create a <code>.fixed</code> file by running <a href="https://github.com/rust-lang/rustfix">rustfix</a> for that test.
+will create a <code>.fixed</code> file by running <a href="https://github.com/rust-lang/cargo/tree/master/crates/rustfix">rustfix</a> for that test.
 Rustfix will apply the suggestions
 from the lint to the code of the test file and compare that to the contents of a
 <code>.fixed</code> file.</p>
@@ -530,7 +530,7 @@ value is passed to the constructor in <code>clippy_lints/lib.rs</code>.</p>
 
 impl ManualStrip {
     pub fn new(conf: &amp;'static Conf) -&gt; Self {
-        Self { msrv: conf.msrv.clone() }
+        Self { msrv: conf.msrv }
     }
 }
 <span class="boring">}</span></code></pre></pre>
@@ -538,20 +538,12 @@ impl ManualStrip {
 using the <code>Msrv::meets</code> method.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>if !self.msrv.meets(msrvs::STR_STRIP_PREFIX) {
+</span>if !self.msrv.meets(cx, msrvs::STR_STRIP_PREFIX) {
     return;
 }
 <span class="boring">}</span></code></pre></pre>
-<p>The project's MSRV can also be specified as an attribute, which overrides
-the value from <code>clippy.toml</code>. This can be accounted for using the
-<code>extract_msrv_attr!(LintContext)</code> macro and passing
-<code>LateContext</code>/<code>EarlyContext</code>.</p>
-<pre><code class="language-rust ignore">impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for ManualStrip {
-    fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, expr: &amp;'tcx Expr&lt;'_&gt;) {
-        ...
-    }
-    extract_msrv_attr!(LateContext);
-}</code></pre>
+<p>Early lint passes should instead use <code>MsrvStack</code> coupled with
+<code>extract_msrv_attr!()</code></p>
 <p>Once the <code>msrv</code> is added to the lint, a relevant test case should be added to
 the lint's test file, <code>tests/ui/manual_strip.rs</code> in this example. It should
 have a case for the version below the MSRV and one with the same contents but
@@ -572,8 +564,16 @@ in <code>clippy_config/src/conf.rs</code>:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>define_Conf! {
-    /// Lint: LIST, OF, LINTS, &lt;THE_NEWLY_ADDED_LINT&gt;. The minimum rust version that the project supports
-    (msrv: Option&lt;String&gt; = None),
+    #[lints(
+        allow_attributes,
+        allow_attributes_without_reason,
+        ..
+        &lt;the newly added lint name&gt;,
+        ..
+        unused_trait_names,
+        use_self,
+    )]
+    msrv: Msrv = Msrv::default(),
     ...
 }
 <span class="boring">}</span></code></pre></pre>
