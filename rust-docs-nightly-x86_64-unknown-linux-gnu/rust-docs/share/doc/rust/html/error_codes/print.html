@@ -675,6 +675,7 @@
 <li><a href="./E0801.html">E0801</a></li>
 <li><a href="./E0802.html">E0802</a></li>
 <li><a href="./E0803.html">E0803</a></li>
+<li><a href="./E0804.html">E0804</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0001"><a class="header" href="#error-code-e0001">Error code E0001</a></h1>
 <h4 id="note-this-error-code-is-no-longer-emitted-by-the-compiler"><a class="header" href="#note-this-error-code-is-no-longer-emitted-by-the-compiler">Note: this error code is no longer emitted by the compiler.</a></h4>
@@ -6067,7 +6068,7 @@ definition, so it is not useful to do this.</p>
 <p>Erroneous code example:</p>
 <pre><pre class="playground"><code class="language-rust compile_fail E0373"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>fn foo() -&gt; Box&lt;Fn(u32) -&gt; u32&gt; {
+</span>fn foo() -&gt; Box&lt;dyn Fn(u32) -&gt; u32&gt; {
     let x = 0u32;
     Box::new(|y| x + y)
 }
@@ -6101,7 +6102,7 @@ This approach moves (or copies, where possible) data into the closure, rather
 than taking references to it. For example:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>fn foo() -&gt; Box&lt;Fn(u32) -&gt; u32&gt; {
+</span>fn foo() -&gt; Box&lt;dyn Fn(u32) -&gt; u32&gt; {
     let x = 0u32;
     Box::new(move |y| x + y)
 }
@@ -15707,6 +15708,42 @@ impl&lt;'a&gt; DataAccess&lt;'a, &amp;'a f64&gt; for Container&lt;'a&gt; {
     }
 }
 <span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-code-e0804"><a class="header" href="#error-code-e0804">Error code E0804</a></h1>
+<p>An auto trait cannot be added to the bounds of a <code>dyn Trait</code> type via
+a pointer cast.</p>
+<p>Erroneous code example:</p>
+<pre><pre class="playground"><code class="language-rust edition2021 compile_fail E0804"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let ptr: *const dyn core::any::Any = &amp;();
+_ = ptr as *const (dyn core::any::Any + Send);
+<span class="boring">}</span></code></pre></pre>
+<p>Adding an auto trait can make the vtable invalid, potentially causing
+UB in safe code afterwards. For example:</p>
+<pre><pre class="playground"><code class="language-rust edition2021 no_run">use core::{mem::transmute, ptr::NonNull};
+
+trait Trait {
+    fn f(&amp;self)
+    where
+        Self: Send;
+}
+
+impl Trait for NonNull&lt;()&gt; {
+    fn f(&amp;self) {
+        unreachable!()
+    }
+}
+
+fn main() {
+    let unsend: &amp;dyn Trait = &amp;NonNull::dangling();
+    let bad: &amp;(dyn Trait + Send) = unsafe { transmute(unsend) };
+    // This crashes, since the vtable for `NonNull as dyn Trait` does
+    // not have an entry for `Trait::f`.
+    bad.f();
+}</code></pre></pre>
+<p>To fix this error, you can use <code>transmute</code> rather than pointer casts,
+but you must ensure that the vtable is valid for the pointer's type
+before calling a method on the trait object or allowing other code to
+do so.</p>
 
                     </main>
 

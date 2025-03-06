@@ -236,7 +236,6 @@
 <li><a href="#private-bounds"><code>private_bounds</code></a></li>
 <li><a href="#private-interfaces"><code>private_interfaces</code></a></li>
 <li><a href="#private-macro-use"><code>private_macro_use</code></a></li>
-<li><a href="#ptr-cast-add-auto-to-object"><code>ptr_cast_add_auto_to_object</code></a></li>
 <li><a href="#ptr-to-integer-transmute-in-consts"><code>ptr_to_integer_transmute_in_consts</code></a></li>
 <li><a href="#redundant-semicolon"><code>redundant-semicolon</code></a></li>
 <li><a href="#redundant-semicolons"><code>redundant_semicolons</code></a></li>
@@ -2685,54 +2684,10 @@ fn main() {
 in an external crate.</p>
 <p>This is a <a href="../index.html#future-incompatible-lints">future-incompatible</a> lint to transition this to a
 hard error in the future.</p>
-<h2 id="ptr-cast-add-auto-to-object"><a class="header" href="#ptr-cast-add-auto-to-object">ptr-cast-add-auto-to-object</a></h2>
-<p>The <code>ptr_cast_add_auto_to_object</code> lint detects casts of raw pointers to trait
-objects, which add auto traits.</p>
-<h3 id="example-72"><a class="header" href="#example-72">Example</a></h3>
-<pre><code class="language-rust edition2021 compile_fail">let ptr: *const dyn core::any::Any = &amp;();
-_ = ptr as *const dyn core::any::Any + Send;</code></pre>
-<p>This will produce:</p>
-<pre><code class="language-text">warning: adding an auto trait `Send` to a trait object in a pointer cast may cause UB later on
- --&gt; lint_example.rs:3:5
-  |
-3 | _ = ptr as *const dyn core::any::Any + Send;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: for more information, see issue #127323 &lt;https://github.com/rust-lang/rust/issues/127323&gt;
-  = note: `#[warn(ptr_cast_add_auto_to_object)]` on by default
-
-</code></pre>
-<h3 id="explanation-72"><a class="header" href="#explanation-72">Explanation</a></h3>
-<p>Adding an auto trait can make the vtable invalid, potentially causing
-UB in safe code afterwards. For example:</p>
-<pre><code class="language-ignore (causes a warning)">#![feature(arbitrary_self_types)]
-
-trait Trait {
-    fn f(self: *const Self)
-    where
-        Self: Send;
-}
-
-impl Trait for *const () {
-    fn f(self: *const Self) {
-        unreachable!()
-    }
-}
-
-fn main() {
-    let unsend: *const () = &amp;();
-    let unsend: *const dyn Trait = &amp;unsend;
-    let send_bad: *const (dyn Trait + Send) = unsend as _;
-    send_bad.f(); // this crashes, since vtable for `*const ()` does not have an entry for `f`
-}
-</code></pre>
-<p>Generally you must ensure that vtable is right for the pointer's type,
-before passing the pointer to safe code.</p>
 <h2 id="ptr-to-integer-transmute-in-consts"><a class="header" href="#ptr-to-integer-transmute-in-consts">ptr-to-integer-transmute-in-consts</a></h2>
 <p>The <code>ptr_to_integer_transmute_in_consts</code> lint detects pointer to integer
 transmute in const functions and associated constants.</p>
-<h3 id="example-73"><a class="header" href="#example-73">Example</a></h3>
+<h3 id="example-72"><a class="header" href="#example-72">Example</a></h3>
 <pre><code class="language-rust">const fn foo(ptr: *const u8) -&gt; usize {
    unsafe {
        std::mem::transmute::&lt;*const u8, usize&gt;(ptr)
@@ -2751,7 +2706,7 @@ transmute in const functions and associated constants.</p>
   = note: `#[warn(ptr_to_integer_transmute_in_consts)]` on by default
 
 </code></pre>
-<h3 id="explanation-73"><a class="header" href="#explanation-73">Explanation</a></h3>
+<h3 id="explanation-72"><a class="header" href="#explanation-72">Explanation</a></h3>
 <p>Transmuting pointers to integers in a <code>const</code> context is undefined behavior.
 Any attempt to use the resulting integer will abort const-evaluation.</p>
 <p>But sometimes the compiler might not emit an error for pointer to integer transmutes
@@ -2764,7 +2719,7 @@ from compiling without any warnings or errors.</p>
 <h2 id="redundant-semicolons"><a class="header" href="#redundant-semicolons">redundant-semicolons</a></h2>
 <p>The <code>redundant_semicolons</code> lint detects unnecessary trailing
 semicolons.</p>
-<h3 id="example-74"><a class="header" href="#example-74">Example</a></h3>
+<h3 id="example-73"><a class="header" href="#example-73">Example</a></h3>
 <pre><code class="language-rust">let _ = 123;;</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unnecessary trailing semicolon
@@ -2776,7 +2731,7 @@ semicolons.</p>
   = note: `#[warn(redundant_semicolons)]` on by default
 
 </code></pre>
-<h3 id="explanation-74"><a class="header" href="#explanation-74">Explanation</a></h3>
+<h3 id="explanation-73"><a class="header" href="#explanation-73">Explanation</a></h3>
 <p>Extra semicolons are not needed, and may be removed to avoid confusion
 and visual clutter.</p>
 <h2 id="refining-impl-trait-internal"><a class="header" href="#refining-impl-trait-internal">refining-impl-trait-internal</a></h2>
@@ -2784,7 +2739,7 @@ and visual clutter.</p>
 types in method signatures that are refined by a trait implementation,
 meaning the implementation adds information about the return type that
 is not present in the trait.</p>
-<h3 id="example-75"><a class="header" href="#example-75">Example</a></h3>
+<h3 id="example-74"><a class="header" href="#example-74">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(refining_impl_trait)]
 
 use std::fmt::Display;
@@ -2829,7 +2784,7 @@ help: replace the return type so that it matches the trait
    |
 
 </code></pre>
-<h3 id="explanation-75"><a class="header" href="#explanation-75">Explanation</a></h3>
+<h3 id="explanation-74"><a class="header" href="#explanation-74">Explanation</a></h3>
 <p>Callers of methods for types where the implementation is known are
 able to observe the types written in the impl signature. This may be
 intended behavior, but may also lead to implementation details being
@@ -2851,7 +2806,7 @@ information.</p>
 types in method signatures that are refined by a publically reachable
 trait implementation, meaning the implementation adds information about
 the return type that is not present in the trait.</p>
-<h3 id="example-76"><a class="header" href="#example-76">Example</a></h3>
+<h3 id="example-75"><a class="header" href="#example-75">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(refining_impl_trait)]
 
 use std::fmt::Display;
@@ -2896,7 +2851,7 @@ help: replace the return type so that it matches the trait
    |
 
 </code></pre>
-<h3 id="explanation-76"><a class="header" href="#explanation-76">Explanation</a></h3>
+<h3 id="explanation-75"><a class="header" href="#explanation-75">Explanation</a></h3>
 <p>Callers of methods for types where the implementation is known are
 able to observe the types written in the impl signature. This may be
 intended behavior, but may also lead to implementation details being
@@ -2916,7 +2871,7 @@ information.</p>
 <h2 id="renamed-and-removed-lints"><a class="header" href="#renamed-and-removed-lints">renamed-and-removed-lints</a></h2>
 <p>The <code>renamed_and_removed_lints</code> lint detects lints that have been
 renamed or removed.</p>
-<h3 id="example-77"><a class="header" href="#example-77">Example</a></h3>
+<h3 id="example-76"><a class="header" href="#example-76">Example</a></h3>
 <pre><code class="language-rust">#![deny(raw_pointer_derive)]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: lint `raw_pointer_derive` has been removed: using derive with raw pointers is ok
@@ -2928,7 +2883,7 @@ renamed or removed.</p>
   = note: `#[warn(renamed_and_removed_lints)]` on by default
 
 </code></pre>
-<h3 id="explanation-77"><a class="header" href="#explanation-77">Explanation</a></h3>
+<h3 id="explanation-76"><a class="header" href="#explanation-76">Explanation</a></h3>
 <p>To fix this, either remove the lint or use the new name. This can help
 avoid confusion about lints that are no longer valid, and help
 maintain consistency for renamed lints.</p>
@@ -2937,7 +2892,7 @@ maintain consistency for renamed lints.</p>
 detects types marked <code>#[repr(transparent)]</code> that (transitively)
 contain an external ZST type marked <code>#[non_exhaustive]</code> or containing
 private fields</p>
-<h3 id="example-78"><a class="header" href="#example-78">Example</a></h3>
+<h3 id="example-77"><a class="header" href="#example-77">Example</a></h3>
 <pre><code class="language-rust ignore (needs external crate)">#![deny(repr_transparent_external_private_fields)]
 use foo::NonExhaustiveZst;
 
@@ -2959,7 +2914,7 @@ note: the lint level is defined here
   = note: for more information, see issue #78586 &lt;https://github.com/rust-lang/rust/issues/78586&gt;
   = note: this struct contains `NonExhaustiveZst`, which is marked with `#[non_exhaustive]`, and makes it not a breaking change to become non-zero-sized in the future.
 </code></pre>
-<h3 id="explanation-78"><a class="header" href="#explanation-78">Explanation</a></h3>
+<h3 id="explanation-77"><a class="header" href="#explanation-77">Explanation</a></h3>
 <p>Previous, Rust accepted fields that contain external private zero-sized types,
 even though it should not be a breaking change to add a non-zero-sized field to
 that private type.</p>
@@ -2972,7 +2927,7 @@ and unintended behavior.</p>
 <p>Using a <code>Self</code> type alias from an outer item was never intended, but was silently allowed.
 This is deprecated -- and is a hard error when the <code>Self</code> type alias references generics
 that are not in scope.</p>
-<h3 id="example-79"><a class="header" href="#example-79">Example</a></h3>
+<h3 id="example-78"><a class="header" href="#example-78">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(self_constructor_from_outer_item)]
 
 struct S0(usize);
@@ -3017,14 +2972,14 @@ error: can't reference `Self` constructor from outer item
    = note: for more information, see issue #124186 &lt;https://github.com/rust-lang/rust/issues/124186&gt;
 
 </code></pre>
-<h3 id="explanation-79"><a class="header" href="#explanation-79">Explanation</a></h3>
+<h3 id="explanation-78"><a class="header" href="#explanation-78">Explanation</a></h3>
 <p>The <code>Self</code> type alias should not be reachable because nested items are not associated with
 the scope of the parameters from the parent item.</p>
 <h2 id="semicolon-in-expressions-from-macros"><a class="header" href="#semicolon-in-expressions-from-macros">semicolon-in-expressions-from-macros</a></h2>
 <p>The <code>semicolon_in_expressions_from_macros</code> lint detects trailing semicolons
 in macro bodies when the macro is invoked in expression position.
 This was previous accepted, but is being phased out.</p>
-<h3 id="example-80"><a class="header" href="#example-80">Example</a></h3>
+<h3 id="example-79"><a class="header" href="#example-79">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(semicolon_in_expressions_from_macros)]
 macro_rules! foo {
     () =&gt; { true; }
@@ -3056,7 +3011,7 @@ note: the lint level is defined here
   = note: this error originates in the macro `foo` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 </code></pre>
-<h3 id="explanation-80"><a class="header" href="#explanation-80">Explanation</a></h3>
+<h3 id="explanation-79"><a class="header" href="#explanation-79">Explanation</a></h3>
 <p>Previous, Rust ignored trailing semicolon in a macro
 body when a macro was invoked in expression position.
 However, this makes the treatment of semicolons in the language
@@ -3068,7 +3023,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
 <h2 id="special-module-name"><a class="header" href="#special-module-name">special-module-name</a></h2>
 <p>The <code>special_module_name</code> lint detects module
 declarations for files that have a special meaning.</p>
-<h3 id="example-81"><a class="header" href="#example-81">Example</a></h3>
+<h3 id="example-80"><a class="header" href="#example-80">Example</a></h3>
 <pre><code class="language-rust compile_fail">mod lib;
 
 fn main() {
@@ -3086,7 +3041,7 @@ fn main() {
   = note: `#[warn(special_module_name)]` on by default
 
 </code></pre>
-<h3 id="explanation-81"><a class="header" href="#explanation-81">Explanation</a></h3>
+<h3 id="explanation-80"><a class="header" href="#explanation-80">Explanation</a></h3>
 <p>Cargo recognizes <code>lib.rs</code> and <code>main.rs</code> as the root of a
 library or binary crate, so declaring them as modules
 will lead to miscompilation of the crate unless configured
@@ -3107,7 +3062,7 @@ one as a module is not allowed.</p>
 <h2 id="stable-features"><a class="header" href="#stable-features">stable-features</a></h2>
 <p>The <code>stable_features</code> lint detects a <a href="https://doc.rust-lang.org/nightly/unstable-book/"><code>feature</code> attribute</a> that
 has since been made stable.</p>
-<h3 id="example-82"><a class="header" href="#example-82">Example</a></h3>
+<h3 id="example-81"><a class="header" href="#example-81">Example</a></h3>
 <pre><code class="language-rust">#![feature(test_accepted_feature)]
 fn main() {}</code></pre>
 <p>This will produce:</p>
@@ -3120,7 +3075,7 @@ fn main() {}</code></pre>
   = note: `#[warn(stable_features)]` on by default
 
 </code></pre>
-<h3 id="explanation-82"><a class="header" href="#explanation-82">Explanation</a></h3>
+<h3 id="explanation-81"><a class="header" href="#explanation-81">Explanation</a></h3>
 <p>When a feature is stabilized, it is no longer necessary to include a
 <code>#![feature]</code> attribute for it. To fix, simply remove the
 <code>#![feature]</code> attribute.</p>
@@ -3129,7 +3084,7 @@ fn main() {}</code></pre>
 <h2 id="static-mut-refs"><a class="header" href="#static-mut-refs">static-mut-refs</a></h2>
 <p>The <code>static_mut_refs</code> lint checks for shared or mutable references
 of mutable static inside <code>unsafe</code> blocks and <code>unsafe</code> functions.</p>
-<h3 id="example-83"><a class="header" href="#example-83">Example</a></h3>
+<h3 id="example-82"><a class="header" href="#example-82">Example</a></h3>
 <pre><code class="language-rust edition2021">fn main() {
     static mut X: i32 = 23;
     static mut Y: i32 = 24;
@@ -3287,7 +3242,7 @@ help: use `&amp;raw const` instead to create a raw pointer
    |          +++++++++
 
 </code></pre>
-<h3 id="explanation-83"><a class="header" href="#explanation-83">Explanation</a></h3>
+<h3 id="explanation-82"><a class="header" href="#explanation-82">Explanation</a></h3>
 <p>Shared or mutable references of mutable static are almost always a mistake and
 can lead to undefined behavior and various other problems in your code.</p>
 <p>This lint is "warn" by default on editions up to 2021, in 2024 is "deny".</p>
@@ -3295,7 +3250,7 @@ can lead to undefined behavior and various other problems in your code.</p>
 <p>The <code>suspicious_double_ref_op</code> lint checks for usage of <code>.clone()</code>/<code>.borrow()</code>/<code>.deref()</code>
 on an <code>&amp;&amp;T</code> when <code>T: !Deref/Borrow/Clone</code>, which means the call will return the inner <code>&amp;T</code>,
 instead of performing the operation on the underlying <code>T</code> and can be confusing.</p>
-<h3 id="example-84"><a class="header" href="#example-84">Example</a></h3>
+<h3 id="example-83"><a class="header" href="#example-83">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>struct Foo;
 let foo = &amp;&amp;Foo;
@@ -3310,13 +3265,13 @@ let clone: &amp;Foo = foo.clone();</code></pre>
   = note: `#[warn(suspicious_double_ref_op)]` on by default
 
 </code></pre>
-<h3 id="explanation-84"><a class="header" href="#explanation-84">Explanation</a></h3>
+<h3 id="explanation-83"><a class="header" href="#explanation-83">Explanation</a></h3>
 <p>Since <code>Foo</code> doesn't implement <code>Clone</code>, running <code>.clone()</code> only dereferences the double
 reference, instead of cloning the inner type which should be what was intended.</p>
 <h2 id="trivial-bounds"><a class="header" href="#trivial-bounds">trivial-bounds</a></h2>
 <p>The <code>trivial_bounds</code> lint detects trait bounds that don't depend on
 any type parameters.</p>
-<h3 id="example-85"><a class="header" href="#example-85">Example</a></h3>
+<h3 id="example-84"><a class="header" href="#example-84">Example</a></h3>
 <pre><code class="language-rust">#![feature(trivial_bounds)]
 pub struct A where i32: Copy;</code></pre>
 <p>This will produce:</p>
@@ -3329,7 +3284,7 @@ pub struct A where i32: Copy;</code></pre>
   = note: `#[warn(trivial_bounds)]` on by default
 
 </code></pre>
-<h3 id="explanation-85"><a class="header" href="#explanation-85">Explanation</a></h3>
+<h3 id="explanation-84"><a class="header" href="#explanation-84">Explanation</a></h3>
 <p>Usually you would not write a trait bound that you know is always
 true, or never true. However, when using macros, the macro may not
 know whether or not the constraint would hold or not at the time when
@@ -3343,7 +3298,7 @@ something is amiss.</p>
 available on the nightly channel, see <a href="https://github.com/rust-lang/rust/issues/48214">tracking issue #48214</a>.</p>
 <h2 id="type-alias-bounds"><a class="header" href="#type-alias-bounds">type-alias-bounds</a></h2>
 <p>The <code>type_alias_bounds</code> lint detects bounds in type aliases.</p>
-<h3 id="example-86"><a class="header" href="#example-86">Example</a></h3>
+<h3 id="example-85"><a class="header" href="#example-85">Example</a></h3>
 <pre><code class="language-rust">type SendVec&lt;T: Send&gt; = Vec&lt;T&gt;;</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: bounds on generic parameters in type aliases are not enforced
@@ -3361,7 +3316,7 @@ available on the nightly channel, see <a href="https://github.com/rust-lang/rust
   = note: `#[warn(type_alias_bounds)]` on by default
 
 </code></pre>
-<h3 id="explanation-86"><a class="header" href="#explanation-86">Explanation</a></h3>
+<h3 id="explanation-85"><a class="header" href="#explanation-85">Explanation</a></h3>
 <p>Trait and lifetime bounds on generic parameters and in where clauses of
 type aliases are not checked at usage sites of the type alias. Moreover,
 they are not thoroughly checked for correctness at their definition site
@@ -3385,7 +3340,7 @@ as opposed to a fully qualified path of the form <code>&lt;T as Trait&gt;::Assoc
 <h2 id="tyvar-behind-raw-pointer"><a class="header" href="#tyvar-behind-raw-pointer">tyvar-behind-raw-pointer</a></h2>
 <p>The <code>tyvar_behind_raw_pointer</code> lint detects raw pointer to an
 inference variable.</p>
-<h3 id="example-87"><a class="header" href="#example-87">Example</a></h3>
+<h3 id="example-86"><a class="header" href="#example-86">Example</a></h3>
 <pre><code class="language-rust edition2015">// edition 2015
 let data = std::ptr::null();
 let _ = &amp;data as *const *const ();
@@ -3403,7 +3358,7 @@ if data.is_null() {}</code></pre>
   = note: `#[warn(tyvar_behind_raw_pointer)]` on by default
 
 </code></pre>
-<h3 id="explanation-87"><a class="header" href="#explanation-87">Explanation</a></h3>
+<h3 id="explanation-86"><a class="header" href="#explanation-86">Explanation</a></h3>
 <p>This kind of inference was previously allowed, but with the future
 arrival of <a href="https://github.com/rust-lang/rust/issues/44874">arbitrary self types</a>, this can introduce ambiguity. To
 resolve this, use an explicit type instead of relying on type
@@ -3415,7 +3370,7 @@ default in the 2015 edition.</p>
 <h2 id="uncommon-codepoints"><a class="header" href="#uncommon-codepoints">uncommon-codepoints</a></h2>
 <p>The <code>uncommon_codepoints</code> lint detects uncommon Unicode codepoints in
 identifiers.</p>
-<h3 id="example-88"><a class="header" href="#example-88">Example</a></h3>
+<h3 id="example-87"><a class="header" href="#example-87">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>const µ: f64 = 0.000001;</code></pre>
 <p>This will produce:</p>
@@ -3429,7 +3384,7 @@ identifiers.</p>
   = note: `#[warn(uncommon_codepoints)]` on by default
 
 </code></pre>
-<h3 id="explanation-88"><a class="header" href="#explanation-88">Explanation</a></h3>
+<h3 id="explanation-87"><a class="header" href="#explanation-87">Explanation</a></h3>
 <p>This lint warns about using characters which are not commonly used, and may
 cause visual confusion.</p>
 <p>This lint is triggered by identifiers that contain a codepoint that is
@@ -3442,7 +3397,7 @@ future.</p>
 <h2 id="unconditional-recursion"><a class="header" href="#unconditional-recursion">unconditional-recursion</a></h2>
 <p>The <code>unconditional_recursion</code> lint detects functions that cannot
 return without calling themselves.</p>
-<h3 id="example-89"><a class="header" href="#example-89">Example</a></h3>
+<h3 id="example-88"><a class="header" href="#example-88">Example</a></h3>
 <pre><code class="language-rust">fn foo() {
     foo();
 }</code></pre>
@@ -3459,7 +3414,7 @@ return without calling themselves.</p>
   = note: `#[warn(unconditional_recursion)]` on by default
 
 </code></pre>
-<h3 id="explanation-89"><a class="header" href="#explanation-89">Explanation</a></h3>
+<h3 id="explanation-88"><a class="header" href="#explanation-88">Explanation</a></h3>
 <p>It is usually a mistake to have a recursive call that does not have
 some condition to cause it to terminate. If you really intend to have
 an infinite loop, using a <code>loop</code> expression is recommended.</p>
@@ -3470,7 +3425,7 @@ type paths ("projections") whose output may not be a local type that is mistaken
 to "cover" said parameters which is <strong>unsound</strong> and which may be rejected by a future version
 of the compiler.</p>
 <p>Originally reported in <a href="https://github.com/rust-lang/rust/issues/99554">#99554</a>.</p>
-<h3 id="example-90"><a class="header" href="#example-90">Example</a></h3>
+<h3 id="example-89"><a class="header" href="#example-89">Example</a></h3>
 <pre><code class="language-rust ignore (dependent)">// dependency.rs
 #![crate_type = "lib"]
 
@@ -3503,12 +3458,12 @@ fn main() {}
    = note: in this case, 'before' refers to the following order: `impl&lt;..&gt; ForeignTrait&lt;T1, ..., Tn&gt; for T0`, where `T0` is the first and `Tn` is the last
    = note: `#[warn(uncovered_param_in_projection)]` on by default
 </code></pre>
-<h3 id="explanation-90"><a class="header" href="#explanation-90">Explanation</a></h3>
+<h3 id="explanation-89"><a class="header" href="#explanation-89">Explanation</a></h3>
 <p>FIXME(fmease): Write explainer.</p>
 <h2 id="undefined-naked-function-abi"><a class="header" href="#undefined-naked-function-abi">undefined-naked-function-abi</a></h2>
 <p>The <code>undefined_naked_function_abi</code> lint detects naked function definitions that
 either do not specify an ABI or specify the Rust ABI.</p>
-<h3 id="example-91"><a class="header" href="#example-91">Example</a></h3>
+<h3 id="example-90"><a class="header" href="#example-90">Example</a></h3>
 <pre><code class="language-rust">#![feature(asm_experimental_arch, naked_functions)]
 
 use std::arch::naked_asm;
@@ -3539,12 +3494,12 @@ warning: Rust ABI is unsupported in naked functions
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-91"><a class="header" href="#explanation-91">Explanation</a></h3>
+<h3 id="explanation-90"><a class="header" href="#explanation-90">Explanation</a></h3>
 <p>The Rust ABI is currently undefined. Therefore, naked functions should
 specify a non-Rust ABI.</p>
 <h2 id="unexpected-cfgs"><a class="header" href="#unexpected-cfgs">unexpected-cfgs</a></h2>
 <p>The <code>unexpected_cfgs</code> lint detects unexpected conditional compilation conditions.</p>
-<h3 id="example-92"><a class="header" href="#example-92">Example</a></h3>
+<h3 id="example-91"><a class="header" href="#example-91">Example</a></h3>
 <pre><code class="language-text">rustc --check-cfg 'cfg()'
 </code></pre>
 <pre><code class="language-rust ignore (needs command line option)">#[cfg(widnows)]
@@ -3558,7 +3513,7 @@ fn foo() {}</code></pre>
   |
   = note: `#[warn(unexpected_cfgs)]` on by default
 </code></pre>
-<h3 id="explanation-92"><a class="header" href="#explanation-92">Explanation</a></h3>
+<h3 id="explanation-91"><a class="header" href="#explanation-91">Explanation</a></h3>
 <p>This lint is only active when <a href="https://doc.rust-lang.org/nightly/rustc/check-cfg.html"><code>--check-cfg</code></a> arguments are being
 passed to the compiler and triggers whenever an unexpected condition name or value is
 used.</p>
@@ -3569,7 +3524,7 @@ details.</p>
 <h2 id="unfulfilled-lint-expectations"><a class="header" href="#unfulfilled-lint-expectations">unfulfilled-lint-expectations</a></h2>
 <p>The <code>unfulfilled_lint_expectations</code> lint detects when a lint expectation is
 unfulfilled.</p>
-<h3 id="example-93"><a class="header" href="#example-93">Example</a></h3>
+<h3 id="example-92"><a class="header" href="#example-92">Example</a></h3>
 <pre><code class="language-rust">#[expect(unused_variables)]
 let x = 10;
 println!("{}", x);</code></pre>
@@ -3583,7 +3538,7 @@ println!("{}", x);</code></pre>
   = note: `#[warn(unfulfilled_lint_expectations)]` on by default
 
 </code></pre>
-<h3 id="explanation-93"><a class="header" href="#explanation-93">Explanation</a></h3>
+<h3 id="explanation-92"><a class="header" href="#explanation-92">Explanation</a></h3>
 <p>The <code>#[expect]</code> attribute can be used to create a lint expectation. The
 expectation is fulfilled, if a <code>#[warn]</code> attribute at the same location
 would result in a lint emission. If the expectation is unfulfilled,
@@ -3592,7 +3547,7 @@ because no lint was emitted, this lint will be emitted on the attribute.</p>
 <p>The <code>ungated_async_fn_track_caller</code> lint warns when the
 <code>#[track_caller]</code> attribute is used on an async function
 without enabling the corresponding unstable feature flag.</p>
-<h3 id="example-94"><a class="header" href="#example-94">Example</a></h3>
+<h3 id="example-93"><a class="header" href="#example-93">Example</a></h3>
 <pre><code class="language-rust">#[track_caller]
 async fn foo() {}</code></pre>
 <p>This will produce:</p>
@@ -3606,17 +3561,17 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-03-04; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-03-05; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
-<h3 id="explanation-94"><a class="header" href="#explanation-94">Explanation</a></h3>
+<h3 id="explanation-93"><a class="header" href="#explanation-93">Explanation</a></h3>
 <p>The attribute must be used in conjunction with the
 <a href="https://doc.rust-lang.org/beta/unstable-book/language-features/async-fn-track-caller.html"><code>async_fn_track_caller</code> feature flag</a>. Otherwise, the <code>#[track_caller]</code>
 annotation will function as a no-op.</p>
 <h2 id="uninhabited-static"><a class="header" href="#uninhabited-static">uninhabited-static</a></h2>
 <p>The <code>uninhabited_static</code> lint detects uninhabited statics.</p>
-<h3 id="example-95"><a class="header" href="#example-95">Example</a></h3>
+<h3 id="example-94"><a class="header" href="#example-94">Example</a></h3>
 <pre><code class="language-rust">enum Void {}
 unsafe extern {
     static EXTERN: Void;
@@ -3634,14 +3589,14 @@ unsafe extern {
   = note: `#[warn(uninhabited_static)]` on by default
 
 </code></pre>
-<h3 id="explanation-95"><a class="header" href="#explanation-95">Explanation</a></h3>
+<h3 id="explanation-94"><a class="header" href="#explanation-94">Explanation</a></h3>
 <p>Statics with an uninhabited type can never be initialized, so they are impossible to define.
 However, this can be side-stepped with an <code>extern static</code>, leading to problems later in the
 compiler which assumes that there are no initialized uninhabited places (such as locals or
 statics). This was accidentally allowed, but is being phased out.</p>
 <h2 id="unknown-lints"><a class="header" href="#unknown-lints">unknown-lints</a></h2>
 <p>The <code>unknown_lints</code> lint detects unrecognized lint attributes.</p>
-<h3 id="example-96"><a class="header" href="#example-96">Example</a></h3>
+<h3 id="example-95"><a class="header" href="#example-95">Example</a></h3>
 <pre><code class="language-rust">#![allow(not_a_real_lint)]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unknown lint: `not_a_real_lint`
@@ -3653,7 +3608,7 @@ statics). This was accidentally allowed, but is being phased out.</p>
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
-<h3 id="explanation-96"><a class="header" href="#explanation-96">Explanation</a></h3>
+<h3 id="explanation-95"><a class="header" href="#explanation-95">Explanation</a></h3>
 <p>It is usually a mistake to specify a lint that does not exist. Check
 the spelling, and check the lint listing for the correct name. Also
 consider if you are using an old version of the compiler, and the lint
@@ -3661,7 +3616,7 @@ is only available in a newer version.</p>
 <h2 id="unknown-or-malformed-diagnostic-attributes"><a class="header" href="#unknown-or-malformed-diagnostic-attributes">unknown-or-malformed-diagnostic-attributes</a></h2>
 <p>The <code>unknown_or_malformed_diagnostic_attributes</code> lint detects unrecognized or otherwise malformed
 diagnostic attributes.</p>
-<h3 id="example-97"><a class="header" href="#example-97">Example</a></h3>
+<h3 id="example-96"><a class="header" href="#example-96">Example</a></h3>
 <pre><code class="language-rust">#![feature(diagnostic_namespace)]
 #[diagnostic::does_not_exist]
 struct Foo;</code></pre>
@@ -3675,7 +3630,7 @@ struct Foo;</code></pre>
   = note: `#[warn(unknown_or_malformed_diagnostic_attributes)]` on by default
 
 </code></pre>
-<h3 id="explanation-97"><a class="header" href="#explanation-97">Explanation</a></h3>
+<h3 id="explanation-96"><a class="header" href="#explanation-96">Explanation</a></h3>
 <p>It is usually a mistake to specify a diagnostic attribute that does not exist. Check
 the spelling, and check the diagnostic attribute listing for the correct name. Also
 consider if you are using an old version of the compiler, and the attribute
@@ -3684,7 +3639,7 @@ is only available in a newer version.</p>
 <p>The <code>unnameable_test_items</code> lint detects <a href="https://doc.rust-lang.org/reference/attributes/testing.html#the-test-attribute"><code>#[test]</code></a> functions
 that are not able to be run by the test harness because they are in a
 position where they are not nameable.</p>
-<h3 id="example-98"><a class="header" href="#example-98">Example</a></h3>
+<h3 id="example-97"><a class="header" href="#example-97">Example</a></h3>
 <pre><code class="language-rust test">fn main() {
     #[test]
     fn foo() {
@@ -3703,7 +3658,7 @@ position where they are not nameable.</p>
   = note: this warning originates in the attribute macro `test` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 </code></pre>
-<h3 id="explanation-98"><a class="header" href="#explanation-98">Explanation</a></h3>
+<h3 id="explanation-97"><a class="header" href="#explanation-97">Explanation</a></h3>
 <p>In order for the test harness to run a test, the test function must be
 located in a position where it can be accessed from the crate root.
 This generally means it must be defined in a module, and not anywhere
@@ -3714,7 +3669,7 @@ decided, see <a href="https://github.com/rust-lang/rfcs/pull/2471#issuecomment-3
 <h2 id="unpredictable-function-pointer-comparisons"><a class="header" href="#unpredictable-function-pointer-comparisons">unpredictable-function-pointer-comparisons</a></h2>
 <p>The <code>unpredictable_function_pointer_comparisons</code> lint checks comparison
 of function pointer as the operands.</p>
-<h3 id="example-99"><a class="header" href="#example-99">Example</a></h3>
+<h3 id="example-98"><a class="header" href="#example-98">Example</a></h3>
 <pre><code class="language-rust">fn a() {}
 fn b() {}
 
@@ -3740,14 +3695,14 @@ help: refactor your code, or use `std::ptr::fn_addr_eq` to suppress the lint
   |
 
 </code></pre>
-<h3 id="explanation-99"><a class="header" href="#explanation-99">Explanation</a></h3>
+<h3 id="explanation-98"><a class="header" href="#explanation-98">Explanation</a></h3>
 <p>Function pointers comparisons do not produce meaningful result since
 they are never guaranteed to be unique and could vary between different
 code generation units. Furthermore, different functions could have the
 same address after being merged together.</p>
 <h2 id="unreachable-code"><a class="header" href="#unreachable-code">unreachable-code</a></h2>
 <p>The <code>unreachable_code</code> lint detects unreachable code paths.</p>
-<h3 id="example-100"><a class="header" href="#example-100">Example</a></h3>
+<h3 id="example-99"><a class="header" href="#example-99">Example</a></h3>
 <pre><code class="language-rust no_run">panic!("we never go past here!");
 
 let x = 5;</code></pre>
@@ -3764,12 +3719,12 @@ let x = 5;</code></pre>
   = note: `#[warn(unreachable_code)]` on by default
 
 </code></pre>
-<h3 id="explanation-100"><a class="header" href="#explanation-100">Explanation</a></h3>
+<h3 id="explanation-99"><a class="header" href="#explanation-99">Explanation</a></h3>
 <p>Unreachable code may signal a mistake or unfinished code. If the code
 is no longer in use, consider removing it.</p>
 <h2 id="unreachable-patterns"><a class="header" href="#unreachable-patterns">unreachable-patterns</a></h2>
 <p>The <code>unreachable_patterns</code> lint detects unreachable patterns.</p>
-<h3 id="example-101"><a class="header" href="#example-101">Example</a></h3>
+<h3 id="example-100"><a class="header" href="#example-100">Example</a></h3>
 <pre><code class="language-rust">let x = 5;
 match x {
     y =&gt; (),
@@ -3787,7 +3742,7 @@ match x {
   = note: `#[warn(unreachable_patterns)]` on by default
 
 </code></pre>
-<h3 id="explanation-101"><a class="header" href="#explanation-101">Explanation</a></h3>
+<h3 id="explanation-100"><a class="header" href="#explanation-100">Explanation</a></h3>
 <p>This usually indicates a mistake in how the patterns are specified or
 ordered. In this example, the <code>y</code> pattern will always match, so the
 five is impossible to reach. Remember, match arms match in order, you
@@ -3797,7 +3752,7 @@ probably wanted to put the <code>5</code> case above the <code>y</code> case.</p
 <h2 id="unstable-name-collisions"><a class="header" href="#unstable-name-collisions">unstable-name-collisions</a></h2>
 <p>The <code>unstable_name_collisions</code> lint detects that you have used a name
 that the standard library plans to add in the future.</p>
-<h3 id="example-102"><a class="header" href="#example-102">Example</a></h3>
+<h3 id="example-101"><a class="header" href="#example-101">Example</a></h3>
 <pre><code class="language-rust">trait MyIterator : Iterator {
     // is_partitioned is an unstable method that already exists on the Iterator trait
     fn is_partitioned&lt;P&gt;(self, predicate: P) -&gt; bool
@@ -3828,7 +3783,7 @@ help: add `#![feature(iter_is_partitioned)]` to the crate attributes to enable `
    |
 
 </code></pre>
-<h3 id="explanation-102"><a class="header" href="#explanation-102">Explanation</a></h3>
+<h3 id="explanation-101"><a class="header" href="#explanation-101">Explanation</a></h3>
 <p>When new methods are added to traits in the standard library, they are
 usually added in an "unstable" form which is only available on the
 <a href="https://doc.rust-lang.org/book/appendix-07-nightly-rust.html">nightly channel</a> with a <a href="https://doc.rust-lang.org/nightly/unstable-book/"><code>feature</code> attribute</a>. If there is any
@@ -3842,7 +3797,7 @@ disambiguate which trait method you intend to call, such as
 <h2 id="unstable-syntax-pre-expansion"><a class="header" href="#unstable-syntax-pre-expansion">unstable-syntax-pre-expansion</a></h2>
 <p>The <code>unstable_syntax_pre_expansion</code> lint detects the use of unstable
 syntax that is discarded during attribute expansion.</p>
-<h3 id="example-103"><a class="header" href="#example-103">Example</a></h3>
+<h3 id="example-102"><a class="header" href="#example-102">Example</a></h3>
 <pre><code class="language-rust">#[cfg(FALSE)]
 macro foo() {}</code></pre>
 <p>This will produce:</p>
@@ -3854,12 +3809,12 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-03-04; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-03-05; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
 </code></pre>
-<h3 id="explanation-103"><a class="header" href="#explanation-103">Explanation</a></h3>
+<h3 id="explanation-102"><a class="header" href="#explanation-102">Explanation</a></h3>
 <p>The input to active attributes such as <code>#[cfg]</code> or procedural macro
 attributes is required to be valid syntax. Previously, the compiler only
 gated the use of unstable syntax features after resolving <code>#[cfg]</code> gates
@@ -3885,7 +3840,7 @@ a target dependent calling convention on a target that does not support this cal
 convention on a function pointer.</p>
 <p>For example <code>stdcall</code> does not make much sense for a x86_64 or, more apparently, powerpc
 code, because this calling convention was never specified for those targets.</p>
-<h3 id="example-104"><a class="header" href="#example-104">Example</a></h3>
+<h3 id="example-103"><a class="header" href="#example-103">Example</a></h3>
 <pre><code class="language-rust ignore (needs specific targets)">fn stdcall_ptr(f: extern "stdcall" fn ()) {
     f()
 }</code></pre>
@@ -3900,7 +3855,7 @@ LL | fn stdcall_ptr(f: extern "stdcall" fn()) {
    = note: for more information, see issue #130260 &lt;https://github.com/rust-lang/rust/issues/130260&gt;
    = note: `#[warn(unsupported_fn_ptr_calling_conventions)]` on by default
 </code></pre>
-<h3 id="explanation-104"><a class="header" href="#explanation-104">Explanation</a></h3>
+<h3 id="explanation-103"><a class="header" href="#explanation-103">Explanation</a></h3>
 <p>On most of the targets the behaviour of <code>stdcall</code> and similar calling conventions is not
 defined at all, but was previously accepted due to a bug in the implementation of the
 compiler.</p>
@@ -3911,7 +3866,7 @@ compiler.</p>
 <h2 id="unused-allocation"><a class="header" href="#unused-allocation">unused-allocation</a></h2>
 <p>The <code>unused_allocation</code> lint detects unnecessary allocations that can
 be eliminated.</p>
-<h3 id="example-105"><a class="header" href="#example-105">Example</a></h3>
+<h3 id="example-104"><a class="header" href="#example-104">Example</a></h3>
 <pre><code class="language-rust">fn main() {
     let a = Box::new([1, 2, 3]).len();
 }</code></pre>
@@ -3925,13 +3880,13 @@ be eliminated.</p>
   = note: `#[warn(unused_allocation)]` on by default
 
 </code></pre>
-<h3 id="explanation-105"><a class="header" href="#explanation-105">Explanation</a></h3>
+<h3 id="explanation-104"><a class="header" href="#explanation-104">Explanation</a></h3>
 <p>When a <code>box</code> expression is immediately coerced to a reference, then
 the allocation is unnecessary, and a reference (using <code>&amp;</code> or <code>&amp;mut</code>)
 should be used instead to avoid the allocation.</p>
 <h2 id="unused-assignments"><a class="header" href="#unused-assignments">unused-assignments</a></h2>
 <p>The <code>unused_assignments</code> lint detects assignments that will never be read.</p>
-<h3 id="example-106"><a class="header" href="#example-106">Example</a></h3>
+<h3 id="example-105"><a class="header" href="#example-105">Example</a></h3>
 <pre><code class="language-rust">let mut x = 5;
 x = 6;</code></pre>
 <p>This will produce:</p>
@@ -3945,7 +3900,7 @@ x = 6;</code></pre>
   = note: `#[warn(unused_assignments)]` on by default
 
 </code></pre>
-<h3 id="explanation-106"><a class="header" href="#explanation-106">Explanation</a></h3>
+<h3 id="explanation-105"><a class="header" href="#explanation-105">Explanation</a></h3>
 <p>Unused assignments may signal a mistake or unfinished code. If the
 variable is never used after being assigned, then the assignment can
 be removed. Variables with an underscore prefix such as <code>_x</code> will not
@@ -3955,7 +3910,7 @@ trigger this lint.</p>
 associated type bound is added to a trait object, but the associated
 type has a <code>where Self: Sized</code> bound, and is thus unavailable on the
 trait object anyway.</p>
-<h3 id="example-107"><a class="header" href="#example-107">Example</a></h3>
+<h3 id="example-106"><a class="header" href="#example-106">Example</a></h3>
 <pre><code class="language-rust">trait Foo {
     type Bar where Self: Sized;
 }
@@ -3971,13 +3926,13 @@ type Mop = dyn Foo&lt;Bar = ()&gt;;</code></pre>
   = note: `#[warn(unused_associated_type_bounds)]` on by default
 
 </code></pre>
-<h3 id="explanation-107"><a class="header" href="#explanation-107">Explanation</a></h3>
+<h3 id="explanation-106"><a class="header" href="#explanation-106">Explanation</a></h3>
 <p>Just like methods with <code>Self: Sized</code> bounds are unavailable on trait
 objects, associated types can be removed from the trait object.</p>
 <h2 id="unused-attributes"><a class="header" href="#unused-attributes">unused-attributes</a></h2>
 <p>The <code>unused_attributes</code> lint detects attributes that were not used by
 the compiler.</p>
-<h3 id="example-108"><a class="header" href="#example-108">Example</a></h3>
+<h3 id="example-107"><a class="header" href="#example-107">Example</a></h3>
 <pre><code class="language-rust">#![ignore]</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: `#[ignore]` only has an effect on functions
@@ -3989,7 +3944,7 @@ the compiler.</p>
   = note: `#[warn(unused_attributes)]` on by default
 
 </code></pre>
-<h3 id="explanation-108"><a class="header" href="#explanation-108">Explanation</a></h3>
+<h3 id="explanation-107"><a class="header" href="#explanation-107">Explanation</a></h3>
 <p>Unused <a href="https://doc.rust-lang.org/reference/attributes.html">attributes</a> may indicate the attribute is placed in the wrong
 position. Consider removing it, or placing it in the correct position.
 Also consider if you intended to use an <em>inner attribute</em> (with a <code>!</code>
@@ -4000,7 +3955,7 @@ attribute.</p>
 <h2 id="unused-braces"><a class="header" href="#unused-braces">unused-braces</a></h2>
 <p>The <code>unused_braces</code> lint detects unnecessary braces around an
 expression.</p>
-<h3 id="example-109"><a class="header" href="#example-109">Example</a></h3>
+<h3 id="example-108"><a class="header" href="#example-108">Example</a></h3>
 <pre><code class="language-rust">if { true } {
     // ...
 }</code></pre>
@@ -4019,13 +3974,13 @@ help: remove these braces
   |
 
 </code></pre>
-<h3 id="explanation-109"><a class="header" href="#explanation-109">Explanation</a></h3>
+<h3 id="explanation-108"><a class="header" href="#explanation-108">Explanation</a></h3>
 <p>The braces are not needed, and should be removed. This is the
 preferred style for writing these expressions.</p>
 <h2 id="unused-comparisons"><a class="header" href="#unused-comparisons">unused-comparisons</a></h2>
 <p>The <code>unused_comparisons</code> lint detects comparisons made useless by
 limits of the types involved.</p>
-<h3 id="example-110"><a class="header" href="#example-110">Example</a></h3>
+<h3 id="example-109"><a class="header" href="#example-109">Example</a></h3>
 <pre><code class="language-rust">fn foo(x: u8) {
     x &gt;= 0;
 }</code></pre>
@@ -4039,13 +3994,13 @@ limits of the types involved.</p>
   = note: `#[warn(unused_comparisons)]` on by default
 
 </code></pre>
-<h3 id="explanation-110"><a class="header" href="#explanation-110">Explanation</a></h3>
+<h3 id="explanation-109"><a class="header" href="#explanation-109">Explanation</a></h3>
 <p>A useless comparison may indicate a mistake, and should be fixed or
 removed.</p>
 <h2 id="unused-doc-comments"><a class="header" href="#unused-doc-comments">unused-doc-comments</a></h2>
 <p>The <code>unused_doc_comments</code> lint detects doc comments that aren't used
 by <code>rustdoc</code>.</p>
-<h3 id="example-111"><a class="header" href="#example-111">Example</a></h3>
+<h3 id="example-110"><a class="header" href="#example-110">Example</a></h3>
 <pre><code class="language-rust">/// docs for x
 let x = 12;</code></pre>
 <p>This will produce:</p>
@@ -4061,7 +4016,7 @@ let x = 12;</code></pre>
   = note: `#[warn(unused_doc_comments)]` on by default
 
 </code></pre>
-<h3 id="explanation-111"><a class="header" href="#explanation-111">Explanation</a></h3>
+<h3 id="explanation-110"><a class="header" href="#explanation-110">Explanation</a></h3>
 <p><code>rustdoc</code> does not use doc comments in all positions, and so the doc
 comment will be ignored. Try changing it to a normal comment with <code>//</code>
 to avoid the warning.</p>
@@ -4072,7 +4027,7 @@ crate-level <a href="https://doc.rust-lang.org/nightly/unstable-book/"><code>fea
 more details.</p>
 <h2 id="unused-imports"><a class="header" href="#unused-imports">unused-imports</a></h2>
 <p>The <code>unused_imports</code> lint detects imports that are never used.</p>
-<h3 id="example-112"><a class="header" href="#example-112">Example</a></h3>
+<h3 id="example-111"><a class="header" href="#example-111">Example</a></h3>
 <pre><code class="language-rust">use std::collections::HashMap;</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unused import: `std::collections::HashMap`
@@ -4084,14 +4039,14 @@ more details.</p>
   = note: `#[warn(unused_imports)]` on by default
 
 </code></pre>
-<h3 id="explanation-112"><a class="header" href="#explanation-112">Explanation</a></h3>
+<h3 id="explanation-111"><a class="header" href="#explanation-111">Explanation</a></h3>
 <p>Unused imports may signal a mistake or unfinished code, and clutter
 the code, and should be removed. If you intended to re-export the item
 to make it available outside of the module, add a visibility modifier
 like <code>pub</code>.</p>
 <h2 id="unused-labels"><a class="header" href="#unused-labels">unused-labels</a></h2>
 <p>The <code>unused_labels</code> lint detects <a href="https://doc.rust-lang.org/reference/expressions/loop-expr.html#loop-labels">labels</a> that are never used.</p>
-<h3 id="example-113"><a class="header" href="#example-113">Example</a></h3>
+<h3 id="example-112"><a class="header" href="#example-112">Example</a></h3>
 <pre><code class="language-rust no_run">'unused_label: loop {}</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unused label
@@ -4103,7 +4058,7 @@ like <code>pub</code>.</p>
   = note: `#[warn(unused_labels)]` on by default
 
 </code></pre>
-<h3 id="explanation-113"><a class="header" href="#explanation-113">Explanation</a></h3>
+<h3 id="explanation-112"><a class="header" href="#explanation-112">Explanation</a></h3>
 <p>Unused labels may signal a mistake or unfinished code. To silence the
 warning for the individual label, prefix it with an underscore such as
 <code>'_my_label:</code>.</p>
@@ -4112,7 +4067,7 @@ warning for the individual label, prefix it with an underscore such as
 <p>Note that this lint is distinct from the <code>unused_macro_rules</code> lint,
 which checks for single rules that never match of an otherwise used
 macro, and thus never expand.</p>
-<h3 id="example-114"><a class="header" href="#example-114">Example</a></h3>
+<h3 id="example-113"><a class="header" href="#example-113">Example</a></h3>
 <pre><code class="language-rust">macro_rules! unused {
     () =&gt; {};
 }
@@ -4129,7 +4084,7 @@ fn main() {
   = note: `#[warn(unused_macros)]` on by default
 
 </code></pre>
-<h3 id="explanation-114"><a class="header" href="#explanation-114">Explanation</a></h3>
+<h3 id="explanation-113"><a class="header" href="#explanation-113">Explanation</a></h3>
 <p>Unused macros may signal a mistake or unfinished code. To silence the
 warning for the individual macro, prefix the name with an underscore
 such as <code>_my_macro</code>. If you intended to export the macro to make it
@@ -4137,7 +4092,7 @@ available outside of the crate, use the <a href="https://doc.rust-lang.org/refer
 <h2 id="unused-must-use"><a class="header" href="#unused-must-use">unused-must-use</a></h2>
 <p>The <code>unused_must_use</code> lint detects unused result of a type flagged as
 <code>#[must_use]</code>.</p>
-<h3 id="example-115"><a class="header" href="#example-115">Example</a></h3>
+<h3 id="example-114"><a class="header" href="#example-114">Example</a></h3>
 <pre><code class="language-rust">fn returns_result() -&gt; Result&lt;(), ()&gt; {
     Ok(())
 }
@@ -4160,13 +4115,13 @@ help: use `let _ = ...` to ignore the resulting value
   |     +++++++
 
 </code></pre>
-<h3 id="explanation-115"><a class="header" href="#explanation-115">Explanation</a></h3>
+<h3 id="explanation-114"><a class="header" href="#explanation-114">Explanation</a></h3>
 <p>The <code>#[must_use]</code> attribute is an indicator that it is a mistake to
 ignore the value. See <a href="https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute">the reference</a> for more details.</p>
 <h2 id="unused-mut"><a class="header" href="#unused-mut">unused-mut</a></h2>
 <p>The <code>unused_mut</code> lint detects mut variables which don't need to be
 mutable.</p>
-<h3 id="example-116"><a class="header" href="#example-116">Example</a></h3>
+<h3 id="example-115"><a class="header" href="#example-115">Example</a></h3>
 <pre><code class="language-rust">let mut x = 5;</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: variable does not need to be mutable
@@ -4180,7 +4135,7 @@ mutable.</p>
   = note: `#[warn(unused_mut)]` on by default
 
 </code></pre>
-<h3 id="explanation-116"><a class="header" href="#explanation-116">Explanation</a></h3>
+<h3 id="explanation-115"><a class="header" href="#explanation-115">Explanation</a></h3>
 <p>The preferred style is to only mark variables as <code>mut</code> if it is
 required.</p>
 <h2 id="unused-parens"><a class="header" href="#unused-parens">unused-parens</a></h2>
@@ -4203,12 +4158,12 @@ help: remove these parentheses
   |
 
 </code></pre>
-<h3 id="explanation-117"><a class="header" href="#explanation-117">Explanation</a></h3>
+<h3 id="explanation-116"><a class="header" href="#explanation-116">Explanation</a></h3>
 <p>The parentheses are not needed, and should be removed. This is the
 preferred style for writing these expressions.</p>
 <h2 id="unused-unsafe"><a class="header" href="#unused-unsafe">unused-unsafe</a></h2>
 <p>The <code>unused_unsafe</code> lint detects unnecessary use of an <code>unsafe</code> block.</p>
-<h3 id="example-117"><a class="header" href="#example-117">Example</a></h3>
+<h3 id="example-116"><a class="header" href="#example-116">Example</a></h3>
 <pre><code class="language-rust">unsafe {}</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unnecessary `unsafe` block
@@ -4220,13 +4175,13 @@ preferred style for writing these expressions.</p>
   = note: `#[warn(unused_unsafe)]` on by default
 
 </code></pre>
-<h3 id="explanation-118"><a class="header" href="#explanation-118">Explanation</a></h3>
+<h3 id="explanation-117"><a class="header" href="#explanation-117">Explanation</a></h3>
 <p>If nothing within the block requires <code>unsafe</code>, then remove the
 <code>unsafe</code> marker because it is not required and may cause confusion.</p>
 <h2 id="unused-variables"><a class="header" href="#unused-variables">unused-variables</a></h2>
 <p>The <code>unused_variables</code> lint detects variables which are not used in
 any way.</p>
-<h3 id="example-118"><a class="header" href="#example-118">Example</a></h3>
+<h3 id="example-117"><a class="header" href="#example-117">Example</a></h3>
 <pre><code class="language-rust">let x = 5;</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: unused variable: `x`
@@ -4238,14 +4193,14 @@ any way.</p>
   = note: `#[warn(unused_variables)]` on by default
 
 </code></pre>
-<h3 id="explanation-119"><a class="header" href="#explanation-119">Explanation</a></h3>
+<h3 id="explanation-118"><a class="header" href="#explanation-118">Explanation</a></h3>
 <p>Unused variables may signal a mistake or unfinished code. To silence
 the warning for the individual variable, prefix it with an underscore
 such as <code>_x</code>.</p>
 <h2 id="useless-ptr-null-checks"><a class="header" href="#useless-ptr-null-checks">useless-ptr-null-checks</a></h2>
 <p>The <code>useless_ptr_null_checks</code> lint checks for useless null checks against pointers
 obtained from non-null types.</p>
-<h3 id="example-119"><a class="header" href="#example-119">Example</a></h3>
+<h3 id="example-118"><a class="header" href="#example-118">Example</a></h3>
 <pre><code class="language-rust"><span class="boring">fn test() {}
 </span>let fn_ptr: fn() = /* somehow obtained nullable function pointer */
 <span class="boring">  test;
@@ -4264,7 +4219,7 @@ if (fn_ptr as *const ()).is_null() { /* ... */ }</code></pre>
   = note: `#[warn(useless_ptr_null_checks)]` on by default
 
 </code></pre>
-<h3 id="explanation-120"><a class="header" href="#explanation-120">Explanation</a></h3>
+<h3 id="explanation-119"><a class="header" href="#explanation-119">Explanation</a></h3>
 <p>Function pointers and references are assumed to be non-null, checking them for null
 will always return false.</p>
 <h2 id="uses-power-alignment"><a class="header" href="#uses-power-alignment">uses-power-alignment</a></h2>
@@ -4281,7 +4236,7 @@ where the floating-point type is aligned on a 4-byte boundary.</p>
 unimplementable within <code>repr(C)</code> in the compiler without building in
 handling of references to packed fields and infectious nested layouts,
 so a warning is produced in these situations.</p>
-<h3 id="example-120"><a class="header" href="#example-120">Example</a></h3>
+<h3 id="example-119"><a class="header" href="#example-119">Example</a></h3>
 <pre><code class="language-rust ignore (fails on non-powerpc64-ibm-aix)">#[repr(C)]
 pub struct Floats {
     a: f64,
@@ -4297,7 +4252,7 @@ pub struct Floats {
   |
   = note: `#[warn(uses_power_alignment)]` on by default
 </code></pre>
-<h3 id="explanation-121"><a class="header" href="#explanation-121">Explanation</a></h3>
+<h3 id="explanation-120"><a class="header" href="#explanation-120">Explanation</a></h3>
 <p>The power alignment rule specifies that the above struct has the
 following alignment:</p>
 <ul>
@@ -4310,7 +4265,7 @@ Thus, a warning should be produced for the above struct in this case.</li>
 <h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
 <p>The <code>warnings</code> lint allows you to change the level of other
 lints which produce warnings.</p>
-<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
+<h3 id="example-120"><a class="header" href="#example-120">Example</a></h3>
 <pre><code class="language-rust">#![deny(warnings)]
 fn foo() {}</code></pre>
 <p>This will produce:</p>
@@ -4328,14 +4283,14 @@ note: the lint level is defined here
   = note: `#[deny(dead_code)]` implied by `#[deny(warnings)]`
 
 </code></pre>
-<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
+<h3 id="explanation-121"><a class="header" href="#explanation-121">Explanation</a></h3>
 <p>The <code>warnings</code> lint is a bit special; by changing its level, you
 change every other warning that would produce a warning to whatever
 value you'd like. As such, you won't ever trigger this lint in your
 code directly.</p>
 <h2 id="while-true"><a class="header" href="#while-true">while-true</a></h2>
 <p>The <code>while_true</code> lint detects <code>while true { }</code>.</p>
-<h3 id="example-122"><a class="header" href="#example-122">Example</a></h3>
+<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
 <pre><code class="language-rust no_run">while true {
 
 }</code></pre>
@@ -4349,7 +4304,7 @@ code directly.</p>
   = note: `#[warn(while_true)]` on by default
 
 </code></pre>
-<h3 id="explanation-123"><a class="header" href="#explanation-123">Explanation</a></h3>
+<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
 <p><code>while true</code> should be replaced with <code>loop</code>. A <code>loop</code> expression is
 the preferred way to write an infinite loop because it more directly
 expresses the intent of the loop.</p>
