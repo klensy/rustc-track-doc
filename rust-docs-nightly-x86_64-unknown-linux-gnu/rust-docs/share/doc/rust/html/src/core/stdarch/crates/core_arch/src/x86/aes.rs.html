@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/../../stdarch/crates/core_arch/src/x86/aes.rs`."><title>aes.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (30f168ef8 2025-03-05)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../../../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../../../src-files1.87.0.js"></script><script defer src="../../../../../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/stdarch/crates/core_arch/src/x86/</div>aes.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! AES New Instructions (AES-NI)
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/../../stdarch/crates/core_arch/src/x86/aes.rs`."><title>aes.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (b74da9613 2025-03-06)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../../../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../../../src-files1.87.0.js"></script><script defer src="../../../../../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/stdarch/crates/core_arch/src/x86/</div>aes.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! AES New Instructions (AES-NI)
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! The intrinsics here correspond to those in the `wmmintrin.h` C header.
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -13,7 +13,7 @@
 <a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span>stdarch_test::assert_instr;
 <a href=#14 id=14 data-nosnippet>14</a>
 <a href=#15 id=15 data-nosnippet>15</a><span class="attr">#[allow(improper_ctypes)]
-<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">extern </span><span class="string">"C" </span>{
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">unsafe extern </span><span class="string">"C" </span>{
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="attr">#[link_name = <span class="string">"llvm.x86.aesni.aesdec"</span>]
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">fn </span>aesdec(a: __m128i, round_key: __m128i) -&gt; __m128i;
 <a href=#19 id=19 data-nosnippet>19</a>    <span class="attr">#[link_name = <span class="string">"llvm.x86.aesni.aesdeclast"</span>]
@@ -35,8 +35,8 @@
 <a href=#35 id=35 data-nosnippet>35</a>#[target_feature(enable = <span class="string">"aes"</span>)]
 <a href=#36 id=36 data-nosnippet>36</a>#[cfg_attr(test, assert_instr(aesdec))]
 <a href=#37 id=37 data-nosnippet>37</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub unsafe fn </span>_mm_aesdec_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
-<a href=#39 id=39 data-nosnippet>39</a>    aesdec(a, round_key)
+<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub fn </span>_mm_aesdec_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
+<a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">unsafe </span>{ aesdec(a, round_key) }
 <a href=#40 id=40 data-nosnippet>40</a>}
 <a href=#41 id=41 data-nosnippet>41</a>
 <a href=#42 id=42 data-nosnippet>42</a><span class="doccomment">/// Performs the last round of an AES decryption flow on data (state) in `a`.
@@ -46,8 +46,8 @@
 <a href=#46 id=46 data-nosnippet>46</a>#[target_feature(enable = <span class="string">"aes"</span>)]
 <a href=#47 id=47 data-nosnippet>47</a>#[cfg_attr(test, assert_instr(aesdeclast))]
 <a href=#48 id=48 data-nosnippet>48</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#49 id=49 data-nosnippet>49</a></span><span class="kw">pub unsafe fn </span>_mm_aesdeclast_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
-<a href=#50 id=50 data-nosnippet>50</a>    aesdeclast(a, round_key)
+<a href=#49 id=49 data-nosnippet>49</a></span><span class="kw">pub fn </span>_mm_aesdeclast_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
+<a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">unsafe </span>{ aesdeclast(a, round_key) }
 <a href=#51 id=51 data-nosnippet>51</a>}
 <a href=#52 id=52 data-nosnippet>52</a>
 <a href=#53 id=53 data-nosnippet>53</a><span class="doccomment">/// Performs one round of an AES encryption flow on data (state) in `a`.
@@ -57,8 +57,8 @@
 <a href=#57 id=57 data-nosnippet>57</a>#[target_feature(enable = <span class="string">"aes"</span>)]
 <a href=#58 id=58 data-nosnippet>58</a>#[cfg_attr(test, assert_instr(aesenc))]
 <a href=#59 id=59 data-nosnippet>59</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub unsafe fn </span>_mm_aesenc_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
-<a href=#61 id=61 data-nosnippet>61</a>    aesenc(a, round_key)
+<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub fn </span>_mm_aesenc_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
+<a href=#61 id=61 data-nosnippet>61</a>    <span class="kw">unsafe </span>{ aesenc(a, round_key) }
 <a href=#62 id=62 data-nosnippet>62</a>}
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a><span class="doccomment">/// Performs the last round of an AES encryption flow on data (state) in `a`.
@@ -68,8 +68,8 @@
 <a href=#68 id=68 data-nosnippet>68</a>#[target_feature(enable = <span class="string">"aes"</span>)]
 <a href=#69 id=69 data-nosnippet>69</a>#[cfg_attr(test, assert_instr(aesenclast))]
 <a href=#70 id=70 data-nosnippet>70</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#71 id=71 data-nosnippet>71</a></span><span class="kw">pub unsafe fn </span>_mm_aesenclast_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
-<a href=#72 id=72 data-nosnippet>72</a>    aesenclast(a, round_key)
+<a href=#71 id=71 data-nosnippet>71</a></span><span class="kw">pub fn </span>_mm_aesenclast_si128(a: __m128i, round_key: __m128i) -&gt; __m128i {
+<a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">unsafe </span>{ aesenclast(a, round_key) }
 <a href=#73 id=73 data-nosnippet>73</a>}
 <a href=#74 id=74 data-nosnippet>74</a>
 <a href=#75 id=75 data-nosnippet>75</a><span class="doccomment">/// Performs the `InvMixColumns` transformation on `a`.
@@ -79,8 +79,8 @@
 <a href=#79 id=79 data-nosnippet>79</a>#[target_feature(enable = <span class="string">"aes"</span>)]
 <a href=#80 id=80 data-nosnippet>80</a>#[cfg_attr(test, assert_instr(aesimc))]
 <a href=#81 id=81 data-nosnippet>81</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#82 id=82 data-nosnippet>82</a></span><span class="kw">pub unsafe fn </span>_mm_aesimc_si128(a: __m128i) -&gt; __m128i {
-<a href=#83 id=83 data-nosnippet>83</a>    aesimc(a)
+<a href=#82 id=82 data-nosnippet>82</a></span><span class="kw">pub fn </span>_mm_aesimc_si128(a: __m128i) -&gt; __m128i {
+<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">unsafe </span>{ aesimc(a) }
 <a href=#84 id=84 data-nosnippet>84</a>}
 <a href=#85 id=85 data-nosnippet>85</a>
 <a href=#86 id=86 data-nosnippet>86</a><span class="doccomment">/// Assist in expanding the AES cipher key.
@@ -95,9 +95,9 @@
 <a href=#95 id=95 data-nosnippet>95</a>#[cfg_attr(test, assert_instr(aeskeygenassist, IMM8 = <span class="number">0</span>))]
 <a href=#96 id=96 data-nosnippet>96</a>#[rustc_legacy_const_generics(<span class="number">1</span>)]
 <a href=#97 id=97 data-nosnippet>97</a>#[stable(feature = <span class="string">"simd_x86"</span>, since = <span class="string">"1.27.0"</span>)]
-<a href=#98 id=98 data-nosnippet>98</a></span><span class="kw">pub unsafe fn </span>_mm_aeskeygenassist_si128&lt;<span class="kw">const </span>IMM8: i32&gt;(a: __m128i) -&gt; __m128i {
+<a href=#98 id=98 data-nosnippet>98</a></span><span class="kw">pub fn </span>_mm_aeskeygenassist_si128&lt;<span class="kw">const </span>IMM8: i32&gt;(a: __m128i) -&gt; __m128i {
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="macro">static_assert_uimm_bits!</span>(IMM8, <span class="number">8</span>);
-<a href=#100 id=100 data-nosnippet>100</a>    aeskeygenassist(a, IMM8 <span class="kw">as </span>u8)
+<a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">unsafe </span>{ aeskeygenassist(a, IMM8 <span class="kw">as </span>u8) }
 <a href=#101 id=101 data-nosnippet>101</a>}
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a><span class="attr">#[cfg(test)]
