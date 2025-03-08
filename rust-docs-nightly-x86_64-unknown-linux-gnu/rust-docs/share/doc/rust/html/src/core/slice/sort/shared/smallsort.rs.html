@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/shared/smallsort.rs`."><title>smallsort.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (b74da9613 2025-03-06)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../src-files1.87.0.js"></script><script defer src="../../../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/shared/</div>smallsort.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains a variety of sort implementations that are optimized for small lengths.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/shared/smallsort.rs`."><title>smallsort.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (f5a1ef712 2025-03-07)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../../../src-files1.87.0.js"></script><script defer src="../../../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/shared/</div>smallsort.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains a variety of sort implementations that are optimized for small lengths.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, ManuallyDrop, MaybeUninit};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::slice::sort::shared::FreezeMarker;
@@ -113,7 +113,7 @@
 <a href=#113 id=113 data-nosnippet>113</a><span class="kw">impl</span>&lt;T: FreezeMarker&gt; UnstableSmallSortFreezeTypeImpl <span class="kw">for </span>T {
 <a href=#114 id=114 data-nosnippet>114</a>    <span class="attr">#[inline(always)]
 <a href=#115 id=115 data-nosnippet>115</a>    </span>default <span class="kw">fn </span>small_sort_threshold() -&gt; usize {
-<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">if </span>(mem::size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
+<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">if </span>(size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
 <a href=#117 id=117 data-nosnippet>117</a>            SMALL_SORT_GENERAL_THRESHOLD
 <a href=#118 id=118 data-nosnippet>118</a>        } <span class="kw">else </span>{
 <a href=#119 id=119 data-nosnippet>119</a>            SMALL_SORT_FALLBACK_THRESHOLD
@@ -125,7 +125,7 @@
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="kw">where
 <a href=#126 id=126 data-nosnippet>126</a>        </span>F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool,
 <a href=#127 id=127 data-nosnippet>127</a>    {
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">if </span>(mem::size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">if </span>(size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
 <a href=#129 id=129 data-nosnippet>129</a>            small_sort_general(v, is_less);
 <a href=#130 id=130 data-nosnippet>130</a>        } <span class="kw">else </span>{
 <a href=#131 id=131 data-nosnippet>131</a>            small_sort_fallback(v, is_less);
@@ -143,10 +143,10 @@
 <a href=#143 id=143 data-nosnippet>143</a>    <span class="attr">#[inline(always)]
 <a href=#144 id=144 data-nosnippet>144</a>    </span><span class="kw">fn </span>small_sort_threshold() -&gt; usize {
 <a href=#145 id=145 data-nosnippet>145</a>        <span class="kw">if </span>has_efficient_in_place_swap::&lt;T&gt;()
-<a href=#146 id=146 data-nosnippet>146</a>            &amp;&amp; (mem::size_of::&lt;T&gt;() * SMALL_SORT_NETWORK_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE
+<a href=#146 id=146 data-nosnippet>146</a>            &amp;&amp; (size_of::&lt;T&gt;() * SMALL_SORT_NETWORK_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE
 <a href=#147 id=147 data-nosnippet>147</a>        {
 <a href=#148 id=148 data-nosnippet>148</a>            SMALL_SORT_NETWORK_THRESHOLD
-<a href=#149 id=149 data-nosnippet>149</a>        } <span class="kw">else if </span>(mem::size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
+<a href=#149 id=149 data-nosnippet>149</a>        } <span class="kw">else if </span>(size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
 <a href=#150 id=150 data-nosnippet>150</a>            SMALL_SORT_GENERAL_THRESHOLD
 <a href=#151 id=151 data-nosnippet>151</a>        } <span class="kw">else </span>{
 <a href=#152 id=152 data-nosnippet>152</a>            SMALL_SORT_FALLBACK_THRESHOLD
@@ -159,10 +159,10 @@
 <a href=#159 id=159 data-nosnippet>159</a>        </span>F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool,
 <a href=#160 id=160 data-nosnippet>160</a>    {
 <a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">if </span>has_efficient_in_place_swap::&lt;T&gt;()
-<a href=#162 id=162 data-nosnippet>162</a>            &amp;&amp; (mem::size_of::&lt;T&gt;() * SMALL_SORT_NETWORK_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE
+<a href=#162 id=162 data-nosnippet>162</a>            &amp;&amp; (size_of::&lt;T&gt;() * SMALL_SORT_NETWORK_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE
 <a href=#163 id=163 data-nosnippet>163</a>        {
 <a href=#164 id=164 data-nosnippet>164</a>            small_sort_network(v, is_less);
-<a href=#165 id=165 data-nosnippet>165</a>        } <span class="kw">else if </span>(mem::size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
+<a href=#165 id=165 data-nosnippet>165</a>        } <span class="kw">else if </span>(size_of::&lt;T&gt;() * SMALL_SORT_GENERAL_SCRATCH_LEN) &lt;= MAX_STACK_ARRAY_SIZE {
 <a href=#166 id=166 data-nosnippet>166</a>            small_sort_general(v, is_less);
 <a href=#167 id=167 data-nosnippet>167</a>        } <span class="kw">else </span>{
 <a href=#168 id=168 data-nosnippet>168</a>            small_sort_fallback(v, is_less);
@@ -238,7 +238,7 @@
 <a href=#238 id=238 data-nosnippet>238</a>    </span><span class="kw">unsafe </span>{
 <a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>scratch_base = scratch.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>T;
 <a href=#240 id=240 data-nosnippet>240</a>
-<a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>presorted_len = <span class="kw">if const </span>{ mem::size_of::&lt;T&gt;() &lt;= <span class="number">16 </span>} &amp;&amp; len &gt;= <span class="number">16 </span>{
+<a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>presorted_len = <span class="kw">if const </span>{ size_of::&lt;T&gt;() &lt;= <span class="number">16 </span>} &amp;&amp; len &gt;= <span class="number">16 </span>{
 <a href=#242 id=242 data-nosnippet>242</a>            <span class="comment">// SAFETY: scratch_base is valid and has enough space.
 <a href=#243 id=243 data-nosnippet>243</a>            </span>sort8_stable(v_base, scratch_base, scratch_base.add(len), is_less);
 <a href=#244 id=244 data-nosnippet>244</a>            sort8_stable(
@@ -863,5 +863,5 @@
 <a href=#863 id=863 data-nosnippet>863</a><span class="attr">#[must_use]
 <a href=#864 id=864 data-nosnippet>864</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>has_efficient_in_place_swap&lt;T&gt;() -&gt; bool {
 <a href=#865 id=865 data-nosnippet>865</a>    <span class="comment">// Heuristic that holds true on all tested 64-bit capable architectures.
-<a href=#866 id=866 data-nosnippet>866</a>    </span>mem::size_of::&lt;T&gt;() &lt;= <span class="number">8 </span><span class="comment">// mem::size_of::&lt;u64&gt;()
+<a href=#866 id=866 data-nosnippet>866</a>    </span>size_of::&lt;T&gt;() &lt;= <span class="number">8 </span><span class="comment">// size_of::&lt;u64&gt;()
 <a href=#867 id=867 data-nosnippet>867</a></span>}</code></pre></div></section></main></body></html>

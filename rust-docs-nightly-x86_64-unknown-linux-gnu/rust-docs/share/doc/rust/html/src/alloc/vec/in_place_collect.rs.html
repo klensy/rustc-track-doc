@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/vec/in_place_collect.rs`."><title>in_place_collect.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (b74da9613 2025-03-06)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files1.87.0.js"></script><script defer src="../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/vec/</div>in_place_collect.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Inplace iterate-and-collect specialization for `Vec`
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/vec/in_place_collect.rs`."><title>in_place_collect.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (f5a1ef712 2025-03-07)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files1.87.0.js"></script><script defer src="../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/vec/</div>in_place_collect.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Inplace iterate-and-collect specialization for `Vec`
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Note: This documents Vec internals, some of the following sections explain implementation
 <a href=#4 id=4 data-nosnippet>4</a>//! details and are best read together with the source of this module.
@@ -171,7 +171,7 @@
 <a href=#171 id=171 data-nosnippet>171</a>) -&gt; bool {
 <a href=#172 id=172 data-nosnippet>172</a>    <span class="comment">// Require matching alignments because an alignment-changing realloc is inefficient on many
 <a href=#173 id=173 data-nosnippet>173</a>    // system allocators and better implementations would require the unstable Allocator trait.
-<a href=#174 id=174 data-nosnippet>174</a>    </span><span class="kw">if const </span>{ SRC::IS_ZST || DEST::IS_ZST || mem::align_of::&lt;SRC&gt;() != mem::align_of::&lt;DEST&gt;() } {
+<a href=#174 id=174 data-nosnippet>174</a>    </span><span class="kw">if const </span>{ SRC::IS_ZST || DEST::IS_ZST || align_of::&lt;SRC&gt;() != align_of::&lt;DEST&gt;() } {
 <a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">return </span><span class="bool-val">false</span>;
 <a href=#176 id=176 data-nosnippet>176</a>    }
 <a href=#177 id=177 data-nosnippet>177</a>
@@ -181,7 +181,7 @@
 <a href=#181 id=181 data-nosnippet>181</a>            // e.g.
 <a href=#182 id=182 data-nosnippet>182</a>            // - 1 x [u8; 4] -&gt; 4x u8, via flatten
 <a href=#183 id=183 data-nosnippet>183</a>            // - 4 x u8 -&gt; 1x [u8; 4], via array_chunks
-<a href=#184 id=184 data-nosnippet>184</a>            </span>mem::size_of::&lt;SRC&gt;() * step_merge.get() &gt;= mem::size_of::&lt;DEST&gt;() * step_expand.get()
+<a href=#184 id=184 data-nosnippet>184</a>            </span>size_of::&lt;SRC&gt;() * step_merge.get() &gt;= size_of::&lt;DEST&gt;() * step_expand.get()
 <a href=#185 id=185 data-nosnippet>185</a>        }
 <a href=#186 id=186 data-nosnippet>186</a>        <span class="comment">// Fall back to other from_iter impls if an overflow occurred in the step merge/expansion
 <a href=#187 id=187 data-nosnippet>187</a>        // tracking.
@@ -190,7 +190,7 @@
 <a href=#190 id=190 data-nosnippet>190</a>}
 <a href=#191 id=191 data-nosnippet>191</a>
 <a href=#192 id=192 data-nosnippet>192</a><span class="kw">const fn </span>needs_realloc&lt;SRC, DEST&gt;(src_cap: usize, dst_cap: usize) -&gt; bool {
-<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">if const </span>{ mem::align_of::&lt;SRC&gt;() != mem::align_of::&lt;DEST&gt;() } {
+<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">if const </span>{ align_of::&lt;SRC&gt;() != align_of::&lt;DEST&gt;() } {
 <a href=#194 id=194 data-nosnippet>194</a>        <span class="comment">// FIXME(const-hack): use unreachable! once that works in const
 <a href=#195 id=195 data-nosnippet>195</a>        </span><span class="macro">panic!</span>(<span class="string">"in_place_collectible() prevents this"</span>);
 <a href=#196 id=196 data-nosnippet>196</a>    }
@@ -199,8 +199,8 @@
 <a href=#199 id=199 data-nosnippet>199</a>    // the caller will have calculated a `dst_cap` that is an integer multiple of
 <a href=#200 id=200 data-nosnippet>200</a>    // `src_cap` without remainder.
 <a href=#201 id=201 data-nosnippet>201</a>    </span><span class="kw">if const </span>{
-<a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">let </span>src_sz = mem::size_of::&lt;SRC&gt;();
-<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">let </span>dest_sz = mem::size_of::&lt;DEST&gt;();
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">let </span>src_sz = size_of::&lt;SRC&gt;();
+<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">let </span>dest_sz = size_of::&lt;DEST&gt;();
 <a href=#204 id=204 data-nosnippet>204</a>        dest_sz != <span class="number">0 </span>&amp;&amp; src_sz % dest_sz == <span class="number">0
 <a href=#205 id=205 data-nosnippet>205</a>    </span>} {
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">return </span><span class="bool-val">false</span>;
@@ -208,7 +208,7 @@
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a>    <span class="comment">// type layouts don't guarantee a fit, so do a runtime check to see if
 <a href=#210 id=210 data-nosnippet>210</a>    // the allocations happen to match
-<a href=#211 id=211 data-nosnippet>211</a>    </span>src_cap &gt; <span class="number">0 </span>&amp;&amp; src_cap * mem::size_of::&lt;SRC&gt;() != dst_cap * mem::size_of::&lt;DEST&gt;()
+<a href=#211 id=211 data-nosnippet>211</a>    </span>src_cap &gt; <span class="number">0 </span>&amp;&amp; src_cap * size_of::&lt;SRC&gt;() != dst_cap * size_of::&lt;DEST&gt;()
 <a href=#212 id=212 data-nosnippet>212</a>}
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a><span class="doccomment">/// This provides a shorthand for the source type since local type aliases aren't a thing.
@@ -262,7 +262,7 @@
 <a href=#262 id=262 data-nosnippet>262</a>            inner.buf.cast::&lt;T&gt;(),
 <a href=#263 id=263 data-nosnippet>263</a>            inner.end <span class="kw">as </span><span class="kw-2">*const </span>T,
 <a href=#264 id=264 data-nosnippet>264</a>            <span class="comment">// SAFETY: the multiplication can not overflow, since `inner.cap * size_of::&lt;I::SRC&gt;()` is the size of the allocation.
-<a href=#265 id=265 data-nosnippet>265</a>            </span>inner.cap.unchecked_mul(mem::size_of::&lt;I::Src&gt;()) / mem::size_of::&lt;T&gt;(),
+<a href=#265 id=265 data-nosnippet>265</a>            </span>inner.cap.unchecked_mul(size_of::&lt;I::Src&gt;()) / size_of::&lt;T&gt;(),
 <a href=#266 id=266 data-nosnippet>266</a>        )
 <a href=#267 id=267 data-nosnippet>267</a>    };
 <a href=#268 id=268 data-nosnippet>268</a>
@@ -310,14 +310,14 @@
 <a href=#310 id=310 data-nosnippet>310</a>        <span class="macro">debug_assert_ne!</span>(dst_cap, <span class="number">0</span>);
 <a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">unsafe </span>{
 <a href=#312 id=312 data-nosnippet>312</a>            <span class="comment">// The old allocation exists, therefore it must have a valid layout.
-<a href=#313 id=313 data-nosnippet>313</a>            </span><span class="kw">let </span>src_align = mem::align_of::&lt;I::Src&gt;();
-<a href=#314 id=314 data-nosnippet>314</a>            <span class="kw">let </span>src_size = mem::size_of::&lt;I::Src&gt;().unchecked_mul(src_cap);
+<a href=#313 id=313 data-nosnippet>313</a>            </span><span class="kw">let </span>src_align = align_of::&lt;I::Src&gt;();
+<a href=#314 id=314 data-nosnippet>314</a>            <span class="kw">let </span>src_size = size_of::&lt;I::Src&gt;().unchecked_mul(src_cap);
 <a href=#315 id=315 data-nosnippet>315</a>            <span class="kw">let </span>old_layout = Layout::from_size_align_unchecked(src_size, src_align);
 <a href=#316 id=316 data-nosnippet>316</a>
 <a href=#317 id=317 data-nosnippet>317</a>            <span class="comment">// The allocation must be equal or smaller for in-place iteration to be possible
 <a href=#318 id=318 data-nosnippet>318</a>            // therefore the new layout must be ≤ the old one and therefore valid.
-<a href=#319 id=319 data-nosnippet>319</a>            </span><span class="kw">let </span>dst_align = mem::align_of::&lt;T&gt;();
-<a href=#320 id=320 data-nosnippet>320</a>            <span class="kw">let </span>dst_size = mem::size_of::&lt;T&gt;().unchecked_mul(dst_cap);
+<a href=#319 id=319 data-nosnippet>319</a>            </span><span class="kw">let </span>dst_align = align_of::&lt;T&gt;();
+<a href=#320 id=320 data-nosnippet>320</a>            <span class="kw">let </span>dst_size = size_of::&lt;T&gt;().unchecked_mul(dst_cap);
 <a href=#321 id=321 data-nosnippet>321</a>            <span class="kw">let </span>new_layout = Layout::from_size_align_unchecked(dst_size, dst_align);
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a>            <span class="kw">let </span>result = alloc.shrink(dst_buf.cast(), old_layout, new_layout);
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>            dst_buf = reallocated.cast::&lt;T&gt;();
 <a href=#326 id=326 data-nosnippet>326</a>        }
 <a href=#327 id=327 data-nosnippet>327</a>    } <span class="kw">else </span>{
-<a href=#328 id=328 data-nosnippet>328</a>        <span class="macro">debug_assert_eq!</span>(src_cap * mem::size_of::&lt;I::Src&gt;(), dst_cap * mem::size_of::&lt;T&gt;());
+<a href=#328 id=328 data-nosnippet>328</a>        <span class="macro">debug_assert_eq!</span>(src_cap * size_of::&lt;I::Src&gt;(), dst_cap * size_of::&lt;T&gt;());
 <a href=#329 id=329 data-nosnippet>329</a>    }
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>    mem::forget(dst_guard);
