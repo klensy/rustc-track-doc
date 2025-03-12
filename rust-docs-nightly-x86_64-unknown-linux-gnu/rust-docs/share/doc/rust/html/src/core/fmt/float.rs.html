@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/fmt/float.rs`."><title>float.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (9fb94b32d 2025-03-10)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files1.87.0.js"></script><script defer src="../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/fmt/</div>float.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{Debug, Display, Formatter, LowerExp, <span class="prelude-ty">Result</span>, UpperExp};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/fmt/float.rs`."><title>float.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.87.0" data-rustdoc-version="1.87.0-nightly (665025243 2025-03-11)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-d8ac8691.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files1.87.0.js"></script><script defer src="../../../static.files/main-a7bf3405.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/fmt/</div>float.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{Debug, Display, Formatter, LowerExp, <span class="prelude-ty">Result</span>, UpperExp};
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::mem::MaybeUninit;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::num::{flt2dec, fmt <span class="kw">as </span>numfmt};
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a>    fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;,
 <a href=#30 id=30 data-nosnippet>30</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#31 id=31 data-nosnippet>31</a>    sign: flt2dec::Sign,
-<a href=#32 id=32 data-nosnippet>32</a>    precision: usize,
+<a href=#32 id=32 data-nosnippet>32</a>    precision: u16,
 <a href=#33 id=33 data-nosnippet>33</a>) -&gt; <span class="prelude-ty">Result</span>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">where
 <a href=#35 id=35 data-nosnippet>35</a>    </span>T: flt2dec::DecodableFloat,
@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a>        flt2dec::strategy::grisu::format_exact,
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="kw-2">*</span>num,
 <a href=#42 id=42 data-nosnippet>42</a>        sign,
-<a href=#43 id=43 data-nosnippet>43</a>        precision,
+<a href=#43 id=43 data-nosnippet>43</a>        precision.into(),
 <a href=#44 id=44 data-nosnippet>44</a>        <span class="kw-2">&amp;mut </span>buf,
 <a href=#45 id=45 data-nosnippet>45</a>        <span class="kw-2">&amp;mut </span>parts,
 <a href=#46 id=46 data-nosnippet>46</a>    );
@@ -55,7 +55,7 @@
 <a href=#55 id=55 data-nosnippet>55</a>    fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;,
 <a href=#56 id=56 data-nosnippet>56</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#57 id=57 data-nosnippet>57</a>    sign: flt2dec::Sign,
-<a href=#58 id=58 data-nosnippet>58</a>    precision: usize,
+<a href=#58 id=58 data-nosnippet>58</a>    precision: u16,
 <a href=#59 id=59 data-nosnippet>59</a>) -&gt; <span class="prelude-ty">Result</span>
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">where
 <a href=#61 id=61 data-nosnippet>61</a>    </span>T: flt2dec::DecodableFloat,
@@ -68,7 +68,7 @@
 <a href=#68 id=68 data-nosnippet>68</a>        flt2dec::strategy::grisu::format_shortest,
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="kw-2">*</span>num,
 <a href=#70 id=70 data-nosnippet>70</a>        sign,
-<a href=#71 id=71 data-nosnippet>71</a>        precision,
+<a href=#71 id=71 data-nosnippet>71</a>        precision.into(),
 <a href=#72 id=72 data-nosnippet>72</a>        <span class="kw-2">&amp;mut </span>buf,
 <a href=#73 id=73 data-nosnippet>73</a>        <span class="kw-2">&amp;mut </span>parts,
 <a href=#74 id=74 data-nosnippet>74</a>    );
@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>    fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;,
 <a href=#102 id=102 data-nosnippet>102</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#103 id=103 data-nosnippet>103</a>    sign: flt2dec::Sign,
-<a href=#104 id=104 data-nosnippet>104</a>    precision: usize,
+<a href=#104 id=104 data-nosnippet>104</a>    precision: u16,
 <a href=#105 id=105 data-nosnippet>105</a>    upper: bool,
 <a href=#106 id=106 data-nosnippet>106</a>) -&gt; <span class="prelude-ty">Result</span>
 <a href=#107 id=107 data-nosnippet>107</a><span class="kw">where
@@ -113,7 +113,7 @@
 <a href=#113 id=113 data-nosnippet>113</a>        flt2dec::strategy::grisu::format_exact,
 <a href=#114 id=114 data-nosnippet>114</a>        <span class="kw-2">*</span>num,
 <a href=#115 id=115 data-nosnippet>115</a>        sign,
-<a href=#116 id=116 data-nosnippet>116</a>        precision,
+<a href=#116 id=116 data-nosnippet>116</a>        precision.into(),
 <a href=#117 id=117 data-nosnippet>117</a>        upper,
 <a href=#118 id=118 data-nosnippet>118</a>        <span class="kw-2">&amp;mut </span>buf,
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="kw-2">&amp;mut </span>parts,
