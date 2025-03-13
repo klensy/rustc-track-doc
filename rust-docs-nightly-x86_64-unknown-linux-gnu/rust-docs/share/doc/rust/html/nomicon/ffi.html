@@ -177,7 +177,7 @@ compile if snappy is installed:</p>
 <pre><code class="language-rust ignore">use libc::size_t;
 
 #[link(name = "snappy")]
-extern {
+unsafe extern "C" {
     fn snappy_max_compressed_length(source_length: size_t) -&gt; size_t;
 }
 
@@ -203,7 +203,7 @@ of keeping the binding correct at runtime.</p>
 <pre><code class="language-rust ignore">use libc::{c_int, size_t};
 
 #[link(name = "snappy")]
-extern {
+unsafe extern {
     fn snappy_compress(input: *const u8,
                        input_length: size_t,
                        compressed: *mut u8,
@@ -360,7 +360,7 @@ This is fairly easy, but requires a few things.</p>
 <h3 id="rust-side"><a class="header" href="#rust-side">Rust side</a></h3>
 <p>First, we assume you have a lib crate named as <code>rust_from_c</code>.
 <code>lib.rs</code> should have Rust code as following:</p>
-<pre><pre class="playground"><code class="language-rust edition2021">#[no_mangle]
+<pre><pre class="playground"><code class="language-rust edition2024">#[unsafe(no_mangle)]
 pub extern "C" fn hello_from_rust() {
     println!("Hello from Rust!");
 }
@@ -404,12 +404,12 @@ with the correct calling convention to make it callable from C code.</p>
 to the C library and afterwards be invoked from there.</p>
 <p>A basic example is:</p>
 <p>Rust code:</p>
-<pre><pre class="playground"><code class="language-rust no_run edition2021">extern fn callback(a: i32) {
+<pre><pre class="playground"><code class="language-rust no_run edition2024">extern fn callback(a: i32) {
     println!("I'm called from C with value {0}", a);
 }
 
 #[link(name = "extlib")]
-extern {
+unsafe extern {
    fn register_callback(cb: extern fn(i32)) -&gt; i32;
    fn trigger_callback();
 }
@@ -445,12 +445,12 @@ C library. The C library can then include the pointer to the Rust object in
 the notification. This will allow the callback to unsafely access the
 referenced Rust object.</p>
 <p>Rust code:</p>
-<pre><pre class="playground"><code class="language-rust no_run edition2021">struct RustObject {
+<pre><pre class="playground"><code class="language-rust no_run edition2024">struct RustObject {
     a: i32,
     // Other members...
 }
 
-extern "C" fn callback(target: *mut RustObject, a: i32) {
+unsafe extern "C" fn callback(target: *mut RustObject, a: i32) {
     println!("I'm called from C with value {0}", a);
     unsafe {
         // Update the value in RustObject with the value received from the callback:
@@ -459,9 +459,9 @@ extern "C" fn callback(target: *mut RustObject, a: i32) {
 }
 
 #[link(name = "extlib")]
-extern {
+unsafe extern {
    fn register_callback(target: *mut RustObject,
-                        cb: extern fn(*mut RustObject, i32)) -&gt; i32;
+                        cb: unsafe extern fn(*mut RustObject, i32)) -&gt; i32;
    fn trigger_callback();
 }
 
@@ -560,7 +560,7 @@ unsafe are only allowed inside unsafe blocks. Unsafe blocks isolate unsafety and
 the compiler that the unsafety does not leak out of the block.</p>
 <p>Unsafe functions, on the other hand, advertise it to the world. An unsafe function is written like
 this:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>unsafe fn kaboom(ptr: *const i32) -&gt; i32 { *ptr }
 <span class="boring">}</span></code></pre></pre>
@@ -571,7 +571,7 @@ global state. In order to access these variables, you declare them in <code>exte
 blocks with the <code>static</code> keyword:</p>
 <!-- ignore: requires libc crate -->
 <pre><code class="language-rust ignore">#[link(name = "readline")]
-extern {
+unsafe extern {
     static rl_readline_version: libc::c_int;
 }
 
@@ -587,7 +587,7 @@ them.</p>
 use std::ptr;
 
 #[link(name = "readline")]
-extern {
+unsafe extern {
     static mut rl_prompt: *const libc::c_char;
 }
 
@@ -611,7 +611,7 @@ conventions. Rust provides a way to tell the compiler which convention to use:</
 <pre><code class="language-rust ignore">#[cfg(all(target_os = "win32", target_arch = "x86"))]
 #[link(name = "kernel32")]
 #[allow(non_snake_case)]
-extern "stdcall" {
+unsafe extern "stdcall" {
     fn SetEnvironmentVariableA(n: *const u8, v: *const u8) -&gt; libc::c_int;
 }
 <span class="boring">fn main() { }</span></code></pre>
@@ -662,7 +662,7 @@ against <code>libc</code> and <code>libm</code> by default.</p>
 <h2 id="variadic-functions"><a class="header" href="#variadic-functions">Variadic functions</a></h2>
 <p>In C, functions can be 'variadic', meaning they accept a variable number of arguments. This can
 be achieved in Rust by specifying <code>...</code> within the argument list of a foreign function declaration:</p>
-<pre><code class="language-no_run">extern {
+<pre><code class="language-no_run">unsafe extern {
     fn foo(x: i32, ...);
 }
 
@@ -673,7 +673,7 @@ fn main() {
 }
 </code></pre>
 <p>Normal Rust functions can <em>not</em> be variadic:</p>
-<pre><pre class="playground"><code class="language-rust compile_fail edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// This will not compile
 
@@ -704,7 +704,7 @@ we have function pointers flying across the FFI boundary in both directions.</p>
 <pre><code class="language-rust ignore">use libc::c_int;
 
 <span class="boring">#[cfg(hidden)]
-</span>extern "C" {
+</span>unsafe extern "C" {
     /// Registers the callback.
     fn register(cb: Option&lt;extern "C" fn(Option&lt;extern "C" fn(c_int) -&gt; c_int&gt;, c_int) -&gt; c_int&gt;);
 }
@@ -758,8 +758,8 @@ undefined</strong>, as is the interaction of <code>panic</code> with foreign exc
 mechanisms (notably C++'s <code>try</code>/<code>catch</code>).</p>
 <h3 id="rust-panic-with-c-unwind"><a class="header" href="#rust-panic-with-c-unwind">Rust <code>panic</code> with <code>"C-unwind"</code></a></h3>
 <!-- ignore: using unstable feature -->
-<pre><code class="language-rust ignore">#[no_mangle]
-extern "C-unwind" fn example() {
+<pre><code class="language-rust ignore">#[unsafe(no_mangle)]
+unsafe extern "C-unwind" fn example() {
     panic!("Uh oh");
 }</code></pre>
 <p>This function (when compiled with <code>panic=unwind</code>) is permitted to unwind C++
@@ -780,13 +780,13 @@ stack frames.</p>
 <h3 id="c-throw-with-c-unwind"><a class="header" href="#c-throw-with-c-unwind">C++ <code>throw</code> with <code>"C-unwind"</code></a></h3>
 <!-- ignore: using unstable feature -->
 <pre><code class="language-rust ignore">#[link(...)]
-extern "C-unwind" {
+unsafe extern "C-unwind" {
     // A C++ function that may throw an exception
     fn may_throw();
 }
 
-#[no_mangle]
-extern "C-unwind" fn rust_passthrough() {
+#[unsafe(no_mangle)]
+unsafe extern "C-unwind" fn rust_passthrough() {
     let b = Box::new(5);
     unsafe { may_throw(); }
     println!("{:?}", &amp;b);
@@ -808,9 +808,9 @@ exception thrown by <code>may_throw</code>.</p>
 <p>If <code>may_throw</code> does throw an exception, <code>b</code> will be dropped. Otherwise, <code>5</code>
 will be printed.</p>
 <h3 id="panic-can-be-stopped-at-an-abi-boundary"><a class="header" href="#panic-can-be-stopped-at-an-abi-boundary"><code>panic</code> can be stopped at an ABI boundary</a></h3>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>#[no_mangle]
+</span>#[unsafe(no_mangle)]
 extern "C" fn assert_nonzero(input: u32) {
     assert!(input != 0)
 }
@@ -820,9 +820,9 @@ to (safely) abort the process, whether or not compiled with <code>panic=abort</c
 <h3 id="catching-panic-preemptively"><a class="header" href="#catching-panic-preemptively">Catching <code>panic</code> preemptively</a></h3>
 <p>If you are writing Rust code that may panic, and you don't wish to abort the
 process if it panics, you must use <a href="../std/panic/fn.catch_unwind.html"><code>catch_unwind</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021">use std::panic::catch_unwind;
+<pre><pre class="playground"><code class="language-rust edition2024">use std::panic::catch_unwind;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn oh_no() -&gt; i32 {
     let result = catch_unwind(|| {
         panic!("Oops!");
@@ -845,7 +845,7 @@ void bar(void *arg);
 </code></pre>
 <p>We can represent this in Rust with the <code>c_void</code> type:</p>
 <!-- ignore: requires libc crate -->
-<pre><code class="language-rust ignore">extern "C" {
+<pre><code class="language-rust ignore">unsafe extern "C" {
     pub fn foo(arg: *mut libc::c_void);
     pub fn bar(arg: *mut libc::c_void);
 }
@@ -860,7 +860,7 @@ void foo(struct Foo *arg);
 void bar(struct Bar *arg);
 </code></pre>
 <p>To do this in Rust, let’s create our own opaque types:</p>
-<pre><pre class="playground"><code class="language-rust edition2021">#[repr(C)]
+<pre><pre class="playground"><code class="language-rust edition2024">#[repr(C)]
 pub struct Foo {
     _data: (),
     _marker:
@@ -873,7 +873,7 @@ pub struct Bar {
         core::marker::PhantomData&lt;(*mut u8, core::marker::PhantomPinned)&gt;,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn foo(arg: *mut Foo);
     pub fn bar(arg: *mut Bar);
 }

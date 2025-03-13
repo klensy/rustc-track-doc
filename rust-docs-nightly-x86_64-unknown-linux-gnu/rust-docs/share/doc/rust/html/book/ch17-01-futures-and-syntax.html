@@ -225,7 +225,7 @@ page finishes that whole process first.</p>
 a request to it, and returns the text of the title element (see Listing 17-1).</p>
 <figure class="listing">
 <span class="file-name">Filename: src/main.rs</span>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate trpl; // required for mdbook test
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate trpl; // required for mdbook test
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    // TODO: we'll add this next!
@@ -266,8 +266,8 @@ allows Rust to avoid running async code until it’s actually needed.</p>
 using <code>thread::spawn</code> in <a href="ch16-01-threads.html#creating-a-new-thread-with-spawn">Creating a New Thread with
 spawn</a><!--ignore-->, where the closure we passed to another
 thread started running immediately. It’s also different from how many other
-languages approach async. But it’s important for Rust, and we’ll see why
-later.</p>
+languages approach async. But it’s important for Rust to be able to provide
+its performance guarantees, just as it is with iterators.</p>
 </section>
 <p>Once we have <code>response_text</code>, we can parse it into an instance of the <code>Html</code>
 type using <code>Html::parse</code>. Instead of a raw string, we now have a data type we
@@ -289,7 +289,7 @@ of <code>page_url_for</code> to chain the <code>trpl::get</code> and <code>text<
 with <code>await</code> between them, as shown in Listing 17-2.</p>
 <figure class="listing">
 <span class="file-name">Filename: src/main.rs</span>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate trpl; // required for mdbook test
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate trpl; // required for mdbook test
 </span><span class="boring">
 </span><span class="boring">use trpl::Html;
 </span><span class="boring">
@@ -317,13 +317,13 @@ anonymous data type the compiler creates for that async block.</p>
 <em>future</em> of the return type. To the compiler, a function definition such as the
 <code>async fn page_title</code> in Listing 17-1 is equivalent to a non-async function
 defined like this:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">extern crate trpl; // required for mdbook test
 </span>use std::future::Future;
 use trpl::Html;
 
-fn page_title(url: &amp;str) -&gt; impl Future&lt;Output = Option&lt;String&gt;&gt; + '_ {
+fn page_title(url: &amp;str) -&gt; impl Future&lt;Output = Option&lt;String&gt;&gt; {
     async move {
         let text = trpl::get(url).await.text().await;
         Html::parse(&amp;text)
@@ -348,13 +348,6 @@ is just like other blocks you have seen.</li>
 <li>The new function body is an <code>async move</code> block because of how it uses the
 <code>url</code> parameter. (We’ll talk much more about <code>async</code> versus <code>async move</code> later
 in the chapter.)</li>
-<li>The new version of the function has a kind of lifetime we haven’t seen before
-in the output type: <code>'_</code>. Because the function returns a future that refers to
-a reference—in this case, the reference from the <code>url</code> parameter—we need to
-tell Rust that we want that reference to be included. We don’t have to name
-the lifetime here, because Rust is smart enough to know there’s only one
-reference that could be involved, but we <em>do</em> have to be explicit that the
-resulting future is bound by that lifetime.</li>
 </ul>
 <p>Now we can call <code>page_title</code> in <code>main</code>.</p>
 <h2 id="determining-a-single-pages-title"><a class="header" href="#determining-a-single-pages-title">Determining a Single Page’s Title</a></h2>
@@ -475,7 +468,7 @@ block so that the runtime can kick off some other work and then come back when
 it’s ready to try advancing the first one again. This is an invisible state machine,
 as if you’d written an enum like this to save the current state at each await
 point:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">extern crate trpl; // required for mdbook test
 </span><span class="boring">
@@ -501,7 +494,7 @@ function back in Listing 17-3. If <code>main</code> were an async function, some
 would need to manage the state machine for whatever future <code>main</code> returned, but
 <code>main</code> is the starting point for the program! Instead, we called the <code>trpl::run</code>
 function in <code>main</code> to set up a runtime and run the future returned by the
-<code>async</code> block until it returns <code>Ready</code>.</p>
+<code>async</code> block until it is done.</p>
 <section class="note" aria-role="note">
 <p>Note: Some runtimes provide macros so you <em>can</em> write an async <code>main</code>
 function. Those macros rewrite <code>async fn main() { ... }</code> to be a normal <code>fn main</code>, which does the same thing we did by hand in Listing 17-5: call a
@@ -565,7 +558,7 @@ also has some additional complexity that we can skip over for now.</p>
 has two cases. Unlike <code>Result</code>, though, there is no notion of success or
 failure baked into <code>Either</code>. Instead, it uses <code>Left</code> and <code>Right</code> to indicate
 “one or the other”:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>enum Either&lt;A, B&gt; {
     Left(A),

@@ -174,7 +174,7 @@ still leaving the <em>really</em> deep dive for other documentation.</p>
 <h3 id="the-future-trait"><a class="header" href="#the-future-trait">The <code>Future</code> Trait</a></h3>
 <p>Let’s start by taking a closer look at how the <code>Future</code> trait works. Here’s how
 Rust defines it:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -194,7 +194,7 @@ reference for its <code>self</code> parameter and a mutable reference to a <code
 and returns a <code>Poll&lt;Self::Output&gt;</code>. We’ll talk more about <code>Pin</code> and
 <code>Context</code> in a moment. For now, let’s focus on what the method returns,
 the <code>Poll</code> type:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>enum Poll&lt;T&gt; {
     Ready(T),
@@ -273,13 +273,13 @@ copy *only* the final `error` block from the errors
   --&gt; src/main.rs:48:33
    |
 48 |         trpl::join_all(futures).await;
-   |                                 ^^^^^ the trait `Unpin` is not implemented for `{async block@src/main.rs:10:23: 10:33}`, which is required by `Box&lt;{async block@src/main.rs:10:23: 10:33}&gt;: Future`
+   |                                 ^^^^^ the trait `Unpin` is not implemented for `{async block@src/main.rs:10:23: 10:33}`
    |
    = note: consider using the `pin!` macro
            consider using `Box::pin` if you need to access the pinned value outside of the current scope
    = note: required for `Box&lt;{async block@src/main.rs:10:23: 10:33}&gt;` to implement `Future`
 note: required by a bound in `futures_util::future::join_all::JoinAll`
-  --&gt; file:///home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.30/src/future/join_all.rs:29:8
+  --&gt; file:///home/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.30/src/future/join_all.rs:29:8
    |
 27 | pub struct JoinAll&lt;F&gt;
    |            ------- required by a bound in this struct
@@ -301,7 +301,7 @@ the collection all implement the <code>Future</code> trait, and <code>Box&lt;T&g
 <p>That’s a lot to absorb! To really understand it, let’s dive a little further
 into how the <code>Future</code> trait actually works, in particular around <em>pinning</em>.</p>
 <p>Look again at the definition of the <code>Future</code> trait:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -406,16 +406,15 @@ itself cannot move, because it is still pinned.</p>
 <figcaption>Figure 17-7: Moving a `Box` which points to a self-referential future type.</figcaption>
 </figure>
 <p>However, most types are perfectly safe to move around, even if they happen to be
-behind a <code>Pin</code> pointer. We only need to think about pinning when items have
-internal references. Primitive values such as numbers and Booleans are safe
-since they obviously don’t have any internal references, so they’re obviously
-safe. Neither do most types you normally work with in Rust. You can move around
-a <code>Vec</code>, for example, without worrying. Given only what we have seen so far, if
-you have a <code>Pin&lt;Vec&lt;String&gt;&gt;</code>, you’d have to do everything via the safe but
-restrictive APIs provided by <code>Pin</code>, even though a <code>Vec&lt;String&gt;</code> is always safe
-to move if there are no other references to it. We need a way to tell the
-compiler that it’s fine to move items around in cases like this—and there’s
-where <code>Unpin</code> comes into play.</p>
+behind a <code>Pin</code> wrapper. We only need to think about pinning when items have
+internal references. Primitive values such as numbers and Booleans obviously
+don’t have any internal references, so they’re safe. Neither do most types you
+normally work with in Rust. You can move around a <code>Vec</code>, for example, without
+worrying. Given only what we have seen so far, if you have a <code>Pin&lt;Vec&lt;String&gt;&gt;</code>,
+you’d have to do everything via the safe but restrictive APIs provided by <code>Pin</code>,
+even though a <code>Vec&lt;String&gt;</code> is always safe to move if there are no other
+references to it. We need a way to tell the compiler that it’s fine to move
+items around in cases like this—and there’s where <code>Unpin</code> comes into play.</p>
 <p><code>Unpin</code> is a marker trait, similar to the <code>Send</code> and <code>Sync</code> traits we saw in
 Chapter 16, and thus has no functionality of its own. Marker traits exist only
 to tell the compiler it’s safe to use the type implementing a given trait in a
@@ -491,7 +490,7 @@ have the idea of a sequence: its <code>next</code> method provides an <code>Opti
 From <code>Future</code>, we have the idea of readiness over time: its <code>poll</code> method
 provides a <code>Poll&lt;Self::Output&gt;</code>. To represent a sequence of items that become
 ready over time, we define a <code>Stream</code> trait that puts those features together:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -525,7 +524,7 @@ work directly in terms of the <code>poll_next</code> API by hand-writing our own
 state machines, of course, just as we <em>could</em> work with futures directly via
 their <code>poll</code> method. Using <code>await</code> is much nicer, though, and the <code>StreamExt</code>
 trait supplies the <code>next</code> method so we can do just that:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use std::pin::Pin;
 </span><span class="boring">use std::task::{Context, Poll};
