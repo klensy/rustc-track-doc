@@ -38,7 +38,7 @@
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-2036d9c0.js"></script>
+        <script src="toc-20003c2e.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -362,7 +362,7 @@ rustup component add rust-src
 $Env:RUSTFLAGS = "-Z control-flow-guard"
 cargo +nightly build -Z build-std --target x86_64-pc-windows-msvc
 </code></pre>
-<p>Alternatively, if you are building the standard library from source, you can set <code>control-flow-guard = true</code> in the config.toml file.</p>
+<p>Alternatively, if you are building the standard library from source, you can set <code>control-flow-guard = true</code> in the bootstrap.toml file.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="coverage-options"><a class="header" href="#coverage-options"><code>coverage-options</code></a></h1>
 <p>This option controls details of the coverage instrumentation performed by
 <code>-C instrument-coverage</code>.</p>
@@ -2945,31 +2945,24 @@ to use one; LLVM uses <code>r4</code>.</li>
 <div class="table-wrapper"><table><thead><tr><th>Architecture</th><th>Register class</th><th>Modifier</th><th>Example output</th><th>LLVM modifier</th></tr></thead><tbody>
 <tr><td>s390x</td><td><code>vreg</code></td><td>None</td><td><code>%v0</code></td><td>None</td></tr>
 </tbody></table>
-</div><div style="break-before: page; page-break-before: always;"></div><h1 id="asm_goto"><a class="header" href="#asm_goto"><code>asm_goto</code></a></h1>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="asm_goto_with_outputs"><a class="header" href="#asm_goto_with_outputs"><code>asm_goto_with_outputs</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/119364">#119364</a></p>
 <hr />
-<p>This feature adds a <code>label &lt;block&gt;</code> operand type to <code>asm!</code>.</p>
+<p>This feature allows label operands to be used together with output operands.</p>
 <p>Example:</p>
 <pre><code class="language-rust ignore (partial-example  x86-only)">
 unsafe {
+    let a: usize;
     asm!(
+        "mov {}, 1"
         "jmp {}",
+        out(reg) a,
         label {
-            println!("Jumped from asm!");
+            println!("Jumped from asm {}!", a);
         }
     );
 }</code></pre>
-<p>The block must have unit type or diverge. The block starts a new safety context,
-so despite outer <code>unsafe</code>, you need extra unsafe to perform unsafe operations
-within <code>label &lt;block&gt;</code>.</p>
-<p>When <code>label &lt;block&gt;</code> is used together with <code>noreturn</code> option, it means that the
-assembly will not fallthrough. It's allowed to jump to a label within the
-assembly. In this case, the entire <code>asm!</code> expression will have an unit type as
-opposed to diverging, if not all label blocks diverge. The <code>asm!</code> expression
-still diverges if <code>noreturn</code> option is used and all label blocks diverge.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="asm_goto_with_outputs"><a class="header" href="#asm_goto_with_outputs"><code>asm_goto_with_outputs</code></a></h1>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/119364">#119364</a></p>
-<hr />
+<p>The output operands are assigned before the label blocks are executed.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="asm_unwind"><a class="header" href="#asm_unwind"><code>asm_unwind</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/93334">#93334</a></p>
 <hr />
@@ -4598,6 +4591,41 @@ has_type::&lt;u8&gt;(z);
 <div style="break-before: page; page-break-before: always;"></div><h1 id="register_tool"><a class="header" href="#register_tool"><code>register_tool</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/66079">#66079</a></p>
 <hr />
+<p>The <code>register_tool</code> language feature informs the compiler that attributes in your code are meant to be used with tools other than the compiler itself. This can be useful if your code has semantic meaning without the external tool, but enables additional features when the tool is present.</p>
+<p><code>register_tool</code> also allows configuring lint levels for external tools.</p>
+<p>Tool attributes are only meant for ignorable attributes. If your code <em>changes</em> meaning when the attribute is present, it should not use a tool attribute (because it cannot be compiled with anything other than the external tool, and in a sense is a fork of the language).</p>
+<hr />
+<p><code>#![register_tool(tool)]</code> is an attribute, and is only valid at the crate root.
+Attributes using the registered tool are checked for valid syntax, and lint attributes are checked to be in a valid format. However, the compiler cannot validate the semantics of the attribute, nor can it tell whether the configured lint is present in the external tool.</p>
+<p>Semantically, <code>clippy::*</code>, <code>rustdoc::*</code>, and <code>rustfmt::*</code> lints and attributes all behave as if <code>#![register_tool(clippy, rustdoc, rustfmt)]</code> were injected into the crate root, except that the <code>rustdoc</code> namespace can only be used for lints, not for attributes.
+When compiling with <code>-Z unstable-features</code>, <code>rustc::*</code> lints can also be used. Like <code>rustdoc</code>, the <code>rustc</code> namespace can only be used with lints, not attributes.</p>
+<p>The compiler will emit an error if it encounters a lint/attribute whose namespace isn't a registered tool.</p>
+<p>Tool namespaces cannot be nested; <code>register_tool(main_tool::subtool)</code> is an error.</p>
+<h2 id="examples-11"><a class="header" href="#examples-11">Examples</a></h2>
+<p>Tool attributes:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(register_tool)]
+#![register_tool(c2rust)]
+
+<span class="boring">fn main() {
+</span>// Mark which C header file this module was generated from.
+#[c2rust::header_src = "operations.h"]
+pub mod operations_h {
+    use std::ffi::c_int;
+
+    // Mark which source line this struct was generated from.
+    #[c2rust::src_loc = "11:0"]
+    pub struct Point {
+        pub x: c_int,
+        pub y: c_int,
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Tool lints:</p>
+<pre><code>#![feature(register_tool)]
+#![register_tool(bevy)]
+#![deny(bevy::duplicate_bevy_dependencies)]
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="repr_simd"><a class="header" href="#repr_simd"><code>repr_simd</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/27731">#27731</a></p>
 <hr />
@@ -4641,7 +4669,7 @@ with <code>cargo check</code>) as an alternative to <code>rustc -Z print-type-si
 that is way more verbose.</p>
 <p>Options provided by <code>#[rustc_layout(...)]</code> are <code>debug</code>, <code>size</code>, <code>align</code>,
 <code>abi</code>. Note that it only works on sized types without generics.</p>
-<h2 id="examples-11"><a class="header" href="#examples-11">Examples</a></h2>
+<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
 <pre><pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![feature(rustc_attrs)]
 
@@ -5192,9 +5220,6 @@ for which you want a custom allocator.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="alloctests"><a class="header" href="#alloctests"><code>alloctests</code></a></h1>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="anonymous_pipe"><a class="header" href="#anonymous_pipe"><code>anonymous_pipe</code></a></h1>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/127154">#127154</a></p>
-<hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="array_chunks"><a class="header" href="#array_chunks"><code>array_chunks</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/74985">#74985</a></p>
 <hr />
@@ -5375,7 +5400,7 @@ that borrows from itself (<code>FnOnce::Output</code> has no lifetime parameters
 <hr />
 <p>The <code>concat_idents</code> feature adds a macro for concatenating multiple identifiers
 into one identifier.</p>
-<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
 <pre><pre class="playground"><code class="language-rust">#![feature(concat_idents)]
 
 fn main() {
@@ -5990,6 +6015,9 @@ fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="proc_macro_tracked_env"><a class="header" href="#proc_macro_tracked_env"><code>proc_macro_tracked_env</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/99515">#99515</a></p>
 <hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="proc_macro_value"><a class="header" href="#proc_macro_value"><code>proc_macro_value</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/136652">#136652</a></p>
+<hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="process_exitcode_internals"><a class="header" href="#process_exitcode_internals"><code>process_exitcode_internals</code></a></h1>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
@@ -6373,7 +6401,7 @@ even when using either of the above.</p>
 <p>The tracking issue for this feature is <a href="https://github.com/rust-lang/rust/issues/29598">#29598</a>.</p>
 <hr />
 <p>With <code>trace_macros</code> you can trace the expansion of macros in your code.</p>
-<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
 <pre><pre class="playground"><code class="language-rust">#![feature(trace_macros)]
 
 fn main() {

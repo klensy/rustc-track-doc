@@ -37,7 +37,7 @@
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-2036d9c0.js"></script>
+        <script src="../toc-20003c2e.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -161,6 +161,41 @@
                         <h1 id="register_tool"><a class="header" href="#register_tool"><code>register_tool</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/66079">#66079</a></p>
 <hr />
+<p>The <code>register_tool</code> language feature informs the compiler that attributes in your code are meant to be used with tools other than the compiler itself. This can be useful if your code has semantic meaning without the external tool, but enables additional features when the tool is present.</p>
+<p><code>register_tool</code> also allows configuring lint levels for external tools.</p>
+<p>Tool attributes are only meant for ignorable attributes. If your code <em>changes</em> meaning when the attribute is present, it should not use a tool attribute (because it cannot be compiled with anything other than the external tool, and in a sense is a fork of the language).</p>
+<hr />
+<p><code>#![register_tool(tool)]</code> is an attribute, and is only valid at the crate root.
+Attributes using the registered tool are checked for valid syntax, and lint attributes are checked to be in a valid format. However, the compiler cannot validate the semantics of the attribute, nor can it tell whether the configured lint is present in the external tool.</p>
+<p>Semantically, <code>clippy::*</code>, <code>rustdoc::*</code>, and <code>rustfmt::*</code> lints and attributes all behave as if <code>#![register_tool(clippy, rustdoc, rustfmt)]</code> were injected into the crate root, except that the <code>rustdoc</code> namespace can only be used for lints, not for attributes.
+When compiling with <code>-Z unstable-features</code>, <code>rustc::*</code> lints can also be used. Like <code>rustdoc</code>, the <code>rustc</code> namespace can only be used with lints, not attributes.</p>
+<p>The compiler will emit an error if it encounters a lint/attribute whose namespace isn't a registered tool.</p>
+<p>Tool namespaces cannot be nested; <code>register_tool(main_tool::subtool)</code> is an error.</p>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<p>Tool attributes:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(register_tool)]
+#![register_tool(c2rust)]
+
+<span class="boring">fn main() {
+</span>// Mark which C header file this module was generated from.
+#[c2rust::header_src = "operations.h"]
+pub mod operations_h {
+    use std::ffi::c_int;
+
+    // Mark which source line this struct was generated from.
+    #[c2rust::src_loc = "11:0"]
+    pub struct Point {
+        pub x: c_int,
+        pub y: c_int,
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Tool lints:</p>
+<pre><code>#![feature(register_tool)]
+#![register_tool(bevy)]
+#![deny(bevy::duplicate_bevy_dependencies)]
+</code></pre>
 
                     </main>
 
