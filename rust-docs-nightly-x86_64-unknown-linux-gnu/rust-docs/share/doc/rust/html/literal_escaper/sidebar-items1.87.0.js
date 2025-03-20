@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["EscapeError","MixedUnit","Mode"],"fn":["byte_from_char","unescape_byte","unescape_char","unescape_mixed","unescape_unicode"]};
