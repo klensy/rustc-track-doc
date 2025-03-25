@@ -8964,7 +8964,7 @@ note: required for `&amp;str` to implement `AsExpression&lt;Integer&gt;`
 47 |     T: Expression&lt;SqlType = ST&gt;,
    |        ------------------------ unsatisfied trait bound introduced here
 </code></pre>
-<p>By adding the <code>#[diagnostic::do_no_recommend]</code> attribute to the blanket <code>impl</code> for <code>AsExpression</code>, the message changes to:</p>
+<p>By adding the <code>#[diagnostic::do_not_recommend]</code> attribute to the blanket <code>impl</code> for <code>AsExpression</code>, the message changes to:</p>
 <pre><code class="language-text">error[E0277]: the trait bound `&amp;str: AsExpression&lt;Integer&gt;` is not satisfied
   --&gt; src/main.rs:53:15
    |
@@ -14389,16 +14389,20 @@ match tuple {
 <blockquote>
 <p><strong><sup>Syntax</sup></strong><br />
 <em>RangePattern</em> :<br />
-      <em>RangeInclusivePattern</em><br />
+      <em>RangeExclusivePattern</em><br />
+   | <em>RangeInclusivePattern</em><br />
    | <em>RangeFromPattern</em><br />
+   | <em>RangeToExclusivePattern</em><br />
    | <em>RangeToInclusivePattern</em><br />
-   | <em>ObsoleteRangePattern</em></p>
+   | <em>ObsoleteRangePattern</em><sup class="footnote-reference"><a href="#obsolete-range-edition">1</a></sup></p>
 <p><em>RangeExclusivePattern</em> :<br />
       <em>RangePatternBound</em> <code>..</code> <em>RangePatternBound</em></p>
 <p><em>RangeInclusivePattern</em> :<br />
       <em>RangePatternBound</em> <code>..=</code> <em>RangePatternBound</em></p>
 <p><em>RangeFromPattern</em> :<br />
       <em>RangePatternBound</em> <code>..</code></p>
+<p><em>RangeToExclusivePattern</em> :<br />
+      <code>..</code> <em>RangePatternBound</em></p>
 <p><em>RangeToInclusivePattern</em> :<br />
       <code>..=</code> <em>RangePatternBound</em></p>
 <p><em>ObsoleteRangePattern</em> :<br />
@@ -14409,47 +14413,49 @@ match tuple {
    | <code>-</code><sup>?</sup> <a href="tokens.html#integer-literals">INTEGER_LITERAL</a><br />
    | <code>-</code><sup>?</sup> <a href="tokens.html#floating-point-literals">FLOAT_LITERAL</a><br />
    | <a href="expressions/path-expr.html"><em>PathExpression</em></a></p>
+<div class="footnote-definition" id="obsolete-range-edition"><sup class="footnote-definition-label">1</sup>
+<p>The <em>ObsoleteRangePattern</em> syntax has been removed in the 2021 edition.</p>
+</div>
 </blockquote>
 <div class="rule" id="r-patterns.range.intro"><a class="rule-link" href="patterns.html#r-patterns.range.intro" title="patterns.range.intro"><span>[patterns<wbr>.range<wbr>.intro]</span/></a>
 </div>
 <p><em>Range patterns</em> match scalar values within the range defined by their bounds.
-They comprise a <em>sigil</em> (one of <code>..</code>, <code>..=</code>, or <code>...</code>) and a bound on one or both sides.</p>
-<div class="rule" id="r-patterns.range.lower-bound"><a class="rule-link" href="patterns.html#r-patterns.range.lower-bound" title="patterns.range.lower-bound"><span>[patterns<wbr>.range<wbr>.lower-bound]</span/></a>
+They comprise a <em>sigil</em> (<code>..</code> or <code>..=</code>) and a bound on one or both sides.</p>
+<p>A bound on the left of the sigil is called a <em>lower bound</em>.
+A bound on the right is called an <em>upper bound</em>.</p>
+<div class="rule" id="r-patterns.range.exclusive"><a class="rule-link" href="patterns.html#r-patterns.range.exclusive" title="patterns.range.exclusive"><span>[patterns<wbr>.range<wbr>.exclusive]</span/></a>
 </div>
-<p>A bound on the left of the sigil is a <em>lower bound</em>.</p>
-<div class="rule" id="r-patterns.range.upper-bound"><a class="rule-link" href="patterns.html#r-patterns.range.upper-bound" title="patterns.range.upper-bound"><span>[patterns<wbr>.range<wbr>.upper-bound]</span/></a>
+<p>The <em>exclusive range pattern</em> matches all values from the lower bound up to, but not including the upper bound.
+It is written as its lower bound, followed by <code>..</code>, followed by the upper bound.</p>
+<p>For example, a pattern <code>'m'..'p'</code> will match only <code>'m'</code>, <code>'n'</code> and <code>'o'</code>, specifically <strong>not</strong> including <code>'p'</code>.</p>
+<div class="rule" id="r-patterns.range.inclusive"><a class="rule-link" href="patterns.html#r-patterns.range.inclusive" title="patterns.range.inclusive"><span>[patterns<wbr>.range<wbr>.inclusive]</span/></a>
 </div>
-<p>A bound on the right is an <em>upper bound</em>.</p>
-<div class="rule" id="r-patterns.range.closed"><a class="rule-link" href="patterns.html#r-patterns.range.closed" title="patterns.range.closed"><span>[patterns<wbr>.range<wbr>.closed]</span/></a>
+<p>The <em>inclusive range pattern</em> matches all values from the lower bound up to and including the upper bound.
+It is written as its lower bound, followed by <code>..=</code>, followed by the upper bound.</p>
+<p>For example, a pattern <code>'m'..='p'</code> will match only the values <code>'m'</code>, <code>'n'</code>, <code>'o'</code>, and <code>'p'</code>.</p>
+<div class="rule" id="r-patterns.range.from"><a class="rule-link" href="patterns.html#r-patterns.range.from" title="patterns.range.from"><span>[patterns<wbr>.range<wbr>.from]</span/></a>
 </div>
-<p>A range pattern with both a lower and upper bound will match all values between and including both of its bounds.
-It is written as its lower bound, followed by <code>..</code> for end-exclusive or <code>..=</code> for end-inclusive, followed by its upper bound.</p>
-<div class="rule" id="r-patterns.range.type"><a class="rule-link" href="patterns.html#r-patterns.range.type" title="patterns.range.type"><span>[patterns<wbr>.range<wbr>.type]</span/></a>
+<p>The <em>from range pattern</em> matches all values greater than or equal to the lower bound.
+It is written as its lower bound followed by <code>..</code>.</p>
+<p>For example, <code>1..</code> will match any integer greater than or equal to 1, such as 1, 9, or 9001, or 9007199254740991 (if it is of an appropriate size), but not 0, and not negative numbers for signed integers.</p>
+<div class="rule" id="r-patterns.range.to-exclusive"><a class="rule-link" href="patterns.html#r-patterns.range.to-exclusive" title="patterns.range.to-exclusive"><span>[patterns<wbr>.range<wbr>.to-exclusive]</span/></a>
 </div>
-<p>The type of the range pattern is the type unification of its upper and lower bounds.</p>
-<p>For example, a pattern <code>'m'..='p'</code> will match only the values <code>'m'</code>, <code>'n'</code>, <code>'o'</code>, and <code>'p'</code>.
-Similarly, <code>'m'..'p'</code> will match only <code>'m'</code>, <code>'n'</code> and <code>'o'</code>, specifically <strong>not</strong> including <code>'p'</code>.</p>
+<p>The <em>to exclusive range pattern</em> matches all values less than the upper bound.
+It is written as <code>..</code> followed by the upper bound.</p>
+<p>For example, <code>..10</code> will match any integer less than 10, such as 9, 1, 0, and for signed integer types, all negative values.</p>
+<div class="rule" id="r-patterns.range.to-inclusive"><a class="rule-link" href="patterns.html#r-patterns.range.to-inclusive" title="patterns.range.to-inclusive"><span>[patterns<wbr>.range<wbr>.to-inclusive]</span/></a>
+</div>
+<p>The <em>to inclusive range pattern</em> matches all values less than or equal to the upper bound.
+It is written as <code>..=</code> followed by the upper bound.</p>
+<p>For example, <code>..=10</code> will match any integer less than or equal to 10, such as 10, 1, 0, and for signed integer types, all negative values.</p>
 <div class="rule" id="r-patterns.range.constraint-less-than"><a class="rule-link" href="patterns.html#r-patterns.range.constraint-less-than" title="patterns.range.constraint-less-than"><span>[patterns<wbr>.range<wbr>.constraint-less-than]</span/></a>
 </div>
 <p>The lower bound cannot be greater than the upper bound.
 That is, in <code>a..=b</code>, a ≤ b must be the case.
 For example, it is an error to have a range pattern <code>10..=0</code>.</p>
-<div class="rule" id="r-patterns.range.open-below"><a class="rule-link" href="patterns.html#r-patterns.range.open-below" title="patterns.range.open-below"><span>[patterns<wbr>.range<wbr>.open-below]</span/></a>
-</div>
-<p>A range pattern with only a lower bound will match any value greater than or equal to the lower bound.
-It is written as its lower bound followed by <code>..</code>, and has the same type as its lower bound.
-For example, <code>1..</code> will match 1, 9, or 9001, or 9007199254740991 (if it is of an appropriate size), but not 0, and not negative numbers for signed integers.</p>
-<div class="rule" id="r-patterns.range.open-above"><a class="rule-link" href="patterns.html#r-patterns.range.open-above" title="patterns.range.open-above"><span>[patterns<wbr>.range<wbr>.open-above]</span/></a>
-</div>
-<p>A range pattern with only an upper bound matches any value less than or equal to the upper bound.
-It is written as <code>..=</code> followed by its upper bound, and has the same type as its upper bound.
-For example, <code>..=10</code> will match 10, 1, 0, and for signed integer types, all negative values.</p>
-<div class="rule" id="r-patterns.range.constraint-slice"><a class="rule-link" href="patterns.html#r-patterns.range.constraint-slice" title="patterns.range.constraint-slice"><span>[patterns<wbr>.range<wbr>.constraint-slice]</span/></a>
-</div>
-<p>Range patterns with only one bound cannot be used as the top-level pattern for subpatterns in <a href="patterns.html#slice-patterns">slice patterns</a>.</p>
 <div class="rule" id="r-patterns.range.bound"><a class="rule-link" href="patterns.html#r-patterns.range.bound" title="patterns.range.bound"><span>[patterns<wbr>.range<wbr>.bound]</span/></a>
 </div>
-<p>The bounds is written as one of:</p>
+<p>A bound is written as one of:</p>
 <ul>
 <li>A character, byte, integer, or float literal.</li>
 <li>A <code>-</code> followed by an integer or float literal.</li>
@@ -14457,22 +14463,22 @@ For example, <code>..=10</code> will match 10, 1, 0, and for signed integer type
 </ul>
 <div class="rule" id="r-patterns.range.constraint-bound-path"><a class="rule-link" href="patterns.html#r-patterns.range.constraint-bound-path" title="patterns.range.constraint-bound-path"><span>[patterns<wbr>.range<wbr>.constraint-bound-path]</span/></a>
 </div>
-<p>If the bounds is written as a path, after macro resolution, the path must resolve to a constant item of the type <code>char</code>, an integer type, or a float type.</p>
-<div class="rule" id="r-patterns.range.value"><a class="rule-link" href="patterns.html#r-patterns.range.value" title="patterns.range.value"><span>[patterns<wbr>.range<wbr>.value]</span/></a>
+<p>If a bound is written as a path, after macro resolution, the path must resolve to a constant item of the type <code>char</code>, an integer type, or a float type.</p>
+<div class="rule" id="r-patterns.range.type"><a class="rule-link" href="patterns.html#r-patterns.range.type" title="patterns.range.type"><span>[patterns<wbr>.range<wbr>.type]</span/></a>
 </div>
-<p>The type and value of the bounds is dependent upon how it is written out.</p>
+<p>The range pattern matches the type of its upper and lower bounds, which must be the same type.</p>
 <div class="rule" id="r-patterns.range.path-value"><a class="rule-link" href="patterns.html#r-patterns.range.path-value" title="patterns.range.path-value"><span>[patterns<wbr>.range<wbr>.path-value]</span/></a>
 </div>
-<p>If the bounds is a <a href="expressions/path-expr.html">path</a>, the pattern has the type and value of the <a href="items/constant-items.html">constant</a> the path resolves to.</p>
+<p>If a bound is a <a href="expressions/path-expr.html">path</a>, the bound matches the type and has the value of the <a href="items/constant-items.html">constant</a> the path resolves to.</p>
+<div class="rule" id="r-patterns.range.literal-value"><a class="rule-link" href="patterns.html#r-patterns.range.literal-value" title="patterns.range.literal-value"><span>[patterns<wbr>.range<wbr>.literal-value]</span/></a>
+</div>
+<p>If a bound is a literal, the bound matches the type and has the value of the corresponding <a href="expressions/literal-expr.html">literal expression</a>.</p>
+<div class="rule" id="r-patterns.range.negation"><a class="rule-link" href="patterns.html#r-patterns.range.negation" title="patterns.range.negation"><span>[patterns<wbr>.range<wbr>.negation]</span/></a>
+</div>
+<p>If a bound is a literal preceded by a <code>-</code>, the bound matches the same type as the corresponding <a href="expressions/literal-expr.html">literal expression</a> and has the value of <a href="expressions/operator-expr.html#negation-operators">negating</a> the value of the corresponding literal expression.</p>
 <div class="rule" id="r-patterns.range.float-restriction"><a class="rule-link" href="patterns.html#r-patterns.range.float-restriction" title="patterns.range.float-restriction"><span>[patterns<wbr>.range<wbr>.float-restriction]</span/></a>
 </div>
 <p>For float range patterns, the constant may not be a <code>NaN</code>.</p>
-<div class="rule" id="r-patterns.range.literal-value"><a class="rule-link" href="patterns.html#r-patterns.range.literal-value" title="patterns.range.literal-value"><span>[patterns<wbr>.range<wbr>.literal-value]</span/></a>
-</div>
-<p>If it is a literal, it has the type and value of the corresponding <a href="expressions/literal-expr.html">literal expression</a>.</p>
-<div class="rule" id="r-patterns.range.negation"><a class="rule-link" href="patterns.html#r-patterns.range.negation" title="patterns.range.negation"><span>[patterns<wbr>.range<wbr>.negation]</span/></a>
-</div>
-<p>If is a literal preceded by a <code>-</code>, it has the same type as the corresponding <a href="expressions/literal-expr.html">literal expression</a> and the value of <a href="expressions/operator-expr.html#negation-operators">negating</a> the value of the corresponding literal expression.</p>
 <p>Examples:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -14557,6 +14563,10 @@ For example, <code>0u8..=255u8</code> is irrefutable.</p>
 <div class="rule" id="r-patterns.range.refutable-char"><a class="rule-link" href="patterns.html#r-patterns.range.refutable-char" title="patterns.range.refutable-char"><span>[patterns<wbr>.range<wbr>.refutable-char]</span/></a>
 </div>
 <p>The range of values for a <code>char</code> type are precisely those ranges containing all Unicode Scalar Values: <code>'\u{0000}'..='\u{D7FF}'</code> and <code>'\u{E000}'..='\u{10FFFF}'</code>.</p>
+<div class="rule" id="r-patterns.range.constraint-slice"><a class="rule-link" href="patterns.html#r-patterns.range.constraint-slice" title="patterns.range.constraint-slice"><span>[patterns<wbr>.range<wbr>.constraint-slice]</span/></a>
+</div>
+<p><em>RangeFromPattern</em> cannot be used as a top-level pattern for subpatterns in <a href="patterns.html#slice-patterns">slice patterns</a>.
+For example, the pattern <code>[1.., _]</code> is not a valid pattern.</p>
 <div class="rule" id="r-patterns.range.edition2021"><a class="rule-link" href="patterns.html#r-patterns.range.edition2021" title="patterns.range.edition2021"><span>[patterns<wbr>.range<wbr>.edition2021]</span/></a>
 </div>
 <blockquote>
@@ -15382,6 +15392,13 @@ are invalid <code>bool</code>s, the inverse is not always sound).</p>
 </div>
 <p>The <code>usize</code> type is an unsigned integer type with the same number of bits as the
 platform’s pointer type. It can represent every memory address in the process.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>While a <code>usize</code> can represent every <em>address</em>, converting a <em>pointer</em> to a <code>usize</code> is not necessarily a reversible operation.
+For more information, see the documentation for <a href="types/../expressions/operator-expr.html#type-cast-expressions">type cast expressions</a>, <a href="types/../../core/ptr/index.html"><code>std::ptr</code></a>, and <a href="types/../../core/ptr/index.html#provenance">provenance</a> in particular.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-type.numeric.int.size.isize"><a class="rule-link" href="types/numeric.html#r-type.numeric.int.size.isize" title="type.numeric.int.size.isize"><span>[type<wbr>.numeric<wbr>.int<wbr>.size<wbr>.isize]</span/></a>
 </div>
 <p>The <code>isize</code> type is a signed integer type with the same number of bits as the
@@ -21527,7 +21544,7 @@ assert_eq!(x, 4 * 6);
 dir_spec := "in" / "out" / "lateout" / "inout" / "inlateout"
 reg_spec := &lt;register class&gt; / "\"" &lt;explicit register&gt; "\""
 operand_expr := expr / "_" / expr "=&gt;" expr / expr "=&gt;" "_"
-reg_operand := [ident "="] dir_spec "(" reg_spec ")" operand_expr / sym &lt;path&gt; / const &lt;expr&gt;
+reg_operand := [ident "="] dir_spec "(" reg_spec ")" operand_expr / sym &lt;path&gt; / const &lt;expr&gt; / label &lt;block&gt;
 clobber_abi := "clobber_abi(" &lt;abi&gt; *("," &lt;abi&gt;) [","] ")"
 option := "pure" / "nomem" / "readonly" / "preserves_flags" / "noreturn" / "nostack" / "att_syntax" / "raw"
 options := "options(" option *("," option) [","] ")"
@@ -21696,8 +21713,8 @@ Further constraints on the directives used by inline assembly are indicated by <
 <ul>
 <li><code>&lt;reg&gt;</code> can refer to a register class or an explicit register.
 The allocated register name is substituted into the asm template string.</li>
-<li>The allocated register will contain the value of <code>&lt;expr&gt;</code> at the start of the asm code.</li>
-<li>The allocated register must contain the same value at the end of the asm code (except if a <code>lateout</code> is allocated to the same register).</li>
+<li>The allocated register will contain the value of <code>&lt;expr&gt;</code> at the start of the assembly code.</li>
+<li>The allocated register must contain the same value at the end of the assembly code (except if a <code>lateout</code> is allocated to the same register).</li>
 </ul>
 </li>
 </ul>
@@ -21715,9 +21732,9 @@ unsafe { core::arch::asm!("/* {} */", in(reg) 5); }
 <ul>
 <li><code>&lt;reg&gt;</code> can refer to a register class or an explicit register.
 The allocated register name is substituted into the asm template string.</li>
-<li>The allocated register will contain an undefined value at the start of the asm code.</li>
-<li><code>&lt;expr&gt;</code> must be a (possibly uninitialized) place expression, to which the contents of the allocated register are written at the end of the asm code.</li>
-<li>An underscore (<code>_</code>) may be specified instead of an expression, which will cause the contents of the register to be discarded at the end of the asm code (effectively acting as a clobber).</li>
+<li>The allocated register will contain an undefined value at the start of the assembly code.</li>
+<li><code>&lt;expr&gt;</code> must be a (possibly uninitialized) place expression, to which the contents of the allocated register are written at the end of the assembly code.</li>
+<li>An underscore (<code>_</code>) may be specified instead of an expression, which will cause the contents of the register to be discarded at the end of the assembly code (effectively acting as a clobber).</li>
 </ul>
 </li>
 </ul>
@@ -21757,8 +21774,8 @@ assert_eq!(x, 5)
 <ul>
 <li><code>&lt;reg&gt;</code> can refer to a register class or an explicit register.
 The allocated register name is substituted into the asm template string.</li>
-<li>The allocated register will contain the value of <code>&lt;expr&gt;</code> at the start of the asm code.</li>
-<li><code>&lt;expr&gt;</code> must be a mutable initialized place expression, to which the contents of the allocated register are written at the end of the asm code.</li>
+<li>The allocated register will contain the value of <code>&lt;expr&gt;</code> at the start of the assembly code.</li>
+<li><code>&lt;expr&gt;</code> must be a mutable initialized place expression, to which the contents of the allocated register are written at the end of the assembly code.</li>
 </ul>
 </li>
 </ul>
@@ -21777,8 +21794,8 @@ assert_eq!(x, 5);
 <li><code>inout(&lt;reg&gt;) &lt;in expr&gt; =&gt; &lt;out expr&gt;</code>
 <ul>
 <li>Same as <code>inout</code> except that the initial value of the register is taken from the value of <code>&lt;in expr&gt;</code>.</li>
-<li><code>&lt;out expr&gt;</code> must be a (possibly uninitialized) place expression, to which the contents of the allocated register are written at the end of the asm code.</li>
-<li>An underscore (<code>_</code>) may be specified instead of an expression for <code>&lt;out expr&gt;</code>, which will cause the contents of the register to be discarded at the end of the asm code (effectively acting as a clobber).</li>
+<li><code>&lt;out expr&gt;</code> must be a (possibly uninitialized) place expression, to which the contents of the allocated register are written at the end of the assembly code.</li>
+<li>An underscore (<code>_</code>) may be specified instead of an expression for <code>&lt;out expr&gt;</code>, which will cause the contents of the register to be discarded at the end of the assembly code (effectively acting as a clobber).</li>
 <li><code>&lt;in expr&gt;</code> and <code>&lt;out expr&gt;</code> may have different types.</li>
 </ul>
 </li>
@@ -21819,7 +21836,7 @@ assert_eq!(x, 5);
 <li><code>&lt;path&gt;</code> must refer to a <code>fn</code> or <code>static</code>.</li>
 <li>A mangled symbol name referring to the item is substituted into the asm template string.</li>
 <li>The substituted string does not include any modifiers (e.g. GOT, PLT, relocations, etc).</li>
-<li><code>&lt;path&gt;</code> is allowed to point to a <code>#[thread_local]</code> static, in which case the asm code can combine the symbol with relocations (e.g. <code>@plt</code>, <code>@TPOFF</code>) to read from thread-local data.</li>
+<li><code>&lt;path&gt;</code> is allowed to point to a <code>#[thread_local]</code> static, in which case the assembly code can combine the symbol with relocations (e.g. <code>@plt</code>, <code>@TPOFF</code>) to read from thread-local data.</li>
 </ul>
 </li>
 </ul>
@@ -21861,6 +21878,27 @@ let y: [u32; 4] = unsafe { core::mem::transmute(y) };
 assert_eq!(y, [3, 2, 0, 1]);
 <span class="boring">}
 </span><span class="boring">}</span></code></pre></pre>
+<div class="rule" id="r-asm.operand-type.supported-operands.label"><a class="rule-link" href="inline-assembly.html#r-asm.operand-type.supported-operands.label" title="asm.operand-type.supported-operands.label"><span>[asm<wbr>.operand-type<wbr>.supported-operands<wbr>.label]</span/></a>
+</div>
+<ul>
+<li><code>label &lt;block&gt;</code>
+<ul>
+<li>The address of the block is substituted into the asm template string. The assembly code may jump to the substituted address.</li>
+<li>After execution of the block, the <code>asm!</code> expression returns.</li>
+<li>The type of the block must be unit or <code>!</code> (never).</li>
+<li>The block starts a new safety context; unsafe operations within the <code>label</code> block must be wrapped in an inner <code>unsafe</code> block, even though the entire <code>asm!</code> expression is already wrapped in <code>unsafe</code>.</li>
+</ul>
+</li>
+</ul>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[cfg(target_arch = "x86_64")]
+</span>unsafe {
+    core::arch::asm!("jmp {}", label {
+        println!("Hello from inline assembly label");
+    });
+}
+<span class="boring">}</span></code></pre></pre>
 <div class="rule" id="r-asm.operand-type.left-to-right"><a class="rule-link" href="inline-assembly.html#r-asm.operand-type.left-to-right" title="asm.operand-type.left-to-right"><span>[asm<wbr>.operand-type<wbr>.left-to-right]</span/></a>
 </div>
 <p>Operand expressions are evaluated from left to right, just like function call arguments.
@@ -22242,7 +22280,7 @@ unsafe { core::arch::asm!("", in("rax") z); }
 </div>
 <p>Some registers cannot be used for input or output operands:</p>
 <div class="table-wrapper"><table><thead><tr><th>Architecture</th><th>Unsupported register</th><th>Reason</th></tr></thead><tbody>
-<tr><td>All</td><td><code>sp</code>, <code>r15</code> (s390x)</td><td>The stack pointer must be restored to its original value at the end of an asm code block.</td></tr>
+<tr><td>All</td><td><code>sp</code>, <code>r15</code> (s390x)</td><td>The stack pointer must be restored to its original value at the end of the assembly code or before jumping to a <code>label</code> block.</td></tr>
 <tr><td>All</td><td><code>bp</code> (x86), <code>x29</code> (AArch64 and Arm64EC), <code>x8</code> (RISC-V), <code>$fp</code> (LoongArch), <code>r11</code> (s390x)</td><td>The frame pointer cannot be used as an input or output.</td></tr>
 <tr><td>ARM</td><td><code>r7</code> or <code>r11</code></td><td>On ARM the frame pointer can be either <code>r7</code> or <code>r11</code> depending on the target. The frame pointer cannot be used as an input or output.</td></tr>
 <tr><td>All</td><td><code>si</code> (x86-32), <code>bx</code> (x86-64), <code>r6</code> (ARM), <code>x19</code> (AArch64 and Arm64EC), <code>x9</code> (RISC-V), <code>$s8</code> (LoongArch)</td><td>This is used internally by LLVM as a “base pointer” for functions with complex stack frames.</td></tr>
@@ -22362,7 +22400,7 @@ assert_eq!(x, 0x1000u16);
 <div class="rule" id="r-asm.template-modifiers.smaller-value"><a class="rule-link" href="inline-assembly.html#r-asm.template-modifiers.smaller-value" title="asm.template-modifiers.smaller-value"><span>[asm<wbr>.template-modifiers<wbr>.smaller-value]</span/></a>
 </div>
 <p>As stated in the previous section, passing an input value smaller than the register width will result in the upper bits of the register containing undefined values.
-This is not a problem if the inline asm only accesses the lower bits of the register, which can be done by using a template modifier to use a subregister name in the asm code (e.g. <code>ax</code> instead of <code>rax</code>).
+This is not a problem if the inline asm only accesses the lower bits of the register, which can be done by using a template modifier to use a subregister name in the assembly code (e.g. <code>ax</code> instead of <code>rax</code>).
 Since this an easy pitfall, the compiler will suggest a template modifier to use where appropriate given the input type.
 If all references to an operand already have modifiers then the warning is suppressed for that operand.</p>
 <div class="rule" id="r-asm.abi-clobbers"><a class="rule-link" href="inline-assembly.html#r-asm.abi-clobbers" title="asm.abi-clobbers"><span>[asm<wbr>.abi-clobbers]</span/></a>
@@ -22370,7 +22408,7 @@ If all references to an operand already have modifiers then the warning is suppr
 <h2 id="abi-clobbers"><a class="header" href="#abi-clobbers">ABI clobbers</a></h2>
 <div class="rule" id="r-asm.abi-clobbers.intro"><a class="rule-link" href="inline-assembly.html#r-asm.abi-clobbers.intro" title="asm.abi-clobbers.intro"><span>[asm<wbr>.abi-clobbers<wbr>.intro]</span/></a>
 </div>
-<p>The <code>clobber_abi</code> keyword can be used to apply a default set of clobbers to an <code>asm!</code> block.
+<p>The <code>clobber_abi</code> keyword can be used to apply a default set of clobbers to the assembly code.
 This will automatically insert the necessary clobber constraints as needed for calling a function with a particular calling convention: if the calling convention does not fully preserve the value of a register across a call then <code>lateout("...") _</code> is implicitly added to the operands list (where the <code>...</code> is replaced by the register’s name).</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -22466,13 +22504,13 @@ assert_eq!(z, 0);
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
 <div class="rule" id="r-asm.options.supported-options"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options" title="asm.options.supported-options"><span>[asm<wbr>.options<wbr>.supported-options]</span/></a>
 </div>
-<p>Flags are used to further influence the behavior of the inline assembly block.
+<p>Flags are used to further influence the behavior of the inline assembly code.
 Currently the following options are defined:</p>
 <div class="rule" id="r-asm.options.supported-options.pure"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.pure" title="asm.options.supported-options.pure"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.pure]</span/></a>
 </div>
 <ul>
-<li><code>pure</code>: The <code>asm!</code> block has no side effects, must eventually return, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to) or values read from memory (unless the <code>nomem</code> options is also set).
-This allows the compiler to execute the <code>asm!</code> block fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used.
+<li><code>pure</code>: The assembly code has no side effects, must eventually return, and its outputs depend only on its direct inputs (i.e. the values themselves, not what they point to) or values read from memory (unless the <code>nomem</code> options is also set).
+This allows the compiler to execute the assembly code fewer times than specified in the program (e.g. by hoisting it out of a loop) or even eliminate it entirely if the outputs are not used.
 The <code>pure</code> option must be combined with either the <code>nomem</code> or <code>readonly</code> options, otherwise a compile-time error is emitted.</li>
 </ul>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
@@ -22501,9 +22539,9 @@ assert_eq!(z, 0);
 <div class="rule" id="r-asm.options.supported-options.nomem"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.nomem" title="asm.options.supported-options.nomem"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.nomem]</span/></a>
 </div>
 <ul>
-<li><code>nomem</code>: The <code>asm!</code> block does not read from or write to any memory accessible outside of the <code>asm!</code> block.
-This allows the compiler to cache the values of modified global variables in registers across the <code>asm!</code> block since it knows that they are not read or written to by the <code>asm!</code>.
-The compiler also assumes that this <code>asm!</code> block does not perform any kind of synchronization with other threads, e.g. via fences.</li>
+<li><code>nomem</code>: The assembly code does not read from or write to any memory accessible outside of the assembly code.
+This allows the compiler to cache the values of modified global variables in registers across execution of the assembly code since it knows that they are not read from or written to by it.
+The compiler also assumes that the assembly code does not perform any kind of synchronization with other threads, e.g. via fences.</li>
 </ul>
 <!-- no_run: This test has unpredictable or undefined behavior at runtime -->
 <pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
@@ -22511,7 +22549,8 @@ The compiler also assumes that this <code>asm!</code> block does not perform any
 </span><span class="boring">#[cfg(target_arch = "x86_64")] {
 </span>let mut x = 0i32;
 let z: i32;
-// Accessing memory from a nomem asm block is disallowed
+// Accessing outside memory from assembly when `nomem` is
+// specified is disallowed
 unsafe {
     core::arch::asm!("mov {val:e}, dword ptr [{ptr}]",
         ptr = in(reg) &amp;mut x,
@@ -22520,7 +22559,8 @@ unsafe {
     )
 }
 
-// Writing to memory is also undefined behaviour
+// Writing to outside memory from assembly when `nomem` is
+// specified is also undefined behaviour
 unsafe {
     core::arch::asm!("mov  dword ptr [{ptr}], {val:e}",
         ptr = in(reg) &amp;mut x,
@@ -22549,16 +22589,16 @@ assert_eq!(z, 1);
 <div class="rule" id="r-asm.options.supported-options.readonly"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.readonly" title="asm.options.supported-options.readonly"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.readonly]</span/></a>
 </div>
 <ul>
-<li><code>readonly</code>: The <code>asm!</code> block does not write to any memory accessible outside of the <code>asm!</code> block.
-This allows the compiler to cache the values of unmodified global variables in registers across the <code>asm!</code> block since it knows that they are not written to by the <code>asm!</code>.
-The compiler also assumes that this <code>asm!</code> block does not perform any kind of synchronization with other threads, e.g. via fences.</li>
+<li><code>readonly</code>: The assembly code does not write to any memory accessible outside of the assembly code.
+This allows the compiler to cache the values of unmodified global variables in registers across execution of the assembly code since it knows that they are not written to by it.
+The compiler also assumes that this assembly code does not perform any kind of synchronization with other threads, e.g. via fences.</li>
 </ul>
 <!-- no_run: This test has undefined behaviour at runtime -->
 <pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">#[cfg(target_arch = "x86_64")] {
 </span>let mut x = 0;
-// We cannot modify memory in readonly
+// We cannot modify outside memory when `readonly` is specified
 unsafe {
     core::arch::asm!("mov dword ptr[{}], 1", in(reg) &amp;mut x, options(readonly))
 }
@@ -22597,15 +22637,13 @@ assert_eq!(z, 1);
 <div class="rule" id="r-asm.options.supported-options.preserves_flags"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.preserves_flags" title="asm.options.supported-options.preserves_flags"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.preserves_flags]</span/></a>
 </div>
 <ul>
-<li><code>preserves_flags</code>: The <code>asm!</code> block does not modify the flags register (defined in the rules below).
-This allows the compiler to avoid recomputing the condition flags after the <code>asm!</code> block.</li>
+<li><code>preserves_flags</code>: The assembly code does not modify the flags register (defined in the rules below).
+This allows the compiler to avoid recomputing the condition flags after execution of the assembly code.</li>
 </ul>
 <div class="rule" id="r-asm.options.supported-options.noreturn"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.noreturn" title="asm.options.supported-options.noreturn"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.noreturn]</span/></a>
 </div>
 <ul>
-<li><code>noreturn</code>: The <code>asm!</code> block never returns, and its return type is defined as <code>!</code> (never).
-Behavior is undefined if execution falls through past the end of the asm code.
-A <code>noreturn</code> asm block behaves just like a function which doesn’t return; notably, local variables in scope are not dropped before it is invoked.</li>
+<li><code>noreturn</code>: The assembly code does not fall through; behavior is undefined if it does. It may still jump to <code>label</code> blocks. If any <code>label</code> blocks return unit, the <code>asm!</code> block will return unit. Otherwise it will return <code>!</code> (never). As with a call to a function that does not return, local variables in scope are not dropped before execution of the assembly code.</li>
 </ul>
 <!-- no_run: This test aborts at runtime -->
 <pre><pre class="playground"><code class="language-rust no_run edition2024">fn main() -&gt; ! {
@@ -22623,10 +22661,20 @@ A <code>noreturn</code> asm block behaves just like a function which doesn’t r
 unsafe { core::arch::asm!("", options(noreturn)); }
 <span class="boring">}
 </span><span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[cfg(target_arch = "x86_64")]
+</span>let _: () = unsafe {
+    // You may still jump to a `label` block
+    core::arch::asm!("jmp {}", label {
+        println!();
+    }, options(noreturn));
+};
+<span class="boring">}</span></code></pre></pre>
 <div class="rule" id="r-asm.options.supported-options.nostack"><a class="rule-link" href="inline-assembly.html#r-asm.options.supported-options.nostack" title="asm.options.supported-options.nostack"><span>[asm<wbr>.options<wbr>.supported-options<wbr>.nostack]</span/></a>
 </div>
 <ul>
-<li><code>nostack</code>: The <code>asm!</code> block does not push data to the stack, or write to the stack red-zone (if supported by the target).
+<li><code>nostack</code>: The assembly code does not push data to the stack, or write to the stack red-zone (if supported by the target).
 If this option is <em>not</em> used then the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.</li>
 </ul>
 <!-- no_run: Test has undefined behavior at runtime -->
@@ -22699,7 +22747,12 @@ unsafe { core::arch::asm!("", options(pure)); }
 <div class="rule" id="r-asm.options.checks.noreturn"><a class="rule-link" href="inline-assembly.html#r-asm.options.checks.noreturn" title="asm.options.checks.noreturn"><span>[asm<wbr>.options<wbr>.checks<wbr>.noreturn]</span/></a>
 </div>
 <ul>
-<li>It is a compile-time error to specify <code>noreturn</code> on an asm block with outputs.</li>
+<li>It is a compile-time error to specify <code>noreturn</code> on an asm block with outputs and without labels.</li>
+</ul>
+<div class="rule" id="r-asm.options.checks.label-with-outputs"><a class="rule-link" href="inline-assembly.html#r-asm.options.checks.label-with-outputs" title="asm.options.checks.label-with-outputs"><span>[asm<wbr>.options<wbr>.checks<wbr>.label-with-outputs]</span/></a>
+</div>
+<ul>
+<li>It is a compile-time error to have any <code>label</code> blocks in an asm block with outputs.</li>
 </ul>
 <pre><pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -22729,7 +22782,7 @@ core::arch::global_asm!("", options(nomem));
 <div class="rule" id="r-asm.rules.reg-not-input"><a class="rule-link" href="inline-assembly.html#r-asm.rules.reg-not-input" title="asm.rules.reg-not-input"><span>[asm<wbr>.rules<wbr>.reg-not-input]</span/></a>
 </div>
 <ul>
-<li>Any registers not specified as inputs will contain an undefined value on entry to the asm block.
+<li>Any registers not specified as inputs will contain an undefined value on entry to the assembly code.
 <ul>
 <li>An “undefined value” in the context of inline assembly means that the register can (non-deterministically) have any one of the possible values allowed by the architecture.
 Notably it is not the same as an LLVM <code>undef</code> which can have a different value every time you read it (since such a concept does not exist in assembly code).</li>
@@ -22739,7 +22792,7 @@ Notably it is not the same as an LLVM <code>undef</code> which can have a differ
 <div class="rule" id="r-asm.rules.reg-not-output"><a class="rule-link" href="inline-assembly.html#r-asm.rules.reg-not-output" title="asm.rules.reg-not-output"><span>[asm<wbr>.rules<wbr>.reg-not-output]</span/></a>
 </div>
 <ul>
-<li>Any registers not specified as outputs must have the same value upon exiting the asm block as they had on entry, otherwise behavior is undefined.
+<li>Any registers not specified as outputs must have the same value upon exiting the assembly code as they had on entry, otherwise behavior is undefined.
 <ul>
 <li>This only applies to registers which can be specified as an input or output.
 Other registers follow target-specific rules.</li>
@@ -22751,7 +22804,7 @@ Code should not rely on this however since it depends on the results of register
 <div class="rule" id="r-asm.rules.unwind"><a class="rule-link" href="inline-assembly.html#r-asm.rules.unwind" title="asm.rules.unwind"><span>[asm<wbr>.rules<wbr>.unwind]</span/></a>
 </div>
 <ul>
-<li>Behavior is undefined if execution unwinds out of an asm block.
+<li>Behavior is undefined if execution unwinds out of the assembly code.
 <ul>
 <li>This also applies if the assembly code calls a function which then unwinds.</li>
 </ul>
@@ -22765,37 +22818,37 @@ Code should not rely on this however since it depends on the results of register
 <li>Refer to the unsafe code guidelines for the exact rules.</li>
 <li>If the <code>readonly</code> option is set, then only memory reads are allowed.</li>
 <li>If the <code>nomem</code> option is set then no reads or writes to memory are allowed.</li>
-<li>These rules do not apply to memory which is private to the asm code, such as stack space allocated within the asm block.</li>
+<li>These rules do not apply to memory which is private to the assembly code, such as stack space allocated within it.</li>
 </ul>
 </li>
 </ul>
 <div class="rule" id="r-asm.rules.black-box"><a class="rule-link" href="inline-assembly.html#r-asm.rules.black-box" title="asm.rules.black-box"><span>[asm<wbr>.rules<wbr>.black-box]</span/></a>
 </div>
 <ul>
-<li>The compiler cannot assume that the instructions in the asm are the ones that will actually end up executed.
+<li>The compiler cannot assume that the instructions in the assembly code are the ones that will actually end up executed.
 <ul>
-<li>This effectively means that the compiler must treat the <code>asm!</code> as a black box and only take the interface specification into account, not the instructions themselves.</li>
+<li>This effectively means that the compiler must treat the assembly code as a black box and only take the interface specification into account, not the instructions themselves.</li>
 <li>Runtime code patching is allowed, via target-specific mechanisms.</li>
-<li>However there is no guarantee that each <code>asm!</code> directly corresponds to a single instance of instructions in the object file: the compiler is free to duplicate or deduplicate <code>asm!</code> blocks.</li>
+<li>However there is no guarantee that each block of assembly code in the source directly corresponds to a single instance of instructions in the object file; the compiler is free to duplicate or deduplicate the assembly code in <code>asm!</code> blocks.</li>
 </ul>
 </li>
 </ul>
 <div class="rule" id="r-asm.rules.stack-below-sp"><a class="rule-link" href="inline-assembly.html#r-asm.rules.stack-below-sp" title="asm.rules.stack-below-sp"><span>[asm<wbr>.rules<wbr>.stack-below-sp]</span/></a>
 </div>
 <ul>
-<li>Unless the <code>nostack</code> option is set, asm code is allowed to use stack space below the stack pointer.
+<li>Unless the <code>nostack</code> option is set, assembly code is allowed to use stack space below the stack pointer.
 <ul>
-<li>On entry to the asm block the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.</li>
+<li>On entry to the assembly code the stack pointer is guaranteed to be suitably aligned (according to the target ABI) for a function call.</li>
 <li>You are responsible for making sure you don’t overflow the stack (e.g. use stack probing to ensure you hit a guard page).</li>
 <li>You should adjust the stack pointer when allocating stack memory as required by the target ABI.</li>
-<li>The stack pointer must be restored to its original value before leaving the asm block.</li>
+<li>The stack pointer must be restored to its original value before leaving the assembly code.</li>
 </ul>
 </li>
 </ul>
 <div class="rule" id="r-asm.rules.noreturn"><a class="rule-link" href="inline-assembly.html#r-asm.rules.noreturn" title="asm.rules.noreturn"><span>[asm<wbr>.rules<wbr>.noreturn]</span/></a>
 </div>
 <ul>
-<li>If the <code>noreturn</code> option is set then behavior is undefined if execution falls through to the end of the asm block.</li>
+<li>If the <code>noreturn</code> option is set then behavior is undefined if execution falls through the end of the assembly code.</li>
 </ul>
 <div class="rule" id="r-asm.rules.pure"><a class="rule-link" href="inline-assembly.html#r-asm.rules.pure" title="asm.rules.pure"><span>[asm<wbr>.rules<wbr>.pure]</span/></a>
 </div>
@@ -22804,14 +22857,14 @@ Code should not rely on this however since it depends on the results of register
 Behavior is also undefined if two executions of the <code>asm!</code> code with the same inputs result in different outputs.
 <ul>
 <li>When used with the <code>nomem</code> option, “inputs” are just the direct inputs of the <code>asm!</code>.</li>
-<li>When used with the <code>readonly</code> option, “inputs” comprise the direct inputs of the <code>asm!</code> and any memory that the <code>asm!</code> block is allowed to read.</li>
+<li>When used with the <code>readonly</code> option, “inputs” comprise the direct inputs of the assembly code and any memory that it is allowed to read.</li>
 </ul>
 </li>
 </ul>
 <div class="rule" id="r-asm.rules.preserved-registers"><a class="rule-link" href="inline-assembly.html#r-asm.rules.preserved-registers" title="asm.rules.preserved-registers"><span>[asm<wbr>.rules<wbr>.preserved-registers]</span/></a>
 </div>
 <ul>
-<li>These flags registers must be restored upon exiting the asm block if the <code>preserves_flags</code> option is set:
+<li>These flags registers must be restored upon exiting the assembly code if the <code>preserves_flags</code> option is set:
 <ul>
 <li>x86
 <ul>
@@ -22858,9 +22911,9 @@ Behavior is also undefined if two executions of the <code>asm!</code> code with 
 <div class="rule" id="r-asm.rules.x86-df"><a class="rule-link" href="inline-assembly.html#r-asm.rules.x86-df" title="asm.rules.x86-df"><span>[asm<wbr>.rules<wbr>.x86-df]</span/></a>
 </div>
 <ul>
-<li>On x86, the direction flag (DF in <code>EFLAGS</code>) is clear on entry to an asm block and must be clear on exit.
+<li>On x86, the direction flag (DF in <code>EFLAGS</code>) is clear on entry to the assembly code and must be clear on exit.
 <ul>
-<li>Behavior is undefined if the direction flag is set on exiting an asm block.</li>
+<li>Behavior is undefined if the direction flag is set on exiting the assembly code.</li>
 </ul>
 </li>
 </ul>
@@ -22869,7 +22922,7 @@ Behavior is also undefined if two executions of the <code>asm!</code> code with 
 <ul>
 <li>On x86, the x87 floating-point register stack must remain unchanged unless all of the <code>st([0-7])</code> registers have been marked as clobbered with <code>out("st(0)") _, out("st(1)") _, ...</code>.
 <ul>
-<li>If all x87 registers are clobbered then the x87 register stack is guaranteed to be empty upon entering an <code>asm</code> block. Assembly code must ensure that the x87 register stack is also empty when exiting the asm block.</li>
+<li>If all x87 registers are clobbered then the x87 register stack is guaranteed to be empty upon entering the assembly code. Assembly code must ensure that the x87 register stack is also empty when exiting the asssembly code.</li>
 </ul>
 </li>
 </ul>
@@ -22911,13 +22964,13 @@ pub fn main() {
 <div class="rule" id="r-asm.rules.only-on-exit"><a class="rule-link" href="inline-assembly.html#r-asm.rules.only-on-exit" title="asm.rules.only-on-exit"><span>[asm<wbr>.rules<wbr>.only-on-exit]</span/></a>
 </div>
 <ul>
-<li>The requirement of restoring the stack pointer and non-output registers to their original value only applies when exiting an <code>asm!</code> block.
+<li>The requirement of restoring the stack pointer and non-output registers to their original value only applies when exiting the assembly code.
 <ul>
-<li>This means that <code>asm!</code> blocks that never return (even if not marked <code>noreturn</code>) don’t need to preserve these registers.</li>
-<li>When returning to a different <code>asm!</code> block than you entered (e.g. for context switching), these registers must contain the value they had upon entering the <code>asm!</code> block that you are <em>exiting</em>.
+<li>This means that assembly code that does not fall through and does not jump to any <code>label</code> blocks, even if not marked <code>noreturn</code>, doesn’t need to preserve these registers.</li>
+<li>When returning to the assembly code of a different <code>asm!</code> block than you entered (e.g. for context switching), these registers must contain the value they had upon entering the <code>asm!</code> block that you are <em>exiting</em>.
 <ul>
-<li>You cannot exit an <code>asm!</code> block that has not been entered.
-Neither can you exit an <code>asm!</code> block that has already been exited (without first entering it again).</li>
+<li>You cannot exit the assembly code of an <code>asm!</code> block that has not been entered.
+Neither can you exit the assembly code of an <code>asm!</code> block whose assembly code has already been exited (without first entering it again).</li>
 <li>You are responsible for switching any target-specific state (e.g. thread-local storage, stack bounds).</li>
 <li>You cannot jump from an address in one <code>asm!</code> block to an address in another, even within the same function or block, without treating their contexts as potentially different and requiring context switching. You cannot assume that any particular value in those contexts (e.g. current stack pointer or temporary values below the stack pointer) will remain unchanged between the two <code>asm!</code> blocks.</li>
 <li>The set of memory locations that you may access is the intersection of those allowed by the <code>asm!</code> blocks you entered and exited.</li>
@@ -22963,7 +23016,7 @@ The compiler is allowed to instantiate multiple copies of the <code>asm!</code> 
 after all other arguments are evaluated, formatting is performed, and operands are translated—
 assembly that is both syntactically correct and semantically valid for the target architecture.
 The formatting rules allow the compiler to generate assembly with correct syntax.
-Rules concerning operands permit valid translation of Rust operands into and out of <code>asm!</code>.
+Rules concerning operands permit valid translation of Rust operands into and out of the assembly code.
 Adherence to these rules is necessary, but not sufficient, for the final expanded assembly to be
 both correct and valid. For instance:</p>
 <ul>
@@ -22990,7 +23043,7 @@ assuming the responsibility of not violating rules of both the compiler or the a
 The result of using other directives is assembler-specific (and may cause an error, or may be accepted as-is).</p>
 <div class="rule" id="r-asm.directives.stateful"><a class="rule-link" href="inline-assembly.html#r-asm.directives.stateful" title="asm.directives.stateful"><span>[asm<wbr>.directives<wbr>.stateful]</span/></a>
 </div>
-<p>If inline assembly includes any “stateful” directive that modifies how subsequent assembly is processed, the block must undo the effects of any such directives before the inline assembly ends.</p>
+<p>If inline assembly includes any “stateful” directive that modifies how subsequent assembly is processed, the assembly code must undo the effects of any such directives before the inline assembly ends.</p>
 <div class="rule" id="r-asm.directives.supported-directives"><a class="rule-link" href="inline-assembly.html#r-asm.directives.supported-directives" title="asm.directives.supported-directives"><span>[asm<wbr>.directives<wbr>.supported-directives]</span/></a>
 </div>
 <p>The following directives are guaranteed to be supported by the assembler:</p>
@@ -23117,7 +23170,7 @@ assert_eq!(s, "Hello World!");
 <li><code>.code32</code></li>
 <li><code>.code64</code></li>
 </ul>
-<p>Use of <code>.code16</code>, <code>.code32</code>, and <code>.code64</code> directives are only supported if the state is reset to the default before exiting the assembly block.
+<p>Use of <code>.code16</code>, <code>.code32</code>, and <code>.code64</code> directives are only supported if the state is reset to the default before exiting the assembly code.
 32-bit x86 uses <code>.code32</code> by default, and x86_64 uses <code>.code64</code> by default.</p>
 <div class="rule" id="r-asm.target-specific-directives.arm-32-bit"><a class="rule-link" href="inline-assembly.html#r-asm.target-specific-directives.arm-32-bit" title="asm.target-specific-directives.arm-32-bit"><span>[asm<wbr>.target-specific-directives<wbr>.arm-32-bit]</span/></a>
 </div>
@@ -23280,15 +23333,12 @@ any safe code interacting with the <code>unsafe</code> code cannot trigger these
 behaviors. <code>unsafe</code> code that satisfies this property for any safe client is
 called <em>sound</em>; if <code>unsafe</code> code can be misused by safe code to exhibit
 undefined behavior, it is <em>unsound</em>.</p>
-<div class="warning">
-<p><em><strong>Warning:</strong></em> The following list is not exhaustive; it may grow or shrink.
-There is no formal model of Rust’s semantics for what is and is not allowed in
-unsafe code, so there may be more behavior considered unsafe. We also reserve
-the right to make some of the behavior in that list defined in the future. In
-other words, this list does not say that anything will <em>definitely</em> always be
-undefined in all future Rust version (but we might make such commitments for
-some list items in the future).</p>
+<div class="alert alert-warning">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>The following list is not exhaustive; it may grow or shrink. There is no formal model of Rust’s semantics for what is and is not allowed in unsafe code, so there may be more behavior considered unsafe. We also reserve the right to make some of the behavior in that list defined in the future. In other words, this list does not say that anything will <em>definitely</em> always be undefined in all future Rust version (but we might make such commitments for some list items in the future).</p>
 <p>Please read the <a href="../nomicon/index.html">Rustonomicon</a> before writing unsafe code.</p>
+</blockquote>
 </div>
 <div class="rule" id="r-undefined.race"><a class="rule-link" href="behavior-considered-undefined.html#r-undefined.race" title="undefined.race"><span>[undefined<wbr>.race]</span/></a>
 </div>
@@ -26618,10 +26668,10 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="patterns.html">9. Patterns</a></td>
-<td>137</td>
+<td>136</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(60);">137</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(60);">136</a>
 <div id="uncovered-60" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="patterns.html#r-patterns">patterns</a></li>
@@ -26698,26 +26748,25 @@ Uncovered rules
 <li><a href="patterns.html#r-patterns.precedence">patterns.precedence</a></li>
 <li><a href="patterns.html#r-patterns.range">patterns.range</a></li>
 <li><a href="patterns.html#r-patterns.range.bound">patterns.range.bound</a></li>
-<li><a href="patterns.html#r-patterns.range.closed">patterns.range.closed</a></li>
 <li><a href="patterns.html#r-patterns.range.constraint-bound-path">patterns.range.constraint-bound-path</a></li>
 <li><a href="patterns.html#r-patterns.range.constraint-less-than">patterns.range.constraint-less-than</a></li>
 <li><a href="patterns.html#r-patterns.range.constraint-slice">patterns.range.constraint-slice</a></li>
 <li><a href="patterns.html#r-patterns.range.edition2021">patterns.range.edition2021</a></li>
+<li><a href="patterns.html#r-patterns.range.exclusive">patterns.range.exclusive</a></li>
 <li><a href="patterns.html#r-patterns.range.float-restriction">patterns.range.float-restriction</a></li>
+<li><a href="patterns.html#r-patterns.range.from">patterns.range.from</a></li>
+<li><a href="patterns.html#r-patterns.range.inclusive">patterns.range.inclusive</a></li>
 <li><a href="patterns.html#r-patterns.range.intro">patterns.range.intro</a></li>
 <li><a href="patterns.html#r-patterns.range.literal-value">patterns.range.literal-value</a></li>
-<li><a href="patterns.html#r-patterns.range.lower-bound">patterns.range.lower-bound</a></li>
 <li><a href="patterns.html#r-patterns.range.negation">patterns.range.negation</a></li>
-<li><a href="patterns.html#r-patterns.range.open-above">patterns.range.open-above</a></li>
-<li><a href="patterns.html#r-patterns.range.open-below">patterns.range.open-below</a></li>
 <li><a href="patterns.html#r-patterns.range.path-value">patterns.range.path-value</a></li>
 <li><a href="patterns.html#r-patterns.range.refutable">patterns.range.refutable</a></li>
 <li><a href="patterns.html#r-patterns.range.refutable-char">patterns.range.refutable-char</a></li>
 <li><a href="patterns.html#r-patterns.range.refutable-integer">patterns.range.refutable-integer</a></li>
 <li><a href="patterns.html#r-patterns.range.syntax">patterns.range.syntax</a></li>
+<li><a href="patterns.html#r-patterns.range.to-exclusive">patterns.range.to-exclusive</a></li>
+<li><a href="patterns.html#r-patterns.range.to-inclusive">patterns.range.to-inclusive</a></li>
 <li><a href="patterns.html#r-patterns.range.type">patterns.range.type</a></li>
-<li><a href="patterns.html#r-patterns.range.upper-bound">patterns.range.upper-bound</a></li>
-<li><a href="patterns.html#r-patterns.range.value">patterns.range.value</a></li>
 <li><a href="patterns.html#r-patterns.ref">patterns.ref</a></li>
 <li><a href="patterns.html#r-patterns.ref.intro">patterns.ref.intro</a></li>
 <li><a href="patterns.html#r-patterns.ref.mut">patterns.ref.mut</a></li>
@@ -27954,10 +28003,10 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="inline-assembly.html">16. Inline assembly</a></td>
-<td>102</td>
+<td>104</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(102);">102</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(102);">104</a>
 <div id="uncovered-102" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="inline-assembly.html#r-asm">asm</a></li>
@@ -27981,11 +28030,13 @@ Uncovered rules
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.inlateout">asm.operand-type.supported-operands.inlateout</a></li>
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.inout">asm.operand-type.supported-operands.inout</a></li>
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.inout-arrow">asm.operand-type.supported-operands.inout-arrow</a></li>
+<li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.label">asm.operand-type.supported-operands.label</a></li>
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.lateout">asm.operand-type.supported-operands.lateout</a></li>
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.out">asm.operand-type.supported-operands.out</a></li>
 <li><a href="inline-assembly.html#r-asm.operand-type.supported-operands.sym">asm.operand-type.supported-operands.sym</a></li>
 <li><a href="inline-assembly.html#r-asm.options">asm.options</a></li>
 <li><a href="inline-assembly.html#r-asm.options.checks">asm.options.checks</a></li>
+<li><a href="inline-assembly.html#r-asm.options.checks.label-with-outputs">asm.options.checks.label-with-outputs</a></li>
 <li><a href="inline-assembly.html#r-asm.options.checks.mutually-exclusive">asm.options.checks.mutually-exclusive</a></li>
 <li><a href="inline-assembly.html#r-asm.options.checks.noreturn">asm.options.checks.noreturn</a></li>
 <li><a href="inline-assembly.html#r-asm.options.checks.pure">asm.options.checks.pure</a></li>
@@ -28335,9 +28386,9 @@ Uncovered rules
 </tr>
 <tr>
 <td><b>Total:</b></td>
-<td>2658</td>
+<td>2659</td>
 <td>53</td>
-<td>2637</td>
+<td>2638</td>
 <td>0.8%</td>
 </tr>
 </table>

@@ -29,7 +29,7 @@
         <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight-56612340.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="ferris-7c050c7a.css">
+        <link rel="stylesheet" href="ferris-d33b75bf.css">
         <link rel="stylesheet" href="theme/2018-edition-4e126c62.css">
         <link rel="stylesheet" href="theme/semantic-notes-9b5766c0.css">
         <link rel="stylesheet" href="theme/listing-cab26221.css">
@@ -41,7 +41,7 @@
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-66e48bc2.js"></script>
+        <script src="toc-4ccd8a3e.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -195,7 +195,7 @@ provides another approach to concurrency as well.)</p>
 closure (we talked about closures in Chapter 13) containing the code we want to
 run in the new thread. The example in Listing 16-1 prints some text from a main
 thread and other text from a new thread:</p>
-<figure class="listing">
+<figure class="listing" id="listing-16-1">
 <span class="file-name">Filename: src/main.rs</span>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::thread;
 use std::time::Duration;
@@ -213,7 +213,7 @@ fn main() {
         thread::sleep(Duration::from_millis(1));
     }
 }</code></pre></pre>
-<figcaption>Listing 16-1: Creating a new thread to print one thing while the main thread prints something else</figcaption>
+<figcaption><a href="#listing-16-1">Listing 16-1</a>: Creating a new thread to print one thing while the main thread prints something else</figcaption>
 </figure>
 <p>Note that when the main thread of a Rust program completes, all spawned threads
 are shut down, whether or not they have finished running. The output from this
@@ -249,11 +249,12 @@ the order in which threads run, we also can’t guarantee that the spawned threa
 will get to run at all!</p>
 <p>We can fix the problem of the spawned thread not running or ending prematurely
 by saving the return value of <code>thread::spawn</code> in a variable. The return type of
-<code>thread::spawn</code> is <code>JoinHandle</code>. A <code>JoinHandle</code> is an owned value that, when we
-call the <code>join</code> method on it, will wait for its thread to finish. Listing 16-2
-shows how to use the <code>JoinHandle</code> of the thread we created in Listing 16-1 and
-how to call <code>join</code> to make sure the spawned thread finishes before <code>main</code> exits:</p>
-<figure class="listing">
+<code>thread::spawn</code> is <code>JoinHandle&lt;T&gt;</code>. A <code>JoinHandle&lt;T&gt;</code> is an owned value that,
+when we call the <code>join</code> method on it, will wait for its thread to finish.
+Listing 16-2 shows how to use the <code>JoinHandle&lt;T&gt;</code> of the thread we created in
+Listing 16-1 and how to call <code>join</code> to make sure the spawned thread finishes
+before <code>main</code> exits.</p>
+<figure class="listing" id="listing-16-2">
 <span class="file-name">Filename: src/main.rs</span>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::thread;
 use std::time::Duration;
@@ -273,7 +274,7 @@ fn main() {
 
     handle.join().unwrap();
 }</code></pre></pre>
-<figcaption>Listing 16-2: Saving a <code>JoinHandle</code> from <code>thread::spawn</code> to guarantee the thread is run to completion</figcaption>
+<figcaption><a href="#listing-16-2">Listing 16-2</a>: Saving a <code>JoinHandle&lt;T&gt;</code> from <code>thread::spawn</code> to guarantee the thread is run to completion</figcaption>
 </figure>
 <p>Calling <code>join</code> on the handle blocks the thread currently running until the
 thread represented by the handle terminates. <em>Blocking</em> a thread means that
@@ -347,7 +348,7 @@ threads run at the same time.</p>
 <p>We’ll often use the <code>move</code> keyword with closures passed to <code>thread::spawn</code>
 because the closure will then take ownership of the values it uses from the
 environment, thus transferring ownership of those values from one thread to
-another. In <a href="ch13-01-closures.html#capturing-references-or-moving-ownership">“Capturing References or Moving Ownership”</a><!-- ignore -->
+another. In <a href="ch13-01-closures.html#capturing-the-environment-with-closures">“Capturing the Environment With Closures”</a><!-- ignore -->
 in Chapter 13, we discussed <code>move</code> in the context of closures. Now, we’ll
 concentrate more on the interaction between <code>move</code> and <code>thread::spawn</code>.</p>
 <p>Notice in Listing 16-1 that the closure we pass to <code>thread::spawn</code> takes no
@@ -355,8 +356,8 @@ arguments: we’re not using any data from the main thread in the spawned
 thread’s code. To use data from the main thread in the spawned thread, the
 spawned thread’s closure must capture the values it needs. Listing 16-3 shows
 an attempt to create a vector in the main thread and use it in the spawned
-thread. However, this won’t yet work, as you’ll see in a moment.</p>
-<figure class="listing">
+thread. However, this won’t work yet, as you’ll see in a moment.</p>
+<figure class="listing" id="listing-16-3">
 <span class="file-name">Filename: src/main.rs</span>
 <pre><code class="language-rust ignore does_not_compile">use std::thread;
 
@@ -369,7 +370,7 @@ fn main() {
 
     handle.join().unwrap();
 }</code></pre>
-<figcaption>Listing 16-3: Attempting to use a vector created by the main thread in another thread</figcaption>
+<figcaption><a href="#listing-16-3">Listing 16-3</a>: Attempting to use a vector created by the main thread in another thread</figcaption>
 </figure>
 <p>The closure uses <code>v</code>, so it will capture <code>v</code> and make it part of the closure’s
 environment. Because <code>thread::spawn</code> runs this closure in a new thread, we
@@ -403,11 +404,11 @@ error: could not compile `threads` (bin "threads") due to 1 previous error
 </code></pre>
 <p>Rust <em>infers</em> how to capture <code>v</code>, and because <code>println!</code> only needs a reference
 to <code>v</code>, the closure tries to borrow <code>v</code>. However, there’s a problem: Rust can’t
-tell how long the spawned thread will run, so it doesn’t know if the reference
-to <code>v</code> will always be valid.</p>
+tell how long the spawned thread will run, so it doesn’t know whether the
+reference to <code>v</code> will always be valid.</p>
 <p>Listing 16-4 provides a scenario that’s more likely to have a reference to <code>v</code>
 that won’t be valid:</p>
-<figure class="listing">
+<figure class="listing" id="listing-16-4">
 <span class="file-name">Filename: src/main.rs</span>
 <pre><code class="language-rust ignore does_not_compile">use std::thread;
 
@@ -422,12 +423,12 @@ fn main() {
 
     handle.join().unwrap();
 }</code></pre>
-<figcaption>Listing 16-4: A thread with a closure that attempts to capture a reference to <code>v</code> from a main thread that drops <code>v</code></figcaption>
+<figcaption><a href="#listing-16-4">Listing 16-4</a>: A thread with a closure that attempts to capture a reference to <code>v</code> from a main thread that drops <code>v</code></figcaption>
 </figure>
-<p>If Rust allowed us to run this code, there’s a possibility the spawned thread
-would be immediately put in the background without running at all. The spawned
-thread has a reference to <code>v</code> inside, but the main thread immediately drops
-<code>v</code>, using the <code>drop</code> function we discussed in Chapter 15. Then, when the
+<p>If Rust allowed us to run this code, there’s a possibility that the spawned
+thread would be immediately put in the background without running at all. The
+spawned thread has a reference to <code>v</code> inside, but the main thread immediately
+drops <code>v</code>, using the <code>drop</code> function we discussed in Chapter 15. Then, when the
 spawned thread starts to execute, <code>v</code> is no longer valid, so a reference to it
 is also invalid. Oh no!</p>
 <p>To fix the compiler error in Listing 16-3, we can use the error message’s
@@ -443,8 +444,8 @@ after automatic regeneration, look at listings/ch16-fearless-concurrency/listing
 <p>By adding the <code>move</code> keyword before the closure, we force the closure to take
 ownership of the values it’s using rather than allowing Rust to infer that it
 should borrow the values. The modification to Listing 16-3 shown in Listing
-16-5 will compile and run as we intend:</p>
-<figure class="listing">
+16-5 will compile and run as we intend.</p>
+<figure class="listing" id="listing-16-5">
 <span class="file-name">Filename: src/main.rs</span>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::thread;
 
@@ -457,7 +458,7 @@ fn main() {
 
     handle.join().unwrap();
 }</code></pre></pre>
-<figcaption>Listing 16-5: Using the <code>move</code> keyword to force a closure to take ownership of the values it uses</figcaption>
+<figcaption><a href="#listing-16-5">Listing 16-5</a>: Using the <code>move</code> keyword to force a closure to take ownership of the values it uses</figcaption>
 </figure>
 <p>We might be tempted to try the same thing to fix the code in Listing 16-4 where
 the main thread called <code>drop</code> by using a <code>move</code> closure. However, this fix will
@@ -493,8 +494,8 @@ If we change Listing 16-4 in the same way, we’re then violating the ownership
 rules when we try to use <code>v</code> in the main thread. The <code>move</code> keyword overrides
 Rust’s conservative default of borrowing; it doesn’t let us violate the
 ownership rules.</p>
-<p>With a basic understanding of threads and the thread API, let’s look at what we
-can <em>do</em> with threads.</p>
+<p>Now that we’ve covered what threads are and the methods supplied by the thread
+API, let’s look at some situations in which we can use threads.</p>
 
                     </main>
 
@@ -542,7 +543,7 @@ can <em>do</em> with threads.</p>
         <script src="book-e98fec48.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="ferris-022cc2d6.js"></script>
+        <script src="ferris-2317480c.js"></script>
 
 
     </div>
