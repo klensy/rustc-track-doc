@@ -37,7 +37,7 @@
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-b9c5272c.js"></script>
+        <script src="../../toc-cff8d39b.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -292,6 +292,7 @@
 <li><a href="#useless-ptr-null-checks"><code>useless_ptr_null_checks</code></a></li>
 <li><a href="#uses-power-alignment"><code>uses_power_alignment</code></a></li>
 <li><a href="#warnings"><code>warnings</code></a></li>
+<li><a href="#wasm-c-abi"><code>wasm_c_abi</code></a></li>
 <li><a href="#while-true"><code>while_true</code></a></li>
 </ul>
 <h2 id="abi-unsupported-vector-types"><a class="header" href="#abi-unsupported-vector-types">abi-unsupported-vector-types</a></h2>
@@ -311,6 +312,7 @@ fn main() {
   let v = unsafe { std::mem::zeroed() };
   unsafe { with_target_feature(v); }
 }</code></pre>
+<p>This will produce:</p>
 <pre><code class="language-text">warning: ABI error: this function call uses a avx vector type, which is not enabled in the caller
  --&gt; lint_example.rs:18:12
   |
@@ -3562,7 +3564,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-03-25; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-03-26; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -3809,7 +3811,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-03-25; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-03-26; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -4288,9 +4290,34 @@ note: the lint level is defined here
 change every other warning that would produce a warning to whatever
 value you'd like. As such, you won't ever trigger this lint in your
 code directly.</p>
+<h2 id="wasm-c-abi"><a class="header" href="#wasm-c-abi">wasm-c-abi</a></h2>
+<p>The <code>wasm_c_abi</code> lint detects usage of the <code>extern "C"</code> ABI of wasm that is affected
+by a planned ABI change that has the goal of aligning Rust with the standard C ABI
+of this target.</p>
+<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
+<pre><code class="language-rust ignore (needs wasm32-unknown-unknown)">#[repr(C)]
+struct MyType(i32, i32);
+
+extern "C" my_fun(x: MyType) {}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: this function function definition is affected by the wasm ABI transition: it passes an argument of non-scalar type `MyType`
+--&gt; $DIR/wasm_c_abi_transition.rs:17:1
+ |
+ | pub extern "C" fn my_fun(_x: MyType) {}
+ | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ |
+ = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+ = note: for more information, see issue #138762 &lt;https://github.com/rust-lang/rust/issues/138762&gt;
+ = help: the "C" ABI Rust uses on wasm32-unknown-unknown will change to align with the standard "C" ABI for this target
+</code></pre>
+<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
+<p>Rust has historically implemented a non-spec-compliant C ABI on wasm32-unknown-unknown. This
+has caused incompatibilities with other compilers and Wasm targets. In a future version
+of Rust, this will be fixed, and therefore code relying on the non-spec-compliant C ABI will
+stop functioning.</p>
 <h2 id="while-true"><a class="header" href="#while-true">while-true</a></h2>
 <p>The <code>while_true</code> lint detects <code>while true { }</code>.</p>
-<h3 id="example-121"><a class="header" href="#example-121">Example</a></h3>
+<h3 id="example-122"><a class="header" href="#example-122">Example</a></h3>
 <pre><code class="language-rust no_run">while true {
 
 }</code></pre>
@@ -4304,7 +4331,7 @@ code directly.</p>
   = note: `#[warn(while_true)]` on by default
 
 </code></pre>
-<h3 id="explanation-122"><a class="header" href="#explanation-122">Explanation</a></h3>
+<h3 id="explanation-123"><a class="header" href="#explanation-123">Explanation</a></h3>
 <p><code>while true</code> should be replaced with <code>loop</code>. A <code>loop</code> expression is
 the preferred way to write an infinite loop because it more directly
 expresses the intent of the loop.</p>
