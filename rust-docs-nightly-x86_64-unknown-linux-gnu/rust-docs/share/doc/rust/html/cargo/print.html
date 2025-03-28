@@ -7102,7 +7102,7 @@ re-executed. The paths in the file are absolute by default. See the
 <p>A third party tool, <a href="https://github.com/mozilla/sccache">sccache</a>, can be used to share built dependencies across
 different workspaces.</p>
 <p>To setup <code>sccache</code>, install it with <code>cargo install sccache</code> and set
-<code>RUSTC_WRAPPER</code> environmental variable to <code>sccache</code> before invoking Cargo. If
+<code>RUSTC_WRAPPER</code> environment variable to <code>sccache</code> before invoking Cargo. If
 you use bash, it makes sense to add <code>export RUSTC_WRAPPER=sccache</code> to
 <code>.bashrc</code>. Alternatively, you can set <a href="reference/../reference/config.html#buildrustc-wrapper"><code>build.rustc-wrapper</code></a> in the <a href="reference/../reference/config.html">Cargo
 configuration</a>. Refer to sccache documentation for more details.</p>
@@ -10729,6 +10729,7 @@ build-std = ["core", "alloc"]
 <li><a href="reference/unstable.html#package-workspace">package-workspace</a> — Allows for packaging and publishing multiple crates in a workspace.</li>
 <li><a href="reference/unstable.html#native-completions">native-completions</a> — Move cargo shell completions to native completions.</li>
 <li><a href="reference/unstable.html#warnings">warnings</a> — controls warning behavior; options for allowing or denying warnings.</li>
+<li><a href="reference/unstable.html#package-message-format">Package message format</a> — Message format for <code>cargo package</code>.</li>
 </ul>
 </li>
 </ul>
@@ -12241,6 +12242,16 @@ regardless of which packages are specified for the current build.</li>
 <li><code>package</code> <em>(unimplemented)</em>: Dependency features are considered on a package-by-package basis,
 preferring duplicate builds of dependencies when different sets of features are activated by the packages.</li>
 </ul>
+<h2 id="package-message-format"><a class="header" href="#package-message-format">Package message format</a></h2>
+<ul>
+<li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/11666">#11666</a></li>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/15353">#15353</a></li>
+</ul>
+<p>The <code>--message-format</code> flag in <code>cargo package</code> controls the output message format.
+Currently, it only works with the <code>--list</code> flag and affects the file listing format,
+Requires <code>-Zunstable-options</code>.
+See <a href="reference/../commands/cargo-package.html#option-cargo-package---message-format"><code>cargo package --message-format</code></a>
+for more information.</p>
 <h1 id="stabilized-and-removed-features"><a class="header" href="#stabilized-and-removed-features">Stabilized and removed features</a></h1>
 <h2 id="compile-progress"><a class="header" href="#compile-progress">Compile progress</a></h2>
 <p>The compile-progress feature has been stabilized in the 1.30 release.
@@ -19280,6 +19291,47 @@ about configuration of registry names. The packages will not be published
 to this registry, but if we are packaging multiple inter-dependent crates,
 lock-files will be generated under the assumption that dependencies will be
 published to this registry.</dd>
+<dt class="option-term" id="option-cargo-package---message-format"><a class="option-anchor" href="commands/cargo-package.html#option-cargo-package---message-format"></a><code>--message-format</code> <em>fmt</em></dt>
+<dd class="option-desc">Specifies the output message format.
+Currently, it only works with <code>--list</code> and affects the file listing format.
+This is unstable and requires <code>-Zunstable-options</code>.
+Valid output formats:</p>
+<ul>
+<li><code>human</code> (default): Display in a file-per-line format.</li>
+<li><code>json</code>: Emit machine-readable JSON information about each package.
+One package per JSON line (Newline delimited JSON).
+<pre><code class="language-javascript">{
+  /* The Package ID Spec of the package. */
+  "id": "path+file:///home/foo#0.0.0",
+  /* Files of this package */
+  "files" {
+    /* Relative path in the archive file. */
+    "Cargo.toml.orig": {
+      /* Where the file is from.
+         - "generate" for file being generated during packaging
+         - "copy" for file being copied from another location.
+      */
+      "kind": "copy",
+      /* For the "copy" kind,
+         it is an absolute path to the actual file content.
+         For the "generate" kind,
+         it is the original file the generated one is based on.
+      */
+      "path": "/home/foo/Cargo.toml"
+    },
+    "Cargo.toml": {
+      "kind": "generate",
+      "path": "/home/foo/Cargo.toml"
+    },
+    "src/main.rs": {
+      "kind": "copy",
+      "path": "/home/foo/src/main.rs"
+    }
+  }
+}
+</code></pre>
+</li>
+</ul></dd>
 </dl>
 <h3 id="package-selection-14"><a class="header" href="#package-selection-14">Package Selection</a></h3>
 <p>By default, when no package selection options are given, the packages selected
