@@ -14,8 +14,8 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-d0866e17.css">
-        <link rel="stylesheet" href="../css/general-e9745eeb.css">
+        <link rel="stylesheet" href="../css/variables-e29d2114.css">
+        <link rel="stylesheet" href="../css/general-d4e31f58.css">
         <link rel="stylesheet" href="../css/chrome-d7ced664.css">
         <link rel="stylesheet" href="../css/print-ad67d350.css" media="print">
 
@@ -31,10 +31,11 @@
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-4e00b98d.js"></script>
@@ -44,8 +45,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -59,7 +60,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -72,8 +74,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -109,6 +111,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -185,16 +188,13 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
     left - right
 }
 <span class="boring">}</span></code></pre></pre>
-<p>In this example, the two doctests will now be compiled into a single executable. Rustdoc will essentially place each example in a separate function within a single binary. The tests still run in independent processes as they did before, so any global state (like global statics) should still continue to work correctly.<sup class="footnote-reference"><a href="#implementation">1</a></sup></p>
+<p>In this example, the two doctests will now be compiled into a single executable. Rustdoc will essentially place each example in a separate function within a single binary. The tests still run in independent processes as they did before, so any global state (like global statics) should still continue to work correctly.<sup class="footnote-reference" id="fr-implementation-1"><a href="#footnote-implementation">1</a></sup></p>
 <p>This change is only available in the 2024 Edition to avoid potential incompatibilities with existing doctests which may not work in a combined executable. However, these incompatibilities are expected to be extremely rare.</p>
-<div class="footnote-definition" id="implementation"><sup class="footnote-definition-label">1</sup>
-<p>For more information on the details of how this work, see <a href="https://blog.guillaume-gomez.fr/articles/2024-08-17+Doctests+-+How+were+they+improved%3F">"Doctests - How were they improved?"</a>.</p>
-</div>
 <h3 id="standalone_crate-tag"><a class="header" href="#standalone_crate-tag"><code>standalone_crate</code> tag</a></h3>
 <p>In some situations it is not possible for rustdoc to combine examples into a single executable. Rustdoc will attempt to automatically detect if this is not possible. For example, a test will not be combined with others if it:</p>
 <ul>
 <li>Uses the <a href="../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>compile_fail</code></a> tag, which indicates that the example should fail to compile.</li>
-<li>Uses an <a href="../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>edition</code></a> tag, which indicates the edition of the example.<sup class="footnote-reference"><a href="#edition-tag">2</a></sup></li>
+<li>Uses an <a href="../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>edition</code></a> tag, which indicates the edition of the example.<sup class="footnote-reference" id="fr-edition-tag-1"><a href="#footnote-edition-tag">2</a></sup></li>
 <li>Uses global attributes, like the <a href="../../std/alloc/trait.GlobalAlloc.html"><code>global_allocator</code></a> attribute, which could potentially interfere with other tests.</li>
 <li>Defines any crate-wide attributes (like <code>#![feature(...)]</code>).</li>
 <li>Defines a macro that uses <code>$crate</code>, because the <code>$crate</code> path will not work correctly.</li>
@@ -215,9 +215,6 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
 //! assert_eq!(location.line(), 5);
 //! ```
 <span class="boring">}</span></code></pre></pre>
-<div class="footnote-definition" id="edition-tag"><sup class="footnote-definition-label">2</sup>
-<p>Note that rustdoc will only combine tests if the entire crate is Edition 2024 or greater. Using the <code>edition2024</code> tag in older editions will not result in those tests being combined.</p>
-</div>
 <h2 id="migration"><a class="header" href="#migration">Migration</a></h2>
 <p>There is no automatic migration to determine which doctests need to be annotated with the <code>standalone_crate</code> tag. It's very unlikely that any given doctest will not work correctly when migrated. We suggest that you update your crate to the 2024 Edition and then run your documentation tests and see if any fail. If one does, you will need to analyze whether it can be rewritten to be compatible with the combined approach, or alternatively, add the <code>standalone_crate</code> tag to retain the previous behavior.</p>
 <p>Some things to watch out for and avoid are:</p>
@@ -225,7 +222,14 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
 <li>Checking the values of <a href="https://doc.rust-lang.org/std/panic/struct.Location.html"><code>std::panic::Location</code></a> or things that make use of <code>Location</code>. The location of the code is now different since multiple tests are now located in the same test crate.</li>
 <li>Checking the value of <a href="https://doc.rust-lang.org/std/any/fn.type_name.html"><code>std::any::type_name</code></a>, which now has a different module path.</li>
 </ul>
-
+<hr>
+<ol class="footnote-definition"><li id="footnote-implementation">
+<p>For more information on the details of how this work, see <a href="https://blog.guillaume-gomez.fr/articles/2024-08-17+Doctests+-+How+were+they+improved%3F">"Doctests - How were they improved?"</a>. <a href="#fr-implementation-1">↩</a></p>
+</li>
+<li id="footnote-edition-tag">
+<p>Note that rustdoc will only combine tests if the entire crate is Edition 2024 or greater. Using the <code>edition2024</code> tag in older editions will not result in those tests being combined. <a href="#fr-edition-tag-1">↩</a></p>
+</li>
+</ol>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
@@ -265,11 +269,11 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
 
         <script src="../elasticlunr-ef4e11c1.min.js"></script>
         <script src="../mark-09e88c2c.min.js"></script>
-        <script src="../searcher-8b5bd394.js"></script>
+        <script src="../searcher-b074573a.js"></script>
 
         <script src="../clipboard-1626706a.min.js"></script>
         <script src="../highlight-abc7f01d.js"></script>
-        <script src="../book-e98fec48.js"></script>
+        <script src="../book-ed82849d.js"></script>
 
         <!-- Custom JS scripts -->
 

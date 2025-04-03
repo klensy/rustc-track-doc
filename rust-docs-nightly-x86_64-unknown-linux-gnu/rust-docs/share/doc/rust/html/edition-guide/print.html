@@ -15,8 +15,8 @@
 
         <link rel="icon" href="favicon-de23e50b.svg">
         <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-d0866e17.css">
-        <link rel="stylesheet" href="css/general-e9745eeb.css">
+        <link rel="stylesheet" href="css/variables-e29d2114.css">
+        <link rel="stylesheet" href="css/general-d4e31f58.css">
         <link rel="stylesheet" href="css/chrome-d7ced664.css">
         <link rel="stylesheet" href="css/print-ad67d350.css" media="print">
 
@@ -32,10 +32,11 @@
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4e00b98d.js"></script>
@@ -45,8 +46,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -60,7 +61,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -73,8 +75,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -110,6 +112,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -1894,7 +1897,7 @@ fn f&lt;'a, T&gt;(x: &amp;'a (), y: T) -&gt; impl Sized + Captures&lt;(&amp;'a (
 <li>In an <code>if let $pat = $expr { .. } else { .. }</code> expression, the temporary values generated from evaluating <code>$expr</code> will be dropped before the program enters the <code>else</code> branch instead of after.</li>
 </ul>
 <h2 id="details-13"><a class="header" href="#details-13">Details</a></h2>
-<p>The 2024 Edition changes the drop scope of <a href="rust-2024/../../reference/expressions.html#temporaries">temporary values</a> in the scrutinee<sup class="footnote-reference"><a href="#scrutinee">1</a></sup> of an <code>if let</code> expression. This is intended to help reduce the potentially unexpected behavior involved with the temporary living for too long.</p>
+<p>The 2024 Edition changes the drop scope of <a href="rust-2024/../../reference/expressions.html#temporaries">temporary values</a> in the scrutinee<sup class="footnote-reference" id="fr-scrutinee-1"><a href="#footnote-scrutinee">1</a></sup> of an <code>if let</code> expression. This is intended to help reduce the potentially unexpected behavior involved with the temporary living for too long.</p>
 <p>Before 2024, the temporaries could be extended beyond the <code>if let</code> expression itself. For example:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1934,9 +1937,6 @@ fn f(value: &amp;RwLock&lt;Option&lt;bool&gt;&gt;) {
 }
 <span class="boring">}</span></code></pre></pre>
 <p>See the <a href="rust-2024/../../reference/destructors.html#temporary-scopes">temporary scope rules</a> for more information about how temporary scopes are extended. See the <a href="rust-2024/temporary-tail-expr-scope.html">tail expression temporary scope</a> chapter for a similar change made to tail expressions.</p>
-<div class="footnote-definition" id="scrutinee"><sup class="footnote-definition-label">1</sup>
-<p>The <a href="rust-2024/../../reference/glossary.html#scrutinee">scrutinee</a> is the expression being matched on in the <code>if let</code> expression.</p>
-</div>
 <h2 id="migration-10"><a class="header" href="#migration-10">Migration</a></h2>
 <p>It is always safe to rewrite <code>if let</code> with a <code>match</code>. The temporaries of the <code>match</code> scrutinee are extended past the end of the <code>match</code> expression (typically to the end of the statement), which is the same as the 2021 behavior of <code>if let</code>.</p>
 <p>The <a href="rust-2024/../../rustc/lints/listing/allowed-by-default.html#if-let-rescope"><code>if_let_rescope</code></a> lint suggests a fix when a lifetime issue arises due to this change or the lint detects that a temporary value with a custom, non-trivial <code>Drop</code> destructor is generated from the scrutinee of the <code>if let</code>. For instance, the earlier example may be rewritten into the following when the suggestion from <code>cargo fix</code> is accepted:</p>
@@ -1969,7 +1969,11 @@ fn f(value: &amp;RwLock&lt;Option&lt;bool&gt;&gt;) {
 </span>// Add this to the root of your crate to do a manual migration.
 #![warn(if_let_rescope)]
 <span class="boring">}</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="tail-expression-temporary-scope"><a class="header" href="#tail-expression-temporary-scope">Tail expression temporary scope</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-scrutinee">
+<p>The <a href="rust-2024/../../reference/glossary.html#scrutinee">scrutinee</a> is the expression being matched on in the <code>if let</code> expression. <a href="#fr-scrutinee-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="tail-expression-temporary-scope"><a class="header" href="#tail-expression-temporary-scope">Tail expression temporary scope</a></h1>
 <h2 id="summary-17"><a class="header" href="#summary-17">Summary</a></h2>
 <ul>
 <li>Temporary values generated in evaluation of the tail expression of a <a href="rust-2024/../../reference/items/functions.html">function</a> or closure body, or a <a href="rust-2024/../../reference/expressions/block-expr.html">block</a> may now be dropped before local variables, and are sometimes not extended to the next larger temporary scope.</li>
@@ -2028,17 +2032,18 @@ fn main() {
 <p>This particular example takes advantage of <a href="rust-2024/../../reference/destructors.html#temporary-lifetime-extension">temporary lifetime extension</a>. Temporary lifetime extension is a set of specific rules which allow temporaries to live longer than they normally would. Because the <code>String</code> temporary is behind a reference, the <code>String</code> temporary is extended long enough for the next statement to call <code>len()</code> on it.</p>
 <p>See the <a href="rust-2024/temporary-if-let-scope.html"><code>if let</code> temporary scope</a> chapter for a similar change made to temporary scopes of <code>if let</code> expressions.</p>
 <h2 id="migration-11"><a class="header" href="#migration-11">Migration</a></h2>
-<p>Unfortunately, there are no semantics-preserving rewrites to shorten the lifetime for temporary values in tail expressions<sup class="footnote-reference"><a href="#RFC3606">1</a></sup>. The <a href="rust-2024/../../rustc/lints/listing/allowed-by-default.html#tail-expr-drop-order"><code>tail_expr_drop_order</code></a> lint detects if a temporary value with a custom, non-trivial <code>Drop</code> destructor is generated in a tail expression. Warnings from this lint will appear when running <code>cargo fix --edition</code>, but will otherwise not automatically make any changes. It is recommended to manually inspect the warnings and determine whether or not you need to make any adjustments.</p>
+<p>Unfortunately, there are no semantics-preserving rewrites to shorten the lifetime for temporary values in tail expressions<sup class="footnote-reference" id="fr-RFC3606-1"><a href="#footnote-RFC3606">1</a></sup>. The <a href="rust-2024/../../rustc/lints/listing/allowed-by-default.html#tail-expr-drop-order"><code>tail_expr_drop_order</code></a> lint detects if a temporary value with a custom, non-trivial <code>Drop</code> destructor is generated in a tail expression. Warnings from this lint will appear when running <code>cargo fix --edition</code>, but will otherwise not automatically make any changes. It is recommended to manually inspect the warnings and determine whether or not you need to make any adjustments.</p>
 <p>If you want to manually inspect these warnings without performing the edition migration, you can enable the lint with:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Add this to the root of your crate to do a manual migration.
 #![warn(tail_expr_drop_order)]
 <span class="boring">}</span></code></pre></pre>
-<div class="footnote-definition" id="RFC3606"><sup class="footnote-definition-label">1</sup>
-<p>Details are documented at <a href="https://github.com/rust-lang/rfcs/pull/3606">RFC 3606</a></p>
-</div>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="match-ergonomics-reservations"><a class="header" href="#match-ergonomics-reservations">Match ergonomics reservations</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-RFC3606">
+<p>Details are documented at <a href="https://github.com/rust-lang/rfcs/pull/3606">RFC 3606</a> <a href="#fr-RFC3606-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="match-ergonomics-reservations"><a class="header" href="#match-ergonomics-reservations">Match ergonomics reservations</a></h1>
 <h2 id="summary-18"><a class="header" href="#summary-18">Summary</a></h2>
 <ul>
 <li>Writing <code>mut</code>, <code>ref</code>, or <code>ref mut</code> on a binding is only allowed within a pattern when the pattern leading up to that binding is fully explicit (i.e. when it does not use match ergonomics).
@@ -2149,7 +2154,7 @@ let &amp;[&amp;x, ref y] = &amp;[&amp;(), &amp;()];
 <li><a href="rust-2024/../../reference/items/external-blocks.html"><code>extern</code> blocks</a> must now be marked with the <code>unsafe</code> keyword.</li>
 </ul>
 <h2 id="details-16"><a class="header" href="#details-16">Details</a></h2>
-<p>Rust 1.82 added the ability in all editions to mark <a href="rust-2024/../../reference/items/external-blocks.html"><code>extern</code> blocks</a> with the <code>unsafe</code> keyword.<sup class="footnote-reference"><a href="#RFC3484">1</a></sup> Adding the <code>unsafe</code> keyword helps to emphasize that it is the responsibility of the author of the <code>extern</code> block to ensure that the signatures are correct. If the signatures are not correct, then it may result in undefined behavior.</p>
+<p>Rust 1.82 added the ability in all editions to mark <a href="rust-2024/../../reference/items/external-blocks.html"><code>extern</code> blocks</a> with the <code>unsafe</code> keyword.<sup class="footnote-reference" id="fr-RFC3484-1"><a href="#footnote-RFC3484">1</a></sup> Adding the <code>unsafe</code> keyword helps to emphasize that it is the responsibility of the author of the <code>extern</code> block to ensure that the signatures are correct. If the signatures are not correct, then it may result in undefined behavior.</p>
 <p>The syntax for an unsafe <code>extern</code> block looks like this:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2169,9 +2174,6 @@ let &amp;[&amp;x, ref y] = &amp;[&amp;(), &amp;()];
 <span class="boring">}</span></code></pre></pre>
 <p>In addition to being able to mark an <code>extern</code> block as <code>unsafe</code>, you can also specify if individual items in the <code>extern</code> block are <code>safe</code> or <code>unsafe</code>. Items marked as <code>safe</code> can be used without an <code>unsafe</code> block.</p>
 <p>Starting with the 2024 Edition, it is now required to include the <code>unsafe</code> keyword on an <code>extern</code> block. This is intended to make it very clear that there are safety requirements that must be upheld by the extern definitions.</p>
-<div class="footnote-definition" id="RFC3484"><sup class="footnote-definition-label">1</sup>
-<p>See <a href="https://github.com/rust-lang/rfcs/blob/master/text/3484-unsafe-extern-blocks.md">RFC 3484</a> for the original proposal.</p>
-</div>
 <h2 id="migration-13"><a class="header" href="#migration-13">Migration</a></h2>
 <p>The <a href="rust-2024/../../rustc/lints/listing/allowed-by-default.html#missing-unsafe-on-extern"><code>missing_unsafe_on_extern</code></a> lint can update <code>extern</code> blocks to add the <code>unsafe</code> keyword. The lint is part of the <code>rust-2024-compatibility</code> lint group which is included in the automatic edition migration. In order to migrate your code to be Rust 2024 Edition compatible, run:</p>
 <pre><code class="language-sh">cargo fix --edition
@@ -2183,7 +2185,11 @@ let &amp;[&amp;x, ref y] = &amp;[&amp;(), &amp;()];
 </span>// Add this to the root of your crate to do a manual migration.
 #![warn(missing_unsafe_on_extern)]
 <span class="boring">}</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe-attributes"><a class="header" href="#unsafe-attributes">Unsafe attributes</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-RFC3484">
+<p>See <a href="https://github.com/rust-lang/rfcs/blob/master/text/3484-unsafe-extern-blocks.md">RFC 3484</a> for the original proposal. <a href="#fr-RFC3484-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe-attributes"><a class="header" href="#unsafe-attributes">Unsafe attributes</a></h1>
 <h2 id="summary-20"><a class="header" href="#summary-20">Summary</a></h2>
 <ul>
 <li>The following attributes must now be marked as <code>unsafe</code>:
@@ -2195,7 +2201,7 @@ let &amp;[&amp;x, ref y] = &amp;[&amp;(), &amp;()];
 </li>
 </ul>
 <h2 id="details-17"><a class="header" href="#details-17">Details</a></h2>
-<p>Rust 1.82 added the ability in all editions to mark certain attributes as <code>unsafe</code> to indicate that they have soundness requirements that must be upheld.<sup class="footnote-reference"><a href="#RFC3325">1</a></sup> The syntax for an unsafe attribute looks like this:</p>
+<p>Rust 1.82 added the ability in all editions to mark certain attributes as <code>unsafe</code> to indicate that they have soundness requirements that must be upheld.<sup class="footnote-reference" id="fr-RFC3325-1"><a href="#footnote-RFC3325">1</a></sup> The syntax for an unsafe attribute looks like this:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// SAFETY: there is no other global function of this name
@@ -2204,9 +2210,6 @@ pub fn example() {}
 <span class="boring">}</span></code></pre></pre>
 <p>Marking the attribute with <code>unsafe</code> highlights that there are safety requirements that must be upheld that the compiler cannot verify on its own.</p>
 <p>Starting with the 2024 Edition, it is now required to mark these attributes as <code>unsafe</code>. The following section describes the safety requirements for these attributes.</p>
-<div class="footnote-definition" id="RFC3325"><sup class="footnote-definition-label">1</sup>
-<p>See <a href="https://rust-lang.github.io/rfcs/3325-unsafe-attributes.html">RFC 3325</a> for the original proposal.</p>
-</div>
 <h3 id="safety-requirements"><a class="header" href="#safety-requirements">Safety requirements</a></h3>
 <p>The <a href="rust-2024/../../reference/abi.html#the-no_mangle-attribute"><code>no_mangle</code></a>, <a href="rust-2024/../../reference/abi.html#the-export_name-attribute"><code>export_name</code></a>, and <a href="rust-2024/../../reference/abi.html#the-link_section-attribute"><code>link_section</code></a> attributes influence the symbol names and linking behavior of items. Care must be taken to ensure that these attributes are used correctly.</p>
 <p>Because the set of symbols across all linked libraries is a global namespace, there can be issues if there is a symbol name collision between libraries. Typically this isn't an issue for normally defined functions because <a href="rust-2024/../../rustc/symbol-mangling/index.html">symbol mangling</a> helps ensure that the symbol name is unique. However, attributes like <code>export_name</code> can upset that assumption of uniqueness.</p>
@@ -2237,7 +2240,11 @@ fn arduino_loop() {
 </span>// Add this to the root of your crate to do a manual migration.
 #![warn(unsafe_attr_outside_unsafe)]
 <span class="boring">}</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe_op_in_unsafe_fn-warning"><a class="header" href="#unsafe_op_in_unsafe_fn-warning">unsafe_op_in_unsafe_fn warning</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-RFC3325">
+<p>See <a href="https://rust-lang.github.io/rfcs/3325-unsafe-attributes.html">RFC 3325</a> for the original proposal. <a href="#fr-RFC3325-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe_op_in_unsafe_fn-warning"><a class="header" href="#unsafe_op_in_unsafe_fn-warning">unsafe_op_in_unsafe_fn warning</a></h1>
 <h2 id="summary-21"><a class="header" href="#summary-21">Summary</a></h2>
 <ul>
 <li>The <a href="rust-2024/../../rustc/lints/listing/allowed-by-default.html#unsafe-op-in-unsafe-fn"><code>unsafe_op_in_unsafe_fn</code></a> lint now warns by default.
@@ -2723,14 +2730,15 @@ fn main() {
    foo!();
 }</code></pre></pre>
 <p>Calling the macro with arguments that would match a rule with a missing specifier (e.g., <code>foo!($name)</code>) is a hard error in all editions. However, simply defining a macro with missing fragment specifiers is not, though we did add a lint in Rust 1.17.</p>
-<p>We'd like to make this a hard error in all editions, but there would be too much breakage right now. So we're starting by making this a hard error in Rust 2024.<sup class="footnote-reference"><a href="#future-incompat">1</a></sup></p>
-<div class="footnote-definition" id="future-incompat"><sup class="footnote-definition-label">1</sup>
-<p>The lint is marked as a "future-incompatible" warning to indicate that it may become a hard error in all editions in a future release. See <a href="https://github.com/rust-lang/rust/issues/40107">#40107</a> for more information.</p>
-</div>
+<p>We'd like to make this a hard error in all editions, but there would be too much breakage right now. So we're starting by making this a hard error in Rust 2024.<sup class="footnote-reference" id="fr-future-incompat-1"><a href="#footnote-future-incompat">1</a></sup></p>
 <h2 id="migration-19"><a class="header" href="#migration-19">Migration</a></h2>
 <p>To migrate your code to the 2024 Edition, remove the unused matcher rule from the macro. The <a href="rust-2024/../../rustc/lints/listing/deny-by-default.html#missing-fragment-specifier"><code>missing_fragment_specifier</code></a> lint is on by default in all editions, and should alert you to macros with this issue.</p>
 <p>There is no automatic migration for this change. We expect that this style of macro is extremely rare. The lint has been a future-incompatibility lint since Rust 1.17, a deny-by-default lint since Rust 1.20, and since Rust 1.82, it has warned about dependencies that are using this pattern.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="gen-keyword"><a class="header" href="#gen-keyword"><code>gen</code> keyword</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-future-incompat">
+<p>The lint is marked as a "future-incompatible" warning to indicate that it may become a hard error in all editions in a future release. See <a href="https://github.com/rust-lang/rust/issues/40107">#40107</a> for more information. <a href="#fr-future-incompat-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="gen-keyword"><a class="header" href="#gen-keyword"><code>gen</code> keyword</a></h1>
 <h2 id="summary-26"><a class="header" href="#summary-26">Summary</a></h2>
 <ul>
 <li><code>gen</code> is a <a href="rust-2024/../../reference/keywords.html#reserved-keywords">reserved keyword</a>.</li>
@@ -3084,16 +3092,13 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
     left - right
 }
 <span class="boring">}</span></code></pre></pre>
-<p>In this example, the two doctests will now be compiled into a single executable. Rustdoc will essentially place each example in a separate function within a single binary. The tests still run in independent processes as they did before, so any global state (like global statics) should still continue to work correctly.<sup class="footnote-reference"><a href="#implementation">1</a></sup></p>
+<p>In this example, the two doctests will now be compiled into a single executable. Rustdoc will essentially place each example in a separate function within a single binary. The tests still run in independent processes as they did before, so any global state (like global statics) should still continue to work correctly.<sup class="footnote-reference" id="fr-implementation-1"><a href="#footnote-implementation">1</a></sup></p>
 <p>This change is only available in the 2024 Edition to avoid potential incompatibilities with existing doctests which may not work in a combined executable. However, these incompatibilities are expected to be extremely rare.</p>
-<div class="footnote-definition" id="implementation"><sup class="footnote-definition-label">1</sup>
-<p>For more information on the details of how this work, see <a href="https://blog.guillaume-gomez.fr/articles/2024-08-17+Doctests+-+How+were+they+improved%3F">"Doctests - How were they improved?"</a>.</p>
-</div>
 <h3 id="standalone_crate-tag"><a class="header" href="#standalone_crate-tag"><code>standalone_crate</code> tag</a></h3>
 <p>In some situations it is not possible for rustdoc to combine examples into a single executable. Rustdoc will attempt to automatically detect if this is not possible. For example, a test will not be combined with others if it:</p>
 <ul>
 <li>Uses the <a href="rust-2024/../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>compile_fail</code></a> tag, which indicates that the example should fail to compile.</li>
-<li>Uses an <a href="rust-2024/../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>edition</code></a> tag, which indicates the edition of the example.<sup class="footnote-reference"><a href="#edition-tag">2</a></sup></li>
+<li>Uses an <a href="rust-2024/../../rustdoc/write-documentation/documentation-tests.html#attributes"><code>edition</code></a> tag, which indicates the edition of the example.<sup class="footnote-reference" id="fr-edition-tag-1"><a href="#footnote-edition-tag">2</a></sup></li>
 <li>Uses global attributes, like the <a href="rust-2024/../../std/alloc/trait.GlobalAlloc.html"><code>global_allocator</code></a> attribute, which could potentially interfere with other tests.</li>
 <li>Defines any crate-wide attributes (like <code>#![feature(...)]</code>).</li>
 <li>Defines a macro that uses <code>$crate</code>, because the <code>$crate</code> path will not work correctly.</li>
@@ -3114,9 +3119,6 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
 //! assert_eq!(location.line(), 5);
 //! ```
 <span class="boring">}</span></code></pre></pre>
-<div class="footnote-definition" id="edition-tag"><sup class="footnote-definition-label">2</sup>
-<p>Note that rustdoc will only combine tests if the entire crate is Edition 2024 or greater. Using the <code>edition2024</code> tag in older editions will not result in those tests being combined.</p>
-</div>
 <h2 id="migration-28"><a class="header" href="#migration-28">Migration</a></h2>
 <p>There is no automatic migration to determine which doctests need to be annotated with the <code>standalone_crate</code> tag. It's very unlikely that any given doctest will not work correctly when migrated. We suggest that you update your crate to the 2024 Edition and then run your documentation tests and see if any fail. If one does, you will need to analyze whether it can be rewritten to be compatible with the combined approach, or alternatively, add the <code>standalone_crate</code> tag to retain the previous behavior.</p>
 <p>Some things to watch out for and avoid are:</p>
@@ -3124,7 +3126,14 @@ pub fn subtract(left: u64, right: u64) -&gt; u64 {
 <li>Checking the values of <a href="https://doc.rust-lang.org/std/panic/struct.Location.html"><code>std::panic::Location</code></a> or things that make use of <code>Location</code>. The location of the code is now different since multiple tests are now located in the same test crate.</li>
 <li>Checking the value of <a href="https://doc.rust-lang.org/std/any/fn.type_name.html"><code>std::any::type_name</code></a>, which now has a different module path.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rustdoc-nested-include-change"><a class="header" href="#rustdoc-nested-include-change">Rustdoc nested <code>include!</code> change</a></h1>
+<hr>
+<ol class="footnote-definition"><li id="footnote-implementation">
+<p>For more information on the details of how this work, see <a href="https://blog.guillaume-gomez.fr/articles/2024-08-17+Doctests+-+How+were+they+improved%3F">"Doctests - How were they improved?"</a>. <a href="#fr-implementation-1">↩</a></p>
+</li>
+<li id="footnote-edition-tag">
+<p>Note that rustdoc will only combine tests if the entire crate is Edition 2024 or greater. Using the <code>edition2024</code> tag in older editions will not result in those tests being combined. <a href="#fr-edition-tag-1">↩</a></p>
+</li>
+</ol><div style="break-before: page; page-break-before: always;"></div><h1 id="rustdoc-nested-include-change"><a class="header" href="#rustdoc-nested-include-change">Rustdoc nested <code>include!</code> change</a></h1>
 <h2 id="summary-35"><a class="header" href="#summary-35">Summary</a></h2>
 <p>When a doctest is included with <code>include_str!</code>, if that doctest itself also uses <code>include!</code>, <code>include_str!</code>, or <code>include_bytes!</code>, the path is resolved relative to the Markdown file, rather than to the Rust source file.</p>
 <h2 id="details-32"><a class="header" href="#details-32">Details</a></h2>
@@ -3732,11 +3741,11 @@ use std::num::{NonZeroU8, NonZeroU16, NonZeroU32, NonZeroU64};</code></pre>
 
         <script src="elasticlunr-ef4e11c1.min.js"></script>
         <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-8b5bd394.js"></script>
+        <script src="searcher-b074573a.js"></script>
 
         <script src="clipboard-1626706a.min.js"></script>
         <script src="highlight-abc7f01d.js"></script>
-        <script src="book-e98fec48.js"></script>
+        <script src="book-ed82849d.js"></script>
 
         <!-- Custom JS scripts -->
 
