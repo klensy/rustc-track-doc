@@ -39,7 +39,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-6ad176b0.js"></script>
+        <script src="toc-a37dfd48.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -4997,6 +4997,134 @@ assert!(result.is_err());
 <div style="break-before: page; page-break-before: always;"></div><h1 id="type_alias_impl_trait"><a class="header" href="#type_alias_impl_trait"><code>type_alias_impl_trait</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/63063">#63063</a></p>
 <hr />
+<blockquote>
+<p>This feature is not to be confused with <a href="language-features/./trait-alias.html"><code>trait_alias</code></a> or <a href="language-features/./impl-trait-in-assoc-type.html"><code>impl_trait_in_assoc_type</code></a>.</p>
+</blockquote>
+<h3 id="what-is-impl-trait"><a class="header" href="#what-is-impl-trait">What is <code>impl Trait</code>?</a></h3>
+<p><code>impl Trait</code> in return position is useful for declaring types that are constrained by traits, but whose concrete type should be hidden:</p>
+<pre><pre class="playground"><code class="language-rust">use std::fmt::Debug;
+
+fn new() -&gt; impl Debug {
+    42
+}
+
+fn main() {
+    let thing = new();
+    // What actually is a `thing`?
+    // No idea but we know it implements `Debug`, so we can debug print it
+    println!("{thing:?}");
+}</code></pre></pre>
+<p>See the <a href="https://doc.rust-lang.org/stable/reference/types/impl-trait.html#abstract-return-types">reference</a> for more information about <code>impl Trait</code> in return position.</p>
+<h3 id="type_alias_impl_trait-1"><a class="header" href="#type_alias_impl_trait-1"><code>type_alias_impl_trait</code></a></h3>
+<p>However, we might want to use an <code>impl Trait</code> in multiple locations but actually use the same concrete type everywhere while keeping it hidden.
+This can be useful in libraries where you want to hide implementation details.</p>
+<p>The <code>#[define_opaque]</code> attribute must be used to explicitly list opaque items constrained by the item it's on.</p>
+<pre><pre class="playground"><code class="language-rust">#![feature(type_alias_impl_trait)]
+<span class="boring">#![allow(unused_variables, dead_code)]
+</span>trait Trait {}
+
+struct MyType;
+
+impl Trait for MyType {}
+
+type Alias = impl Trait;
+
+#[define_opaque(Alias)] // To constrain the type alias to `MyType`
+fn new() -&gt; Alias {
+    MyType
+}
+
+#[define_opaque(Alias)] // So we can name the concrete type inside this item
+fn main() {
+    let thing: MyType = new();
+}
+
+// It can be a part of a struct too
+struct HaveAlias {
+    stuff: String,
+    thing: Alias,
+}</code></pre></pre>
+<p>In this example, the concrete type referred to by <code>Alias</code> is guaranteed to be the same wherever <code>Alias</code> occurs.</p>
+<blockquote>
+<p>Orginally this feature included type aliases as an associated type of a trait. In <a href="https://github.com/rust-lang/rust/pull/110237">#110237</a> this was split off to <a href="language-features/./impl-trait-in-assoc-type.html"><code>impl_trait_in_assoc_type</code></a>.</p>
+</blockquote>
+<h3 id="type_alias_impl_trait-in-argument-position"><a class="header" href="#type_alias_impl_trait-in-argument-position"><code>type_alias_impl_trait</code> in argument position.</a></h3>
+<p>Note that using <code>Alias</code> as an argument type is <em>not</em> the same as argument-position <code>impl Trait</code>, as <code>Alias</code> refers to a unique type, whereas the concrete type for argument-position <code>impl Trait</code> is chosen by the caller.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![feature(type_alias_impl_trait)]
+</span><span class="boring">#![allow(unused_variables)]
+</span><span class="boring">pub mod x {
+</span><span class="boring">pub trait Trait {}
+</span><span class="boring">
+</span><span class="boring">struct MyType;
+</span><span class="boring">
+</span><span class="boring">impl Trait for MyType {}
+</span><span class="boring">
+</span><span class="boring">pub type Alias = impl Trait;
+</span><span class="boring">
+</span><span class="boring">#[define_opaque(Alias)]
+</span><span class="boring">pub fn new() -&gt; Alias {
+</span><span class="boring">    MyType
+</span><span class="boring">}
+</span><span class="boring">}
+</span><span class="boring">use x::*;
+</span>// this...
+pub fn take_alias(x: Alias) {
+    // ...
+}
+
+// ...is *not* the same as
+pub fn take_impl(x: impl Trait) {
+    // ...
+}
+<span class="boring">fn main(){}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0308"><span class="boring">#![feature(type_alias_impl_trait)]
+</span><span class="boring">#![allow(unused_variables)]
+</span><span class="boring">pub mod x {
+</span><span class="boring">pub trait Trait {}
+</span><span class="boring">
+</span><span class="boring">struct MyType;
+</span><span class="boring">
+</span><span class="boring">impl Trait for MyType {}
+</span><span class="boring">
+</span><span class="boring">pub type Alias = impl Trait;
+</span><span class="boring">
+</span><span class="boring">#[define_opaque(Alias)]
+</span><span class="boring">pub fn new() -&gt; Alias {
+</span><span class="boring">    MyType
+</span><span class="boring">}
+</span><span class="boring">}
+</span><span class="boring">use x::*;
+</span><span class="boring">pub fn take_alias(x: Alias) {
+</span><span class="boring">    // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">pub fn take_impl(x: impl Trait) {
+</span><span class="boring">   // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span>// a user's crate using the trait and type alias
+struct UserType;
+impl Trait for UserType {}
+
+<span class="boring">fn main(){
+</span>let x = UserType;
+take_alias(x);
+// ERROR expected opaque type, found `UserType`
+// this function *actually* takes a `MyType` as is constrained in `new`
+
+let x = UserType;
+take_impl(x);
+// OK
+
+let x = new();
+take_alias(x);
+// OK
+
+let x = new();
+take_impl(x);
+// OK
+<span class="boring">}</span></code></pre></pre>
+<p>Note that the user cannot use <code>#[define_opaque(Alias)]</code> to reify the opaque type because only the crate where the type alias is declared may do so. But if this happened in the same crate and the opaque type was reified, they'd get a familiar error: "expected <code>MyType</code>, got <code>UserType</code>".</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="type_changing_struct_update"><a class="header" href="#type_changing_struct_update"><code>type_changing_struct_update</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/86555">#86555</a></p>
 <hr />
@@ -5651,6 +5779,9 @@ fn main() {
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="file_lock"><a class="header" href="#file_lock"><code>file_lock</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/130994">#130994</a></p>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="float_algebraic"><a class="header" href="#float_algebraic"><code>float_algebraic</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/136469">#136469</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="float_erf"><a class="header" href="#float_erf"><code>float_erf</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/136321">#136321</a></p>
