@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-de575e9a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (5e17a2a91 2025-04-05)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.88.0.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Slice management and manipulation.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-de575e9a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (2fa8b11f0 2025-04-06)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.88.0.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Slice management and manipulation.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! For more details see [`std::slice`].
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -8,7 +8,7 @@
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{<span class="self">self</span>, Equal, Greater, Less};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::{exact_div, unchecked_sub};
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, SizedTypeProperties};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, MaybeUninit, SizedTypeProperties};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::num::NonZero;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::ops::{OneSidedRange, OneSidedRangeBound, Range, RangeBounds, RangeInclusive};
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::panic::const_panic;
@@ -4579,7 +4579,7 @@
 <a href=#4579 id=4579 data-nosnippet>4579</a>        // or generate worse code otherwise. This is also why we need to go
 <a href=#4580 id=4580 data-nosnippet>4580</a>        // through a raw pointer here.
 <a href=#4581 id=4581 data-nosnippet>4581</a>        </span><span class="kw">let </span>slice: <span class="kw-2">*mut </span>[T] = <span class="self">self</span>;
-<a href=#4582 id=4582 data-nosnippet>4582</a>        <span class="kw">let </span><span class="kw-2">mut </span>arr: mem::MaybeUninit&lt;[<span class="kw-2">&amp;mut </span>I::Output; N]&gt; = mem::MaybeUninit::uninit();
+<a href=#4582 id=4582 data-nosnippet>4582</a>        <span class="kw">let </span><span class="kw-2">mut </span>arr: MaybeUninit&lt;[<span class="kw-2">&amp;mut </span>I::Output; N]&gt; = MaybeUninit::uninit();
 <a href=#4583 id=4583 data-nosnippet>4583</a>        <span class="kw">let </span>arr_ptr = arr.as_mut_ptr();
 <a href=#4584 id=4584 data-nosnippet>4584</a>
 <a href=#4585 id=4585 data-nosnippet>4585</a>        <span class="comment">// SAFETY: We expect `indices` to contain disjunct values that are
@@ -4764,387 +4764,436 @@
 <a href=#4764 id=4764 data-nosnippet>4764</a>    }
 <a href=#4765 id=4765 data-nosnippet>4765</a>}
 <a href=#4766 id=4766 data-nosnippet>4766</a>
-<a href=#4767 id=4767 data-nosnippet>4767</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; [[T; N]] {
-<a href=#4768 id=4768 data-nosnippet>4768</a>    <span class="doccomment">/// Takes a `&amp;[[T; N]]`, and flattens it to a `&amp;[T]`.
-<a href=#4769 id=4769 data-nosnippet>4769</a>    ///
-<a href=#4770 id=4770 data-nosnippet>4770</a>    /// # Panics
-<a href=#4771 id=4771 data-nosnippet>4771</a>    ///
-<a href=#4772 id=4772 data-nosnippet>4772</a>    /// This panics if the length of the resulting slice would overflow a `usize`.
+<a href=#4767 id=4767 data-nosnippet>4767</a><span class="kw">impl</span>&lt;T&gt; [MaybeUninit&lt;T&gt;] {
+<a href=#4768 id=4768 data-nosnippet>4768</a>    <span class="doccomment">/// Transmutes the mutable uninitialized slice to a mutable uninitialized slice of
+<a href=#4769 id=4769 data-nosnippet>4769</a>    /// another type, ensuring alignment of the types is maintained.
+<a href=#4770 id=4770 data-nosnippet>4770</a>    ///
+<a href=#4771 id=4771 data-nosnippet>4771</a>    /// This is a safe wrapper around [`slice::align_to_mut`], so inherits the same
+<a href=#4772 id=4772 data-nosnippet>4772</a>    /// guarantees as that method.
 <a href=#4773 id=4773 data-nosnippet>4773</a>    ///
-<a href=#4774 id=4774 data-nosnippet>4774</a>    /// This is only possible when flattening a slice of arrays of zero-sized
-<a href=#4775 id=4775 data-nosnippet>4775</a>    /// types, and thus tends to be irrelevant in practice. If
-<a href=#4776 id=4776 data-nosnippet>4776</a>    /// `size_of::&lt;T&gt;() &gt; 0`, this will never panic.
-<a href=#4777 id=4777 data-nosnippet>4777</a>    ///
-<a href=#4778 id=4778 data-nosnippet>4778</a>    /// # Examples
+<a href=#4774 id=4774 data-nosnippet>4774</a>    /// # Examples
+<a href=#4775 id=4775 data-nosnippet>4775</a>    ///
+<a href=#4776 id=4776 data-nosnippet>4776</a>    /// ```
+<a href=#4777 id=4777 data-nosnippet>4777</a>    /// #![feature(align_to_uninit_mut)]
+<a href=#4778 id=4778 data-nosnippet>4778</a>    /// use std::mem::MaybeUninit;
 <a href=#4779 id=4779 data-nosnippet>4779</a>    ///
-<a href=#4780 id=4780 data-nosnippet>4780</a>    /// ```
-<a href=#4781 id=4781 data-nosnippet>4781</a>    /// assert_eq!([[1, 2, 3], [4, 5, 6]].as_flattened(), &amp;[1, 2, 3, 4, 5, 6]);
-<a href=#4782 id=4782 data-nosnippet>4782</a>    ///
-<a href=#4783 id=4783 data-nosnippet>4783</a>    /// assert_eq!(
-<a href=#4784 id=4784 data-nosnippet>4784</a>    ///     [[1, 2, 3], [4, 5, 6]].as_flattened(),
-<a href=#4785 id=4785 data-nosnippet>4785</a>    ///     [[1, 2], [3, 4], [5, 6]].as_flattened(),
-<a href=#4786 id=4786 data-nosnippet>4786</a>    /// );
-<a href=#4787 id=4787 data-nosnippet>4787</a>    ///
-<a href=#4788 id=4788 data-nosnippet>4788</a>    /// let slice_of_empty_arrays: &amp;[[i32; 0]] = &amp;[[], [], [], [], []];
-<a href=#4789 id=4789 data-nosnippet>4789</a>    /// assert!(slice_of_empty_arrays.as_flattened().is_empty());
-<a href=#4790 id=4790 data-nosnippet>4790</a>    ///
-<a href=#4791 id=4791 data-nosnippet>4791</a>    /// let empty_slice_of_arrays: &amp;[[u32; 10]] = &amp;[];
-<a href=#4792 id=4792 data-nosnippet>4792</a>    /// assert!(empty_slice_of_arrays.as_flattened().is_empty());
-<a href=#4793 id=4793 data-nosnippet>4793</a>    /// ```
-<a href=#4794 id=4794 data-nosnippet>4794</a>    </span><span class="attr">#[stable(feature = <span class="string">"slice_flatten"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#4795 id=4795 data-nosnippet>4795</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_flatten"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
-<a href=#4796 id=4796 data-nosnippet>4796</a>    </span><span class="kw">pub const fn </span>as_flattened(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[T] {
-<a href=#4797 id=4797 data-nosnippet>4797</a>        <span class="kw">let </span>len = <span class="kw">if </span>T::IS_ZST {
-<a href=#4798 id=4798 data-nosnippet>4798</a>            <span class="self">self</span>.len().checked_mul(N).expect(<span class="string">"slice len overflow"</span>)
-<a href=#4799 id=4799 data-nosnippet>4799</a>        } <span class="kw">else </span>{
-<a href=#4800 id=4800 data-nosnippet>4800</a>            <span class="comment">// SAFETY: `self.len() * N` cannot overflow because `self` is
-<a href=#4801 id=4801 data-nosnippet>4801</a>            // already in the address space.
-<a href=#4802 id=4802 data-nosnippet>4802</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.len().unchecked_mul(N) }
-<a href=#4803 id=4803 data-nosnippet>4803</a>        };
-<a href=#4804 id=4804 data-nosnippet>4804</a>        <span class="comment">// SAFETY: `[T]` is layout-identical to `[T; N]`
-<a href=#4805 id=4805 data-nosnippet>4805</a>        </span><span class="kw">unsafe </span>{ from_raw_parts(<span class="self">self</span>.as_ptr().cast(), len) }
-<a href=#4806 id=4806 data-nosnippet>4806</a>    }
-<a href=#4807 id=4807 data-nosnippet>4807</a>
-<a href=#4808 id=4808 data-nosnippet>4808</a>    <span class="doccomment">/// Takes a `&amp;mut [[T; N]]`, and flattens it to a `&amp;mut [T]`.
-<a href=#4809 id=4809 data-nosnippet>4809</a>    ///
-<a href=#4810 id=4810 data-nosnippet>4810</a>    /// # Panics
-<a href=#4811 id=4811 data-nosnippet>4811</a>    ///
-<a href=#4812 id=4812 data-nosnippet>4812</a>    /// This panics if the length of the resulting slice would overflow a `usize`.
-<a href=#4813 id=4813 data-nosnippet>4813</a>    ///
-<a href=#4814 id=4814 data-nosnippet>4814</a>    /// This is only possible when flattening a slice of arrays of zero-sized
-<a href=#4815 id=4815 data-nosnippet>4815</a>    /// types, and thus tends to be irrelevant in practice. If
-<a href=#4816 id=4816 data-nosnippet>4816</a>    /// `size_of::&lt;T&gt;() &gt; 0`, this will never panic.
-<a href=#4817 id=4817 data-nosnippet>4817</a>    ///
-<a href=#4818 id=4818 data-nosnippet>4818</a>    /// # Examples
-<a href=#4819 id=4819 data-nosnippet>4819</a>    ///
-<a href=#4820 id=4820 data-nosnippet>4820</a>    /// ```
-<a href=#4821 id=4821 data-nosnippet>4821</a>    /// fn add_5_to_all(slice: &amp;mut [i32]) {
-<a href=#4822 id=4822 data-nosnippet>4822</a>    ///     for i in slice {
-<a href=#4823 id=4823 data-nosnippet>4823</a>    ///         *i += 5;
-<a href=#4824 id=4824 data-nosnippet>4824</a>    ///     }
-<a href=#4825 id=4825 data-nosnippet>4825</a>    /// }
+<a href=#4780 id=4780 data-nosnippet>4780</a>    /// pub struct BumpAllocator&lt;'scope&gt; {
+<a href=#4781 id=4781 data-nosnippet>4781</a>    ///     memory: &amp;'scope mut [MaybeUninit&lt;u8&gt;],
+<a href=#4782 id=4782 data-nosnippet>4782</a>    /// }
+<a href=#4783 id=4783 data-nosnippet>4783</a>    ///
+<a href=#4784 id=4784 data-nosnippet>4784</a>    /// impl&lt;'scope&gt; BumpAllocator&lt;'scope&gt; {
+<a href=#4785 id=4785 data-nosnippet>4785</a>    ///     pub fn new(memory: &amp;'scope mut [MaybeUninit&lt;u8&gt;]) -&gt; Self {
+<a href=#4786 id=4786 data-nosnippet>4786</a>    ///         Self { memory }
+<a href=#4787 id=4787 data-nosnippet>4787</a>    ///     }
+<a href=#4788 id=4788 data-nosnippet>4788</a>    ///     pub fn try_alloc_uninit&lt;T&gt;(&amp;mut self) -&gt; Option&lt;&amp;'scope mut MaybeUninit&lt;T&gt;&gt; {
+<a href=#4789 id=4789 data-nosnippet>4789</a>    ///         let first_end = self.memory.as_ptr().align_offset(align_of::&lt;T&gt;()) + size_of::&lt;T&gt;();
+<a href=#4790 id=4790 data-nosnippet>4790</a>    ///         let prefix = self.memory.split_off_mut(..first_end)?;
+<a href=#4791 id=4791 data-nosnippet>4791</a>    ///         Some(&amp;mut prefix.align_to_uninit_mut::&lt;T&gt;().1[0])
+<a href=#4792 id=4792 data-nosnippet>4792</a>    ///     }
+<a href=#4793 id=4793 data-nosnippet>4793</a>    ///     pub fn try_alloc_u32(&amp;mut self, value: u32) -&gt; Option&lt;&amp;'scope mut u32&gt; {
+<a href=#4794 id=4794 data-nosnippet>4794</a>    ///         let uninit = self.try_alloc_uninit()?;
+<a href=#4795 id=4795 data-nosnippet>4795</a>    ///         Some(uninit.write(value))
+<a href=#4796 id=4796 data-nosnippet>4796</a>    ///     }
+<a href=#4797 id=4797 data-nosnippet>4797</a>    /// }
+<a href=#4798 id=4798 data-nosnippet>4798</a>    ///
+<a href=#4799 id=4799 data-nosnippet>4799</a>    /// let mut memory = [MaybeUninit::&lt;u8&gt;::uninit(); 10];
+<a href=#4800 id=4800 data-nosnippet>4800</a>    /// let mut allocator = BumpAllocator::new(&amp;mut memory);
+<a href=#4801 id=4801 data-nosnippet>4801</a>    /// let v = allocator.try_alloc_u32(42);
+<a href=#4802 id=4802 data-nosnippet>4802</a>    /// assert_eq!(v, Some(&amp;mut 42));
+<a href=#4803 id=4803 data-nosnippet>4803</a>    /// ```
+<a href=#4804 id=4804 data-nosnippet>4804</a>    </span><span class="attr">#[unstable(feature = <span class="string">"align_to_uninit_mut"</span>, issue = <span class="string">"139062"</span>)]
+<a href=#4805 id=4805 data-nosnippet>4805</a>    #[inline]
+<a href=#4806 id=4806 data-nosnippet>4806</a>    #[must_use]
+<a href=#4807 id=4807 data-nosnippet>4807</a>    </span><span class="kw">pub fn </span>align_to_uninit_mut&lt;U&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;mut </span><span class="self">Self</span>, <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;U&gt;], <span class="kw-2">&amp;mut </span><span class="self">Self</span>) {
+<a href=#4808 id=4808 data-nosnippet>4808</a>        <span class="comment">// SAFETY: `MaybeUninit` is transparent. Correct size and alignment are guaranteed by
+<a href=#4809 id=4809 data-nosnippet>4809</a>        // `align_to_mut` itself. Therefore the only thing that we have to ensure for a safe
+<a href=#4810 id=4810 data-nosnippet>4810</a>        // `transmute` is that the values are valid for the types involved. But for `MaybeUninit`
+<a href=#4811 id=4811 data-nosnippet>4811</a>        // any values are valid, so this operation is safe.
+<a href=#4812 id=4812 data-nosnippet>4812</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.align_to_mut() }
+<a href=#4813 id=4813 data-nosnippet>4813</a>    }
+<a href=#4814 id=4814 data-nosnippet>4814</a>}
+<a href=#4815 id=4815 data-nosnippet>4815</a>
+<a href=#4816 id=4816 data-nosnippet>4816</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; [[T; N]] {
+<a href=#4817 id=4817 data-nosnippet>4817</a>    <span class="doccomment">/// Takes a `&amp;[[T; N]]`, and flattens it to a `&amp;[T]`.
+<a href=#4818 id=4818 data-nosnippet>4818</a>    ///
+<a href=#4819 id=4819 data-nosnippet>4819</a>    /// # Panics
+<a href=#4820 id=4820 data-nosnippet>4820</a>    ///
+<a href=#4821 id=4821 data-nosnippet>4821</a>    /// This panics if the length of the resulting slice would overflow a `usize`.
+<a href=#4822 id=4822 data-nosnippet>4822</a>    ///
+<a href=#4823 id=4823 data-nosnippet>4823</a>    /// This is only possible when flattening a slice of arrays of zero-sized
+<a href=#4824 id=4824 data-nosnippet>4824</a>    /// types, and thus tends to be irrelevant in practice. If
+<a href=#4825 id=4825 data-nosnippet>4825</a>    /// `size_of::&lt;T&gt;() &gt; 0`, this will never panic.
 <a href=#4826 id=4826 data-nosnippet>4826</a>    ///
-<a href=#4827 id=4827 data-nosnippet>4827</a>    /// let mut array = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
-<a href=#4828 id=4828 data-nosnippet>4828</a>    /// add_5_to_all(array.as_flattened_mut());
-<a href=#4829 id=4829 data-nosnippet>4829</a>    /// assert_eq!(array, [[6, 7, 8], [9, 10, 11], [12, 13, 14]]);
-<a href=#4830 id=4830 data-nosnippet>4830</a>    /// ```
-<a href=#4831 id=4831 data-nosnippet>4831</a>    </span><span class="attr">#[stable(feature = <span class="string">"slice_flatten"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#4832 id=4832 data-nosnippet>4832</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_flatten"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
-<a href=#4833 id=4833 data-nosnippet>4833</a>    </span><span class="kw">pub const fn </span>as_flattened_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[T] {
-<a href=#4834 id=4834 data-nosnippet>4834</a>        <span class="kw">let </span>len = <span class="kw">if </span>T::IS_ZST {
-<a href=#4835 id=4835 data-nosnippet>4835</a>            <span class="self">self</span>.len().checked_mul(N).expect(<span class="string">"slice len overflow"</span>)
-<a href=#4836 id=4836 data-nosnippet>4836</a>        } <span class="kw">else </span>{
-<a href=#4837 id=4837 data-nosnippet>4837</a>            <span class="comment">// SAFETY: `self.len() * N` cannot overflow because `self` is
-<a href=#4838 id=4838 data-nosnippet>4838</a>            // already in the address space.
-<a href=#4839 id=4839 data-nosnippet>4839</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.len().unchecked_mul(N) }
-<a href=#4840 id=4840 data-nosnippet>4840</a>        };
-<a href=#4841 id=4841 data-nosnippet>4841</a>        <span class="comment">// SAFETY: `[T]` is layout-identical to `[T; N]`
-<a href=#4842 id=4842 data-nosnippet>4842</a>        </span><span class="kw">unsafe </span>{ from_raw_parts_mut(<span class="self">self</span>.as_mut_ptr().cast(), len) }
-<a href=#4843 id=4843 data-nosnippet>4843</a>    }
-<a href=#4844 id=4844 data-nosnippet>4844</a>}
-<a href=#4845 id=4845 data-nosnippet>4845</a>
-<a href=#4846 id=4846 data-nosnippet>4846</a><span class="kw">impl </span>[f32] {
-<a href=#4847 id=4847 data-nosnippet>4847</a>    <span class="doccomment">/// Sorts the slice of floats.
-<a href=#4848 id=4848 data-nosnippet>4848</a>    ///
-<a href=#4849 id=4849 data-nosnippet>4849</a>    /// This sort is in-place (i.e. does not allocate), *O*(*n* \* log(*n*)) worst-case, and uses
-<a href=#4850 id=4850 data-nosnippet>4850</a>    /// the ordering defined by [`f32::total_cmp`].
-<a href=#4851 id=4851 data-nosnippet>4851</a>    ///
-<a href=#4852 id=4852 data-nosnippet>4852</a>    /// # Current implementation
-<a href=#4853 id=4853 data-nosnippet>4853</a>    ///
-<a href=#4854 id=4854 data-nosnippet>4854</a>    /// This uses the same sorting algorithm as [`sort_unstable_by`](slice::sort_unstable_by).
-<a href=#4855 id=4855 data-nosnippet>4855</a>    ///
-<a href=#4856 id=4856 data-nosnippet>4856</a>    /// # Examples
-<a href=#4857 id=4857 data-nosnippet>4857</a>    ///
-<a href=#4858 id=4858 data-nosnippet>4858</a>    /// ```
-<a href=#4859 id=4859 data-nosnippet>4859</a>    /// #![feature(sort_floats)]
-<a href=#4860 id=4860 data-nosnippet>4860</a>    /// let mut v = [2.6, -5e-8, f32::NAN, 8.29, f32::INFINITY, -1.0, 0.0, -f32::INFINITY, -0.0];
-<a href=#4861 id=4861 data-nosnippet>4861</a>    ///
-<a href=#4862 id=4862 data-nosnippet>4862</a>    /// v.sort_floats();
-<a href=#4863 id=4863 data-nosnippet>4863</a>    /// let sorted = [-f32::INFINITY, -1.0, -5e-8, -0.0, 0.0, 2.6, 8.29, f32::INFINITY, f32::NAN];
-<a href=#4864 id=4864 data-nosnippet>4864</a>    /// assert_eq!(&amp;v[..8], &amp;sorted[..8]);
-<a href=#4865 id=4865 data-nosnippet>4865</a>    /// assert!(v[8].is_nan());
-<a href=#4866 id=4866 data-nosnippet>4866</a>    /// ```
-<a href=#4867 id=4867 data-nosnippet>4867</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
-<a href=#4868 id=4868 data-nosnippet>4868</a>    #[inline]
-<a href=#4869 id=4869 data-nosnippet>4869</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#4870 id=4870 data-nosnippet>4870</a>        <span class="self">self</span>.sort_unstable_by(f32::total_cmp);
-<a href=#4871 id=4871 data-nosnippet>4871</a>    }
-<a href=#4872 id=4872 data-nosnippet>4872</a>}
-<a href=#4873 id=4873 data-nosnippet>4873</a>
-<a href=#4874 id=4874 data-nosnippet>4874</a><span class="kw">impl </span>[f64] {
-<a href=#4875 id=4875 data-nosnippet>4875</a>    <span class="doccomment">/// Sorts the slice of floats.
-<a href=#4876 id=4876 data-nosnippet>4876</a>    ///
-<a href=#4877 id=4877 data-nosnippet>4877</a>    /// This sort is in-place (i.e. does not allocate), *O*(*n* \* log(*n*)) worst-case, and uses
-<a href=#4878 id=4878 data-nosnippet>4878</a>    /// the ordering defined by [`f64::total_cmp`].
-<a href=#4879 id=4879 data-nosnippet>4879</a>    ///
-<a href=#4880 id=4880 data-nosnippet>4880</a>    /// # Current implementation
-<a href=#4881 id=4881 data-nosnippet>4881</a>    ///
-<a href=#4882 id=4882 data-nosnippet>4882</a>    /// This uses the same sorting algorithm as [`sort_unstable_by`](slice::sort_unstable_by).
-<a href=#4883 id=4883 data-nosnippet>4883</a>    ///
-<a href=#4884 id=4884 data-nosnippet>4884</a>    /// # Examples
-<a href=#4885 id=4885 data-nosnippet>4885</a>    ///
-<a href=#4886 id=4886 data-nosnippet>4886</a>    /// ```
-<a href=#4887 id=4887 data-nosnippet>4887</a>    /// #![feature(sort_floats)]
-<a href=#4888 id=4888 data-nosnippet>4888</a>    /// let mut v = [2.6, -5e-8, f64::NAN, 8.29, f64::INFINITY, -1.0, 0.0, -f64::INFINITY, -0.0];
-<a href=#4889 id=4889 data-nosnippet>4889</a>    ///
-<a href=#4890 id=4890 data-nosnippet>4890</a>    /// v.sort_floats();
-<a href=#4891 id=4891 data-nosnippet>4891</a>    /// let sorted = [-f64::INFINITY, -1.0, -5e-8, -0.0, 0.0, 2.6, 8.29, f64::INFINITY, f64::NAN];
-<a href=#4892 id=4892 data-nosnippet>4892</a>    /// assert_eq!(&amp;v[..8], &amp;sorted[..8]);
-<a href=#4893 id=4893 data-nosnippet>4893</a>    /// assert!(v[8].is_nan());
-<a href=#4894 id=4894 data-nosnippet>4894</a>    /// ```
-<a href=#4895 id=4895 data-nosnippet>4895</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
-<a href=#4896 id=4896 data-nosnippet>4896</a>    #[inline]
-<a href=#4897 id=4897 data-nosnippet>4897</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#4898 id=4898 data-nosnippet>4898</a>        <span class="self">self</span>.sort_unstable_by(f64::total_cmp);
-<a href=#4899 id=4899 data-nosnippet>4899</a>    }
-<a href=#4900 id=4900 data-nosnippet>4900</a>}
-<a href=#4901 id=4901 data-nosnippet>4901</a>
-<a href=#4902 id=4902 data-nosnippet>4902</a><span class="kw">trait </span>CloneFromSpec&lt;T&gt; {
-<a href=#4903 id=4903 data-nosnippet>4903</a>    <span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]);
-<a href=#4904 id=4904 data-nosnippet>4904</a>}
-<a href=#4905 id=4905 data-nosnippet>4905</a>
-<a href=#4906 id=4906 data-nosnippet>4906</a><span class="kw">impl</span>&lt;T&gt; CloneFromSpec&lt;T&gt; <span class="kw">for </span>[T]
-<a href=#4907 id=4907 data-nosnippet>4907</a><span class="kw">where
-<a href=#4908 id=4908 data-nosnippet>4908</a>    </span>T: Clone,
-<a href=#4909 id=4909 data-nosnippet>4909</a>{
-<a href=#4910 id=4910 data-nosnippet>4910</a>    <span class="attr">#[track_caller]
-<a href=#4911 id=4911 data-nosnippet>4911</a>    </span>default <span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
-<a href=#4912 id=4912 data-nosnippet>4912</a>        <span class="macro">assert!</span>(<span class="self">self</span>.len() == src.len(), <span class="string">"destination and source slices have different lengths"</span>);
-<a href=#4913 id=4913 data-nosnippet>4913</a>        <span class="comment">// NOTE: We need to explicitly slice them to the same length
-<a href=#4914 id=4914 data-nosnippet>4914</a>        // to make it easier for the optimizer to elide bounds checking.
-<a href=#4915 id=4915 data-nosnippet>4915</a>        // But since it can't be relied on we also have an explicit specialization for T: Copy.
-<a href=#4916 id=4916 data-nosnippet>4916</a>        </span><span class="kw">let </span>len = <span class="self">self</span>.len();
-<a href=#4917 id=4917 data-nosnippet>4917</a>        <span class="kw">let </span>src = <span class="kw-2">&amp;</span>src[..len];
-<a href=#4918 id=4918 data-nosnippet>4918</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..len {
-<a href=#4919 id=4919 data-nosnippet>4919</a>            <span class="self">self</span>[i].clone_from(<span class="kw-2">&amp;</span>src[i]);
-<a href=#4920 id=4920 data-nosnippet>4920</a>        }
-<a href=#4921 id=4921 data-nosnippet>4921</a>    }
-<a href=#4922 id=4922 data-nosnippet>4922</a>}
-<a href=#4923 id=4923 data-nosnippet>4923</a>
-<a href=#4924 id=4924 data-nosnippet>4924</a><span class="kw">impl</span>&lt;T&gt; CloneFromSpec&lt;T&gt; <span class="kw">for </span>[T]
-<a href=#4925 id=4925 data-nosnippet>4925</a><span class="kw">where
-<a href=#4926 id=4926 data-nosnippet>4926</a>    </span>T: Copy,
-<a href=#4927 id=4927 data-nosnippet>4927</a>{
-<a href=#4928 id=4928 data-nosnippet>4928</a>    <span class="attr">#[track_caller]
-<a href=#4929 id=4929 data-nosnippet>4929</a>    </span><span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
-<a href=#4930 id=4930 data-nosnippet>4930</a>        <span class="self">self</span>.copy_from_slice(src);
-<a href=#4931 id=4931 data-nosnippet>4931</a>    }
-<a href=#4932 id=4932 data-nosnippet>4932</a>}
-<a href=#4933 id=4933 data-nosnippet>4933</a>
-<a href=#4934 id=4934 data-nosnippet>4934</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#4935 id=4935 data-nosnippet>4935</a></span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span><span class="kw-2">&amp;</span>[T] {
-<a href=#4936 id=4936 data-nosnippet>4936</a>    <span class="doccomment">/// Creates an empty slice.
-<a href=#4937 id=4937 data-nosnippet>4937</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#4938 id=4938 data-nosnippet>4938</a>        <span class="kw-2">&amp;</span>[]
-<a href=#4939 id=4939 data-nosnippet>4939</a>    }
-<a href=#4940 id=4940 data-nosnippet>4940</a>}
-<a href=#4941 id=4941 data-nosnippet>4941</a>
-<a href=#4942 id=4942 data-nosnippet>4942</a><span class="attr">#[stable(feature = <span class="string">"mut_slice_default"</span>, since = <span class="string">"1.5.0"</span>)]
-<a href=#4943 id=4943 data-nosnippet>4943</a></span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span><span class="kw-2">&amp;mut </span>[T] {
-<a href=#4944 id=4944 data-nosnippet>4944</a>    <span class="doccomment">/// Creates a mutable empty slice.
-<a href=#4945 id=4945 data-nosnippet>4945</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#4946 id=4946 data-nosnippet>4946</a>        <span class="kw-2">&amp;mut </span>[]
-<a href=#4947 id=4947 data-nosnippet>4947</a>    }
-<a href=#4948 id=4948 data-nosnippet>4948</a>}
-<a href=#4949 id=4949 data-nosnippet>4949</a>
-<a href=#4950 id=4950 data-nosnippet>4950</a><span class="attr">#[unstable(feature = <span class="string">"slice_pattern"</span>, reason = <span class="string">"stopgap trait for slice patterns"</span>, issue = <span class="string">"56345"</span>)]
-<a href=#4951 id=4951 data-nosnippet>4951</a></span><span class="doccomment">/// Patterns in slices - currently, only used by `strip_prefix` and `strip_suffix`.  At a future
-<a href=#4952 id=4952 data-nosnippet>4952</a>/// point, we hope to generalise `core::str::Pattern` (which at the time of writing is limited to
-<a href=#4953 id=4953 data-nosnippet>4953</a>/// `str`) to slices, and then this trait will be replaced or abolished.
-<a href=#4954 id=4954 data-nosnippet>4954</a></span><span class="kw">pub trait </span>SlicePattern {
-<a href=#4955 id=4955 data-nosnippet>4955</a>    <span class="doccomment">/// The element type of the slice being matched on.
-<a href=#4956 id=4956 data-nosnippet>4956</a>    </span><span class="kw">type </span>Item;
-<a href=#4957 id=4957 data-nosnippet>4957</a>
-<a href=#4958 id=4958 data-nosnippet>4958</a>    <span class="doccomment">/// Currently, the consumers of `SlicePattern` need a slice.
-<a href=#4959 id=4959 data-nosnippet>4959</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item];
-<a href=#4960 id=4960 data-nosnippet>4960</a>}
-<a href=#4961 id=4961 data-nosnippet>4961</a>
-<a href=#4962 id=4962 data-nosnippet>4962</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#4963 id=4963 data-nosnippet>4963</a></span><span class="kw">impl</span>&lt;T&gt; SlicePattern <span class="kw">for </span>[T] {
-<a href=#4964 id=4964 data-nosnippet>4964</a>    <span class="kw">type </span>Item = T;
-<a href=#4965 id=4965 data-nosnippet>4965</a>
-<a href=#4966 id=4966 data-nosnippet>4966</a>    <span class="attr">#[inline]
-<a href=#4967 id=4967 data-nosnippet>4967</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
-<a href=#4968 id=4968 data-nosnippet>4968</a>        <span class="self">self
-<a href=#4969 id=4969 data-nosnippet>4969</a>    </span>}
-<a href=#4970 id=4970 data-nosnippet>4970</a>}
-<a href=#4971 id=4971 data-nosnippet>4971</a>
-<a href=#4972 id=4972 data-nosnippet>4972</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#4973 id=4973 data-nosnippet>4973</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; SlicePattern <span class="kw">for </span>[T; N] {
-<a href=#4974 id=4974 data-nosnippet>4974</a>    <span class="kw">type </span>Item = T;
-<a href=#4975 id=4975 data-nosnippet>4975</a>
-<a href=#4976 id=4976 data-nosnippet>4976</a>    <span class="attr">#[inline]
-<a href=#4977 id=4977 data-nosnippet>4977</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
-<a href=#4978 id=4978 data-nosnippet>4978</a>        <span class="self">self
-<a href=#4979 id=4979 data-nosnippet>4979</a>    </span>}
-<a href=#4980 id=4980 data-nosnippet>4980</a>}
-<a href=#4981 id=4981 data-nosnippet>4981</a>
-<a href=#4982 id=4982 data-nosnippet>4982</a><span class="doccomment">/// This checks every index against each other, and against `len`.
-<a href=#4983 id=4983 data-nosnippet>4983</a>///
-<a href=#4984 id=4984 data-nosnippet>4984</a>/// This will do `binomial(N + 1, 2) = N * (N + 1) / 2 = 0, 1, 3, 6, 10, ..`
-<a href=#4985 id=4985 data-nosnippet>4985</a>/// comparison operations.
-<a href=#4986 id=4986 data-nosnippet>4986</a></span><span class="attr">#[inline]
-<a href=#4987 id=4987 data-nosnippet>4987</a></span><span class="kw">fn </span>get_disjoint_check_valid&lt;I: GetDisjointMutIndex, <span class="kw">const </span>N: usize&gt;(
-<a href=#4988 id=4988 data-nosnippet>4988</a>    indices: <span class="kw-2">&amp;</span>[I; N],
-<a href=#4989 id=4989 data-nosnippet>4989</a>    len: usize,
-<a href=#4990 id=4990 data-nosnippet>4990</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), GetDisjointMutError&gt; {
-<a href=#4991 id=4991 data-nosnippet>4991</a>    <span class="comment">// NB: The optimizer should inline the loops into a sequence
-<a href=#4992 id=4992 data-nosnippet>4992</a>    // of instructions without additional branching.
-<a href=#4993 id=4993 data-nosnippet>4993</a>    </span><span class="kw">for </span>(i, idx) <span class="kw">in </span>indices.iter().enumerate() {
-<a href=#4994 id=4994 data-nosnippet>4994</a>        <span class="kw">if </span>!idx.is_in_bounds(len) {
-<a href=#4995 id=4995 data-nosnippet>4995</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::IndexOutOfBounds);
-<a href=#4996 id=4996 data-nosnippet>4996</a>        }
-<a href=#4997 id=4997 data-nosnippet>4997</a>        <span class="kw">for </span>idx2 <span class="kw">in </span><span class="kw-2">&amp;</span>indices[..i] {
-<a href=#4998 id=4998 data-nosnippet>4998</a>            <span class="kw">if </span>idx.is_overlapping(idx2) {
-<a href=#4999 id=4999 data-nosnippet>4999</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::OverlappingIndices);
-<a href=#5000 id=5000 data-nosnippet>5000</a>            }
-<a href=#5001 id=5001 data-nosnippet>5001</a>        }
-<a href=#5002 id=5002 data-nosnippet>5002</a>    }
-<a href=#5003 id=5003 data-nosnippet>5003</a>    <span class="prelude-val">Ok</span>(())
-<a href=#5004 id=5004 data-nosnippet>5004</a>}
-<a href=#5005 id=5005 data-nosnippet>5005</a>
-<a href=#5006 id=5006 data-nosnippet>5006</a><span class="doccomment">/// The error type returned by [`get_disjoint_mut`][`slice::get_disjoint_mut`].
-<a href=#5007 id=5007 data-nosnippet>5007</a>///
-<a href=#5008 id=5008 data-nosnippet>5008</a>/// It indicates one of two possible errors:
-<a href=#5009 id=5009 data-nosnippet>5009</a>/// - An index is out-of-bounds.
-<a href=#5010 id=5010 data-nosnippet>5010</a>/// - The same index appeared multiple times in the array
-<a href=#5011 id=5011 data-nosnippet>5011</a>///   (or different but overlapping indices when ranges are provided).
-<a href=#5012 id=5012 data-nosnippet>5012</a>///
-<a href=#5013 id=5013 data-nosnippet>5013</a>/// # Examples
-<a href=#5014 id=5014 data-nosnippet>5014</a>///
-<a href=#5015 id=5015 data-nosnippet>5015</a>/// ```
-<a href=#5016 id=5016 data-nosnippet>5016</a>/// use std::slice::GetDisjointMutError;
-<a href=#5017 id=5017 data-nosnippet>5017</a>///
-<a href=#5018 id=5018 data-nosnippet>5018</a>/// let v = &amp;mut [1, 2, 3];
-<a href=#5019 id=5019 data-nosnippet>5019</a>/// assert_eq!(v.get_disjoint_mut([0, 999]), Err(GetDisjointMutError::IndexOutOfBounds));
-<a href=#5020 id=5020 data-nosnippet>5020</a>/// assert_eq!(v.get_disjoint_mut([1, 1]), Err(GetDisjointMutError::OverlappingIndices));
-<a href=#5021 id=5021 data-nosnippet>5021</a>/// ```
-<a href=#5022 id=5022 data-nosnippet>5022</a></span><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
-<a href=#5023 id=5023 data-nosnippet>5023</a>#[derive(Debug, Clone, PartialEq, Eq)]
-<a href=#5024 id=5024 data-nosnippet>5024</a></span><span class="kw">pub enum </span>GetDisjointMutError {
-<a href=#5025 id=5025 data-nosnippet>5025</a>    <span class="doccomment">/// An index provided was out-of-bounds for the slice.
-<a href=#5026 id=5026 data-nosnippet>5026</a>    </span>IndexOutOfBounds,
-<a href=#5027 id=5027 data-nosnippet>5027</a>    <span class="doccomment">/// Two indices provided were overlapping.
-<a href=#5028 id=5028 data-nosnippet>5028</a>    </span>OverlappingIndices,
+<a href=#4827 id=4827 data-nosnippet>4827</a>    /// # Examples
+<a href=#4828 id=4828 data-nosnippet>4828</a>    ///
+<a href=#4829 id=4829 data-nosnippet>4829</a>    /// ```
+<a href=#4830 id=4830 data-nosnippet>4830</a>    /// assert_eq!([[1, 2, 3], [4, 5, 6]].as_flattened(), &amp;[1, 2, 3, 4, 5, 6]);
+<a href=#4831 id=4831 data-nosnippet>4831</a>    ///
+<a href=#4832 id=4832 data-nosnippet>4832</a>    /// assert_eq!(
+<a href=#4833 id=4833 data-nosnippet>4833</a>    ///     [[1, 2, 3], [4, 5, 6]].as_flattened(),
+<a href=#4834 id=4834 data-nosnippet>4834</a>    ///     [[1, 2], [3, 4], [5, 6]].as_flattened(),
+<a href=#4835 id=4835 data-nosnippet>4835</a>    /// );
+<a href=#4836 id=4836 data-nosnippet>4836</a>    ///
+<a href=#4837 id=4837 data-nosnippet>4837</a>    /// let slice_of_empty_arrays: &amp;[[i32; 0]] = &amp;[[], [], [], [], []];
+<a href=#4838 id=4838 data-nosnippet>4838</a>    /// assert!(slice_of_empty_arrays.as_flattened().is_empty());
+<a href=#4839 id=4839 data-nosnippet>4839</a>    ///
+<a href=#4840 id=4840 data-nosnippet>4840</a>    /// let empty_slice_of_arrays: &amp;[[u32; 10]] = &amp;[];
+<a href=#4841 id=4841 data-nosnippet>4841</a>    /// assert!(empty_slice_of_arrays.as_flattened().is_empty());
+<a href=#4842 id=4842 data-nosnippet>4842</a>    /// ```
+<a href=#4843 id=4843 data-nosnippet>4843</a>    </span><span class="attr">#[stable(feature = <span class="string">"slice_flatten"</span>, since = <span class="string">"1.80.0"</span>)]
+<a href=#4844 id=4844 data-nosnippet>4844</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_flatten"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#4845 id=4845 data-nosnippet>4845</a>    </span><span class="kw">pub const fn </span>as_flattened(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[T] {
+<a href=#4846 id=4846 data-nosnippet>4846</a>        <span class="kw">let </span>len = <span class="kw">if </span>T::IS_ZST {
+<a href=#4847 id=4847 data-nosnippet>4847</a>            <span class="self">self</span>.len().checked_mul(N).expect(<span class="string">"slice len overflow"</span>)
+<a href=#4848 id=4848 data-nosnippet>4848</a>        } <span class="kw">else </span>{
+<a href=#4849 id=4849 data-nosnippet>4849</a>            <span class="comment">// SAFETY: `self.len() * N` cannot overflow because `self` is
+<a href=#4850 id=4850 data-nosnippet>4850</a>            // already in the address space.
+<a href=#4851 id=4851 data-nosnippet>4851</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.len().unchecked_mul(N) }
+<a href=#4852 id=4852 data-nosnippet>4852</a>        };
+<a href=#4853 id=4853 data-nosnippet>4853</a>        <span class="comment">// SAFETY: `[T]` is layout-identical to `[T; N]`
+<a href=#4854 id=4854 data-nosnippet>4854</a>        </span><span class="kw">unsafe </span>{ from_raw_parts(<span class="self">self</span>.as_ptr().cast(), len) }
+<a href=#4855 id=4855 data-nosnippet>4855</a>    }
+<a href=#4856 id=4856 data-nosnippet>4856</a>
+<a href=#4857 id=4857 data-nosnippet>4857</a>    <span class="doccomment">/// Takes a `&amp;mut [[T; N]]`, and flattens it to a `&amp;mut [T]`.
+<a href=#4858 id=4858 data-nosnippet>4858</a>    ///
+<a href=#4859 id=4859 data-nosnippet>4859</a>    /// # Panics
+<a href=#4860 id=4860 data-nosnippet>4860</a>    ///
+<a href=#4861 id=4861 data-nosnippet>4861</a>    /// This panics if the length of the resulting slice would overflow a `usize`.
+<a href=#4862 id=4862 data-nosnippet>4862</a>    ///
+<a href=#4863 id=4863 data-nosnippet>4863</a>    /// This is only possible when flattening a slice of arrays of zero-sized
+<a href=#4864 id=4864 data-nosnippet>4864</a>    /// types, and thus tends to be irrelevant in practice. If
+<a href=#4865 id=4865 data-nosnippet>4865</a>    /// `size_of::&lt;T&gt;() &gt; 0`, this will never panic.
+<a href=#4866 id=4866 data-nosnippet>4866</a>    ///
+<a href=#4867 id=4867 data-nosnippet>4867</a>    /// # Examples
+<a href=#4868 id=4868 data-nosnippet>4868</a>    ///
+<a href=#4869 id=4869 data-nosnippet>4869</a>    /// ```
+<a href=#4870 id=4870 data-nosnippet>4870</a>    /// fn add_5_to_all(slice: &amp;mut [i32]) {
+<a href=#4871 id=4871 data-nosnippet>4871</a>    ///     for i in slice {
+<a href=#4872 id=4872 data-nosnippet>4872</a>    ///         *i += 5;
+<a href=#4873 id=4873 data-nosnippet>4873</a>    ///     }
+<a href=#4874 id=4874 data-nosnippet>4874</a>    /// }
+<a href=#4875 id=4875 data-nosnippet>4875</a>    ///
+<a href=#4876 id=4876 data-nosnippet>4876</a>    /// let mut array = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+<a href=#4877 id=4877 data-nosnippet>4877</a>    /// add_5_to_all(array.as_flattened_mut());
+<a href=#4878 id=4878 data-nosnippet>4878</a>    /// assert_eq!(array, [[6, 7, 8], [9, 10, 11], [12, 13, 14]]);
+<a href=#4879 id=4879 data-nosnippet>4879</a>    /// ```
+<a href=#4880 id=4880 data-nosnippet>4880</a>    </span><span class="attr">#[stable(feature = <span class="string">"slice_flatten"</span>, since = <span class="string">"1.80.0"</span>)]
+<a href=#4881 id=4881 data-nosnippet>4881</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_flatten"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#4882 id=4882 data-nosnippet>4882</a>    </span><span class="kw">pub const fn </span>as_flattened_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[T] {
+<a href=#4883 id=4883 data-nosnippet>4883</a>        <span class="kw">let </span>len = <span class="kw">if </span>T::IS_ZST {
+<a href=#4884 id=4884 data-nosnippet>4884</a>            <span class="self">self</span>.len().checked_mul(N).expect(<span class="string">"slice len overflow"</span>)
+<a href=#4885 id=4885 data-nosnippet>4885</a>        } <span class="kw">else </span>{
+<a href=#4886 id=4886 data-nosnippet>4886</a>            <span class="comment">// SAFETY: `self.len() * N` cannot overflow because `self` is
+<a href=#4887 id=4887 data-nosnippet>4887</a>            // already in the address space.
+<a href=#4888 id=4888 data-nosnippet>4888</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.len().unchecked_mul(N) }
+<a href=#4889 id=4889 data-nosnippet>4889</a>        };
+<a href=#4890 id=4890 data-nosnippet>4890</a>        <span class="comment">// SAFETY: `[T]` is layout-identical to `[T; N]`
+<a href=#4891 id=4891 data-nosnippet>4891</a>        </span><span class="kw">unsafe </span>{ from_raw_parts_mut(<span class="self">self</span>.as_mut_ptr().cast(), len) }
+<a href=#4892 id=4892 data-nosnippet>4892</a>    }
+<a href=#4893 id=4893 data-nosnippet>4893</a>}
+<a href=#4894 id=4894 data-nosnippet>4894</a>
+<a href=#4895 id=4895 data-nosnippet>4895</a><span class="kw">impl </span>[f32] {
+<a href=#4896 id=4896 data-nosnippet>4896</a>    <span class="doccomment">/// Sorts the slice of floats.
+<a href=#4897 id=4897 data-nosnippet>4897</a>    ///
+<a href=#4898 id=4898 data-nosnippet>4898</a>    /// This sort is in-place (i.e. does not allocate), *O*(*n* \* log(*n*)) worst-case, and uses
+<a href=#4899 id=4899 data-nosnippet>4899</a>    /// the ordering defined by [`f32::total_cmp`].
+<a href=#4900 id=4900 data-nosnippet>4900</a>    ///
+<a href=#4901 id=4901 data-nosnippet>4901</a>    /// # Current implementation
+<a href=#4902 id=4902 data-nosnippet>4902</a>    ///
+<a href=#4903 id=4903 data-nosnippet>4903</a>    /// This uses the same sorting algorithm as [`sort_unstable_by`](slice::sort_unstable_by).
+<a href=#4904 id=4904 data-nosnippet>4904</a>    ///
+<a href=#4905 id=4905 data-nosnippet>4905</a>    /// # Examples
+<a href=#4906 id=4906 data-nosnippet>4906</a>    ///
+<a href=#4907 id=4907 data-nosnippet>4907</a>    /// ```
+<a href=#4908 id=4908 data-nosnippet>4908</a>    /// #![feature(sort_floats)]
+<a href=#4909 id=4909 data-nosnippet>4909</a>    /// let mut v = [2.6, -5e-8, f32::NAN, 8.29, f32::INFINITY, -1.0, 0.0, -f32::INFINITY, -0.0];
+<a href=#4910 id=4910 data-nosnippet>4910</a>    ///
+<a href=#4911 id=4911 data-nosnippet>4911</a>    /// v.sort_floats();
+<a href=#4912 id=4912 data-nosnippet>4912</a>    /// let sorted = [-f32::INFINITY, -1.0, -5e-8, -0.0, 0.0, 2.6, 8.29, f32::INFINITY, f32::NAN];
+<a href=#4913 id=4913 data-nosnippet>4913</a>    /// assert_eq!(&amp;v[..8], &amp;sorted[..8]);
+<a href=#4914 id=4914 data-nosnippet>4914</a>    /// assert!(v[8].is_nan());
+<a href=#4915 id=4915 data-nosnippet>4915</a>    /// ```
+<a href=#4916 id=4916 data-nosnippet>4916</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
+<a href=#4917 id=4917 data-nosnippet>4917</a>    #[inline]
+<a href=#4918 id=4918 data-nosnippet>4918</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#4919 id=4919 data-nosnippet>4919</a>        <span class="self">self</span>.sort_unstable_by(f32::total_cmp);
+<a href=#4920 id=4920 data-nosnippet>4920</a>    }
+<a href=#4921 id=4921 data-nosnippet>4921</a>}
+<a href=#4922 id=4922 data-nosnippet>4922</a>
+<a href=#4923 id=4923 data-nosnippet>4923</a><span class="kw">impl </span>[f64] {
+<a href=#4924 id=4924 data-nosnippet>4924</a>    <span class="doccomment">/// Sorts the slice of floats.
+<a href=#4925 id=4925 data-nosnippet>4925</a>    ///
+<a href=#4926 id=4926 data-nosnippet>4926</a>    /// This sort is in-place (i.e. does not allocate), *O*(*n* \* log(*n*)) worst-case, and uses
+<a href=#4927 id=4927 data-nosnippet>4927</a>    /// the ordering defined by [`f64::total_cmp`].
+<a href=#4928 id=4928 data-nosnippet>4928</a>    ///
+<a href=#4929 id=4929 data-nosnippet>4929</a>    /// # Current implementation
+<a href=#4930 id=4930 data-nosnippet>4930</a>    ///
+<a href=#4931 id=4931 data-nosnippet>4931</a>    /// This uses the same sorting algorithm as [`sort_unstable_by`](slice::sort_unstable_by).
+<a href=#4932 id=4932 data-nosnippet>4932</a>    ///
+<a href=#4933 id=4933 data-nosnippet>4933</a>    /// # Examples
+<a href=#4934 id=4934 data-nosnippet>4934</a>    ///
+<a href=#4935 id=4935 data-nosnippet>4935</a>    /// ```
+<a href=#4936 id=4936 data-nosnippet>4936</a>    /// #![feature(sort_floats)]
+<a href=#4937 id=4937 data-nosnippet>4937</a>    /// let mut v = [2.6, -5e-8, f64::NAN, 8.29, f64::INFINITY, -1.0, 0.0, -f64::INFINITY, -0.0];
+<a href=#4938 id=4938 data-nosnippet>4938</a>    ///
+<a href=#4939 id=4939 data-nosnippet>4939</a>    /// v.sort_floats();
+<a href=#4940 id=4940 data-nosnippet>4940</a>    /// let sorted = [-f64::INFINITY, -1.0, -5e-8, -0.0, 0.0, 2.6, 8.29, f64::INFINITY, f64::NAN];
+<a href=#4941 id=4941 data-nosnippet>4941</a>    /// assert_eq!(&amp;v[..8], &amp;sorted[..8]);
+<a href=#4942 id=4942 data-nosnippet>4942</a>    /// assert!(v[8].is_nan());
+<a href=#4943 id=4943 data-nosnippet>4943</a>    /// ```
+<a href=#4944 id=4944 data-nosnippet>4944</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
+<a href=#4945 id=4945 data-nosnippet>4945</a>    #[inline]
+<a href=#4946 id=4946 data-nosnippet>4946</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#4947 id=4947 data-nosnippet>4947</a>        <span class="self">self</span>.sort_unstable_by(f64::total_cmp);
+<a href=#4948 id=4948 data-nosnippet>4948</a>    }
+<a href=#4949 id=4949 data-nosnippet>4949</a>}
+<a href=#4950 id=4950 data-nosnippet>4950</a>
+<a href=#4951 id=4951 data-nosnippet>4951</a><span class="kw">trait </span>CloneFromSpec&lt;T&gt; {
+<a href=#4952 id=4952 data-nosnippet>4952</a>    <span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]);
+<a href=#4953 id=4953 data-nosnippet>4953</a>}
+<a href=#4954 id=4954 data-nosnippet>4954</a>
+<a href=#4955 id=4955 data-nosnippet>4955</a><span class="kw">impl</span>&lt;T&gt; CloneFromSpec&lt;T&gt; <span class="kw">for </span>[T]
+<a href=#4956 id=4956 data-nosnippet>4956</a><span class="kw">where
+<a href=#4957 id=4957 data-nosnippet>4957</a>    </span>T: Clone,
+<a href=#4958 id=4958 data-nosnippet>4958</a>{
+<a href=#4959 id=4959 data-nosnippet>4959</a>    <span class="attr">#[track_caller]
+<a href=#4960 id=4960 data-nosnippet>4960</a>    </span>default <span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
+<a href=#4961 id=4961 data-nosnippet>4961</a>        <span class="macro">assert!</span>(<span class="self">self</span>.len() == src.len(), <span class="string">"destination and source slices have different lengths"</span>);
+<a href=#4962 id=4962 data-nosnippet>4962</a>        <span class="comment">// NOTE: We need to explicitly slice them to the same length
+<a href=#4963 id=4963 data-nosnippet>4963</a>        // to make it easier for the optimizer to elide bounds checking.
+<a href=#4964 id=4964 data-nosnippet>4964</a>        // But since it can't be relied on we also have an explicit specialization for T: Copy.
+<a href=#4965 id=4965 data-nosnippet>4965</a>        </span><span class="kw">let </span>len = <span class="self">self</span>.len();
+<a href=#4966 id=4966 data-nosnippet>4966</a>        <span class="kw">let </span>src = <span class="kw-2">&amp;</span>src[..len];
+<a href=#4967 id=4967 data-nosnippet>4967</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..len {
+<a href=#4968 id=4968 data-nosnippet>4968</a>            <span class="self">self</span>[i].clone_from(<span class="kw-2">&amp;</span>src[i]);
+<a href=#4969 id=4969 data-nosnippet>4969</a>        }
+<a href=#4970 id=4970 data-nosnippet>4970</a>    }
+<a href=#4971 id=4971 data-nosnippet>4971</a>}
+<a href=#4972 id=4972 data-nosnippet>4972</a>
+<a href=#4973 id=4973 data-nosnippet>4973</a><span class="kw">impl</span>&lt;T&gt; CloneFromSpec&lt;T&gt; <span class="kw">for </span>[T]
+<a href=#4974 id=4974 data-nosnippet>4974</a><span class="kw">where
+<a href=#4975 id=4975 data-nosnippet>4975</a>    </span>T: Copy,
+<a href=#4976 id=4976 data-nosnippet>4976</a>{
+<a href=#4977 id=4977 data-nosnippet>4977</a>    <span class="attr">#[track_caller]
+<a href=#4978 id=4978 data-nosnippet>4978</a>    </span><span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
+<a href=#4979 id=4979 data-nosnippet>4979</a>        <span class="self">self</span>.copy_from_slice(src);
+<a href=#4980 id=4980 data-nosnippet>4980</a>    }
+<a href=#4981 id=4981 data-nosnippet>4981</a>}
+<a href=#4982 id=4982 data-nosnippet>4982</a>
+<a href=#4983 id=4983 data-nosnippet>4983</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#4984 id=4984 data-nosnippet>4984</a></span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span><span class="kw-2">&amp;</span>[T] {
+<a href=#4985 id=4985 data-nosnippet>4985</a>    <span class="doccomment">/// Creates an empty slice.
+<a href=#4986 id=4986 data-nosnippet>4986</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#4987 id=4987 data-nosnippet>4987</a>        <span class="kw-2">&amp;</span>[]
+<a href=#4988 id=4988 data-nosnippet>4988</a>    }
+<a href=#4989 id=4989 data-nosnippet>4989</a>}
+<a href=#4990 id=4990 data-nosnippet>4990</a>
+<a href=#4991 id=4991 data-nosnippet>4991</a><span class="attr">#[stable(feature = <span class="string">"mut_slice_default"</span>, since = <span class="string">"1.5.0"</span>)]
+<a href=#4992 id=4992 data-nosnippet>4992</a></span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span><span class="kw-2">&amp;mut </span>[T] {
+<a href=#4993 id=4993 data-nosnippet>4993</a>    <span class="doccomment">/// Creates a mutable empty slice.
+<a href=#4994 id=4994 data-nosnippet>4994</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#4995 id=4995 data-nosnippet>4995</a>        <span class="kw-2">&amp;mut </span>[]
+<a href=#4996 id=4996 data-nosnippet>4996</a>    }
+<a href=#4997 id=4997 data-nosnippet>4997</a>}
+<a href=#4998 id=4998 data-nosnippet>4998</a>
+<a href=#4999 id=4999 data-nosnippet>4999</a><span class="attr">#[unstable(feature = <span class="string">"slice_pattern"</span>, reason = <span class="string">"stopgap trait for slice patterns"</span>, issue = <span class="string">"56345"</span>)]
+<a href=#5000 id=5000 data-nosnippet>5000</a></span><span class="doccomment">/// Patterns in slices - currently, only used by `strip_prefix` and `strip_suffix`.  At a future
+<a href=#5001 id=5001 data-nosnippet>5001</a>/// point, we hope to generalise `core::str::Pattern` (which at the time of writing is limited to
+<a href=#5002 id=5002 data-nosnippet>5002</a>/// `str`) to slices, and then this trait will be replaced or abolished.
+<a href=#5003 id=5003 data-nosnippet>5003</a></span><span class="kw">pub trait </span>SlicePattern {
+<a href=#5004 id=5004 data-nosnippet>5004</a>    <span class="doccomment">/// The element type of the slice being matched on.
+<a href=#5005 id=5005 data-nosnippet>5005</a>    </span><span class="kw">type </span>Item;
+<a href=#5006 id=5006 data-nosnippet>5006</a>
+<a href=#5007 id=5007 data-nosnippet>5007</a>    <span class="doccomment">/// Currently, the consumers of `SlicePattern` need a slice.
+<a href=#5008 id=5008 data-nosnippet>5008</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item];
+<a href=#5009 id=5009 data-nosnippet>5009</a>}
+<a href=#5010 id=5010 data-nosnippet>5010</a>
+<a href=#5011 id=5011 data-nosnippet>5011</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
+<a href=#5012 id=5012 data-nosnippet>5012</a></span><span class="kw">impl</span>&lt;T&gt; SlicePattern <span class="kw">for </span>[T] {
+<a href=#5013 id=5013 data-nosnippet>5013</a>    <span class="kw">type </span>Item = T;
+<a href=#5014 id=5014 data-nosnippet>5014</a>
+<a href=#5015 id=5015 data-nosnippet>5015</a>    <span class="attr">#[inline]
+<a href=#5016 id=5016 data-nosnippet>5016</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
+<a href=#5017 id=5017 data-nosnippet>5017</a>        <span class="self">self
+<a href=#5018 id=5018 data-nosnippet>5018</a>    </span>}
+<a href=#5019 id=5019 data-nosnippet>5019</a>}
+<a href=#5020 id=5020 data-nosnippet>5020</a>
+<a href=#5021 id=5021 data-nosnippet>5021</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
+<a href=#5022 id=5022 data-nosnippet>5022</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; SlicePattern <span class="kw">for </span>[T; N] {
+<a href=#5023 id=5023 data-nosnippet>5023</a>    <span class="kw">type </span>Item = T;
+<a href=#5024 id=5024 data-nosnippet>5024</a>
+<a href=#5025 id=5025 data-nosnippet>5025</a>    <span class="attr">#[inline]
+<a href=#5026 id=5026 data-nosnippet>5026</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
+<a href=#5027 id=5027 data-nosnippet>5027</a>        <span class="self">self
+<a href=#5028 id=5028 data-nosnippet>5028</a>    </span>}
 <a href=#5029 id=5029 data-nosnippet>5029</a>}
 <a href=#5030 id=5030 data-nosnippet>5030</a>
-<a href=#5031 id=5031 data-nosnippet>5031</a><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
-<a href=#5032 id=5032 data-nosnippet>5032</a></span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>GetDisjointMutError {
-<a href=#5033 id=5033 data-nosnippet>5033</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#5034 id=5034 data-nosnippet>5034</a>        <span class="kw">let </span>msg = <span class="kw">match </span><span class="self">self </span>{
-<a href=#5035 id=5035 data-nosnippet>5035</a>            GetDisjointMutError::IndexOutOfBounds =&gt; <span class="string">"an index is out of bounds"</span>,
-<a href=#5036 id=5036 data-nosnippet>5036</a>            GetDisjointMutError::OverlappingIndices =&gt; <span class="string">"there were overlapping indices"</span>,
-<a href=#5037 id=5037 data-nosnippet>5037</a>        };
-<a href=#5038 id=5038 data-nosnippet>5038</a>        fmt::Display::fmt(msg, f)
-<a href=#5039 id=5039 data-nosnippet>5039</a>    }
-<a href=#5040 id=5040 data-nosnippet>5040</a>}
-<a href=#5041 id=5041 data-nosnippet>5041</a>
-<a href=#5042 id=5042 data-nosnippet>5042</a><span class="kw">mod </span>private_get_disjoint_mut_index {
-<a href=#5043 id=5043 data-nosnippet>5043</a>    <span class="kw">use super</span>::{Range, RangeInclusive, range};
-<a href=#5044 id=5044 data-nosnippet>5044</a>
-<a href=#5045 id=5045 data-nosnippet>5045</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5046 id=5046 data-nosnippet>5046</a>    </span><span class="kw">pub trait </span>Sealed {}
-<a href=#5047 id=5047 data-nosnippet>5047</a>
-<a href=#5048 id=5048 data-nosnippet>5048</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5049 id=5049 data-nosnippet>5049</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>usize {}
-<a href=#5050 id=5050 data-nosnippet>5050</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5051 id=5051 data-nosnippet>5051</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>Range&lt;usize&gt; {}
-<a href=#5052 id=5052 data-nosnippet>5052</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5053 id=5053 data-nosnippet>5053</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>RangeInclusive&lt;usize&gt; {}
-<a href=#5054 id=5054 data-nosnippet>5054</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5055 id=5055 data-nosnippet>5055</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>range::Range&lt;usize&gt; {}
-<a href=#5056 id=5056 data-nosnippet>5056</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5057 id=5057 data-nosnippet>5057</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>range::RangeInclusive&lt;usize&gt; {}
-<a href=#5058 id=5058 data-nosnippet>5058</a>}
-<a href=#5059 id=5059 data-nosnippet>5059</a>
-<a href=#5060 id=5060 data-nosnippet>5060</a><span class="doccomment">/// A helper trait for `&lt;[T]&gt;::get_disjoint_mut()`.
+<a href=#5031 id=5031 data-nosnippet>5031</a><span class="doccomment">/// This checks every index against each other, and against `len`.
+<a href=#5032 id=5032 data-nosnippet>5032</a>///
+<a href=#5033 id=5033 data-nosnippet>5033</a>/// This will do `binomial(N + 1, 2) = N * (N + 1) / 2 = 0, 1, 3, 6, 10, ..`
+<a href=#5034 id=5034 data-nosnippet>5034</a>/// comparison operations.
+<a href=#5035 id=5035 data-nosnippet>5035</a></span><span class="attr">#[inline]
+<a href=#5036 id=5036 data-nosnippet>5036</a></span><span class="kw">fn </span>get_disjoint_check_valid&lt;I: GetDisjointMutIndex, <span class="kw">const </span>N: usize&gt;(
+<a href=#5037 id=5037 data-nosnippet>5037</a>    indices: <span class="kw-2">&amp;</span>[I; N],
+<a href=#5038 id=5038 data-nosnippet>5038</a>    len: usize,
+<a href=#5039 id=5039 data-nosnippet>5039</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), GetDisjointMutError&gt; {
+<a href=#5040 id=5040 data-nosnippet>5040</a>    <span class="comment">// NB: The optimizer should inline the loops into a sequence
+<a href=#5041 id=5041 data-nosnippet>5041</a>    // of instructions without additional branching.
+<a href=#5042 id=5042 data-nosnippet>5042</a>    </span><span class="kw">for </span>(i, idx) <span class="kw">in </span>indices.iter().enumerate() {
+<a href=#5043 id=5043 data-nosnippet>5043</a>        <span class="kw">if </span>!idx.is_in_bounds(len) {
+<a href=#5044 id=5044 data-nosnippet>5044</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::IndexOutOfBounds);
+<a href=#5045 id=5045 data-nosnippet>5045</a>        }
+<a href=#5046 id=5046 data-nosnippet>5046</a>        <span class="kw">for </span>idx2 <span class="kw">in </span><span class="kw-2">&amp;</span>indices[..i] {
+<a href=#5047 id=5047 data-nosnippet>5047</a>            <span class="kw">if </span>idx.is_overlapping(idx2) {
+<a href=#5048 id=5048 data-nosnippet>5048</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::OverlappingIndices);
+<a href=#5049 id=5049 data-nosnippet>5049</a>            }
+<a href=#5050 id=5050 data-nosnippet>5050</a>        }
+<a href=#5051 id=5051 data-nosnippet>5051</a>    }
+<a href=#5052 id=5052 data-nosnippet>5052</a>    <span class="prelude-val">Ok</span>(())
+<a href=#5053 id=5053 data-nosnippet>5053</a>}
+<a href=#5054 id=5054 data-nosnippet>5054</a>
+<a href=#5055 id=5055 data-nosnippet>5055</a><span class="doccomment">/// The error type returned by [`get_disjoint_mut`][`slice::get_disjoint_mut`].
+<a href=#5056 id=5056 data-nosnippet>5056</a>///
+<a href=#5057 id=5057 data-nosnippet>5057</a>/// It indicates one of two possible errors:
+<a href=#5058 id=5058 data-nosnippet>5058</a>/// - An index is out-of-bounds.
+<a href=#5059 id=5059 data-nosnippet>5059</a>/// - The same index appeared multiple times in the array
+<a href=#5060 id=5060 data-nosnippet>5060</a>///   (or different but overlapping indices when ranges are provided).
 <a href=#5061 id=5061 data-nosnippet>5061</a>///
-<a href=#5062 id=5062 data-nosnippet>5062</a>/// # Safety
+<a href=#5062 id=5062 data-nosnippet>5062</a>/// # Examples
 <a href=#5063 id=5063 data-nosnippet>5063</a>///
-<a href=#5064 id=5064 data-nosnippet>5064</a>/// If `is_in_bounds()` returns `true` and `is_overlapping()` returns `false`,
-<a href=#5065 id=5065 data-nosnippet>5065</a>/// it must be safe to index the slice with the indices.
-<a href=#5066 id=5066 data-nosnippet>5066</a></span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5067 id=5067 data-nosnippet>5067</a></span><span class="kw">pub unsafe trait </span>GetDisjointMutIndex:
-<a href=#5068 id=5068 data-nosnippet>5068</a>    Clone + private_get_disjoint_mut_index::Sealed
-<a href=#5069 id=5069 data-nosnippet>5069</a>{
-<a href=#5070 id=5070 data-nosnippet>5070</a>    <span class="doccomment">/// Returns `true` if `self` is in bounds for `len` slice elements.
-<a href=#5071 id=5071 data-nosnippet>5071</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5072 id=5072 data-nosnippet>5072</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool;
-<a href=#5073 id=5073 data-nosnippet>5073</a>
-<a href=#5074 id=5074 data-nosnippet>5074</a>    <span class="doccomment">/// Returns `true` if `self` overlaps with `other`.
-<a href=#5075 id=5075 data-nosnippet>5075</a>    ///
-<a href=#5076 id=5076 data-nosnippet>5076</a>    /// Note that we don't consider zero-length ranges to overlap at the beginning or the end,
-<a href=#5077 id=5077 data-nosnippet>5077</a>    /// but do consider them to overlap in the middle.
-<a href=#5078 id=5078 data-nosnippet>5078</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5079 id=5079 data-nosnippet>5079</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool;
-<a href=#5080 id=5080 data-nosnippet>5080</a>}
-<a href=#5081 id=5081 data-nosnippet>5081</a>
-<a href=#5082 id=5082 data-nosnippet>5082</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5083 id=5083 data-nosnippet>5083</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5084 id=5084 data-nosnippet>5084</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>usize {
-<a href=#5085 id=5085 data-nosnippet>5085</a>    <span class="attr">#[inline]
-<a href=#5086 id=5086 data-nosnippet>5086</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
-<a href=#5087 id=5087 data-nosnippet>5087</a>        <span class="kw-2">*</span><span class="self">self </span>&lt; len
+<a href=#5064 id=5064 data-nosnippet>5064</a>/// ```
+<a href=#5065 id=5065 data-nosnippet>5065</a>/// use std::slice::GetDisjointMutError;
+<a href=#5066 id=5066 data-nosnippet>5066</a>///
+<a href=#5067 id=5067 data-nosnippet>5067</a>/// let v = &amp;mut [1, 2, 3];
+<a href=#5068 id=5068 data-nosnippet>5068</a>/// assert_eq!(v.get_disjoint_mut([0, 999]), Err(GetDisjointMutError::IndexOutOfBounds));
+<a href=#5069 id=5069 data-nosnippet>5069</a>/// assert_eq!(v.get_disjoint_mut([1, 1]), Err(GetDisjointMutError::OverlappingIndices));
+<a href=#5070 id=5070 data-nosnippet>5070</a>/// ```
+<a href=#5071 id=5071 data-nosnippet>5071</a></span><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
+<a href=#5072 id=5072 data-nosnippet>5072</a>#[derive(Debug, Clone, PartialEq, Eq)]
+<a href=#5073 id=5073 data-nosnippet>5073</a></span><span class="kw">pub enum </span>GetDisjointMutError {
+<a href=#5074 id=5074 data-nosnippet>5074</a>    <span class="doccomment">/// An index provided was out-of-bounds for the slice.
+<a href=#5075 id=5075 data-nosnippet>5075</a>    </span>IndexOutOfBounds,
+<a href=#5076 id=5076 data-nosnippet>5076</a>    <span class="doccomment">/// Two indices provided were overlapping.
+<a href=#5077 id=5077 data-nosnippet>5077</a>    </span>OverlappingIndices,
+<a href=#5078 id=5078 data-nosnippet>5078</a>}
+<a href=#5079 id=5079 data-nosnippet>5079</a>
+<a href=#5080 id=5080 data-nosnippet>5080</a><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
+<a href=#5081 id=5081 data-nosnippet>5081</a></span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>GetDisjointMutError {
+<a href=#5082 id=5082 data-nosnippet>5082</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#5083 id=5083 data-nosnippet>5083</a>        <span class="kw">let </span>msg = <span class="kw">match </span><span class="self">self </span>{
+<a href=#5084 id=5084 data-nosnippet>5084</a>            GetDisjointMutError::IndexOutOfBounds =&gt; <span class="string">"an index is out of bounds"</span>,
+<a href=#5085 id=5085 data-nosnippet>5085</a>            GetDisjointMutError::OverlappingIndices =&gt; <span class="string">"there were overlapping indices"</span>,
+<a href=#5086 id=5086 data-nosnippet>5086</a>        };
+<a href=#5087 id=5087 data-nosnippet>5087</a>        fmt::Display::fmt(msg, f)
 <a href=#5088 id=5088 data-nosnippet>5088</a>    }
-<a href=#5089 id=5089 data-nosnippet>5089</a>
-<a href=#5090 id=5090 data-nosnippet>5090</a>    <span class="attr">#[inline]
-<a href=#5091 id=5091 data-nosnippet>5091</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#5092 id=5092 data-nosnippet>5092</a>        <span class="kw-2">*</span><span class="self">self </span>== <span class="kw-2">*</span>other
-<a href=#5093 id=5093 data-nosnippet>5093</a>    }
-<a href=#5094 id=5094 data-nosnippet>5094</a>}
-<a href=#5095 id=5095 data-nosnippet>5095</a>
-<a href=#5096 id=5096 data-nosnippet>5096</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5097 id=5097 data-nosnippet>5097</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5098 id=5098 data-nosnippet>5098</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>Range&lt;usize&gt; {
-<a href=#5099 id=5099 data-nosnippet>5099</a>    <span class="attr">#[inline]
-<a href=#5100 id=5100 data-nosnippet>5100</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
-<a href=#5101 id=5101 data-nosnippet>5101</a>        (<span class="self">self</span>.start &lt;= <span class="self">self</span>.end) &amp; (<span class="self">self</span>.end &lt;= len)
-<a href=#5102 id=5102 data-nosnippet>5102</a>    }
-<a href=#5103 id=5103 data-nosnippet>5103</a>
-<a href=#5104 id=5104 data-nosnippet>5104</a>    <span class="attr">#[inline]
-<a href=#5105 id=5105 data-nosnippet>5105</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#5106 id=5106 data-nosnippet>5106</a>        (<span class="self">self</span>.start &lt; other.end) &amp; (other.start &lt; <span class="self">self</span>.end)
-<a href=#5107 id=5107 data-nosnippet>5107</a>    }
-<a href=#5108 id=5108 data-nosnippet>5108</a>}
-<a href=#5109 id=5109 data-nosnippet>5109</a>
-<a href=#5110 id=5110 data-nosnippet>5110</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5111 id=5111 data-nosnippet>5111</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5112 id=5112 data-nosnippet>5112</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>RangeInclusive&lt;usize&gt; {
-<a href=#5113 id=5113 data-nosnippet>5113</a>    <span class="attr">#[inline]
-<a href=#5114 id=5114 data-nosnippet>5114</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
-<a href=#5115 id=5115 data-nosnippet>5115</a>        (<span class="self">self</span>.start &lt;= <span class="self">self</span>.end) &amp; (<span class="self">self</span>.end &lt; len)
-<a href=#5116 id=5116 data-nosnippet>5116</a>    }
-<a href=#5117 id=5117 data-nosnippet>5117</a>
-<a href=#5118 id=5118 data-nosnippet>5118</a>    <span class="attr">#[inline]
-<a href=#5119 id=5119 data-nosnippet>5119</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#5120 id=5120 data-nosnippet>5120</a>        (<span class="self">self</span>.start &lt;= other.end) &amp; (other.start &lt;= <span class="self">self</span>.end)
-<a href=#5121 id=5121 data-nosnippet>5121</a>    }
-<a href=#5122 id=5122 data-nosnippet>5122</a>}
-<a href=#5123 id=5123 data-nosnippet>5123</a>
-<a href=#5124 id=5124 data-nosnippet>5124</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5125 id=5125 data-nosnippet>5125</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5126 id=5126 data-nosnippet>5126</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>range::Range&lt;usize&gt; {
-<a href=#5127 id=5127 data-nosnippet>5127</a>    <span class="attr">#[inline]
-<a href=#5128 id=5128 data-nosnippet>5128</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
-<a href=#5129 id=5129 data-nosnippet>5129</a>        Range::from(<span class="kw-2">*</span><span class="self">self</span>).is_in_bounds(len)
-<a href=#5130 id=5130 data-nosnippet>5130</a>    }
-<a href=#5131 id=5131 data-nosnippet>5131</a>
-<a href=#5132 id=5132 data-nosnippet>5132</a>    <span class="attr">#[inline]
-<a href=#5133 id=5133 data-nosnippet>5133</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#5134 id=5134 data-nosnippet>5134</a>        Range::from(<span class="kw-2">*</span><span class="self">self</span>).is_overlapping(<span class="kw-2">&amp;</span>Range::from(<span class="kw-2">*</span>other))
-<a href=#5135 id=5135 data-nosnippet>5135</a>    }
-<a href=#5136 id=5136 data-nosnippet>5136</a>}
-<a href=#5137 id=5137 data-nosnippet>5137</a>
-<a href=#5138 id=5138 data-nosnippet>5138</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5139 id=5139 data-nosnippet>5139</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5140 id=5140 data-nosnippet>5140</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>range::RangeInclusive&lt;usize&gt; {
-<a href=#5141 id=5141 data-nosnippet>5141</a>    <span class="attr">#[inline]
-<a href=#5142 id=5142 data-nosnippet>5142</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
-<a href=#5143 id=5143 data-nosnippet>5143</a>        RangeInclusive::from(<span class="kw-2">*</span><span class="self">self</span>).is_in_bounds(len)
-<a href=#5144 id=5144 data-nosnippet>5144</a>    }
-<a href=#5145 id=5145 data-nosnippet>5145</a>
-<a href=#5146 id=5146 data-nosnippet>5146</a>    <span class="attr">#[inline]
-<a href=#5147 id=5147 data-nosnippet>5147</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#5148 id=5148 data-nosnippet>5148</a>        RangeInclusive::from(<span class="kw-2">*</span><span class="self">self</span>).is_overlapping(<span class="kw-2">&amp;</span>RangeInclusive::from(<span class="kw-2">*</span>other))
-<a href=#5149 id=5149 data-nosnippet>5149</a>    }
-<a href=#5150 id=5150 data-nosnippet>5150</a>}</code></pre></div></section></main></body></html>
+<a href=#5089 id=5089 data-nosnippet>5089</a>}
+<a href=#5090 id=5090 data-nosnippet>5090</a>
+<a href=#5091 id=5091 data-nosnippet>5091</a><span class="kw">mod </span>private_get_disjoint_mut_index {
+<a href=#5092 id=5092 data-nosnippet>5092</a>    <span class="kw">use super</span>::{Range, RangeInclusive, range};
+<a href=#5093 id=5093 data-nosnippet>5093</a>
+<a href=#5094 id=5094 data-nosnippet>5094</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5095 id=5095 data-nosnippet>5095</a>    </span><span class="kw">pub trait </span>Sealed {}
+<a href=#5096 id=5096 data-nosnippet>5096</a>
+<a href=#5097 id=5097 data-nosnippet>5097</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5098 id=5098 data-nosnippet>5098</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>usize {}
+<a href=#5099 id=5099 data-nosnippet>5099</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5100 id=5100 data-nosnippet>5100</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>Range&lt;usize&gt; {}
+<a href=#5101 id=5101 data-nosnippet>5101</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5102 id=5102 data-nosnippet>5102</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>RangeInclusive&lt;usize&gt; {}
+<a href=#5103 id=5103 data-nosnippet>5103</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5104 id=5104 data-nosnippet>5104</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>range::Range&lt;usize&gt; {}
+<a href=#5105 id=5105 data-nosnippet>5105</a>    <span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5106 id=5106 data-nosnippet>5106</a>    </span><span class="kw">impl </span>Sealed <span class="kw">for </span>range::RangeInclusive&lt;usize&gt; {}
+<a href=#5107 id=5107 data-nosnippet>5107</a>}
+<a href=#5108 id=5108 data-nosnippet>5108</a>
+<a href=#5109 id=5109 data-nosnippet>5109</a><span class="doccomment">/// A helper trait for `&lt;[T]&gt;::get_disjoint_mut()`.
+<a href=#5110 id=5110 data-nosnippet>5110</a>///
+<a href=#5111 id=5111 data-nosnippet>5111</a>/// # Safety
+<a href=#5112 id=5112 data-nosnippet>5112</a>///
+<a href=#5113 id=5113 data-nosnippet>5113</a>/// If `is_in_bounds()` returns `true` and `is_overlapping()` returns `false`,
+<a href=#5114 id=5114 data-nosnippet>5114</a>/// it must be safe to index the slice with the indices.
+<a href=#5115 id=5115 data-nosnippet>5115</a></span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5116 id=5116 data-nosnippet>5116</a></span><span class="kw">pub unsafe trait </span>GetDisjointMutIndex:
+<a href=#5117 id=5117 data-nosnippet>5117</a>    Clone + private_get_disjoint_mut_index::Sealed
+<a href=#5118 id=5118 data-nosnippet>5118</a>{
+<a href=#5119 id=5119 data-nosnippet>5119</a>    <span class="doccomment">/// Returns `true` if `self` is in bounds for `len` slice elements.
+<a href=#5120 id=5120 data-nosnippet>5120</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5121 id=5121 data-nosnippet>5121</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool;
+<a href=#5122 id=5122 data-nosnippet>5122</a>
+<a href=#5123 id=5123 data-nosnippet>5123</a>    <span class="doccomment">/// Returns `true` if `self` overlaps with `other`.
+<a href=#5124 id=5124 data-nosnippet>5124</a>    ///
+<a href=#5125 id=5125 data-nosnippet>5125</a>    /// Note that we don't consider zero-length ranges to overlap at the beginning or the end,
+<a href=#5126 id=5126 data-nosnippet>5126</a>    /// but do consider them to overlap in the middle.
+<a href=#5127 id=5127 data-nosnippet>5127</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5128 id=5128 data-nosnippet>5128</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool;
+<a href=#5129 id=5129 data-nosnippet>5129</a>}
+<a href=#5130 id=5130 data-nosnippet>5130</a>
+<a href=#5131 id=5131 data-nosnippet>5131</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5132 id=5132 data-nosnippet>5132</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5133 id=5133 data-nosnippet>5133</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>usize {
+<a href=#5134 id=5134 data-nosnippet>5134</a>    <span class="attr">#[inline]
+<a href=#5135 id=5135 data-nosnippet>5135</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
+<a href=#5136 id=5136 data-nosnippet>5136</a>        <span class="kw-2">*</span><span class="self">self </span>&lt; len
+<a href=#5137 id=5137 data-nosnippet>5137</a>    }
+<a href=#5138 id=5138 data-nosnippet>5138</a>
+<a href=#5139 id=5139 data-nosnippet>5139</a>    <span class="attr">#[inline]
+<a href=#5140 id=5140 data-nosnippet>5140</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#5141 id=5141 data-nosnippet>5141</a>        <span class="kw-2">*</span><span class="self">self </span>== <span class="kw-2">*</span>other
+<a href=#5142 id=5142 data-nosnippet>5142</a>    }
+<a href=#5143 id=5143 data-nosnippet>5143</a>}
+<a href=#5144 id=5144 data-nosnippet>5144</a>
+<a href=#5145 id=5145 data-nosnippet>5145</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5146 id=5146 data-nosnippet>5146</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5147 id=5147 data-nosnippet>5147</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>Range&lt;usize&gt; {
+<a href=#5148 id=5148 data-nosnippet>5148</a>    <span class="attr">#[inline]
+<a href=#5149 id=5149 data-nosnippet>5149</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
+<a href=#5150 id=5150 data-nosnippet>5150</a>        (<span class="self">self</span>.start &lt;= <span class="self">self</span>.end) &amp; (<span class="self">self</span>.end &lt;= len)
+<a href=#5151 id=5151 data-nosnippet>5151</a>    }
+<a href=#5152 id=5152 data-nosnippet>5152</a>
+<a href=#5153 id=5153 data-nosnippet>5153</a>    <span class="attr">#[inline]
+<a href=#5154 id=5154 data-nosnippet>5154</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#5155 id=5155 data-nosnippet>5155</a>        (<span class="self">self</span>.start &lt; other.end) &amp; (other.start &lt; <span class="self">self</span>.end)
+<a href=#5156 id=5156 data-nosnippet>5156</a>    }
+<a href=#5157 id=5157 data-nosnippet>5157</a>}
+<a href=#5158 id=5158 data-nosnippet>5158</a>
+<a href=#5159 id=5159 data-nosnippet>5159</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5160 id=5160 data-nosnippet>5160</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5161 id=5161 data-nosnippet>5161</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>RangeInclusive&lt;usize&gt; {
+<a href=#5162 id=5162 data-nosnippet>5162</a>    <span class="attr">#[inline]
+<a href=#5163 id=5163 data-nosnippet>5163</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
+<a href=#5164 id=5164 data-nosnippet>5164</a>        (<span class="self">self</span>.start &lt;= <span class="self">self</span>.end) &amp; (<span class="self">self</span>.end &lt; len)
+<a href=#5165 id=5165 data-nosnippet>5165</a>    }
+<a href=#5166 id=5166 data-nosnippet>5166</a>
+<a href=#5167 id=5167 data-nosnippet>5167</a>    <span class="attr">#[inline]
+<a href=#5168 id=5168 data-nosnippet>5168</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#5169 id=5169 data-nosnippet>5169</a>        (<span class="self">self</span>.start &lt;= other.end) &amp; (other.start &lt;= <span class="self">self</span>.end)
+<a href=#5170 id=5170 data-nosnippet>5170</a>    }
+<a href=#5171 id=5171 data-nosnippet>5171</a>}
+<a href=#5172 id=5172 data-nosnippet>5172</a>
+<a href=#5173 id=5173 data-nosnippet>5173</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5174 id=5174 data-nosnippet>5174</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5175 id=5175 data-nosnippet>5175</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>range::Range&lt;usize&gt; {
+<a href=#5176 id=5176 data-nosnippet>5176</a>    <span class="attr">#[inline]
+<a href=#5177 id=5177 data-nosnippet>5177</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
+<a href=#5178 id=5178 data-nosnippet>5178</a>        Range::from(<span class="kw-2">*</span><span class="self">self</span>).is_in_bounds(len)
+<a href=#5179 id=5179 data-nosnippet>5179</a>    }
+<a href=#5180 id=5180 data-nosnippet>5180</a>
+<a href=#5181 id=5181 data-nosnippet>5181</a>    <span class="attr">#[inline]
+<a href=#5182 id=5182 data-nosnippet>5182</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#5183 id=5183 data-nosnippet>5183</a>        Range::from(<span class="kw-2">*</span><span class="self">self</span>).is_overlapping(<span class="kw-2">&amp;</span>Range::from(<span class="kw-2">*</span>other))
+<a href=#5184 id=5184 data-nosnippet>5184</a>    }
+<a href=#5185 id=5185 data-nosnippet>5185</a>}
+<a href=#5186 id=5186 data-nosnippet>5186</a>
+<a href=#5187 id=5187 data-nosnippet>5187</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5188 id=5188 data-nosnippet>5188</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5189 id=5189 data-nosnippet>5189</a></span><span class="kw">unsafe impl </span>GetDisjointMutIndex <span class="kw">for </span>range::RangeInclusive&lt;usize&gt; {
+<a href=#5190 id=5190 data-nosnippet>5190</a>    <span class="attr">#[inline]
+<a href=#5191 id=5191 data-nosnippet>5191</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; bool {
+<a href=#5192 id=5192 data-nosnippet>5192</a>        RangeInclusive::from(<span class="kw-2">*</span><span class="self">self</span>).is_in_bounds(len)
+<a href=#5193 id=5193 data-nosnippet>5193</a>    }
+<a href=#5194 id=5194 data-nosnippet>5194</a>
+<a href=#5195 id=5195 data-nosnippet>5195</a>    <span class="attr">#[inline]
+<a href=#5196 id=5196 data-nosnippet>5196</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#5197 id=5197 data-nosnippet>5197</a>        RangeInclusive::from(<span class="kw-2">*</span><span class="self">self</span>).is_overlapping(<span class="kw-2">&amp;</span>RangeInclusive::from(<span class="kw-2">*</span>other))
+<a href=#5198 id=5198 data-nosnippet>5198</a>    }
+<a href=#5199 id=5199 data-nosnippet>5199</a>}</code></pre></div></section></main></body></html>
