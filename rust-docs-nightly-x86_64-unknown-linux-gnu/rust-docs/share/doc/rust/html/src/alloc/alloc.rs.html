@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-de575e9a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (934880f58 2025-04-09)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-63605ae7.js"></script><script defer src="../../src-files1.88.0.js"></script><script defer src="../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-7dda4a46.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (0fe8f3454 2025-04-10)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-63605ae7.js"></script><script defer src="../../src-files1.88.0.js"></script><script defer src="../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="attr">#![stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -16,22 +16,22 @@
 <a href=#16 id=16 data-nosnippet>16</a>    // otherwise.
 <a href=#17 id=17 data-nosnippet>17</a>    </span><span class="attr">#[rustc_allocator]
 <a href=#18 id=18 data-nosnippet>18</a>    #[rustc_nounwind]
-<a href=#19 id=19 data-nosnippet>19</a>    #[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#19 id=19 data-nosnippet>19</a>    #[rustc_std_internal_symbol]
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">fn </span>__rust_alloc(size: usize, align: usize) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#21 id=21 data-nosnippet>21</a>    <span class="attr">#[rustc_deallocator]
 <a href=#22 id=22 data-nosnippet>22</a>    #[rustc_nounwind]
-<a href=#23 id=23 data-nosnippet>23</a>    #[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#23 id=23 data-nosnippet>23</a>    #[rustc_std_internal_symbol]
 <a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">fn </span>__rust_dealloc(ptr: <span class="kw-2">*mut </span>u8, size: usize, align: usize);
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="attr">#[rustc_reallocator]
 <a href=#26 id=26 data-nosnippet>26</a>    #[rustc_nounwind]
-<a href=#27 id=27 data-nosnippet>27</a>    #[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#27 id=27 data-nosnippet>27</a>    #[rustc_std_internal_symbol]
 <a href=#28 id=28 data-nosnippet>28</a>    </span><span class="kw">fn </span>__rust_realloc(ptr: <span class="kw-2">*mut </span>u8, old_size: usize, align: usize, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="attr">#[rustc_allocator_zeroed]
 <a href=#30 id=30 data-nosnippet>30</a>    #[rustc_nounwind]
-<a href=#31 id=31 data-nosnippet>31</a>    #[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#31 id=31 data-nosnippet>31</a>    #[rustc_std_internal_symbol]
 <a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">fn </span>__rust_alloc_zeroed(size: usize, align: usize) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#33 id=33 data-nosnippet>33</a>
-<a href=#34 id=34 data-nosnippet>34</a>    <span class="attr">#[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#34 id=34 data-nosnippet>34</a>    <span class="attr">#[rustc_std_internal_symbol]
 <a href=#35 id=35 data-nosnippet>35</a>    </span><span class="kw">static </span>__rust_no_alloc_shim_is_unstable: u8;
 <a href=#36 id=36 data-nosnippet>36</a>}
 <a href=#37 id=37 data-nosnippet>37</a>
@@ -360,7 +360,7 @@
 <a href=#360 id=360 data-nosnippet>360</a>    <span class="comment">// This is the magic symbol to call the global alloc error handler. rustc generates
 <a href=#361 id=361 data-nosnippet>361</a>    // it to call `__rg_oom` if there is a `#[alloc_error_handler]`, or to call the
 <a href=#362 id=362 data-nosnippet>362</a>    // default implementations below (`__rdl_oom`) otherwise.
-<a href=#363 id=363 data-nosnippet>363</a>    </span><span class="attr">#[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#363 id=363 data-nosnippet>363</a>    </span><span class="attr">#[rustc_std_internal_symbol]
 <a href=#364 id=364 data-nosnippet>364</a>    </span><span class="kw">fn </span>__rust_alloc_error_handler(size: usize, align: usize) -&gt; !;
 <a href=#365 id=365 data-nosnippet>365</a>}
 <a href=#366 id=366 data-nosnippet>366</a>
@@ -427,7 +427,7 @@
 <a href=#427 id=427 data-nosnippet>427</a>        <span class="kw">unsafe extern </span><span class="string">"Rust" </span>{
 <a href=#428 id=428 data-nosnippet>428</a>            <span class="comment">// This symbol is emitted by rustc next to __rust_alloc_error_handler.
 <a href=#429 id=429 data-nosnippet>429</a>            // Its value depends on the -Zoom={panic,abort} compiler option.
-<a href=#430 id=430 data-nosnippet>430</a>            </span><span class="attr">#[cfg_attr(not(bootstrap), rustc_std_internal_symbol)]
+<a href=#430 id=430 data-nosnippet>430</a>            </span><span class="attr">#[rustc_std_internal_symbol]
 <a href=#431 id=431 data-nosnippet>431</a>            </span><span class="kw">static </span>__rust_alloc_error_handler_should_panic: u8;
 <a href=#432 id=432 data-nosnippet>432</a>        }
 <a href=#433 id=433 data-nosnippet>433</a>
