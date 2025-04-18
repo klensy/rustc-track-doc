@@ -38,7 +38,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-bbf950f9.js"></script>
+        <script src="../toc-1d03d2f3.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -164,6 +164,114 @@
                         <h1 id="macro_metavar_expr_concat"><a class="header" href="#macro_metavar_expr_concat"><code>macro_metavar_expr_concat</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/124225">#124225</a></p>
 <hr />
+<p>In stable Rust, there is no way to create new identifiers by joining identifiers to literals or other identifiers without using procedural macros such as <a href="https://crates.io/crates/paste"><code>paste</code></a>.
+<code>#![feature(macro_metavar_expr_concat)]</code> introduces a way to do this, using the concat metavariable expression.</p>
+<blockquote>
+<p>This feature uses the syntax from <a href="../language-features/macro-metavar-expr.html"><code>macro_metavar_expr</code></a> but is otherwise
+independent. It replaces the old unstable feature <a href="../library-features/concat-idents.html"><code>concat_idents</code></a>.</p>
+</blockquote>
+<blockquote>
+<p>This is an experimental feature; it and its syntax will require a RFC before stabilization.</p>
+</blockquote>
+<h3 id="overview"><a class="header" href="#overview">Overview</a></h3>
+<p><code>#![feature(macro_metavar_expr_concat)]</code> provides the <code>concat</code> metavariable expression for creating new identifiers:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(macro_metavar_expr_concat)]
+
+<span class="boring">fn main() {
+</span>macro_rules! create_some_structs {
+    ($name:ident) =&gt; {
+        pub struct ${ concat(First, $name) };
+        pub struct ${ concat(Second, $name) };
+        pub struct ${ concat(Third, $name) };
+    }
+}
+
+create_some_structs!(Thing);
+<span class="boring">}</span></code></pre></pre>
+<p>This macro invocation expands to:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct FirstThing;
+pub struct SecondThing;
+pub struct ThirdThing;
+<span class="boring">}</span></code></pre></pre>
+<h3 id="syntax"><a class="header" href="#syntax">Syntax</a></h3>
+<p>This feature builds upon the metavariable expression syntax <code>${ .. }</code> as specified in <a href="https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html">RFC 3086</a> (<a href="../language-features/macro-metavar-expr.html"><code>macro_metavar_expr</code></a>).
+<code>concat</code> is available like <code>${ concat(items) }</code>, where <code>items</code> is a comma separated sequence of idents and/or literals.</p>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<h4 id="create-a-function-or-method-with-a-concatenated-name"><a class="header" href="#create-a-function-or-method-with-a-concatenated-name">Create a function or method with a concatenated name</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(macro_metavar_expr_concat)]
+
+<span class="boring">fn main() {
+</span>macro_rules! make_getter {
+    ($name:ident, $field: ident, $ret:ty) =&gt; {
+        impl $name {
+            pub fn ${ concat(get_, $field) }(&amp;self) -&gt; &amp;$ret {
+                &amp;self.$field
+            }
+        }
+    }
+}
+
+pub struct Thing {
+    description: String,
+}
+
+make_getter!(Thing, description, String);
+<span class="boring">}</span></code></pre></pre>
+<p>This expands to:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Thing {
+    description: String,
+}
+
+impl Thing {
+    pub fn get_description(&amp;self) -&gt; &amp;String {
+        &amp;self.description
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h4 id="create-names-for-macro-generated-tests"><a class="header" href="#create-names-for-macro-generated-tests">Create names for macro generated tests</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(macro_metavar_expr_concat)]
+
+<span class="boring">fn main() {
+</span>macro_rules! test_math {
+    ($integer:ident) =&gt; {
+        #[test]
+        fn ${ concat(test_, $integer, _, addition) } () {
+            let a: $integer = 73;
+            let b: $integer = 42;
+            assert_eq!(a + b, 115)
+        }
+
+        #[test]
+        fn ${ concat(test_, $integer, _, subtraction) } () {
+            let a: $integer = 73;
+            let b: $integer = 42;
+            assert_eq!(a - b, 31)
+        }
+    }
+}
+
+test_math!(i32);
+test_math!(u64);
+test_math!(u128);
+<span class="boring">}</span></code></pre></pre>
+<p>Running this returns the following output:</p>
+<pre><code class="language-text">running 6 tests
+test test_i32_subtraction ... ok
+test test_i32_addition ... ok
+test test_u128_addition ... ok
+test test_u128_subtraction ... ok
+test test_u64_addition ... ok
+test test_u64_subtraction ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+</code></pre>
 
                     </main>
 
