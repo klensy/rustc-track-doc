@@ -164,6 +164,53 @@
                         <h1 id="deref_patterns"><a class="header" href="#deref_patterns"><code>deref_patterns</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/87121">#87121</a></p>
 <hr />
+<blockquote>
+<p><strong>Note</strong>: This feature is incomplete. In the future, it is meant to supersede
+<a href="./box-patterns.html"><code>box_patterns</code></a> and <a href="./string-deref-patterns.html"><code>string_deref_patterns</code></a>.</p>
+</blockquote>
+<p>This feature permits pattern matching on <a href="https://doc.rust-lang.org/std/ops/trait.DerefPure.html#implementors">smart pointers in the standard library</a> through their
+<code>Deref</code> target types, either implicitly or with explicit <code>deref!(_)</code> patterns (the syntax of which
+is currently a placeholder).</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(deref_patterns)]
+#![allow(incomplete_features)]
+
+<span class="boring">fn main() {
+</span>let mut v = vec![Box::new(Some(0))];
+
+// Implicit dereferences are inserted when a pattern can match against the
+// result of repeatedly dereferencing but can't match against a smart
+// pointer itself. This works alongside match ergonomics for references.
+if let [Some(x)] = &amp;mut v {
+    *x += 1;
+}
+
+// Explicit `deref!(_)` patterns may instead be used when finer control is
+// needed, e.g. to dereference only a single smart pointer, or to bind the
+// the result of dereferencing to a variable.
+if let deref!([deref!(opt_x @ Some(1))]) = &amp;mut v {
+    opt_x.as_mut().map(|x| *x += 1);
+}
+
+assert_eq!(v, [Box::new(Some(2))]);
+<span class="boring">}</span></code></pre></pre>
+<p>Without this feature, it may be necessary to introduce temporaries to represent dereferenced places
+when matching on nested structures:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut v = vec![Box::new(Some(0))];
+if let [b] = &amp;mut *v {
+    if let Some(x) = &amp;mut **b {
+        *x += 1;
+    }
+}
+if let [b] = &amp;mut *v {
+    if let opt_x @ Some(1) = &amp;mut **b {
+        opt_x.as_mut().map(|x| *x += 1);
+    }
+}
+assert_eq!(v, [Box::new(Some(2))]);
+<span class="boring">}</span></code></pre></pre>
 
                     </main>
 
