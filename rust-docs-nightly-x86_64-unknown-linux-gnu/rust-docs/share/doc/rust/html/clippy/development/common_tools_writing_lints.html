@@ -40,7 +40,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-aae65099.js"></script>
+        <script src="../toc-b214795e.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -317,19 +317,21 @@ paths for Clippy can be found in <a href="https://doc.rust-lang.org/nightly/nigh
 <p>To check if our type defines a method called <code>some_method</code>:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::is_type_diagnostic_item;
-use clippy_utils::return_ty;
+</span>use clippy_utils::ty::is_type_lang_item;
+use clippy_utils::{sym, return_ty};
 
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
     fn check_impl_item(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, impl_item: &amp;'tcx ImplItem&lt;'_&gt;) {
         // Check if item is a method/function
         if let ImplItemKind::Fn(ref signature, _) = impl_item.kind
             // Check the method is named `some_method`
-            &amp;&amp; impl_item.ident.name.as_str() == "some_method"
+            //
+            // Add `some_method` to `clippy_utils::sym` if it's not already there
+            &amp;&amp; impl_item.ident.name == sym::some_method
             // We can also check it has a parameter `self`
             &amp;&amp; signature.decl.implicit_self.has_implicit_self()
             // We can go further and even check if its return type is `String`
-            &amp;&amp; is_type_diagnostic_item(cx, return_ty(cx, impl_item.hir_id), sym!(string_type))
+            &amp;&amp; is_type_lang_item(cx, return_ty(cx, impl_item.hir_id), LangItem::String)
         {
             // ...
         }

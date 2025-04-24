@@ -519,7 +519,7 @@ window.search = window.search || {};
         document.head.append(script);
     }
 
-    loadScript(path_to_root + 'searchindex-c6cb85d5.js', 'search-index');
+    loadScript(path_to_root + 'searchindex-ea7cba9b.js', 'search-index');
 
     // Exported functions
     search.hasFocus = hasFocus;
