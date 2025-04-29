@@ -453,8 +453,7 @@ This affects both diagnostics and paths emitted by the <code>file!()</code> macr
 a target is passed. Currently, if a target is passed that is different
 from the host cargo will simply skip testing doctests. If this flag is
 present, cargo will continue as normal, passing the tests to doctest,
-while also passing it a <code>--target</code> option, as well as enabling
-<code>-Zunstable-features --enable-per-target-ignores</code> and passing along
+while also passing it a <code>--target</code> option, as well as passing along
 information from <code>.cargo/config.toml</code>. See the rustc issue for more information.</p>
 <pre><code class="language-sh">cargo test --target foo -Zdoctest-xcompile
 </code></pre>
@@ -1552,28 +1551,11 @@ plus any other introduced by the build script, such as include directories.</li>
 <ul>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/12633">#12633</a></li>
 </ul>
-<p>The <code>-Zgc</code> flag enables garbage-collection within cargo’s global cache within the cargo home directory.
-This includes downloaded dependencies such as compressed <code>.crate</code> files, extracted <code>src</code> directories, registry index caches, and git dependencies.
-When <code>-Zgc</code> is present, cargo will track the last time any index and dependency was used,
-and then uses those timestamps to manually or automatically delete cache entries that have not been used for a while.</p>
-<pre><code class="language-sh">cargo build -Zgc
-</code></pre>
-<h3 id="automatic-garbage-collection"><a class="header" href="#automatic-garbage-collection">Automatic garbage collection</a></h3>
-<p>Automatic deletion happens on commands that are already doing a significant amount of work,
-such as all of the build commands (<code>cargo build</code>, <code>cargo test</code>, <code>cargo check</code>, etc.), and <code>cargo fetch</code>.
-The deletion happens just after resolution and packages have been downloaded.
-Automatic deletion is only done once per day (see <code>cache.auto-clean-frequency</code> to configure).
-Automatic deletion is disabled if cargo is offline such as with <code>--offline</code> or <code>--frozen</code> to avoid deleting artifacts that may need to be used if you are offline for a long period of time.</p>
+<p>The <code>-Zgc</code> flag is used to enable certain features related to garbage-collection of cargo’s global cache within the cargo home directory.</p>
 <h4 id="automatic-gc-configuration"><a class="header" href="#automatic-gc-configuration">Automatic gc configuration</a></h4>
-<p>The automatic gc behavior can be specified via a cargo configuration setting.
+<p>The <code>-Zgc</code> flag will enable Cargo to read extra configuration options related to garbage collection.
 The settings available are:</p>
 <pre><code class="language-toml"># Example config.toml file.
-
-# This table defines settings for cargo's caches.
-[cache]
-# The maximum frequency that automatic cleaning of the cache happens.
-# Can be "never" to disable, or "always" to run on every command.
-auto-clean-frequency = "1 day"
 
 # Sub-table for defining specific settings for cleaning the global cache.
 [cache.global-clean]
@@ -1588,8 +1570,9 @@ max-git-co-age = "1 month"
 # Any git clone older than this duration will be deleted from the git cache.
 max-git-db-age = "3 months"
 </code></pre>
+<p>Note that the <a href="config.html#cacheauto-clean-frequency"><code>cache.auto-clean-frequency</code></a> option was stabilized in Rust 1.88.</p>
 <h3 id="manual-garbage-collection-with-cargo-clean"><a class="header" href="#manual-garbage-collection-with-cargo-clean">Manual garbage collection with <code>cargo clean</code></a></h3>
-<p>Manual deletion can be done with the <code>cargo clean gc</code> command.
+<p>Manual deletion can be done with the <code>cargo clean gc -Zgc</code> command.
 Deletion of cache contents can be performed by passing one of the cache options:</p>
 <ul>
 <li><code>--max-src-age=DURATION</code> — Deletes source cache files that have not been used since the given age.</li>
@@ -1605,9 +1588,9 @@ Deletion of cache contents can be performed by passing one of the cache options:
 </ul>
 <p>A DURATION is specified in the form “N seconds/minutes/days/weeks/months” where N is an integer.</p>
 <p>A SIZE is specified in the form “N <em>suffix</em>” where <em>suffix</em> is B, kB, MB, GB, kiB, MiB, or GiB, and N is an integer or floating point number. If no suffix is specified, the number is the number of bytes.</p>
-<pre><code class="language-sh">cargo clean gc
-cargo clean gc --max-download-age=1week
-cargo clean gc --max-git-size=0 --max-download-size=100MB
+<pre><code class="language-sh">cargo clean gc -Zgc
+cargo clean gc -Zgc --max-download-age=1week
+cargo clean gc -Zgc --max-git-size=0 --max-download-size=100MB
 </code></pre>
 <h2 id="open-namespaces"><a class="header" href="#open-namespaces">open-namespaces</a></h2>
 <ul>
@@ -2003,6 +1986,9 @@ about specifying custom cfgs.</p>
 <p>The 2024 edition has been stabilized in the 1.85 release.
 See the <a href="manifest.html#the-edition-field"><code>edition</code> field</a> for more information on setting the edition.
 See <a href="../commands/cargo-fix.html"><code>cargo fix --edition</code></a> and <a href="../../edition-guide/index.html">The Edition Guide</a> for more information on migrating existing projects.</p>
+<h2 id="automatic-garbage-collection"><a class="header" href="#automatic-garbage-collection">Automatic garbage collection</a></h2>
+<p>Support for automatically deleting old files was stabilized in Rust 1.88.
+More information can be found in the <a href="config.html#cache">config chapter</a>.</p>
 
                     </main>
 
