@@ -7574,7 +7574,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-04-29; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-04-30; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -7843,7 +7843,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-04-29; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-04-30; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -8266,10 +8266,10 @@ which can also be set for XLC by <code>#pragma align(power)</code> or
 recursively first field (as in "at offset 0") modify the layout of
 <em>subsequent</em> fields of the associated structs to use an alignment value
 where the floating-point type is aligned on a 4-byte boundary.</p>
-<p>The power alignment rule for structs needed for C compatibility is
-unimplementable within <code>repr(C)</code> in the compiler without building in
-handling of references to packed fields and infectious nested layouts,
-so a warning is produced in these situations.</p>
+<p>Effectively, subsequent floating-point fields act as-if they are <code>repr(packed(4))</code>. This
+would be unsound to do in a <code>repr(C)</code> type without all the restrictions that come with
+<code>repr(packed)</code>. Rust instead chooses a layout that maintains soundness of Rust code, at the
+expense of incompatibility with C code.</p>
 <h3 id="example-177"><a class="header" href="#example-177">Example</a></h3>
 <pre><code class="language-rust ignore (fails on non-powerpc64-ibm-aix)">#[repr(C)]
 pub struct Floats {
@@ -8292,10 +8292,11 @@ following alignment:</p>
 <ul>
 <li>offset_of!(Floats, a) == 0</li>
 <li>offset_of!(Floats, b) == 8</li>
-<li>offset_of!(Floats, c) == 12
-However, rust currently aligns <code>c</code> at offset_of!(Floats, c) == 16.
-Thus, a warning should be produced for the above struct in this case.</li>
+<li>offset_of!(Floats, c) == 12</li>
 </ul>
+<p>However, Rust currently aligns <code>c</code> at <code>offset_of!(Floats, c) == 16</code>.
+Using offset 12 would be unsound since <code>f64</code> generally must be 8-aligned on this target.
+Thus, a warning is produced for the above struct.</p>
 <h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
 <p>The <code>warnings</code> lint allows you to change the level of other
 lints which produce warnings.</p>
@@ -9414,7 +9415,7 @@ the future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-04-29; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-04-30; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
