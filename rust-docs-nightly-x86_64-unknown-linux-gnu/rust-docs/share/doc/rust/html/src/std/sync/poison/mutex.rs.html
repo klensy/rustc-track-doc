@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/mutex.rs`."><title>mutex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-20739d33.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (4824c2bb7 2025-05-02)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../../src-files1.88.0.js"></script><script defer src="../../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>mutex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/mutex.rs`."><title>mutex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-20739d33.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.88.0" data-rustdoc-version="1.88.0-nightly (d6a325d93 2025-05-03)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../../src-files1.88.0.js"></script><script defer src="../../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>mutex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::marker::PhantomData;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, ManuallyDrop};
@@ -253,11 +253,11 @@
 <a href=#253 id=253 data-nosnippet>253</a>/// The data protected by the mutex can be accessed through this guard via its
 <a href=#254 id=254 data-nosnippet>254</a>/// [`Deref`] and [`DerefMut`] implementations.
 <a href=#255 id=255 data-nosnippet>255</a>///
-<a href=#256 id=256 data-nosnippet>256</a>/// This structure is created by the [`map`] and [`try_map`] methods on
+<a href=#256 id=256 data-nosnippet>256</a>/// This structure is created by the [`map`] and [`filter_map`] methods on
 <a href=#257 id=257 data-nosnippet>257</a>/// [`MutexGuard`].
 <a href=#258 id=258 data-nosnippet>258</a>///
 <a href=#259 id=259 data-nosnippet>259</a>/// [`map`]: MutexGuard::map
-<a href=#260 id=260 data-nosnippet>260</a>/// [`try_map`]: MutexGuard::try_map
+<a href=#260 id=260 data-nosnippet>260</a>/// [`filter_map`]: MutexGuard::filter_map
 <a href=#261 id=261 data-nosnippet>261</a>/// [`Condvar`]: crate::sync::Condvar
 <a href=#262 id=262 data-nosnippet>262</a></span><span class="attr">#[must_use = <span class="string">"if unused the Mutex will immediately unlock"</span>]
 <a href=#263 id=263 data-nosnippet>263</a>#[must_not_suspend = <span class="string">"holding a MappedMutexGuard across suspend \
@@ -718,7 +718,7 @@
 <a href=#718 id=718 data-nosnippet>718</a>        U: <span class="question-mark">?</span>Sized,
 <a href=#719 id=719 data-nosnippet>719</a>    {
 <a href=#720 id=720 data-nosnippet>720</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
-<a href=#721 id=721 data-nosnippet>721</a>        // was created, and have been upheld throughout `map` and/or `try_map`.
+<a href=#721 id=721 data-nosnippet>721</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
 <a href=#722 id=722 data-nosnippet>722</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
 <a href=#723 id=723 data-nosnippet>723</a>        // passed to it. If the closure panics, the guard will be dropped.
 <a href=#724 id=724 data-nosnippet>724</a>        </span><span class="kw">let </span>data = NonNull::from(f(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>orig.lock.data.get() }));
@@ -739,140 +739,138 @@
 <a href=#739 id=739 data-nosnippet>739</a>    /// The `Mutex` is already locked, so this cannot fail.
 <a href=#740 id=740 data-nosnippet>740</a>    ///
 <a href=#741 id=741 data-nosnippet>741</a>    /// This is an associated function that needs to be used as
-<a href=#742 id=742 data-nosnippet>742</a>    /// `MutexGuard::try_map(...)`. A method would interfere with methods of the
+<a href=#742 id=742 data-nosnippet>742</a>    /// `MutexGuard::filter_map(...)`. A method would interfere with methods of the
 <a href=#743 id=743 data-nosnippet>743</a>    /// same name on the contents of the `MutexGuard` used through `Deref`.
-<a href=#744 id=744 data-nosnippet>744</a>    </span><span class="attr">#[doc(alias = <span class="string">"filter_map"</span>)]
-<a href=#745 id=745 data-nosnippet>745</a>    #[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#746 id=746 data-nosnippet>746</a>    </span><span class="kw">pub fn </span>try_map&lt;U, F&gt;(orig: <span class="self">Self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;, <span class="self">Self</span>&gt;
-<a href=#747 id=747 data-nosnippet>747</a>    <span class="kw">where
-<a href=#748 id=748 data-nosnippet>748</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>U&gt;,
-<a href=#749 id=749 data-nosnippet>749</a>        U: <span class="question-mark">?</span>Sized,
-<a href=#750 id=750 data-nosnippet>750</a>    {
-<a href=#751 id=751 data-nosnippet>751</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
-<a href=#752 id=752 data-nosnippet>752</a>        // was created, and have been upheld throughout `map` and/or `try_map`.
-<a href=#753 id=753 data-nosnippet>753</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
-<a href=#754 id=754 data-nosnippet>754</a>        // passed to it. If the closure panics, the guard will be dropped.
-<a href=#755 id=755 data-nosnippet>755</a>        </span><span class="kw">match </span>f(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>orig.lock.data.get() }) {
-<a href=#756 id=756 data-nosnippet>756</a>            <span class="prelude-val">Some</span>(data) =&gt; {
-<a href=#757 id=757 data-nosnippet>757</a>                <span class="kw">let </span>data = NonNull::from(data);
-<a href=#758 id=758 data-nosnippet>758</a>                <span class="kw">let </span>orig = ManuallyDrop::new(orig);
-<a href=#759 id=759 data-nosnippet>759</a>                <span class="prelude-val">Ok</span>(MappedMutexGuard {
-<a href=#760 id=760 data-nosnippet>760</a>                    data,
-<a href=#761 id=761 data-nosnippet>761</a>                    inner: <span class="kw-2">&amp;</span>orig.lock.inner,
-<a href=#762 id=762 data-nosnippet>762</a>                    poison_flag: <span class="kw-2">&amp;</span>orig.lock.poison,
-<a href=#763 id=763 data-nosnippet>763</a>                    poison: orig.poison.clone(),
-<a href=#764 id=764 data-nosnippet>764</a>                    _variance: PhantomData,
-<a href=#765 id=765 data-nosnippet>765</a>                })
-<a href=#766 id=766 data-nosnippet>766</a>            }
-<a href=#767 id=767 data-nosnippet>767</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(orig),
-<a href=#768 id=768 data-nosnippet>768</a>        }
-<a href=#769 id=769 data-nosnippet>769</a>    }
-<a href=#770 id=770 data-nosnippet>770</a>}
-<a href=#771 id=771 data-nosnippet>771</a>
-<a href=#772 id=772 data-nosnippet>772</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#773 id=773 data-nosnippet>773</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Deref <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#774 id=774 data-nosnippet>774</a>    <span class="kw">type </span>Target = T;
-<a href=#775 id=775 data-nosnippet>775</a>
-<a href=#776 id=776 data-nosnippet>776</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#777 id=777 data-nosnippet>777</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.data.as_ref() }
-<a href=#778 id=778 data-nosnippet>778</a>    }
-<a href=#779 id=779 data-nosnippet>779</a>}
-<a href=#780 id=780 data-nosnippet>780</a>
-<a href=#781 id=781 data-nosnippet>781</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#782 id=782 data-nosnippet>782</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; DerefMut <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#783 id=783 data-nosnippet>783</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#784 id=784 data-nosnippet>784</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.data.as_mut() }
-<a href=#785 id=785 data-nosnippet>785</a>    }
-<a href=#786 id=786 data-nosnippet>786</a>}
-<a href=#787 id=787 data-nosnippet>787</a>
-<a href=#788 id=788 data-nosnippet>788</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#789 id=789 data-nosnippet>789</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Drop <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#790 id=790 data-nosnippet>790</a>    <span class="attr">#[inline]
-<a href=#791 id=791 data-nosnippet>791</a>    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#792 id=792 data-nosnippet>792</a>        <span class="kw">unsafe </span>{
-<a href=#793 id=793 data-nosnippet>793</a>            <span class="self">self</span>.poison_flag.done(<span class="kw-2">&amp;</span><span class="self">self</span>.poison);
-<a href=#794 id=794 data-nosnippet>794</a>            <span class="self">self</span>.inner.unlock();
-<a href=#795 id=795 data-nosnippet>795</a>        }
-<a href=#796 id=796 data-nosnippet>796</a>    }
-<a href=#797 id=797 data-nosnippet>797</a>}
-<a href=#798 id=798 data-nosnippet>798</a>
-<a href=#799 id=799 data-nosnippet>799</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#800 id=800 data-nosnippet>800</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + fmt::Debug&gt; fmt::Debug <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#801 id=801 data-nosnippet>801</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#802 id=802 data-nosnippet>802</a>        fmt::Debug::fmt(<span class="kw-2">&amp;**</span><span class="self">self</span>, f)
-<a href=#803 id=803 data-nosnippet>803</a>    }
-<a href=#804 id=804 data-nosnippet>804</a>}
-<a href=#805 id=805 data-nosnippet>805</a>
-<a href=#806 id=806 data-nosnippet>806</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#807 id=807 data-nosnippet>807</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + fmt::Display&gt; fmt::Display <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#808 id=808 data-nosnippet>808</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#809 id=809 data-nosnippet>809</a>        (<span class="kw-2">**</span><span class="self">self</span>).fmt(f)
-<a href=#810 id=810 data-nosnippet>810</a>    }
-<a href=#811 id=811 data-nosnippet>811</a>}
-<a href=#812 id=812 data-nosnippet>812</a>
-<a href=#813 id=813 data-nosnippet>813</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span>Sized&gt; MappedMutexGuard&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#814 id=814 data-nosnippet>814</a>    <span class="doccomment">/// Makes a [`MappedMutexGuard`] for a component of the borrowed data, e.g.
-<a href=#815 id=815 data-nosnippet>815</a>    /// an enum variant.
-<a href=#816 id=816 data-nosnippet>816</a>    ///
-<a href=#817 id=817 data-nosnippet>817</a>    /// The `Mutex` is already locked, so this cannot fail.
-<a href=#818 id=818 data-nosnippet>818</a>    ///
-<a href=#819 id=819 data-nosnippet>819</a>    /// This is an associated function that needs to be used as
-<a href=#820 id=820 data-nosnippet>820</a>    /// `MappedMutexGuard::map(...)`. A method would interfere with methods of the
-<a href=#821 id=821 data-nosnippet>821</a>    /// same name on the contents of the `MutexGuard` used through `Deref`.
-<a href=#822 id=822 data-nosnippet>822</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#823 id=823 data-nosnippet>823</a>    </span><span class="kw">pub fn </span>map&lt;U, F&gt;(<span class="kw-2">mut </span>orig: <span class="self">Self</span>, f: F) -&gt; MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;
-<a href=#824 id=824 data-nosnippet>824</a>    <span class="kw">where
-<a href=#825 id=825 data-nosnippet>825</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>U,
-<a href=#826 id=826 data-nosnippet>826</a>        U: <span class="question-mark">?</span>Sized,
-<a href=#827 id=827 data-nosnippet>827</a>    {
-<a href=#828 id=828 data-nosnippet>828</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
-<a href=#829 id=829 data-nosnippet>829</a>        // was created, and have been upheld throughout `map` and/or `try_map`.
-<a href=#830 id=830 data-nosnippet>830</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
-<a href=#831 id=831 data-nosnippet>831</a>        // passed to it. If the closure panics, the guard will be dropped.
-<a href=#832 id=832 data-nosnippet>832</a>        </span><span class="kw">let </span>data = NonNull::from(f(<span class="kw">unsafe </span>{ orig.data.as_mut() }));
-<a href=#833 id=833 data-nosnippet>833</a>        <span class="kw">let </span>orig = ManuallyDrop::new(orig);
-<a href=#834 id=834 data-nosnippet>834</a>        MappedMutexGuard {
-<a href=#835 id=835 data-nosnippet>835</a>            data,
-<a href=#836 id=836 data-nosnippet>836</a>            inner: orig.inner,
-<a href=#837 id=837 data-nosnippet>837</a>            poison_flag: orig.poison_flag,
-<a href=#838 id=838 data-nosnippet>838</a>            poison: orig.poison.clone(),
-<a href=#839 id=839 data-nosnippet>839</a>            _variance: PhantomData,
-<a href=#840 id=840 data-nosnippet>840</a>        }
-<a href=#841 id=841 data-nosnippet>841</a>    }
-<a href=#842 id=842 data-nosnippet>842</a>
-<a href=#843 id=843 data-nosnippet>843</a>    <span class="doccomment">/// Makes a [`MappedMutexGuard`] for a component of the borrowed data. The
-<a href=#844 id=844 data-nosnippet>844</a>    /// original guard is returned as an `Err(...)` if the closure returns
-<a href=#845 id=845 data-nosnippet>845</a>    /// `None`.
-<a href=#846 id=846 data-nosnippet>846</a>    ///
-<a href=#847 id=847 data-nosnippet>847</a>    /// The `Mutex` is already locked, so this cannot fail.
-<a href=#848 id=848 data-nosnippet>848</a>    ///
-<a href=#849 id=849 data-nosnippet>849</a>    /// This is an associated function that needs to be used as
-<a href=#850 id=850 data-nosnippet>850</a>    /// `MappedMutexGuard::try_map(...)`. A method would interfere with methods of the
-<a href=#851 id=851 data-nosnippet>851</a>    /// same name on the contents of the `MutexGuard` used through `Deref`.
-<a href=#852 id=852 data-nosnippet>852</a>    </span><span class="attr">#[doc(alias = <span class="string">"filter_map"</span>)]
-<a href=#853 id=853 data-nosnippet>853</a>    #[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
-<a href=#854 id=854 data-nosnippet>854</a>    </span><span class="kw">pub fn </span>try_map&lt;U, F&gt;(<span class="kw-2">mut </span>orig: <span class="self">Self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;, <span class="self">Self</span>&gt;
-<a href=#855 id=855 data-nosnippet>855</a>    <span class="kw">where
-<a href=#856 id=856 data-nosnippet>856</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>U&gt;,
-<a href=#857 id=857 data-nosnippet>857</a>        U: <span class="question-mark">?</span>Sized,
-<a href=#858 id=858 data-nosnippet>858</a>    {
-<a href=#859 id=859 data-nosnippet>859</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
-<a href=#860 id=860 data-nosnippet>860</a>        // was created, and have been upheld throughout `map` and/or `try_map`.
-<a href=#861 id=861 data-nosnippet>861</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
-<a href=#862 id=862 data-nosnippet>862</a>        // passed to it. If the closure panics, the guard will be dropped.
-<a href=#863 id=863 data-nosnippet>863</a>        </span><span class="kw">match </span>f(<span class="kw">unsafe </span>{ orig.data.as_mut() }) {
-<a href=#864 id=864 data-nosnippet>864</a>            <span class="prelude-val">Some</span>(data) =&gt; {
-<a href=#865 id=865 data-nosnippet>865</a>                <span class="kw">let </span>data = NonNull::from(data);
-<a href=#866 id=866 data-nosnippet>866</a>                <span class="kw">let </span>orig = ManuallyDrop::new(orig);
-<a href=#867 id=867 data-nosnippet>867</a>                <span class="prelude-val">Ok</span>(MappedMutexGuard {
-<a href=#868 id=868 data-nosnippet>868</a>                    data,
-<a href=#869 id=869 data-nosnippet>869</a>                    inner: orig.inner,
-<a href=#870 id=870 data-nosnippet>870</a>                    poison_flag: orig.poison_flag,
-<a href=#871 id=871 data-nosnippet>871</a>                    poison: orig.poison.clone(),
-<a href=#872 id=872 data-nosnippet>872</a>                    _variance: PhantomData,
-<a href=#873 id=873 data-nosnippet>873</a>                })
-<a href=#874 id=874 data-nosnippet>874</a>            }
-<a href=#875 id=875 data-nosnippet>875</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(orig),
-<a href=#876 id=876 data-nosnippet>876</a>        }
-<a href=#877 id=877 data-nosnippet>877</a>    }
-<a href=#878 id=878 data-nosnippet>878</a>}</code></pre></div></section></main></body></html>
+<a href=#744 id=744 data-nosnippet>744</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#745 id=745 data-nosnippet>745</a>    </span><span class="kw">pub fn </span>filter_map&lt;U, F&gt;(orig: <span class="self">Self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;, <span class="self">Self</span>&gt;
+<a href=#746 id=746 data-nosnippet>746</a>    <span class="kw">where
+<a href=#747 id=747 data-nosnippet>747</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>U&gt;,
+<a href=#748 id=748 data-nosnippet>748</a>        U: <span class="question-mark">?</span>Sized,
+<a href=#749 id=749 data-nosnippet>749</a>    {
+<a href=#750 id=750 data-nosnippet>750</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
+<a href=#751 id=751 data-nosnippet>751</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
+<a href=#752 id=752 data-nosnippet>752</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
+<a href=#753 id=753 data-nosnippet>753</a>        // passed to it. If the closure panics, the guard will be dropped.
+<a href=#754 id=754 data-nosnippet>754</a>        </span><span class="kw">match </span>f(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>orig.lock.data.get() }) {
+<a href=#755 id=755 data-nosnippet>755</a>            <span class="prelude-val">Some</span>(data) =&gt; {
+<a href=#756 id=756 data-nosnippet>756</a>                <span class="kw">let </span>data = NonNull::from(data);
+<a href=#757 id=757 data-nosnippet>757</a>                <span class="kw">let </span>orig = ManuallyDrop::new(orig);
+<a href=#758 id=758 data-nosnippet>758</a>                <span class="prelude-val">Ok</span>(MappedMutexGuard {
+<a href=#759 id=759 data-nosnippet>759</a>                    data,
+<a href=#760 id=760 data-nosnippet>760</a>                    inner: <span class="kw-2">&amp;</span>orig.lock.inner,
+<a href=#761 id=761 data-nosnippet>761</a>                    poison_flag: <span class="kw-2">&amp;</span>orig.lock.poison,
+<a href=#762 id=762 data-nosnippet>762</a>                    poison: orig.poison.clone(),
+<a href=#763 id=763 data-nosnippet>763</a>                    _variance: PhantomData,
+<a href=#764 id=764 data-nosnippet>764</a>                })
+<a href=#765 id=765 data-nosnippet>765</a>            }
+<a href=#766 id=766 data-nosnippet>766</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(orig),
+<a href=#767 id=767 data-nosnippet>767</a>        }
+<a href=#768 id=768 data-nosnippet>768</a>    }
+<a href=#769 id=769 data-nosnippet>769</a>}
+<a href=#770 id=770 data-nosnippet>770</a>
+<a href=#771 id=771 data-nosnippet>771</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#772 id=772 data-nosnippet>772</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Deref <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#773 id=773 data-nosnippet>773</a>    <span class="kw">type </span>Target = T;
+<a href=#774 id=774 data-nosnippet>774</a>
+<a href=#775 id=775 data-nosnippet>775</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#776 id=776 data-nosnippet>776</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.data.as_ref() }
+<a href=#777 id=777 data-nosnippet>777</a>    }
+<a href=#778 id=778 data-nosnippet>778</a>}
+<a href=#779 id=779 data-nosnippet>779</a>
+<a href=#780 id=780 data-nosnippet>780</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#781 id=781 data-nosnippet>781</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; DerefMut <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#782 id=782 data-nosnippet>782</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.data.as_mut() }
+<a href=#784 id=784 data-nosnippet>784</a>    }
+<a href=#785 id=785 data-nosnippet>785</a>}
+<a href=#786 id=786 data-nosnippet>786</a>
+<a href=#787 id=787 data-nosnippet>787</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#788 id=788 data-nosnippet>788</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Drop <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#789 id=789 data-nosnippet>789</a>    <span class="attr">#[inline]
+<a href=#790 id=790 data-nosnippet>790</a>    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#791 id=791 data-nosnippet>791</a>        <span class="kw">unsafe </span>{
+<a href=#792 id=792 data-nosnippet>792</a>            <span class="self">self</span>.poison_flag.done(<span class="kw-2">&amp;</span><span class="self">self</span>.poison);
+<a href=#793 id=793 data-nosnippet>793</a>            <span class="self">self</span>.inner.unlock();
+<a href=#794 id=794 data-nosnippet>794</a>        }
+<a href=#795 id=795 data-nosnippet>795</a>    }
+<a href=#796 id=796 data-nosnippet>796</a>}
+<a href=#797 id=797 data-nosnippet>797</a>
+<a href=#798 id=798 data-nosnippet>798</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#799 id=799 data-nosnippet>799</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + fmt::Debug&gt; fmt::Debug <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#800 id=800 data-nosnippet>800</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#801 id=801 data-nosnippet>801</a>        fmt::Debug::fmt(<span class="kw-2">&amp;**</span><span class="self">self</span>, f)
+<a href=#802 id=802 data-nosnippet>802</a>    }
+<a href=#803 id=803 data-nosnippet>803</a>}
+<a href=#804 id=804 data-nosnippet>804</a>
+<a href=#805 id=805 data-nosnippet>805</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#806 id=806 data-nosnippet>806</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + fmt::Display&gt; fmt::Display <span class="kw">for </span>MappedMutexGuard&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#807 id=807 data-nosnippet>807</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#808 id=808 data-nosnippet>808</a>        (<span class="kw-2">**</span><span class="self">self</span>).fmt(f)
+<a href=#809 id=809 data-nosnippet>809</a>    }
+<a href=#810 id=810 data-nosnippet>810</a>}
+<a href=#811 id=811 data-nosnippet>811</a>
+<a href=#812 id=812 data-nosnippet>812</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span>Sized&gt; MappedMutexGuard&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#813 id=813 data-nosnippet>813</a>    <span class="doccomment">/// Makes a [`MappedMutexGuard`] for a component of the borrowed data, e.g.
+<a href=#814 id=814 data-nosnippet>814</a>    /// an enum variant.
+<a href=#815 id=815 data-nosnippet>815</a>    ///
+<a href=#816 id=816 data-nosnippet>816</a>    /// The `Mutex` is already locked, so this cannot fail.
+<a href=#817 id=817 data-nosnippet>817</a>    ///
+<a href=#818 id=818 data-nosnippet>818</a>    /// This is an associated function that needs to be used as
+<a href=#819 id=819 data-nosnippet>819</a>    /// `MappedMutexGuard::map(...)`. A method would interfere with methods of the
+<a href=#820 id=820 data-nosnippet>820</a>    /// same name on the contents of the `MutexGuard` used through `Deref`.
+<a href=#821 id=821 data-nosnippet>821</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#822 id=822 data-nosnippet>822</a>    </span><span class="kw">pub fn </span>map&lt;U, F&gt;(<span class="kw-2">mut </span>orig: <span class="self">Self</span>, f: F) -&gt; MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;
+<a href=#823 id=823 data-nosnippet>823</a>    <span class="kw">where
+<a href=#824 id=824 data-nosnippet>824</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>U,
+<a href=#825 id=825 data-nosnippet>825</a>        U: <span class="question-mark">?</span>Sized,
+<a href=#826 id=826 data-nosnippet>826</a>    {
+<a href=#827 id=827 data-nosnippet>827</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
+<a href=#828 id=828 data-nosnippet>828</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
+<a href=#829 id=829 data-nosnippet>829</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
+<a href=#830 id=830 data-nosnippet>830</a>        // passed to it. If the closure panics, the guard will be dropped.
+<a href=#831 id=831 data-nosnippet>831</a>        </span><span class="kw">let </span>data = NonNull::from(f(<span class="kw">unsafe </span>{ orig.data.as_mut() }));
+<a href=#832 id=832 data-nosnippet>832</a>        <span class="kw">let </span>orig = ManuallyDrop::new(orig);
+<a href=#833 id=833 data-nosnippet>833</a>        MappedMutexGuard {
+<a href=#834 id=834 data-nosnippet>834</a>            data,
+<a href=#835 id=835 data-nosnippet>835</a>            inner: orig.inner,
+<a href=#836 id=836 data-nosnippet>836</a>            poison_flag: orig.poison_flag,
+<a href=#837 id=837 data-nosnippet>837</a>            poison: orig.poison.clone(),
+<a href=#838 id=838 data-nosnippet>838</a>            _variance: PhantomData,
+<a href=#839 id=839 data-nosnippet>839</a>        }
+<a href=#840 id=840 data-nosnippet>840</a>    }
+<a href=#841 id=841 data-nosnippet>841</a>
+<a href=#842 id=842 data-nosnippet>842</a>    <span class="doccomment">/// Makes a [`MappedMutexGuard`] for a component of the borrowed data. The
+<a href=#843 id=843 data-nosnippet>843</a>    /// original guard is returned as an `Err(...)` if the closure returns
+<a href=#844 id=844 data-nosnippet>844</a>    /// `None`.
+<a href=#845 id=845 data-nosnippet>845</a>    ///
+<a href=#846 id=846 data-nosnippet>846</a>    /// The `Mutex` is already locked, so this cannot fail.
+<a href=#847 id=847 data-nosnippet>847</a>    ///
+<a href=#848 id=848 data-nosnippet>848</a>    /// This is an associated function that needs to be used as
+<a href=#849 id=849 data-nosnippet>849</a>    /// `MappedMutexGuard::filter_map(...)`. A method would interfere with methods of the
+<a href=#850 id=850 data-nosnippet>850</a>    /// same name on the contents of the `MutexGuard` used through `Deref`.
+<a href=#851 id=851 data-nosnippet>851</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
+<a href=#852 id=852 data-nosnippet>852</a>    </span><span class="kw">pub fn </span>filter_map&lt;U, F&gt;(<span class="kw-2">mut </span>orig: <span class="self">Self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;MappedMutexGuard&lt;<span class="lifetime">'a</span>, U&gt;, <span class="self">Self</span>&gt;
+<a href=#853 id=853 data-nosnippet>853</a>    <span class="kw">where
+<a href=#854 id=854 data-nosnippet>854</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>U&gt;,
+<a href=#855 id=855 data-nosnippet>855</a>        U: <span class="question-mark">?</span>Sized,
+<a href=#856 id=856 data-nosnippet>856</a>    {
+<a href=#857 id=857 data-nosnippet>857</a>        <span class="comment">// SAFETY: the conditions of `MutexGuard::new` were satisfied when the original guard
+<a href=#858 id=858 data-nosnippet>858</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
+<a href=#859 id=859 data-nosnippet>859</a>        // The signature of the closure guarantees that it will not "leak" the lifetime of the reference
+<a href=#860 id=860 data-nosnippet>860</a>        // passed to it. If the closure panics, the guard will be dropped.
+<a href=#861 id=861 data-nosnippet>861</a>        </span><span class="kw">match </span>f(<span class="kw">unsafe </span>{ orig.data.as_mut() }) {
+<a href=#862 id=862 data-nosnippet>862</a>            <span class="prelude-val">Some</span>(data) =&gt; {
+<a href=#863 id=863 data-nosnippet>863</a>                <span class="kw">let </span>data = NonNull::from(data);
+<a href=#864 id=864 data-nosnippet>864</a>                <span class="kw">let </span>orig = ManuallyDrop::new(orig);
+<a href=#865 id=865 data-nosnippet>865</a>                <span class="prelude-val">Ok</span>(MappedMutexGuard {
+<a href=#866 id=866 data-nosnippet>866</a>                    data,
+<a href=#867 id=867 data-nosnippet>867</a>                    inner: orig.inner,
+<a href=#868 id=868 data-nosnippet>868</a>                    poison_flag: orig.poison_flag,
+<a href=#869 id=869 data-nosnippet>869</a>                    poison: orig.poison.clone(),
+<a href=#870 id=870 data-nosnippet>870</a>                    _variance: PhantomData,
+<a href=#871 id=871 data-nosnippet>871</a>                })
+<a href=#872 id=872 data-nosnippet>872</a>            }
+<a href=#873 id=873 data-nosnippet>873</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(orig),
+<a href=#874 id=874 data-nosnippet>874</a>        }
+<a href=#875 id=875 data-nosnippet>875</a>    }
+<a href=#876 id=876 data-nosnippet>876</a>}</code></pre></div></section></main></body></html>
