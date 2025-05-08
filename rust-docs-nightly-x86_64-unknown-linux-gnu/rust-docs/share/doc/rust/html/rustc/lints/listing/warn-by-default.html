@@ -927,23 +927,23 @@ higher-level like one of the above.</li>
 to dereferences of raw pointers.</p>
 <h3 id="example-16"><a class="header" href="#example-16">Example</a></h3>
 <pre><code class="language-rust">unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    &amp;raw mut (*ptr)[..16]
-    //             ^^^^^^ this calls `IndexMut::index_mut(&amp;mut ..., ..16)`,
-    //                    implicitly creating a reference
+    unsafe { &amp;raw mut (*ptr)[..16] }
+    //                      ^^^^^^ this calls `IndexMut::index_mut(&amp;mut ..., ..16)`,
+    //                             implicitly creating a reference
 }</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: implicit autoref creates a reference to the dereference of a raw pointer
- --&gt; lint_example.rs:3:14
+ --&gt; lint_example.rs:3:23
   |
-3 |     &amp;raw mut (*ptr)[..16]
-  |              ^^^^^^^^^^^^
+3 |     unsafe { &amp;raw mut (*ptr)[..16] }
+  |                       ^^^^^^^^^^^^
   |
   = note: creating a reference requires the pointer target to be valid and imposes aliasing requirements
   = note: `#[warn(dangerous_implicit_autorefs)]` on by default
 help: try using a raw pointer method instead; or if this reference is intentional, make it explicit
   |
-3 |     &amp;raw mut (&amp;mut (*ptr))[..16]
-  |              +++++       +
+3 |     unsafe { &amp;raw mut (&amp;mut (*ptr))[..16] }
+  |                       +++++       +
 
 </code></pre>
 <h3 id="explanation-16"><a class="header" href="#explanation-16">Explanation</a></h3>
@@ -953,13 +953,13 @@ to take a reference to the dereference of a raw pointer implicitly, which inflic
 the usual reference requirements.</p>
 <p>If you are sure that you can soundly take a reference, then you can take it explicitly:</p>
 <pre><code class="language-rust">unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    &amp;raw mut (&amp;mut *ptr)[..16]
+    unsafe { &amp;raw mut (&amp;mut *ptr)[..16] }
 }</code></pre>
 <p>Otherwise try to find an alternative way to achive your goals using only raw pointers:</p>
-<pre><code class="language-rust">use std::slice;
+<pre><code class="language-rust">use std::ptr;
 
-unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    slice::from_raw_parts_mut(ptr.cast(), 16)
+fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
+    ptr::slice_from_raw_parts_mut(ptr.cast(), 16)
 }</code></pre>
 <h2 id="dangling-pointers-from-temporaries"><a class="header" href="#dangling-pointers-from-temporaries">dangling-pointers-from-temporaries</a></h2>
 <p>The <code>dangling_pointers_from_temporaries</code> lint detects getting a pointer to data
@@ -3514,7 +3514,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-05-06; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-05-07; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -3783,7 +3783,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-05-06; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-05-07; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 

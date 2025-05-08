@@ -523,6 +523,6 @@ window.search = window.search || {};
         document.head.append(script);
     }
 
-    loadScript(path_to_root + 'searchindex-ba5925e8.js', 'search-index');
+    loadScript(path_to_root + 'searchindex-23ec6a17.js', 'search-index');
 
 })(window.search);

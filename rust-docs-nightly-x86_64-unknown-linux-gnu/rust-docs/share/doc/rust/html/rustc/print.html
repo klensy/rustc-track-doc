@@ -4987,23 +4987,23 @@ higher-level like one of the above.</li>
 to dereferences of raw pointers.</p>
 <h3 id="example-74"><a class="header" href="#example-74">Example</a></h3>
 <pre><code class="language-rust">unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    &amp;raw mut (*ptr)[..16]
-    //             ^^^^^^ this calls `IndexMut::index_mut(&amp;mut ..., ..16)`,
-    //                    implicitly creating a reference
+    unsafe { &amp;raw mut (*ptr)[..16] }
+    //                      ^^^^^^ this calls `IndexMut::index_mut(&amp;mut ..., ..16)`,
+    //                             implicitly creating a reference
 }</code></pre>
 <p>This will produce:</p>
 <pre><code class="language-text">warning: implicit autoref creates a reference to the dereference of a raw pointer
- --&gt; lint_example.rs:3:14
+ --&gt; lint_example.rs:3:23
   |
-3 |     &amp;raw mut (*ptr)[..16]
-  |              ^^^^^^^^^^^^
+3 |     unsafe { &amp;raw mut (*ptr)[..16] }
+  |                       ^^^^^^^^^^^^
   |
   = note: creating a reference requires the pointer target to be valid and imposes aliasing requirements
   = note: `#[warn(dangerous_implicit_autorefs)]` on by default
 help: try using a raw pointer method instead; or if this reference is intentional, make it explicit
   |
-3 |     &amp;raw mut (&amp;mut (*ptr))[..16]
-  |              +++++       +
+3 |     unsafe { &amp;raw mut (&amp;mut (*ptr))[..16] }
+  |                       +++++       +
 
 </code></pre>
 <h3 id="explanation-76"><a class="header" href="#explanation-76">Explanation</a></h3>
@@ -5013,13 +5013,13 @@ to take a reference to the dereference of a raw pointer implicitly, which inflic
 the usual reference requirements.</p>
 <p>If you are sure that you can soundly take a reference, then you can take it explicitly:</p>
 <pre><code class="language-rust">unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    &amp;raw mut (&amp;mut *ptr)[..16]
+    unsafe { &amp;raw mut (&amp;mut *ptr)[..16] }
 }</code></pre>
 <p>Otherwise try to find an alternative way to achive your goals using only raw pointers:</p>
-<pre><code class="language-rust">use std::slice;
+<pre><code class="language-rust">use std::ptr;
 
-unsafe fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
-    slice::from_raw_parts_mut(ptr.cast(), 16)
+fn fun(ptr: *mut [u8]) -&gt; *mut [u8] {
+    ptr::slice_from_raw_parts_mut(ptr.cast(), 16)
 }</code></pre>
 <h2 id="dangling-pointers-from-temporaries"><a class="header" href="#dangling-pointers-from-temporaries">dangling-pointers-from-temporaries</a></h2>
 <p>The <code>dangling_pointers_from_temporaries</code> lint detects getting a pointer to data
@@ -7574,7 +7574,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-05-06; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-05-07; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -7843,7 +7843,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-05-06; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-05-07; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -9370,39 +9370,12 @@ according to the visibility rules. This is a <a href="lints/listing/../index.htm
 lint to transition this to a hard error in the future. See <a href="https://github.com/rust-lang/rust/issues/127909">issue
 #127909</a> for more details.</p>
 <h2 id="soft-unstable"><a class="header" href="#soft-unstable">soft-unstable</a></h2>
-<p>The <code>soft_unstable</code> lint detects unstable features that were
-unintentionally allowed on stable.</p>
-<h3 id="example-210"><a class="header" href="#example-210">Example</a></h3>
-<pre><code class="language-rust compile_fail">#[cfg(test)]
-extern crate test;
-
-#[bench]
-fn name(b: &amp;mut test::Bencher) {
-    b.iter(|| 123)
-}</code></pre>
-<p>This will produce:</p>
-<pre><code class="language-text">error: use of unstable library feature `test`: `bench` is a part of custom test frameworks which are unstable
- --&gt; lint_example.rs:5:3
-  |
-5 | #[bench]
-  |   ^^^^^
-  |
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: for more information, see issue #64266 &lt;https://github.com/rust-lang/rust/issues/64266&gt;
-  = note: `#[deny(soft_unstable)]` on by default
-
-</code></pre>
-<h3 id="explanation-213"><a class="header" href="#explanation-213">Explanation</a></h3>
-<p>The <a href="https://doc.rust-lang.org/nightly/unstable-book/library-features/test.html"><code>bench</code> attribute</a> was accidentally allowed to be specified on
-the <a href="https://doc.rust-lang.org/book/appendix-07-nightly-rust.html">stable release channel</a>. Turning this to a hard error would have
-broken some projects. This lint allows those projects to continue to
-build correctly when <a href="https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints"><code>--cap-lints</code></a> is used, but otherwise signal an
-error that <code>#[bench]</code> should not be used on the stable channel. This
-is a <a href="lints/listing/../index.html#future-incompatible-lints">future-incompatible</a> lint to transition this to a hard error in
-the future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #64266</a> for more details.</p>
+<p>The <code>soft_unstable</code> lint detects unstable features that were unintentionally allowed on
+stable. This is a <a href="lints/listing/../index.html#future-incompatible-lints">future-incompatible</a> lint to transition this to a hard error in the
+future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #64266</a> for more details.</p>
 <h2 id="test-unstable-lint"><a class="header" href="#test-unstable-lint">test-unstable-lint</a></h2>
 <p>The <code>test_unstable_lint</code> lint tests unstable lints and is perma-unstable.</p>
-<h3 id="example-211"><a class="header" href="#example-211">Example</a></h3>
+<h3 id="example-210"><a class="header" href="#example-210">Example</a></h3>
 <pre><code class="language-rust">// This lint is intentionally used to test the compiler's behavior
 // when an unstable lint is enabled without the corresponding feature gate.
 #![allow(test_unstable_lint)]</code></pre>
@@ -9415,11 +9388,11 @@ the future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-05-06; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-05-07; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
-<h3 id="explanation-214"><a class="header" href="#explanation-214">Explanation</a></h3>
+<h3 id="explanation-213"><a class="header" href="#explanation-213">Explanation</a></h3>
 <p>In order to test the behavior of unstable lints, a permanently-unstable
 lint is required. This lint can be used to trigger warnings and errors
 from the compiler related to unstable lints.</p>
@@ -9427,7 +9400,7 @@ from the compiler related to unstable lints.</p>
 <p>The <code>text_direction_codepoint_in_comment</code> lint detects Unicode codepoints in comments that
 change the visual representation of text on screen in a way that does not correspond to
 their on memory representation.</p>
-<h3 id="example-212"><a class="header" href="#example-212">Example</a></h3>
+<h3 id="example-211"><a class="header" href="#example-211">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(text_direction_codepoint_in_comment)]
 fn main() {
     println!("{:?}"); // '‮');
@@ -9451,7 +9424,7 @@ note: the lint level is defined here
   = help: if their presence wasn't intentional, you can remove them
 
 </code></pre>
-<h3 id="explanation-215"><a class="header" href="#explanation-215">Explanation</a></h3>
+<h3 id="explanation-214"><a class="header" href="#explanation-214">Explanation</a></h3>
 <p>Unicode allows changing the visual flow of text on screen in order to support scripts that
 are written right-to-left, but a specially crafted comment can make code that will be
 compiled appear to be part of a comment, depending on the software used to read the code.
@@ -9461,7 +9434,7 @@ their use.</p>
 <p>The <code>text_direction_codepoint_in_literal</code> lint detects Unicode codepoints that change the
 visual representation of text on screen in a way that does not correspond to their on
 memory representation.</p>
-<h3 id="explanation-216"><a class="header" href="#explanation-216">Explanation</a></h3>
+<h3 id="explanation-215"><a class="header" href="#explanation-215">Explanation</a></h3>
 <p>The unicode characters <code>\u{202A}</code>, <code>\u{202B}</code>, <code>\u{202D}</code>, <code>\u{202E}</code>, <code>\u{2066}</code>,
 <code>\u{2067}</code>, <code>\u{2068}</code>, <code>\u{202C}</code> and <code>\u{2069}</code> make the flow of text on screen change
 its direction on software that supports these codepoints. This makes the text "abc" display
@@ -9469,7 +9442,7 @@ as "cba" on screen. By leveraging software that supports these, people can write
 crafted literals that make the surrounding code seem like it's performing one action, when
 in reality it is performing another. Because of this, we proactively lint against their
 presence to avoid surprises.</p>
-<h3 id="example-213"><a class="header" href="#example-213">Example</a></h3>
+<h3 id="example-212"><a class="header" href="#example-212">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![deny(text_direction_codepoint_in_literal)]
 fn main() {
     println!("{:?}", '‮');
@@ -9501,7 +9474,7 @@ help: if you want to keep them but make them visible in your source code, you ca
 <h2 id="unconditional-panic"><a class="header" href="#unconditional-panic">unconditional-panic</a></h2>
 <p>The <code>unconditional_panic</code> lint detects an operation that will cause a
 panic at runtime.</p>
-<h3 id="example-214"><a class="header" href="#example-214">Example</a></h3>
+<h3 id="example-213"><a class="header" href="#example-213">Example</a></h3>
 <pre><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>let x = 1 / 0;</code></pre>
 <p>This will produce:</p>
@@ -9514,7 +9487,7 @@ panic at runtime.</p>
   = note: `#[deny(unconditional_panic)]` on by default
 
 </code></pre>
-<h3 id="explanation-217"><a class="header" href="#explanation-217">Explanation</a></h3>
+<h3 id="explanation-216"><a class="header" href="#explanation-216">Explanation</a></h3>
 <p>This lint detects code that is very likely incorrect because it will
 always panic, such as division by zero and out-of-bounds array
 accesses. Consider adjusting your code if this is a bug, or using the
@@ -9522,7 +9495,7 @@ accesses. Consider adjusting your code if this is a bug, or using the
 <h2 id="undropped-manually-drops"><a class="header" href="#undropped-manually-drops">undropped-manually-drops</a></h2>
 <p>The <code>undropped_manually_drops</code> lint check for calls to <code>std::mem::drop</code> with
 a value of <code>std::mem::ManuallyDrop</code> which doesn't drop.</p>
-<h3 id="example-215"><a class="header" href="#example-215">Example</a></h3>
+<h3 id="example-214"><a class="header" href="#example-214">Example</a></h3>
 <pre><code class="language-rust compile_fail">struct S;
 drop(std::mem::ManuallyDrop::new(S));</code></pre>
 <p>This will produce:</p>
@@ -9541,13 +9514,13 @@ help: use `std::mem::ManuallyDrop::into_inner` to get the inner value
   |      +++++++++++++++++++++++++++++++++++                              +
 
 </code></pre>
-<h3 id="explanation-218"><a class="header" href="#explanation-218">Explanation</a></h3>
+<h3 id="explanation-217"><a class="header" href="#explanation-217">Explanation</a></h3>
 <p><code>ManuallyDrop</code> does not drop it's inner value so calling <code>std::mem::drop</code> will
 not drop the inner value of the <code>ManuallyDrop</code> either.</p>
 <h2 id="unknown-crate-types"><a class="header" href="#unknown-crate-types">unknown-crate-types</a></h2>
 <p>The <code>unknown_crate_types</code> lint detects an unknown crate type found in
 a <a href="https://doc.rust-lang.org/reference/linkage.html"><code>crate_type</code> attribute</a>.</p>
-<h3 id="example-216"><a class="header" href="#example-216">Example</a></h3>
+<h3 id="example-215"><a class="header" href="#example-215">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![crate_type="lol"]
 fn main() {}</code></pre>
 <p>This will produce:</p>
@@ -9560,12 +9533,12 @@ fn main() {}</code></pre>
   = note: `#[deny(unknown_crate_types)]` on by default
 
 </code></pre>
-<h3 id="explanation-219"><a class="header" href="#explanation-219">Explanation</a></h3>
+<h3 id="explanation-218"><a class="header" href="#explanation-218">Explanation</a></h3>
 <p>An unknown value give to the <code>crate_type</code> attribute is almost
 certainly a mistake.</p>
 <h2 id="useless-deprecated"><a class="header" href="#useless-deprecated">useless-deprecated</a></h2>
 <p>The <code>useless_deprecated</code> lint detects deprecation attributes with no effect.</p>
-<h3 id="example-217"><a class="header" href="#example-217">Example</a></h3>
+<h3 id="example-216"><a class="header" href="#example-216">Example</a></h3>
 <pre><code class="language-rust compile_fail">struct X;
 
 #[deprecated = "message"]
@@ -9584,7 +9557,7 @@ impl Default for X {
   = note: `#[deny(useless_deprecated)]` on by default
 
 </code></pre>
-<h3 id="explanation-220"><a class="header" href="#explanation-220">Explanation</a></h3>
+<h3 id="explanation-219"><a class="header" href="#explanation-219">Explanation</a></h3>
 <p>Deprecation attributes have no effect on trait implementations.</p>
 <script>
 document.addEventListener("DOMContentLoaded", (event) => {
