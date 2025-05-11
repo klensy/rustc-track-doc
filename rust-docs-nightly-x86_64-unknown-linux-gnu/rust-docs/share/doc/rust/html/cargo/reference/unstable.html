@@ -256,6 +256,7 @@ build-std = ["core", "alloc"]
 <li><a href="#checksum-freshness">checksum-freshness</a> — When passed, the decision as to whether a crate needs to be rebuilt is made using file checksums instead of the file mtime.</li>
 <li><a href="#panic-abort-tests">panic-abort-tests</a> — Allows running tests with the “abort” panic strategy.</li>
 <li><a href="#host-config">host-config</a> — Allows setting <code>[target]</code>-like configuration settings for host build targets.</li>
+<li><a href="#no-embed-metadata">no-embed-metadata</a> — Passes <code>-Zembed-metadata=no</code> to the compiler, which avoid embedding metadata into rlib and dylib artifacts, to save disk space.</li>
 <li><a href="#target-applies-to-host">target-applies-to-host</a> — Alters whether certain flags will be passed to host build targets.</li>
 <li><a href="#gc">gc</a> — Global cache garbage collection.</li>
 <li><a href="#open-namespaces">open-namespaces</a> — Allow multiple packages to participate in the same API namespace</li>
@@ -431,7 +432,7 @@ build-dir = "out"
 </ul>
 <p>The path to where internal files used as part of the build are placed.</p>
 <p>This option supports path templating.</p>
-<p>Avaiable template variables:</p>
+<p>Available template variables:</p>
 <ul>
 <li><code>{workspace-root}</code> resolves to root of the current workspace.</li>
 <li><code>{cargo-cache-home}</code> resolves to <code>CARGO_HOME</code></li>
@@ -1742,11 +1743,11 @@ nightly channel, without requiring additional <code>-Z</code> options.</p>
 <ul>
 <li>
 <p>bash:
-Add <code>source &lt;(CARGO_COMPLETE=bash cargo +nightly)</code> to your .bashrc.</p>
+Add <code>source &lt;(CARGO_COMPLETE=bash cargo +nightly)</code> to <code>~/.local/share/bash-completion/completions/cargo</code>.</p>
 </li>
 <li>
 <p>zsh:
-Add <code>source &lt;(CARGO_COMPLETE=zsh cargo +nightly)</code> to your .zshrc.</p>
+Add <code>source &lt;(CARGO_COMPLETE=zsh cargo +nightly)</code> to your <code>.zshrc</code>.</p>
 </li>
 <li>
 <p>fish:
@@ -1824,6 +1825,20 @@ for more information.</p>
 <p>The <code>-Z rustdoc-depinfo</code> flag leverages rustdoc’s dep-info files to determine
 whether documentations are required to re-generate. This can be combined with
 <code>-Z checksum-freshness</code> to detect checksum changes rather than file mtime.</p>
+<h2 id="no-embed-metadata"><a class="header" href="#no-embed-metadata">no-embed-metadata</a></h2>
+<ul>
+<li>Original Pull Request: <a href="https://github.com/rust-lang/cargo/pull/15378">#15378</a></li>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/15495">#15495</a></li>
+</ul>
+<p>The default behavior of Rust is to embed crate metadata into <code>rlib</code> and <code>dylib</code> artifacts.
+Since Cargo also passes <code>--emit=metadata</code> to these intermediate artifacts to enable pipelined
+compilation, this means that a lot of metadata ends up being duplicated on disk, which wastes
+disk space in the target directory.</p>
+<p>This feature tells Cargo to pass the <code>-Zembed-metadata=no</code> flag to the compiler, which instructs
+it not to embed metadata within rlib and dylib artifacts. In this case, the metadata will only
+be stored in <code>.rmeta</code> files.</p>
+<pre><code class="language-console">cargo +nightly -Zno-embed-metadata build
+</code></pre>
 <h1 id="stabilized-and-removed-features"><a class="header" href="#stabilized-and-removed-features">Stabilized and removed features</a></h1>
 <h2 id="compile-progress"><a class="header" href="#compile-progress">Compile progress</a></h2>
 <p>The compile-progress feature has been stabilized in the 1.30 release.
