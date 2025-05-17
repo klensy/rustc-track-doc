@@ -483,6 +483,14 @@ be linted.</p>
 <ul>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#dbg_macro"><code>dbg_macro</code></a></li>
 </ul>
+<h2 id="allow-exact-repetitions"><a class="header" href="#allow-exact-repetitions"><code>allow-exact-repetitions</code></a></h2>
+<p>Whether an item should be allowed to have the same name as its containing module</p>
+<p><strong>Default Value:</strong> <code>true</code></p>
+<hr />
+<p><strong>Affected lints:</strong></p>
+<ul>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#module_name_repetitions"><code>module_name_repetitions</code></a></li>
+</ul>
 <h2 id="allow-expect-in-consts"><a class="header" href="#allow-expect-in-consts"><code>allow-expect-in-consts</code></a></h2>
 <p>Whether <code>expect</code> should be allowed in code always evaluated at compile time</p>
 <p><strong>Default Value:</strong> <code>true</code></p>
@@ -1011,6 +1019,14 @@ For example, <code>[_, _, _, e, ..]</code> is a slice pattern with 4 elements.</
 <ul>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#min_ident_chars"><code>min_ident_chars</code></a></li>
 </ul>
+<h2 id="missing-docs-allow-unused"><a class="header" href="#missing-docs-allow-unused"><code>missing-docs-allow-unused</code></a></h2>
+<p>Whether to allow fields starting with an underscore to skip documentation requirements</p>
+<p><strong>Default Value:</strong> <code>false</code></p>
+<hr />
+<p><strong>Affected lints:</strong></p>
+<ul>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#missing_docs_in_private_items"><code>missing_docs_in_private_items</code></a></li>
+</ul>
 <h2 id="missing-docs-in-crate-items"><a class="header" href="#missing-docs-in-crate-items"><code>missing-docs-in-crate-items</code></a></h2>
 <p>Whether to <strong>only</strong> check for missing documentation in items visible within the current
 crate. For example, <code>pub(crate)</code> items.</p>
@@ -1108,6 +1124,7 @@ crate. For example, <code>pub(crate)</code> items.</p>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#same_item_push"><code>same_item_push</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#seek_from_current"><code>seek_from_current</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#seek_rewind"><code>seek_rewind</code></a></li>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#to_digit_is_some"><code>to_digit_is_some</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#transmute_ptr_to_ref"><code>transmute_ptr_to_ref</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#tuple_array_conversions"><code>tuple_array_conversions</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#type_repetition_in_bounds"><code>type_repetition_in_bounds</code></a></li>
@@ -1664,30 +1681,21 @@ unclear to you.</p>
 <h2 id="install-from-source"><a class="header" href="#install-from-source">Install from source</a></h2>
 <p>If you are hacking on Clippy and want to install it from source, do the
 following:</p>
-<p>First, take note of the toolchain
-<a href="https://rust-lang.github.io/rustup/overrides.html">override</a> in
-<code>/rust-toolchain.toml</code>. We will use this override to install Clippy into the right
-toolchain.</p>
-<blockquote>
-<p>Tip: You can view the active toolchain for the current directory with <code>rustup show active-toolchain</code>.</p>
-</blockquote>
 <p>From the Clippy project root, run the following command to build the Clippy
-binaries and copy them into the toolchain directory. This will override the
-currently installed Clippy component.</p>
-<pre><code class="language-terminal">cargo build --release --bin cargo-clippy --bin clippy-driver -Zunstable-options --out-dir "$(rustc --print=sysroot)/bin"
+binaries and copy them into the toolchain directory. This will create a new
+toolchain called <code>clippy</code> by default, see <code>cargo dev setup toolchain --help</code>
+for other options.</p>
+<pre><code class="language-terminal">cargo dev setup toolcahin
 </code></pre>
-<p>Now you may run <code>cargo clippy</code> in any project, using the toolchain where you
-just installed Clippy.</p>
+<p>Now you may run <code>cargo +clippy clippy</code> in any project using the new toolchain.</p>
 <pre><code class="language-terminal">cd my-project
-cargo +nightly-2021-07-01 clippy
+cargo +clippy clippy
 </code></pre>
 <p>...or <code>clippy-driver</code></p>
-<pre><code class="language-terminal">clippy-driver +nightly-2021-07-01 &lt;filename&gt;
+<pre><code class="language-terminal">clippy-driver +clippy &lt;filename&gt;
 </code></pre>
-<p>If you need to restore the default Clippy installation, run the following (from
-the Clippy project root).</p>
-<pre><code class="language-terminal">rustup component remove clippy
-rustup component add clippy
+<p>If you no longer need the toolchain it can be uninstalled using <code>rustup</code>:</p>
+<pre><code class="language-terminal">rustup toolchain uninstall clippy
 </code></pre>
 <blockquote>
 <p><strong>DO NOT</strong> install using <code>cargo install --path . --force</code> since this will
@@ -2032,7 +2040,7 @@ write some unit tests (as opposed to only UI tests) for the separate function.</
 
 fn is_foo_fn(fn_kind: FnKind&lt;'_&gt;) -&gt; bool {
     match fn_kind {
-        FnKind::Fn(_, ident, ..) =&gt; {
+        FnKind::Fn(_, _, Fn { ident, .. }) =&gt; {
             // check if `fn` name is `foo`
             ident.name.as_str() == "foo"
         }
@@ -3119,22 +3127,24 @@ impl LateLintPass&lt;'_&gt; for CheckDropTraitLint {
 <span class="boring">}</span></code></pre></pre>
 <h2 id="using-type-path"><a class="header" href="#using-type-path">Using Type Path</a></h2>
 <p>If neither diagnostic item nor a language item is available, we can use
-<a href="https://github.com/rust-lang/rust-clippy/blob/master/clippy_utils/src/paths.rs"><code>clippy_utils::paths</code></a> with the <code>match_trait_method</code> to determine trait
-implementation.</p>
+<a href="https://github.com/rust-lang/rust-clippy/blob/master/clippy_utils/src/paths.rs"><code>clippy_utils::paths</code></a> to determine get a trait's <code>DefId</code>.</p>
 <blockquote>
 <p><strong>Note</strong>: This approach should be avoided if possible, the best thing to do would be to make a PR to <a href="https://github.com/rust-lang/rust"><code>rust-lang/rust</code></a> adding a diagnostic item.</p>
 </blockquote>
-<p>Below, we check if the given <code>expr</code> implements the <code>Iterator</code>'s trait method <code>cloned</code> :</p>
+<p>Below, we check if the given <code>expr</code> implements <a href="https://doc.rust-lang.org/std/iter/trait.Step.html"><code>core::iter::Step</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::{match_trait_method, paths};
+</span>use clippy_utils::{implements_trait, paths};
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass};
 
-impl LateLintPass&lt;'_&gt; for CheckTokioAsyncReadExtTrait {
+impl LateLintPass&lt;'_&gt; for CheckIterStep {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'_&gt;, expr: &amp;Expr&lt;'_&gt;) {
-        if match_trait_method(cx, expr, &amp;paths::CORE_ITER_CLONED) {
-            println!("`expr` implements `CORE_ITER_CLONED` trait!");
+        let ty = cx.typeck_results().expr_ty(expr);
+        if let Some(trait_def_id) = paths::ITER_STEP.first(cx)
+            &amp;&amp; implements_trait(cx, ty, trait_def_id, &amp;[])
+        {
+            println!("`expr` implements the `core::iter::Step` trait!");
         }
     }
 }
@@ -3532,7 +3542,7 @@ arguments have to be checked separately.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use clippy_utils::ty::{is_type_diagnostic_item, is_type_lang_item};
-use clippy_utils::{paths, match_def_path};
+use clippy_utils::paths;
 use rustc_span::symbol::sym;
 use rustc_hir::LangItem;
 
@@ -3554,7 +3564,7 @@ impl LateLintPass&lt;'_&gt; for MyStructLint {
 
         // 3. Using the type path
         // This method should be avoided if possible
-        if match_def_path(cx, def_id, &amp;paths::RESULT) {
+        if paths::RESULT.matches_ty(cx, ty) {
             // The type is a `core::result::Result`
         }
     }
@@ -3936,14 +3946,16 @@ checkout:</p>
 <p>Once you've got the correct commit range, run</p>
 <pre><code>util/fetch_prs_between.sh commit1 commit2 &gt; changes.txt
 </code></pre>
-<p>and open that file in your editor of choice.</p>
+<p>where <code>commit2</code> is the commit hash from the previous command and <code>commit1</code>
+is the commit hash from the current CHANGELOG file.
+Open <code>changes.txt</code> file in your editor of choice.</p>
 <p>When updating the changelog it's also a good idea to make sure that <code>commit1</code> is
 already correct in the current changelog.</p>
 <h3 id="3-authoring-the-final-changelog"><a class="header" href="#3-authoring-the-final-changelog">3. Authoring the final changelog</a></h3>
 <p>The above script should have dumped all the relevant PRs to the file you
 specified. It should have filtered out most of the irrelevant PRs already, but
-it's a good idea to do a manual cleanup pass where you look for more irrelevant
-PRs. If you're not sure about some PRs, just leave them in for the review and
+it's a good idea to do a manual cleanup pass and choose valuable PRs.
+If you're not sure about some PRs, just leave them in for the review and
 ask for feedback.</p>
 <p>With the PRs filtered, you can start to take each PR and move the <code>changelog: </code>
 content to <code>CHANGELOG.md</code>. Adapt the wording as you see fit but try to keep it
@@ -3954,7 +3966,6 @@ somewhat coherent.</p>
 <li>Moves or deprecations of lints</li>
 <li>Changes that expand what code existing lints cover</li>
 <li>False positive fixes</li>
-<li>Suggestion fixes/improvements</li>
 <li>ICE fixes</li>
 <li>Documentation improvements</li>
 <li>Others</li>
@@ -3969,7 +3980,6 @@ somewhat coherent.</p>
 
 ### Enhancements
 ### False Positive Fixes
-### Suggestion Fixes/Improvements
 ### ICE Fixes
 ### Documentation Improvements
 ### Others
@@ -3986,7 +3996,13 @@ Those have to be included in the changelog of the <em>previous</em> release.</p>
 </blockquote>
 <h3 id="4-update-clippyversion-attributes"><a class="header" href="#4-update-clippyversion-attributes">4. Update <code>clippy::version</code> attributes</a></h3>
 <p>Next, make sure to check that the <code>#[clippy::version]</code> attributes for the added
-lints contain the correct version.</p>
+lints contain the correct version.
+In order to find lints that need a version update, go through the lints in the
+"New Lints" section and run the following command for each lint name:</p>
+<pre><code>grep -rB1 "pub $LINT_NAME" .
+</code></pre>
+<p>The version shown should match the version of the release the changelog is
+written for. If not, update the version to the changelog version.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="release-a-new-clippy-version"><a class="header" href="#release-a-new-clippy-version">Release a new Clippy Version</a></h1>
 <blockquote>
 <p><em>NOTE:</em> This document is probably only relevant to you, if you're a member of
