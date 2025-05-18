@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DIGITS","EPSILON","INFINITY","MANTISSA_DIGITS","MAX","MAX_10_EXP","MAX_EXP","MIN","MIN_10_EXP","MIN_EXP","MIN_POSITIVE","NAN","NEG_INFINITY","RADIX"],"mod":["consts"]};
+window.SIDEBAR_ITEMS = {"constant":["DIGITS","EPSILON","INFINITY","MANTISSA_DIGITS","MAX","MAX_10_EXP","MAX_EXP","MIN","MIN_10_EXP","MIN_EXP","MIN_POSITIVE","NAN","NEG_INFINITY","RADIX"],"fn":["abs_sub","cbrt","ceil","div_euclid","floor","fract","mul_add","powi","rem_euclid","round","round_ties_even","sqrt","trunc"],"mod":["consts"]};
