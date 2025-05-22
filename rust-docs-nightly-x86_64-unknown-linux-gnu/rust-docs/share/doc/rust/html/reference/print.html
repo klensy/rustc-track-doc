@@ -14982,7 +14982,7 @@ trait DynIncompatible {
     fn foo() {}  // ERROR: associated function without Sized
     fn returns(&amp;self) -&gt; Self; // ERROR: Self in return type
     fn typed&lt;T&gt;(&amp;self, x: T) {} // ERROR: has generic type parameters
-    fn nested(self: Rc&lt;Box&lt;Self&gt;&gt;) {} // ERROR: nested receiver not yet supported
+    fn nested(self: Rc&lt;Box&lt;Self&gt;&gt;) {} // ERROR: nested receiver cannot be downcasted
 }
 
 struct S;
@@ -37672,6 +37672,7 @@ or a <code>match</code> guard.</li>
 <li>The body expression for a match arm.</li>
 <li>Each operand of a <a href="expressions/operator-expr.html#lazy-boolean-operators">lazy boolean expression</a>.</li>
 <li>The pattern-matching condition(s) and consequent body of <a href="expressions/if-expr.html#if-expressions"><code>if</code></a> (<a href="destructors.html#r-destructors.scope.temporary.edition2024">destructors.scope.temporary.edition2024</a>).</li>
+<li>The pattern-matching condition and loop body of <a href="expressions/loop-expr.html#predicate-loops"><code>while</code></a>.</li>
 <li>The entirety of the tail expression of a block (<a href="destructors.html#r-destructors.scope.temporary.edition2024">destructors.scope.temporary.edition2024</a>).</li>
 </ul>
 <div class="alert alert-note">
@@ -37691,6 +37692,7 @@ or a <code>match</code> guard.</li>
 <p>Some examples:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">#![allow(irrefutable_let_patterns)]
 </span><span class="boring">struct PrintOnDrop(&amp;'static str);
 </span><span class="boring">impl Drop for PrintOnDrop {
 </span><span class="boring">    fn drop(&amp;mut self) {
@@ -37716,6 +37718,13 @@ else {
     PrintOnDrop("if let else").0
     // `if let else` dropped here
 };
+
+while let x = PrintOnDrop("while let scrutinee").0 {
+    PrintOnDrop("while let loop body").0;
+    break;
+    // `while let loop body` dropped here.
+    // `while let scrutinee` dropped here.
+}
 
 // Dropped before the first ||
 (PrintOnDrop("first operand").0 == ""
