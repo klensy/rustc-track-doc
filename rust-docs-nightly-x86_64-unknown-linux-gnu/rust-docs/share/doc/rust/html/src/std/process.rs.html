@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (2eef47813 2025-05-22)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-63605ae7.js"></script><script defer src="../../src-files1.89.0.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A module for working with processes.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (3e674b06b 2025-05-23)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-63605ae7.js"></script><script defer src="../../src-files1.89.0.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A module for working with processes.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module is mostly concerned with spawning and interacting with child
 <a href=#4 id=4 data-nosnippet>4</a>//! processes, but it also provides [`abort`] and [`exit`] for terminating the
@@ -1348,7 +1348,7 @@
 <a href=#1348 id=1348 data-nosnippet>1348</a>    ///
 <a href=#1349 id=1349 data-nosnippet>1349</a>    /// ```
 <a href=#1350 id=1350 data-nosnippet>1350</a>    /// #![feature(exit_status_error)]
-<a href=#1351 id=1351 data-nosnippet>1351</a>    /// # #[cfg(unix)] {
+<a href=#1351 id=1351 data-nosnippet>1351</a>    /// # #[cfg(all(unix, not(target_os = "android")))] {
 <a href=#1352 id=1352 data-nosnippet>1352</a>    /// use std::process::Command;
 <a href=#1353 id=1353 data-nosnippet>1353</a>    /// assert!(Command::new("false").output().unwrap().exit_ok().is_err());
 <a href=#1354 id=1354 data-nosnippet>1354</a>    /// # }
@@ -1695,7 +1695,7 @@
 <a href=#1695 id=1695 data-nosnippet>1695</a>    /// # Ok(())
 <a href=#1696 id=1696 data-nosnippet>1696</a>    /// # }
 <a href=#1697 id=1697 data-nosnippet>1697</a>    /// #
-<a href=#1698 id=1698 data-nosnippet>1698</a>    /// # if cfg!(unix) {
+<a href=#1698 id=1698 data-nosnippet>1698</a>    /// # if cfg!(all(unix, not(target_os = "android"))) {
 <a href=#1699 id=1699 data-nosnippet>1699</a>    /// #     test().unwrap();
 <a href=#1700 id=1700 data-nosnippet>1700</a>    /// # }
 <a href=#1701 id=1701 data-nosnippet>1701</a>    /// ```
@@ -1724,7 +1724,7 @@
 <a href=#1724 id=1724 data-nosnippet>1724</a>    /// # Ok(())
 <a href=#1725 id=1725 data-nosnippet>1725</a>    /// # }
 <a href=#1726 id=1726 data-nosnippet>1726</a>    /// #
-<a href=#1727 id=1727 data-nosnippet>1727</a>    /// # if cfg!(unix) {
+<a href=#1727 id=1727 data-nosnippet>1727</a>    /// # if cfg!(all(unix, not(target_os = "android"))) {
 <a href=#1728 id=1728 data-nosnippet>1728</a>    /// #     test().unwrap();
 <a href=#1729 id=1729 data-nosnippet>1729</a>    /// # }
 <a href=#1730 id=1730 data-nosnippet>1730</a>    /// ```
@@ -1907,7 +1907,7 @@
 <a href=#1907 id=1907 data-nosnippet>1907</a>///
 <a href=#1908 id=1908 data-nosnippet>1908</a>/// ```
 <a href=#1909 id=1909 data-nosnippet>1909</a>/// #![feature(exit_status_error)]
-<a href=#1910 id=1910 data-nosnippet>1910</a>/// # if cfg!(unix) {
+<a href=#1910 id=1910 data-nosnippet>1910</a>/// # if cfg!(all(unix, not(target_os = "android"))) {
 <a href=#1911 id=1911 data-nosnippet>1911</a>/// use std::process::{Command, ExitStatusError};
 <a href=#1912 id=1912 data-nosnippet>1912</a>///
 <a href=#1913 id=1913 data-nosnippet>1913</a>/// fn run(cmd: &amp;str) -&gt; Result&lt;(), ExitStatusError&gt; {
@@ -1950,7 +1950,7 @@
 <a href=#1950 id=1950 data-nosnippet>1950</a>    ///
 <a href=#1951 id=1951 data-nosnippet>1951</a>    /// ```
 <a href=#1952 id=1952 data-nosnippet>1952</a>    /// #![feature(exit_status_error)]
-<a href=#1953 id=1953 data-nosnippet>1953</a>    /// # #[cfg(unix)] {
+<a href=#1953 id=1953 data-nosnippet>1953</a>    /// # #[cfg(all(unix, not(target_os = "android")))] {
 <a href=#1954 id=1954 data-nosnippet>1954</a>    /// use std::process::Command;
 <a href=#1955 id=1955 data-nosnippet>1955</a>    ///
 <a href=#1956 id=1956 data-nosnippet>1956</a>    /// let bad = Command::new("false").status().unwrap().exit_ok().unwrap_err();
@@ -1975,7 +1975,7 @@
 <a href=#1975 id=1975 data-nosnippet>1975</a>    /// ```
 <a href=#1976 id=1976 data-nosnippet>1976</a>    /// #![feature(exit_status_error)]
 <a href=#1977 id=1977 data-nosnippet>1977</a>    ///
-<a href=#1978 id=1978 data-nosnippet>1978</a>    /// # if cfg!(unix) {
+<a href=#1978 id=1978 data-nosnippet>1978</a>    /// # if cfg!(all(unix, not(target_os = "android"))) {
 <a href=#1979 id=1979 data-nosnippet>1979</a>    /// use std::num::NonZero;
 <a href=#1980 id=1980 data-nosnippet>1980</a>    /// use std::process::Command;
 <a href=#1981 id=1981 data-nosnippet>1981</a>    ///
@@ -2532,7 +2532,7 @@
 <a href=#2532 id=2532 data-nosnippet>2532</a>#[rustc_on_unimplemented(on(
 <a href=#2533 id=2533 data-nosnippet>2533</a>    cause = <span class="string">"MainFunctionType"</span>,
 <a href=#2534 id=2534 data-nosnippet>2534</a>    message = <span class="string">"`main` has invalid return type `{Self}`"</span>,
-<a href=#2535 id=2535 data-nosnippet>2535</a>    label = <span class="string">"`main` can only return types that implement `{Termination}`"
+<a href=#2535 id=2535 data-nosnippet>2535</a>    label = <span class="string">"`main` can only return types that implement `{This}`"
 <a href=#2536 id=2536 data-nosnippet>2536</a></span>))]
 <a href=#2537 id=2537 data-nosnippet>2537</a></span><span class="kw">pub trait </span>Termination {
 <a href=#2538 id=2538 data-nosnippet>2538</a>    <span class="doccomment">/// Is called to get the representation of the value as status code.

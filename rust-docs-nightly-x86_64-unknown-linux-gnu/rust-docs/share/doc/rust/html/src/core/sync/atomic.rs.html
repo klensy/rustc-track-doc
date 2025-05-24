@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (2eef47813 2025-05-22)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (3e674b06b 2025-05-23)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Atomic types provide primitive shared-memory communication between
 <a href=#4 id=4 data-nosnippet>4</a>//! threads, and are the building blocks of other concurrent
@@ -193,7 +193,7 @@
 <a href=#193 id=193 data-nosnippet>193</a>//!
 <a href=#194 id=194 data-nosnippet>194</a>//! A simple spinlock:
 <a href=#195 id=195 data-nosnippet>195</a>//!
-<a href=#196 id=196 data-nosnippet>196</a>//! ```
+<a href=#196 id=196 data-nosnippet>196</a>//! ```ignore-wasm
 <a href=#197 id=197 data-nosnippet>197</a>//! use std::sync::Arc;
 <a href=#198 id=198 data-nosnippet>198</a>//! use std::sync::atomic::{AtomicUsize, Ordering};
 <a href=#199 id=199 data-nosnippet>199</a>//! use std::{hint, thread};
@@ -622,7 +622,7 @@
 <a href=#622 id=622 data-nosnippet>622</a>    ///
 <a href=#623 id=623 data-nosnippet>623</a>    /// # Examples
 <a href=#624 id=624 data-nosnippet>624</a>    ///
-<a href=#625 id=625 data-nosnippet>625</a>    /// ```
+<a href=#625 id=625 data-nosnippet>625</a>    /// ```ignore-wasm
 <a href=#626 id=626 data-nosnippet>626</a>    /// #![feature(atomic_from_mut)]
 <a href=#627 id=627 data-nosnippet>627</a>    /// use std::sync::atomic::{AtomicBool, Ordering};
 <a href=#628 id=628 data-nosnippet>628</a>    ///
@@ -653,7 +653,7 @@
 <a href=#653 id=653 data-nosnippet>653</a>    ///
 <a href=#654 id=654 data-nosnippet>654</a>    /// # Examples
 <a href=#655 id=655 data-nosnippet>655</a>    ///
-<a href=#656 id=656 data-nosnippet>656</a>    /// ```
+<a href=#656 id=656 data-nosnippet>656</a>    /// ```rust,ignore-wasm
 <a href=#657 id=657 data-nosnippet>657</a>    /// #![feature(atomic_from_mut)]
 <a href=#658 id=658 data-nosnippet>658</a>    /// use std::sync::atomic::{AtomicBool, Ordering};
 <a href=#659 id=659 data-nosnippet>659</a>    ///
@@ -1548,7 +1548,7 @@
 <a href=#1548 id=1548 data-nosnippet>1548</a>    ///
 <a href=#1549 id=1549 data-nosnippet>1549</a>    /// # Examples
 <a href=#1550 id=1550 data-nosnippet>1550</a>    ///
-<a href=#1551 id=1551 data-nosnippet>1551</a>    /// ```
+<a href=#1551 id=1551 data-nosnippet>1551</a>    /// ```ignore-wasm
 <a href=#1552 id=1552 data-nosnippet>1552</a>    /// #![feature(atomic_from_mut)]
 <a href=#1553 id=1553 data-nosnippet>1553</a>    /// use std::ptr::null_mut;
 <a href=#1554 id=1554 data-nosnippet>1554</a>    /// use std::sync::atomic::{AtomicPtr, Ordering};
@@ -1585,7 +1585,7 @@
 <a href=#1585 id=1585 data-nosnippet>1585</a>    ///
 <a href=#1586 id=1586 data-nosnippet>1586</a>    /// # Examples
 <a href=#1587 id=1587 data-nosnippet>1587</a>    ///
-<a href=#1588 id=1588 data-nosnippet>1588</a>    /// ```
+<a href=#1588 id=1588 data-nosnippet>1588</a>    /// ```ignore-wasm
 <a href=#1589 id=1589 data-nosnippet>1589</a>    /// #![feature(atomic_from_mut)]
 <a href=#1590 id=1590 data-nosnippet>1590</a>    /// use std::ptr::null_mut;
 <a href=#1591 id=1591 data-nosnippet>1591</a>    /// use std::sync::atomic::{AtomicPtr, Ordering};
@@ -2692,7 +2692,7 @@
 <a href=#2692 id=2692 data-nosnippet>2692</a>            ///
 <a href=#2693 id=2693 data-nosnippet>2693</a>            /// # Examples
 <a href=#2694 id=2694 data-nosnippet>2694</a>            ///
-<a href=#2695 id=2695 data-nosnippet>2695</a>            /// ```
+<a href=#2695 id=2695 data-nosnippet>2695</a>            /// ```ignore-wasm
 <a href=#2696 id=2696 data-nosnippet>2696</a>            /// #![feature(atomic_from_mut)]
 <a href=#2697 id=2697 data-nosnippet>2697</a>            </span><span class="attr">#[doc = <span class="macro">concat!</span>(<span class="macro-nonterminal">$extra_feature</span>, <span class="string">"use std::sync::atomic::{"</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$atomic_type</span>), <span class="string">", Ordering};"</span>)]
 <a href=#2698 id=2698 data-nosnippet>2698</a>            </span><span class="doccomment">///
@@ -2725,7 +2725,7 @@
 <a href=#2725 id=2725 data-nosnippet>2725</a>            </span><span class="doccomment">///
 <a href=#2726 id=2726 data-nosnippet>2726</a>            /// # Examples
 <a href=#2727 id=2727 data-nosnippet>2727</a>            ///
-<a href=#2728 id=2728 data-nosnippet>2728</a>            /// ```
+<a href=#2728 id=2728 data-nosnippet>2728</a>            /// ```ignore-wasm
 <a href=#2729 id=2729 data-nosnippet>2729</a>            /// #![feature(atomic_from_mut)]
 <a href=#2730 id=2730 data-nosnippet>2730</a>            </span><span class="attr">#[doc = <span class="macro">concat!</span>(<span class="macro-nonterminal">$extra_feature</span>, <span class="string">"use std::sync::atomic::{"</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$atomic_type</span>), <span class="string">", Ordering};"</span>)]
 <a href=#2731 id=2731 data-nosnippet>2731</a>            </span><span class="doccomment">///
