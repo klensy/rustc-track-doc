@@ -39,7 +39,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b25a3982.js"></script>
+        <script src="toc-e37ca50a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -199,12 +199,78 @@ fn main() {
 that what is contained here is accurate or up to date. It's developed on a
 best-effort basis. Each page will have a link to its tracking issue with the
 latest developments; you might want to check those as well.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="compiler-environment-variables"><a class="header" href="#compiler-environment-variables">Compiler environment variables</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_bootstrap"><a class="header" href="#rustc_bootstrap"><code>RUSTC_BOOTSTRAP</code></a></h1>
+<p>This feature is perma-unstable and has no tracking issue.</p>
+<hr />
+<p>The <code>RUSTC_BOOTSTRAP</code> environment variable tells rustc to act as if it is a nightly compiler;
+in particular, it allows <code>#![feature(...)]</code> attributes and <code>-Z</code> flags even on the stable release channel.</p>
+<p>Setting <code>RUSTC_BOOTSTRAP=1</code> instructs rustc to enable this for all crates.
+Setting <code>RUSTC_BOOTSTRAP=crate_name</code> instructs rustc to only apply this to crates named <code>crate_name</code>.
+Setting <code>RUSTC_BOOTSTRAP=-1</code> instructs rustc to act as if it is a stable compiler, even on the nightly release channel.
+Cargo disallows setting <code>cargo::rustc-env=RUSTC_BOOTSTRAP</code> in build scripts.
+Build systems can limit the features they enable with <a href="compiler-environment-variables/../compiler-flags/allow-features.html"><code>-Z allow-features=feature1,feature2</code></a>.
+Crates can fully opt out of unstable features by using <a href="compiler-environment-variables/../../rustc/lints/listing/allowed-by-default.html#unstable-features"><code>#![forbid(unstable_features)]</code></a> at the crate root (or any other way of enabling lints, such as <code>-F unstable-features</code>).</p>
+<h2 id="why-does-this-environment-variable-exist"><a class="header" href="#why-does-this-environment-variable-exist">Why does this environment variable exist?</a></h2>
+<p><code>RUSTC_BOOTSTRAP</code>, as the name suggests, is used for bootstrapping the compiler from an earlier version.
+In particular, nightly is built with beta, and beta is built with stable.
+Since the standard library and compiler both use unstable features, <code>RUSTC_BOOTSTRAP</code> is required so that we can use the previous version to build them.</p>
+<h2 id="why-is-this-environment-variable-so-easy-to-use-for-people-not-in-the-rust-project"><a class="header" href="#why-is-this-environment-variable-so-easy-to-use-for-people-not-in-the-rust-project">Why is this environment variable so easy to use for people not in the Rust project?</a></h2>
+<p>Originally, <code>RUSTC_BOOTSTRAP</code> required passing in a hash of the previous compiler version, to discourage using it for any purpose other than bootstrapping.
+That constraint was later relaxed; see <a href="https://github.com/rust-lang/rust/issues/36548">https://github.com/rust-lang/rust/issues/36548</a> for the discussion that happened at that time.</p>
+<p>People have at various times proposed re-adding the technical constraints.
+However, doing so is extremely disruptive for several major projects that we very much want to keep using the latest stable toolchain version, such as Firefox, Rust for Linux, and Chromium.
+We continue to allow <code>RUSTC_BOOTSTRAP</code> until we can come up with an alternative that does not disrupt our largest constituents.</p>
+<h2 id="stability-policy"><a class="header" href="#stability-policy">Stability policy</a></h2>
+<p>Despite being usable on stable, this is an unstable feature.
+Like any other unstable feature, we reserve the right to change or remove this feature in the future, as well as any other unstable feature that it enables.
+Using this feature opts you out of the normal stability/backwards compatibility guarantee of stable.</p>
+<p>Although we do not take technical measures to prevent it from being used, we strongly discourage using this feature.
+If at all possible, please contribute to stabilizing the features you care about instead of bypassing the Rust project's stability policy.</p>
+<p>For library crates, we especially discourage the use of this feature.
+The crates depending on you do not know that you use this feature, have little recourse if it breaks, and can be used in contexts that are hard to predict.</p>
+<p>For libraries that do use this feature, please document the versions you support (including a <em>maximum</em> as well as minimum version), and a mechanism to disable it.
+If you do not have a mechanism to disable the use of <code>RUSTC_BOOTSTRAP</code>, consider removing its use altogether, such that people can only use your library if they are already using a nightly toolchain.
+This leaves the choice of whether to opt-out of Rust's stability guarantees up to the end user building their code.</p>
+<h2 id="history"><a class="header" href="#history">History</a></h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/37265">Allowed without a hash</a> (<a href="https://github.com/rust-lang/rust/issues/36548">discussion</a>)</li>
+<li><a href="https://github.com/rust-lang/rust/pull/77802">Extended to crate names</a> (<a href="https://github.com/rust-lang/cargo/issues/7088">discussion</a>)</li>
+<li><a href="https://github.com/rust-lang/cargo/pull/9181">Disallowed for build scripts</a> (<a href="https://github.com/rust-lang/compiler-team/issues/350">discussion</a>)</li>
+<li><a href="https://github.com/rust-lang/rust/pull/132993">Extended to emulate stable</a> (<a href="https://github.com/rust-lang/rust/issues/123404">discussion</a>)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_override_version_string"><a class="header" href="#rustc_override_version_string"><code>RUSTC_OVERRIDE_VERSION_STRING</code></a></h1>
+<p>This feature is perma-unstable and has no tracking issue.</p>
+<hr />
+<p>The <code>RUSTC_OVERRIDE_VERSION_STRING</code> environment variable overrides the version reported by <code>rustc --version</code>. For example:</p>
+<pre><code class="language-console">$ rustc --version
+rustc 1.87.0-nightly (43f0014ef 2025-03-25)
+$ env RUSTC_OVERRIDE_VERSION_STRING=1.81.0-nightly rustc --version
+rustc 1.81.0-nightly
+</code></pre>
+<p>Note that the version string is completely overwritten; i.e. rustc discards commit hash and commit date information unless it is explicitly included in the environment variable. The string only applies to the "release" part of the version; for example:</p>
+<pre><code class="language-console">$ RUSTC_OVERRIDE_VERSION_STRING="1.81.0-nightly (aaaaaaaaa 2025-03-22)" rustc -vV
+rustc 1.81.0-nightly (aaaaaaaaa 2025-03-22)
+binary: rustc
+commit-hash: 43f0014ef0f242418674f49052ed39b70f73bc1c
+commit-date: 2025-03-25
+host: x86_64-unknown-linux-gnu
+release: 1.81.0-nightly (aaaaaaaaa 2025-03-22)
+LLVM version: 20.1.1
+</code></pre>
+<p>Note here that <code>commit-hash</code> and <code>commit-date</code> do not match the values in the string, and <code>release</code> includes the fake hash and date.</p>
+<p>This variable has no effect on whether or not unstable features are allowed to be used. It only affects the output of <code>--version</code>.</p>
+<h2 id="why-does-this-environment-variable-exist-1"><a class="header" href="#why-does-this-environment-variable-exist-1">Why does this environment variable exist?</a></h2>
+<p>Various library crates have incomplete or incorrect feature detection.
+This environment variable allows bisecting crates that do incorrect detection with <code>version_check::supports_feature</code>.</p>
+<p>This is not intended to be used for any other case (and, except for bisection, is not particularly useful).</p>
+<p>See <a href="https://github.com/rust-lang/rust/pull/124339">https://github.com/rust-lang/rust/pull/124339</a> for further discussion.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="compiler-flags"><a class="header" href="#compiler-flags">Compiler flags</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="allow-features"><a class="header" href="#allow-features"><code>allow-features</code></a></h1>
 <p>This feature is perma-unstable and has no tracking issue.</p>
 <hr />
 <p>This flag allows limiting the features which can be enabled with <code>#![feature(...)]</code> attributes.
-By default, all features are allowed on nightly and no features are allowed on stable or beta (but see <a href="compiler-flags/./rustc-bootstrap.html"><code>RUSTC_BOOTSTRAP</code></a>).</p>
+By default, all features are allowed on nightly and no features are allowed on stable or beta (but see <a href="compiler-flags/../compiler-environment-variables/RUSTC_BOOTSTRAP.html"><code>RUSTC_BOOTSTRAP</code></a>).</p>
 <p>Features are comma-separated, for example <code>-Z allow-features=ffi_pure,f16</code>.
 If the flag is present, any feature listed will be allowed and any feature not listed will be disallowed.
 Any unrecognized feature is ignored.</p>
@@ -1251,71 +1317,6 @@ test unit_test_critical ... ok &lt;1.100s&gt;
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_bootstrap"><a class="header" href="#rustc_bootstrap"><code>RUSTC_BOOTSTRAP</code></a></h1>
-<p>This feature is perma-unstable and has no tracking issue.</p>
-<hr />
-<p>The <code>RUSTC_BOOTSTRAP</code> environment variable tells rustc to act as if it is a nightly compiler;
-in particular, it allows <code>#![feature(...)]</code> attributes and <code>-Z</code> flags even on the stable release channel.</p>
-<p>Setting <code>RUSTC_BOOTSTRAP=1</code> instructs rustc to enable this for all crates.
-Setting <code>RUSTC_BOOTSTRAP=crate_name</code> instructs rustc to only apply this to crates named <code>crate_name</code>.
-Setting <code>RUSTC_BOOTSTRAP=-1</code> instructs rustc to act as if it is a stable compiler, even on the nightly release channel.
-Cargo disallows setting <code>cargo::rustc-env=RUSTC_BOOTSTRAP</code> in build scripts.
-Build systems can limit the features they enable with <a href="compiler-flags/./allow-features.html"><code>-Z allow-features=feature1,feature2</code></a>.
-Crates can fully opt out of unstable features by using <a href="compiler-flags/../../rustc/lints/listing/allowed-by-default.html#unstable-features"><code>#![forbid(unstable_features)]</code></a> at the crate root (or any other way of enabling lints, such as <code>-F unstable-features</code>).</p>
-<h2 id="why-does-this-environment-variable-exist"><a class="header" href="#why-does-this-environment-variable-exist">Why does this environment variable exist?</a></h2>
-<p><code>RUSTC_BOOTSTRAP</code>, as the name suggests, is used for bootstrapping the compiler from an earlier version.
-In particular, nightly is built with beta, and beta is built with stable.
-Since the standard library and compiler both use unstable features, <code>RUSTC_BOOTSTRAP</code> is required so that we can use the previous version to build them.</p>
-<h2 id="why-is-this-environment-variable-so-easy-to-use-for-people-not-in-the-rust-project"><a class="header" href="#why-is-this-environment-variable-so-easy-to-use-for-people-not-in-the-rust-project">Why is this environment variable so easy to use for people not in the Rust project?</a></h2>
-<p>Originally, <code>RUSTC_BOOTSTRAP</code> required passing in a hash of the previous compiler version, to discourage using it for any purpose other than bootstrapping.
-That constraint was later relaxed; see <a href="https://github.com/rust-lang/rust/issues/36548">https://github.com/rust-lang/rust/issues/36548</a> for the discussion that happened at that time.</p>
-<p>People have at various times proposed re-adding the technical constraints.
-However, doing so is extremely disruptive for several major projects that we very much want to keep using the latest stable toolchain version, such as Firefox, Rust for Linux, and Chromium.
-We continue to allow <code>RUSTC_BOOTSTRAP</code> until we can come up with an alternative that does not disrupt our largest constituents.</p>
-<h2 id="stability-policy"><a class="header" href="#stability-policy">Stability policy</a></h2>
-<p>Despite being usable on stable, this is an unstable feature.
-Like any other unstable feature, we reserve the right to change or remove this feature in the future, as well as any other unstable feature that it enables.
-Using this feature opts you out of the normal stability/backwards compatibility guarantee of stable.</p>
-<p>Although we do not take technical measures to prevent it from being used, we strongly discourage using this feature.
-If at all possible, please contribute to stabilizing the features you care about instead of bypassing the Rust project's stability policy.</p>
-<p>For library crates, we especially discourage the use of this feature.
-The crates depending on you do not know that you use this feature, have little recourse if it breaks, and can be used in contexts that are hard to predict.</p>
-<p>For libraries that do use this feature, please document the versions you support (including a <em>maximum</em> as well as minimum version), and a mechanism to disable it.
-If you do not have a mechanism to disable the use of <code>RUSTC_BOOTSTRAP</code>, consider removing its use altogether, such that people can only use your library if they are already using a nightly toolchain.
-This leaves the choice of whether to opt-out of Rust's stability guarantees up to the end user building their code.</p>
-<h2 id="history"><a class="header" href="#history">History</a></h2>
-<ul>
-<li><a href="https://github.com/rust-lang/rust/pull/37265">Allowed without a hash</a> (<a href="https://github.com/rust-lang/rust/issues/36548">discussion</a>)</li>
-<li><a href="https://github.com/rust-lang/rust/pull/77802">Extended to crate names</a> (<a href="https://github.com/rust-lang/cargo/issues/7088">discussion</a>)</li>
-<li><a href="https://github.com/rust-lang/cargo/pull/9181">Disallowed for build scripts</a> (<a href="https://github.com/rust-lang/compiler-team/issues/350">discussion</a>)</li>
-<li><a href="https://github.com/rust-lang/rust/pull/132993">Extended to emulate stable</a> (<a href="https://github.com/rust-lang/rust/issues/123404">discussion</a>)</li>
-</ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_override_version_string"><a class="header" href="#rustc_override_version_string"><code>RUSTC_OVERRIDE_VERSION_STRING</code></a></h1>
-<p>This feature is perma-unstable and has no tracking issue.</p>
-<hr />
-<p>The <code>RUSTC_OVERRIDE_VERSION_STRING</code> environment variable overrides the version reported by <code>rustc --version</code>. For example:</p>
-<pre><code class="language-console">$ rustc --version
-rustc 1.87.0-nightly (43f0014ef 2025-03-25)
-$ env RUSTC_OVERRIDE_VERSION_STRING=1.81.0-nightly rustc --version
-rustc 1.81.0-nightly
-</code></pre>
-<p>Note that the version string is completely overwritten; i.e. rustc discards commit hash and commit date information unless it is explicitly included in the environment variable. The string only applies to the "release" part of the version; for example:</p>
-<pre><code class="language-console">$ RUSTC_OVERRIDE_VERSION_STRING="1.81.0-nightly (aaaaaaaaa 2025-03-22)" rustc -vV
-rustc 1.81.0-nightly (aaaaaaaaa 2025-03-22)
-binary: rustc
-commit-hash: 43f0014ef0f242418674f49052ed39b70f73bc1c
-commit-date: 2025-03-25
-host: x86_64-unknown-linux-gnu
-release: 1.81.0-nightly (aaaaaaaaa 2025-03-22)
-LLVM version: 20.1.1
-</code></pre>
-<p>Note here that <code>commit-hash</code> and <code>commit-date</code> do not match the values in the string, and <code>release</code> includes the fake hash and date.</p>
-<p>This variable has no effect on whether or not unstable features are allowed to be used. It only affects the output of <code>--version</code>.</p>
-<h2 id="why-does-this-environment-variable-exist-1"><a class="header" href="#why-does-this-environment-variable-exist-1">Why does this environment variable exist?</a></h2>
-<p>Various library crates have incomplete or incorrect feature detection.
-This environment variable allows bisecting crates that do incorrect detection with <code>version_check::supports_feature</code>.</p>
-<p>This is not intended to be used for any other case (and, except for bisection, is not particularly useful).</p>
-<p>See <a href="https://github.com/rust-lang/rust/pull/124339">https://github.com/rust-lang/rust/pull/124339</a> for further discussion.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sanitizer"><a class="header" href="#sanitizer"><code>sanitizer</code></a></h1>
 <p>Sanitizers are tools that help detect and prevent various types of bugs and
 vulnerabilities in software. They are available in compilers and work by
@@ -2423,6 +2424,7 @@ future with no option to fall back to the old non-spec-compliant ABI.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_avr_interrupt"><a class="header" href="#abi_avr_interrupt"><code>abi_avr_interrupt</code></a></h1>
+<p>Allows <code>extern "avr-interrupt" fn()</code> and <code>extern "avr-non-blocking-interrupt" fn()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/69664">#69664</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_c_cmse_nonsecure_call"><a class="header" href="#abi_c_cmse_nonsecure_call"><code>abi_c_cmse_nonsecure_call</code></a></h1>
@@ -2501,6 +2503,7 @@ call_nonsecure_function:
         pop     {r7, pc}
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_gpu_kernel"><a class="header" href="#abi_gpu_kernel"><code>abi_gpu_kernel</code></a></h1>
+<p>Allows <code>extern "gpu-kernel" fn()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/135467">#135467</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_msp430_interrupt"><a class="header" href="#abi_msp430_interrupt"><code>abi_msp430_interrupt</code></a></h1>
@@ -2583,9 +2586,11 @@ $ cat $(find -name '*.s')
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_riscv_interrupt"><a class="header" href="#abi_riscv_interrupt"><code>abi_riscv_interrupt</code></a></h1>
+<p>Allows <code>extern "riscv-interrupt-m" fn()</code> and <code>extern "riscv-interrupt-s" fn()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/111889">#111889</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_unadjusted"><a class="header" href="#abi_unadjusted"><code>abi_unadjusted</code></a></h1>
+<p>Allows using the <code>unadjusted</code> ABI; perma-unstable.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_vectorcall"><a class="header" href="#abi_vectorcall"><code>abi_vectorcall</code></a></h1>
@@ -2600,6 +2605,7 @@ fn main() {
     println!("{}", add_f64s(2.0, 4.0));
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="abi_x86_interrupt"><a class="header" href="#abi_x86_interrupt"><code>abi_x86_interrupt</code></a></h1>
+<p>Allows <code>extern "x86-interrupt" fn()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/40180">#40180</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="adt_const_params"><a class="header" href="#adt_const_params"><code>adt_const_params</code></a></h1>
@@ -2633,6 +2639,7 @@ fn is_foo_a_and_bar_true&lt;const F: Foo, const B: Bar&gt;() -&gt; bool {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="alloc_error_handler"><a class="header" href="#alloc_error_handler"><code>alloc_error_handler</code></a></h1>
+<p>Allows defining an <code>#[alloc_error_handler]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/51540">#51540</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="allocator_internals"><a class="header" href="#allocator_internals"><code>allocator_internals</code></a></h1>
@@ -2641,12 +2648,15 @@ detail of the <code>global_allocator</code> feature not intended for use outside
 compiler.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="allow_internal_unsafe"><a class="header" href="#allow_internal_unsafe"><code>allow_internal_unsafe</code></a></h1>
+<p>Allows using <code>#[allow_internal_unsafe]</code>. This is an attribute on <code>macro_rules!</code> and can't use the attribute handling below (it has to be checked before expansion possibly makes macros disappear).</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="allow_internal_unstable"><a class="header" href="#allow_internal_unstable"><code>allow_internal_unstable</code></a></h1>
+<p>Allows using <code>#[allow_internal_unstable]</code>. This is an attribute on <code>macro_rules!</code> and can't use the attribute handling below (it has to be checked before expansion possibly makes macros disappear).</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="anonymous_lifetime_in_impl_trait"><a class="header" href="#anonymous_lifetime_in_impl_trait"><code>anonymous_lifetime_in_impl_trait</code></a></h1>
+<p>Allows using anonymous lifetimes in argument-position impl-trait.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="apx_target_feature"><a class="header" href="#apx_target_feature"><code>apx_target_feature</code></a></h1>
@@ -3094,24 +3104,31 @@ unsafe {
 <hr />
 <p>This feature adds a <code>may_unwind</code> option to <code>asm!</code> which allows an <code>asm</code> block to unwind stack and be part of the stack unwinding process. This option is only supported by the LLVM backend right now.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="associated_const_equality"><a class="header" href="#associated_const_equality"><code>associated_const_equality</code></a></h1>
+<p>Allows users to enforce equality of associated constants <code>TraitImpl&lt;AssocConst=3&gt;</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/92827">#92827</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="associated_type_defaults"><a class="header" href="#associated_type_defaults"><code>associated_type_defaults</code></a></h1>
+<p>Allows associated type defaults.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29661">#29661</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="async_drop"><a class="header" href="#async_drop"><code>async_drop</code></a></h1>
+<p>Allows implementing <code>AsyncDrop</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/126482">#126482</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="async_fn_in_dyn_trait"><a class="header" href="#async_fn_in_dyn_trait"><code>async_fn_in_dyn_trait</code></a></h1>
+<p>Allows async functions to be called from <code>dyn Trait</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/133119">#133119</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="async_fn_track_caller"><a class="header" href="#async_fn_track_caller"><code>async_fn_track_caller</code></a></h1>
+<p>Allows <code>#[track_caller]</code> on async functions.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/110011">#110011</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="async_for_loop"><a class="header" href="#async_for_loop"><code>async_for_loop</code></a></h1>
+<p>Allows <code>for await</code> loops.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/118898">#118898</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="async_trait_bounds"><a class="header" href="#async_trait_bounds"><code>async_trait_bounds</code></a></h1>
+<p>Allows <code>async</code> trait bound modifier.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/62290">#62290</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="auto_traits"><a class="header" href="#auto_traits"><code>auto_traits</code></a></h1>
@@ -3192,6 +3209,7 @@ is considered a successful match.</p>
 <h2 id="supertraits"><a class="header" href="#supertraits">Supertraits</a></h2>
 <p>Auto traits cannot have supertraits. This is for soundness reasons, as the interaction of coinduction with implied bounds is difficult to reconcile.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="avx10_target_feature"><a class="header" href="#avx10_target_feature"><code>avx10_target_feature</code></a></h1>
+<p>Allows using Intel AVX10 target features and intrinsics</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/138843">#138843</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="box_patterns"><a class="header" href="#box_patterns"><code>box_patterns</code></a></h1>
@@ -3222,6 +3240,7 @@ fn main() {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="builtin_syntax"><a class="header" href="#builtin_syntax"><code>builtin_syntax</code></a></h1>
+<p>Allows builtin # foo() syntax</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/110680">#110680</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="c_variadic"><a class="header" href="#c_variadic"><code>c_variadic</code></a></h1>
@@ -3243,15 +3262,19 @@ defined in Rust. They may be called both from within Rust and via FFI.</p>
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_contract_checks"><a class="header" href="#cfg_contract_checks"><code>cfg_contract_checks</code></a></h1>
+<p>Allows the use of <code>#[cfg(contract_checks)</code> to check if contract checks are enabled.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/128044">#128044</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_emscripten_wasm_eh"><a class="header" href="#cfg_emscripten_wasm_eh"><code>cfg_emscripten_wasm_eh</code></a></h1>
+<p>Allows access to the emscripten_wasm_eh config, used by panic_unwind and unwind</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_overflow_checks"><a class="header" href="#cfg_overflow_checks"><code>cfg_overflow_checks</code></a></h1>
+<p>Allows the use of <code>#[cfg(overflow_checks)</code> to check if integer overflow behaviour.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/111466">#111466</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_relocation_model"><a class="header" href="#cfg_relocation_model"><code>cfg_relocation_model</code></a></h1>
+<p>Provides the relocation model information as cfg entry</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/114929">#114929</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_sanitize"><a class="header" href="#cfg_sanitize"><code>cfg_sanitize</code></a></h1>
@@ -3283,24 +3306,31 @@ fn b() {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_sanitizer_cfi"><a class="header" href="#cfg_sanitizer_cfi"><code>cfg_sanitizer_cfi</code></a></h1>
+<p>Allows <code>cfg(sanitizer_cfi_generalize_pointers)</code> and <code>cfg(sanitizer_cfi_normalize_integers)</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/89653">#89653</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_target_compact"><a class="header" href="#cfg_target_compact"><code>cfg_target_compact</code></a></h1>
+<p>Allows <code>cfg(target(abi = "..."))</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/96901">#96901</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_target_has_atomic"><a class="header" href="#cfg_target_has_atomic"><code>cfg_target_has_atomic</code></a></h1>
+<p>Allows <code>cfg(target_has_atomic_load_store = "...")</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/94039">#94039</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_target_has_atomic_equal_alignment"><a class="header" href="#cfg_target_has_atomic_equal_alignment"><code>cfg_target_has_atomic_equal_alignment</code></a></h1>
+<p>Allows <code>cfg(target_has_atomic_equal_alignment = "...")</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/93822">#93822</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_target_has_reliable_f16_f128"><a class="header" href="#cfg_target_has_reliable_f16_f128"><code>cfg_target_has_reliable_f16_f128</code></a></h1>
+<p>Allows checking whether or not the backend correctly supports unstable float types.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_target_thread_local"><a class="header" href="#cfg_target_thread_local"><code>cfg_target_thread_local</code></a></h1>
+<p>Allows <code>cfg(target_thread_local)</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29594">#29594</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_ub_checks"><a class="header" href="#cfg_ub_checks"><code>cfg_ub_checks</code></a></h1>
+<p>Allows the use of <code>#[cfg(ub_checks)</code> to check if UB checks are enabled.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/123499">#123499</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cfg_version"><a class="header" href="#cfg_version"><code>cfg_version</code></a></h1>
@@ -3352,6 +3382,7 @@ extern {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="closure_lifetime_binder"><a class="header" href="#closure_lifetime_binder"><code>closure_lifetime_binder</code></a></h1>
+<p>Allows <code>for&lt;...&gt;</code> on closures and coroutines.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/97362">#97362</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="closure_track_caller"><a class="header" href="#closure_track_caller"><code>closure_track_caller</code></a></h1>
@@ -3436,33 +3467,43 @@ $ arm-none-eabi-objdump -D function.o
 <p>This feature is internal to the Rust compiler and is not intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_async_blocks"><a class="header" href="#const_async_blocks"><code>const_async_blocks</code></a></h1>
+<p>Allows <code>async {}</code> expressions in const contexts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/85368">#85368</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_closures"><a class="header" href="#const_closures"><code>const_closures</code></a></h1>
+<p>Allows <code>const || {}</code> closures in const contexts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/106003">#106003</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_destruct"><a class="header" href="#const_destruct"><code>const_destruct</code></a></h1>
+<p>Allows using <code>~const Destruct</code> bounds and calling drop impls in const contexts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/133214">#133214</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_for"><a class="header" href="#const_for"><code>const_for</code></a></h1>
+<p>Allows <code>for _ in _</code> loops in const contexts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/87575">#87575</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_precise_live_drops"><a class="header" href="#const_precise_live_drops"><code>const_precise_live_drops</code></a></h1>
+<p>Be more precise when looking for live drops in a const context.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/73255">#73255</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_trait_impl"><a class="header" href="#const_trait_impl"><code>const_trait_impl</code></a></h1>
+<p>Allows <code>impl const Trait for T</code> syntax.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/67792">#67792</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_try"><a class="header" href="#const_try"><code>const_try</code></a></h1>
+<p>Allows the <code>?</code> operator in const contexts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/74935">#74935</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contracts"><a class="header" href="#contracts"><code>contracts</code></a></h1>
+<p>Allows use of contracts attributes.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/128044">#128044</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contracts_internals"><a class="header" href="#contracts_internals"><code>contracts_internals</code></a></h1>
+<p>Allows access to internal machinery used to implement contracts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/128044">#128044</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="coroutine_clone"><a class="header" href="#coroutine_clone"><code>coroutine_clone</code></a></h1>
+<p>Allows coroutines to be cloned.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/95360">#95360</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="coroutines"><a class="header" href="#coroutines"><code>coroutines</code></a></h1>
@@ -3710,9 +3751,11 @@ fn bar() {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom_inner_attributes"><a class="header" href="#custom_inner_attributes"><code>custom_inner_attributes</code></a></h1>
+<p>Allows non-builtin attributes in inner attribute position.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/54726">#54726</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom_mir"><a class="header" href="#custom_mir"><code>custom_mir</code></a></h1>
+<p>Allows writing custom MIR</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom_test_frameworks"><a class="header" href="#custom_test_frameworks"><code>custom_test_frameworks</code></a></h1>
@@ -3743,6 +3786,7 @@ const WILL_PASS: i32 = 0;
 const WILL_FAIL: i32 = 4;
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="decl_macro"><a class="header" href="#decl_macro"><code>decl_macro</code></a></h1>
+<p>Allows declarative macros 2.0 (<code>macro</code>).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/39412">#39412</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="default_field_values"><a class="header" href="#default_field_values"><code>default_field_values</code></a></h1>
@@ -3819,9 +3863,11 @@ impl Default for Pet {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="deprecated_safe"><a class="header" href="#deprecated_safe"><code>deprecated_safe</code></a></h1>
+<p>Allows using <code>#[deprecated_safe]</code> to deprecate the safeness of a function or trait</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/94978">#94978</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="deprecated_suggestion"><a class="header" href="#deprecated_suggestion"><code>deprecated_suggestion</code></a></h1>
+<p>Allows having using <code>suggestion</code> in the <code>#[deprecated]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/94785">#94785</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="deref_patterns"><a class="header" href="#deref_patterns"><code>deref_patterns</code></a></h1>
@@ -3921,6 +3967,7 @@ match *(b"test" as &amp;[u8]) {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="doc_auto_cfg"><a class="header" href="#doc_auto_cfg"><code>doc_auto_cfg</code></a></h1>
+<p>Tells rustdoc to automatically generate <code>#[doc(cfg(...))]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/43781">#43781</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="doc_cfg"><a class="header" href="#doc_cfg"><code>doc_cfg</code></a></h1>
@@ -3966,6 +4013,7 @@ pub struct Icon {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="doc_cfg_hide"><a class="header" href="#doc_cfg_hide"><code>doc_cfg_hide</code></a></h1>
+<p>Allows <code>#[doc(cfg_hide(...))]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/43781">#43781</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="doc_masked"><a class="header" href="#doc_masked"><code>doc_masked</code></a></h1>
@@ -4013,18 +4061,22 @@ pub fn my_fn() -&gt; MyStruct { MyStruct }
 <p>This feature was originally implemented in PR <a href="https://github.com/rust-lang/rust/pull/45039">#45039</a>.</p>
 <p>See also its documentation in <a href="language-features/../../rustdoc/unstable-features.html#adding-your-trait-to-the-notable-traits-dialog">the rustdoc book</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="dropck_eyepatch"><a class="header" href="#dropck_eyepatch"><code>dropck_eyepatch</code></a></h1>
+<p>Allows using the <code>may_dangle</code> attribute (RFC 1327).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/34761">#34761</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="dyn_star"><a class="header" href="#dyn_star"><code>dyn_star</code></a></h1>
+<p>Allows <code>dyn* Trait</code> objects.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/102425">#102425</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ergonomic_clones"><a class="header" href="#ergonomic_clones"><code>ergonomic_clones</code></a></h1>
+<p>Allows the .use postfix syntax <code>x.use</code> and use closures <code>use |x| { ... }</code></p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132290">#132290</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ermsb_target_feature"><a class="header" href="#ermsb_target_feature"><code>ermsb_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="exhaustive_patterns"><a class="header" href="#exhaustive_patterns"><code>exhaustive_patterns</code></a></h1>
+<p>Allows exhaustive pattern matching on types that contain uninhabited types.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/51085">#51085</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="explicit_extern_abis"><a class="header" href="#explicit_extern_abis"><code>explicit_extern_abis</code></a></h1>
@@ -4047,9 +4099,11 @@ extern "C" fn function2() {} // compiles
 extern "aapcs" fn function3() {} // compiles
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="explicit_tail_calls"><a class="header" href="#explicit_tail_calls"><code>explicit_tail_calls</code></a></h1>
+<p>Allows explicit tail calls via <code>become</code> expression.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/112788">#112788</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="export_stable"><a class="header" href="#export_stable"><code>export_stable</code></a></h1>
+<p>Allows using <code>#[export_stable]</code> which indicates that an item is exportable.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/139939">#139939</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="extended_varargs_abi_support"><a class="header" href="#extended_varargs_abi_support"><code>extended_varargs_abi_support</code></a></h1>
@@ -4058,9 +4112,11 @@ extern "aapcs" fn function3() {} // compiles
 <p>This feature adds the possibility of using <code>sysv64</code>, <code>win64</code> or <code>efiapi</code> calling
 conventions on functions with varargs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="extern_system_varargs"><a class="header" href="#extern_system_varargs"><code>extern_system_varargs</code></a></h1>
+<p>Allows using <code>system</code> as a calling convention with varargs.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/136946">#136946</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="extern_types"><a class="header" href="#extern_types"><code>extern_types</code></a></h1>
+<p>Allows defining <code>extern type</code>s.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/43467">#43467</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="f128"><a class="header" href="#f128"><code>f128</code></a></h1>
@@ -4144,15 +4200,19 @@ implemented in this way on all of them. It is therefore also worth verifying
 that the semantics of the C toolchain used to compile the binary being linked
 against are compatible with those of the <code>#[ffi_pure]</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fmt_debug"><a class="header" href="#fmt_debug"><code>fmt_debug</code></a></h1>
+<p>Controlling the behavior of fmt::Debug</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/129709">#129709</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fn_align"><a class="header" href="#fn_align"><code>fn_align</code></a></h1>
+<p>Allows using <code>#[repr(align(...))]</code> on function items</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/82232">#82232</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fn_delegation"><a class="header" href="#fn_delegation"><code>fn_delegation</code></a></h1>
+<p>Support delegating implementation of functions to other already implemented functions.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/118212">#118212</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="freeze_impls"><a class="header" href="#freeze_impls"><code>freeze_impls</code></a></h1>
+<p>Allows impls for the Freeze trait.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/121675">#121675</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="frontmatter"><a class="header" href="#frontmatter"><code>frontmatter</code></a></h1>
@@ -4172,33 +4232,43 @@ fn main() {
     let x: libc::c_int = 1i32;
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fundamental"><a class="header" href="#fundamental"><code>fundamental</code></a></h1>
+<p>Allows using the <code>#[fundamental]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29635">#29635</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gen_blocks"><a class="header" href="#gen_blocks"><code>gen_blocks</code></a></h1>
+<p>Allows defining gen blocks and <code>gen fn</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/117078">#117078</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_arg_infer"><a class="header" href="#generic_arg_infer"><code>generic_arg_infer</code></a></h1>
+<p>Infer generic args for both consts and types.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/85077">#85077</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_assert"><a class="header" href="#generic_assert"><code>generic_assert</code></a></h1>
+<p>Outputs useful <code>assert!</code> messages</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs"><code>generic_const_exprs</code></a></h1>
+<p>Allows non-trivial generic constants which have to have wfness manually propagated to callers</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/76560">#76560</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_const_items"><a class="header" href="#generic_const_items"><code>generic_const_items</code></a></h1>
+<p>Allows generic parameters and where-clauses on free &amp; associated const items.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/113521">#113521</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_const_parameter_types"><a class="header" href="#generic_const_parameter_types"><code>generic_const_parameter_types</code></a></h1>
+<p>Allows the type of const generics to depend on generic parameters</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/137626">#137626</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="generic_pattern_types"><a class="header" href="#generic_pattern_types"><code>generic_pattern_types</code></a></h1>
+<p>Allows any generic constants being used as pattern type range ends</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/136574">#136574</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="global_registration"><a class="header" href="#global_registration"><code>global_registration</code></a></h1>
+<p>Allows registering static items globally, possibly across crates, to iterate over at runtime.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/125119">#125119</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="guard_patterns"><a class="header" href="#guard_patterns"><code>guard_patterns</code></a></h1>
+<p>Allows using guards in patterns.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/129967">#129967</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="half_open_range_patterns_in_slices"><a class="header" href="#half_open_range_patterns_in_slices"><code>half_open_range_patterns_in_slices</code></a></h1>
@@ -4222,15 +4292,19 @@ fn main() {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="if_let_guard"><a class="header" href="#if_let_guard"><code>if_let_guard</code></a></h1>
+<p>Allows <code>if let</code> guard in match arms.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/51114">#51114</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="impl_trait_in_assoc_type"><a class="header" href="#impl_trait_in_assoc_type"><code>impl_trait_in_assoc_type</code></a></h1>
+<p>Allows <code>impl Trait</code> to be used inside associated types (RFC 2515).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/63063">#63063</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="impl_trait_in_bindings"><a class="header" href="#impl_trait_in_bindings"><code>impl_trait_in_bindings</code></a></h1>
+<p>Allows <code>impl Trait</code> in bindings (<code>let</code>).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/63065">#63065</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="impl_trait_in_fn_trait_return"><a class="header" href="#impl_trait_in_fn_trait_return"><code>impl_trait_in_fn_trait_return</code></a></h1>
+<p>Allows <code>impl Trait</code> as output type in <code>Fn</code> traits in return position of functions.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/99697">#99697</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="import_trait_associated_functions"><a class="header" href="#import_trait_associated_functions">import_trait_associated_functions</a></h1>
@@ -4248,6 +4322,7 @@ fn main() {
     assert_eq!(sum, Some(21));
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="inherent_associated_types"><a class="header" href="#inherent_associated_types"><code>inherent_associated_types</code></a></h1>
+<p>Allows associated types in inherent impls.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/8995">#8995</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intra-doc-pointers"><a class="header" href="#intra-doc-pointers"><code>intra-doc-pointers</code></a></h1>
@@ -4428,9 +4503,11 @@ return a valid pointer, and so needs to do the check internally.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/83518">#83518</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="lazy_type_alias"><a class="header" href="#lazy_type_alias"><code>lazy_type_alias</code></a></h1>
+<p>Allow to have type alias types for inter-crate use.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/112792">#112792</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="let_chains"><a class="header" href="#let_chains"><code>let_chains</code></a></h1>
+<p>Allows <code>if/while p &amp;&amp; let q = r &amp;&amp; ...</code> chains.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/53667">#53667</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="link_arg_attribute"><a class="header" href="#link_arg_attribute"><code>link_arg_attribute</code></a></h1>
@@ -4453,9 +4530,11 @@ extern "C" {}
 <p>This feature is internal to the Rust compiler and is not intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="link_llvm_intrinsics"><a class="header" href="#link_llvm_intrinsics"><code>link_llvm_intrinsics</code></a></h1>
+<p>Allows using <code>#[link_name="llvm.*"]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29602">#29602</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="linkage"><a class="header" href="#linkage"><code>linkage</code></a></h1>
+<p>Allows using the <code>#[linkage = ".."]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29603">#29603</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="loongarch_target_feature"><a class="header" href="#loongarch_target_feature"><code>loongarch_target_feature</code></a></h1>
@@ -4611,15 +4690,18 @@ fn cheap_clone&lt;T: CheapToClone&gt;(t: T) -&gt; T {
 <p>This is expected to replace the unstable <code>overlapping_marker_traits</code>
 feature, which applied to all empty traits (without needing an opt-in).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args"><code>min_generic_const_args</code></a></h1>
+<p>Enables the generic const args MVP (only bare paths, not arbitrary computation).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="min_specialization"><a class="header" href="#min_specialization"><code>min_specialization</code></a></h1>
+<p>A minimal, sound subset of specialization intended to be used by the standard library until the soundness issues with specialization are fixed.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/31844">#31844</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="mips_target_feature"><a class="header" href="#mips_target_feature"><code>mips_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="more_maybe_bounds"><a class="header" href="#more_maybe_bounds"><code>more_maybe_bounds</code></a></h1>
+<p>Allows using <code>?Trait</code> trait bounds in more contexts.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="more_qualified_paths"><a class="header" href="#more_qualified_paths"><code>more_qualified_paths</code></a></h1>
@@ -4652,18 +4734,23 @@ impl A for Foo {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/137976">#137976</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="multiple_supertrait_upcastable"><a class="header" href="#multiple_supertrait_upcastable"><code>multiple_supertrait_upcastable</code></a></h1>
+<p>Allows the <code>multiple_supertrait_upcastable</code> lint.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="must_not_suspend"><a class="header" href="#must_not_suspend"><code>must_not_suspend</code></a></h1>
+<p>Allows the <code>#[must_not_suspend]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/83310">#83310</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="mut_ref"><a class="header" href="#mut_ref"><code>mut_ref</code></a></h1>
+<p>Allows <code>mut ref</code> and <code>mut ref mut</code> identifier patterns.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/123076">#123076</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="naked_functions_rustic_abi"><a class="header" href="#naked_functions_rustic_abi"><code>naked_functions_rustic_abi</code></a></h1>
+<p>Allows using <code>#[naked]</code> on <code>extern "Rust"</code> functions.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/138997">#138997</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="naked_functions_target_feature"><a class="header" href="#naked_functions_target_feature"><code>naked_functions_target_feature</code></a></h1>
+<p>Allows using <code>#[target_feature(enable = "...")]</code> on <code>#[naked]</code> on functions.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/138568">#138568</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="native_link_modifiers_as_needed"><a class="header" href="#native_link_modifiers_as_needed"><code>native_link_modifiers_as_needed</code></a></h1>
@@ -4676,9 +4763,11 @@ impl A for Foo {
 The modifier does nothing for linkers that don't support it (e.g. <code>link.exe</code>).</p>
 <p>The default for this modifier is unclear, some targets currently specify it as <code>+as-needed</code>, some do not. We may want to try making <code>+as-needed</code> a default for all targets.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="needs_panic_runtime"><a class="header" href="#needs_panic_runtime"><code>needs_panic_runtime</code></a></h1>
+<p>Allows declaring with <code>#![needs_panic_runtime]</code> that a panic runtime is needed.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/32837">#32837</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="negative_bounds"><a class="header" href="#negative_bounds"><code>negative_bounds</code></a></h1>
+<p>Allow negative trait bounds. This is an internal-only feature for testing the trait solver!</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="negative_impls"><a class="header" href="#negative_impls"><code>negative_impls</code></a></h1>
@@ -4724,12 +4813,15 @@ marker type is <code>!AutoTrait</code>.</p>
 <li>It prevents downstream crates from creating such impls.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="never_patterns"><a class="header" href="#never_patterns"><code>never_patterns</code></a></h1>
+<p>Allows the <code>!</code> pattern.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/118155">#118155</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="never_type"><a class="header" href="#never_type"><code>never_type</code></a></h1>
+<p>Allows the <code>!</code> type. Does not imply 'exhaustive_patterns' (below) any more.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/35121">#35121</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="never_type_fallback"><a class="header" href="#never_type_fallback"><code>never_type_fallback</code></a></h1>
+<p>Allows diverging expressions to fall back to <code>!</code> rather than <code>()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/65992">#65992</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="new_range"><a class="header" href="#new_range"><code>new_range</code></a></h1>
@@ -4737,6 +4829,7 @@ marker type is <code>!AutoTrait</code>.</p>
 <hr />
 <p>Switch the syntaxes <code>a..</code>, <code>a..b</code>, and <code>a..=b</code> to resolve the new range types.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="no_core"><a class="header" href="#no_core"><code>no_core</code></a></h1>
+<p>Allows <code>#![no_core]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29639">#29639</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="no_sanitize"><a class="header" href="#no_sanitize"><code>no_sanitize</code></a></h1>
@@ -4762,9 +4855,11 @@ fn foo() {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="non_exhaustive_omitted_patterns_lint"><a class="header" href="#non_exhaustive_omitted_patterns_lint"><code>non_exhaustive_omitted_patterns_lint</code></a></h1>
+<p>Allows using the <code>non_exhaustive_omitted_patterns</code> lint.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/89554">#89554</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="non_lifetime_binders"><a class="header" href="#non_lifetime_binders"><code>non_lifetime_binders</code></a></h1>
+<p>Allows <code>for&lt;T&gt;</code> binders in where-clauses</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/108185">#108185</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="offset_of_enum"><a class="header" href="#offset_of_enum"><code>offset_of_enum</code></a></h1>
@@ -4809,24 +4904,31 @@ fn main() {
     assert_eq!(std::mem::offset_of!(Struct, tail), 4);
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="omit_gdb_pretty_printer_section"><a class="header" href="#omit_gdb_pretty_printer_section"><code>omit_gdb_pretty_printer_section</code></a></h1>
+<p>Allows using <code>#[omit_gdb_pretty_printer_section]</code>.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="optimize_attribute"><a class="header" href="#optimize_attribute"><code>optimize_attribute</code></a></h1>
+<p>Allows using <code>#[optimize(X)]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/54882">#54882</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="panic_runtime"><a class="header" href="#panic_runtime"><code>panic_runtime</code></a></h1>
+<p>Allows using the <code>#![panic_runtime]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/32837">#32837</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="patchable_function_entry"><a class="header" href="#patchable_function_entry"><code>patchable_function_entry</code></a></h1>
+<p>Allows specifying nop padding on functions for dynamic patching.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/123115">#123115</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="pattern_complexity_limit"><a class="header" href="#pattern_complexity_limit"><code>pattern_complexity_limit</code></a></h1>
+<p>Set the maximum pattern complexity allowed (not limited by default).</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="pattern_types"><a class="header" href="#pattern_types"><code>pattern_types</code></a></h1>
+<p>Allows using pattern types.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/123646">#123646</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="pin_ergonomics"><a class="header" href="#pin_ergonomics"><code>pin_ergonomics</code></a></h1>
+<p>Experimental features that make <code>Pin</code> more ergonomic.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/130494">#130494</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="postfix-match"><a class="header" href="#postfix-match"><code>postfix-match</code></a></h1>
@@ -4856,18 +4958,21 @@ get_foo().match {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="prelude_import"><a class="header" href="#prelude_import"><code>prelude_import</code></a></h1>
+<p>Allows using <code>#[prelude_import]</code> on glob <code>use</code> items.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="prfchw_target_feature"><a class="header" href="#prfchw_target_feature"><code>prfchw_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="proc_macro_hygiene"><a class="header" href="#proc_macro_hygiene"><code>proc_macro_hygiene</code></a></h1>
+<p>Allows macro attributes on expressions, statements and non-inline modules.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/54727">#54727</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="profiler_runtime"><a class="header" href="#profiler_runtime"><code>profiler_runtime</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/42524">#42524</a>.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="raw_dylib_elf"><a class="header" href="#raw_dylib_elf"><code>raw_dylib_elf</code></a></h1>
+<p>Allows the use of raw-dylibs on ELF platforms</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/135694">#135694</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ref_pat_eat_one_layer_2024"><a class="header" href="#ref_pat_eat_one_layer_2024"><code>ref_pat_eat_one_layer_2024</code></a></h1>
@@ -4967,6 +5072,7 @@ pub mod operations_h {
 #![deny(bevy::duplicate_bevy_dependencies)]
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="repr_simd"><a class="header" href="#repr_simd"><code>repr_simd</code></a></h1>
+<p>Allows <code>repr(simd)</code> and importing the various simd intrinsics.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/27731">#27731</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="repr128"><a class="header" href="#repr128"><code>repr128</code></a></h1>
@@ -4983,6 +5089,7 @@ enum Foo {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="return_type_notation"><a class="header" href="#return_type_notation"><code>return_type_notation</code></a></h1>
+<p>Allows bounding the return type of AFIT/RPITIT.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/109417">#109417</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="riscv_target_feature"><a class="header" href="#riscv_target_feature"><code>riscv_target_feature</code></a></h1>
@@ -4992,9 +5099,11 @@ enum Foo {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rust_cold_cc"><a class="header" href="#rust_cold_cc"><code>rust_cold_cc</code></a></h1>
+<p>Allows <code>extern "rust-cold"</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/97544">#97544</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_allow_const_fn_unstable"><a class="header" href="#rustc_allow_const_fn_unstable"><code>rustc_allow_const_fn_unstable</code></a></h1>
+<p>Allows using <code>#[rustc_allow_const_fn_unstable]</code>. This is an attribute on <code>const fn</code> for the same purpose as <code>#[allow_internal_unstable]</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/69399">#69399</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rustc_attrs"><a class="header" href="#rustc_attrs"><code>rustc_attrs</code></a></h1>
@@ -5071,33 +5180,40 @@ dependent crates which link to it (including integration tests, which are built 
 <li>You might need to configure library paths explicitly depending on your LLVM installation</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rustdoc_internals"><a class="header" href="#rustdoc_internals"><code>rustdoc_internals</code></a></h1>
+<p>Allows using internal rustdoc features like <code>doc(keyword)</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/90418">#90418</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rustdoc_missing_doc_code_examples"><a class="header" href="#rustdoc_missing_doc_code_examples"><code>rustdoc_missing_doc_code_examples</code></a></h1>
+<p>Allows using the <code>rustdoc::missing_doc_code_examples</code> lint</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/101730">#101730</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="s390x_target_feature"><a class="header" href="#s390x_target_feature"><code>s390x_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sha512_sm_x86"><a class="header" href="#sha512_sm_x86"><code>sha512_sm_x86</code></a></h1>
+<p>Allows use of x86 SHA512, SM3 and SM4 target-features and intrinsics</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/126624">#126624</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="simd_ffi"><a class="header" href="#simd_ffi"><code>simd_ffi</code></a></h1>
+<p>Allows the use of SIMD types in functions declared in <code>extern</code> blocks.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/27731">#27731</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sparc_target_feature"><a class="header" href="#sparc_target_feature"><code>sparc_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132783">#132783</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="specialization"><a class="header" href="#specialization"><code>specialization</code></a></h1>
+<p>Allows specialization of implementations (RFC 1210).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/31844">#31844</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sse4a_target_feature"><a class="header" href="#sse4a_target_feature"><code>sse4a_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="staged_api"><a class="header" href="#staged_api"><code>staged_api</code></a></h1>
+<p>Allows using the <code>#[stable]</code> and <code>#[unstable]</code> attributes.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="stmt_expr_attributes"><a class="header" href="#stmt_expr_attributes"><code>stmt_expr_attributes</code></a></h1>
+<p>Allows attributes on expressions and non-item statements.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/15701">#15701</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="strict_provenance_lints"><a class="header" href="#strict_provenance_lints"><code>strict_provenance_lints</code></a></h1>
@@ -5154,21 +5270,26 @@ pub fn is_it_the_answer(value: Value) -&gt; bool {
 }
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="structural_match"><a class="header" href="#structural_match"><code>structural_match</code></a></h1>
+<p>Allows using <code>#[structural_match]</code> which indicates that a type is structurally matchable. FIXME: Subsumed by trait <code>StructuralPartialEq</code>, cannot move to removed until a library feature with the same name exists.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/31434">#31434</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="super_let"><a class="header" href="#super_let"><code>super_let</code></a></h1>
+<p>Allows <code>super let</code> statements.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/139076">#139076</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="supertrait_item_shadowing"><a class="header" href="#supertrait_item_shadowing"><code>supertrait_item_shadowing</code></a></h1>
+<p>Allows subtrait items to shadow supertrait items.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/89151">#89151</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tbm_target_feature"><a class="header" href="#tbm_target_feature"><code>tbm_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test_unstable_lint"><a class="header" href="#test_unstable_lint"><code>test_unstable_lint</code></a></h1>
+<p>Added for testing unstable lints; perma-unstable.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="thread_local"><a class="header" href="#thread_local"><code>thread_local</code></a></h1>
+<p>Allows using <code>#[thread_local]</code> on <code>static</code> items.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29594">#29594</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="trait_alias"><a class="header" href="#trait_alias"><code>trait_alias</code></a></h1>
@@ -5198,6 +5319,7 @@ pub fn main() {
     println!("{:?}", b);
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="transmute_generic_consts"><a class="header" href="#transmute_generic_consts"><code>transmute_generic_consts</code></a></h1>
+<p>Allows for transmuting between arrays with sizes that contain generic consts.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/109929">#109929</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="transparent_unions"><a class="header" href="#transparent_unions"><code>transparent_unions</code></a></h1>
@@ -5274,6 +5396,7 @@ it is transparent). The Rust compiler is free to perform this optimization if
 possible, but is not required to, and different compiler versions may differ in
 their application of these optimizations.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="trivial_bounds"><a class="header" href="#trivial_bounds"><code>trivial_bounds</code></a></h1>
+<p>Allows inconsistent bounds in where clauses.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/48214">#48214</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="try_blocks"><a class="header" href="#try_blocks"><code>try_blocks</code></a></h1>
@@ -5470,18 +5593,23 @@ extern "rust-call" fn add_args(args: (u32, u32)) -&gt; u32 {
 
 fn main() {}</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unqualified_local_imports"><a class="header" href="#unqualified_local_imports"><code>unqualified_local_imports</code></a></h1>
+<p>Helps with formatting for <code>group_imports = "StdExternalCrate"</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/138299">#138299</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe_binders"><a class="header" href="#unsafe_binders"><code>unsafe_binders</code></a></h1>
+<p>Allows using <code>unsafe&lt;'a&gt; &amp;'a T</code> unsafe binder types.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/130516">#130516</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unsafe_fields"><a class="header" href="#unsafe_fields"><code>unsafe_fields</code></a></h1>
+<p>Allows declaring fields <code>unsafe</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132922">#132922</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unsized_const_params"><a class="header" href="#unsized_const_params"><code>unsized_const_params</code></a></h1>
+<p>Allows const generic parameters to be defined with types that are not <code>Sized</code>, e.g. <code>fn foo&lt;const N: [u8]&gt;() {</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/95174">#95174</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unsized_fn_params"><a class="header" href="#unsized_fn_params"><code>unsized_fn_params</code></a></h1>
+<p>Allows unsized fn parameters.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/48055">#48055</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unsized_locals"><a class="header" href="#unsized_locals"><code>unsized_locals</code></a></h1>
@@ -5620,24 +5748,29 @@ fn main() {
 }</code></pre></pre>
 <p>will unnecessarily extend the stack frame.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="used_with_arg"><a class="header" href="#used_with_arg"><code>used_with_arg</code></a></h1>
+<p>Allows using the <code>#[used(linker)]</code> (or <code>#[used(compiler)]</code>) attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/93798">#93798</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="wasm_target_feature"><a class="header" href="#wasm_target_feature"><code>wasm_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="where_clause_attrs"><a class="header" href="#where_clause_attrs"><code>where_clause_attrs</code></a></h1>
+<p>Allows use of attributes in <code>where</code> clauses.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/115590">#115590</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="with_negative_coherence"><a class="header" href="#with_negative_coherence"><code>with_negative_coherence</code></a></h1>
+<p>Use for stable + negative coherence and strict coherence depending on trait's rustc_strict_coherence value.</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="x86_amx_intrinsics"><a class="header" href="#x86_amx_intrinsics"><code>x86_amx_intrinsics</code></a></h1>
+<p>Allows use of x86 <code>AMX</code> target-feature attributes and intrinsics</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/126622">#126622</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="x87_target_feature"><a class="header" href="#x87_target_feature"><code>x87_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="xop_target_feature"><a class="header" href="#xop_target_feature"><code>xop_target_feature</code></a></h1>
+<p>Allows use of the <code>xop</code> target-feature</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/127208">#127208</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="yeet_expr"><a class="header" href="#yeet_expr"><code>yeet_expr</code></a></h1>
@@ -5888,9 +6021,6 @@ fn main() {
 }</code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_alloc_error"><a class="header" href="#const_alloc_error"><code>const_alloc_error</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/92523">#92523</a></p>
-<hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="const_array_as_mut_slice"><a class="header" href="#const_array_as_mut_slice"><code>const_array_as_mut_slice</code></a></h1>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/133333">#133333</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="const_array_each_ref"><a class="header" href="#const_array_each_ref"><code>const_array_each_ref</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/133289">#133289</a></p>
@@ -6387,6 +6517,9 @@ fn main() {
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="nonzero_ops"><a class="header" href="#nonzero_ops"><code>nonzero_ops</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/84186">#84186</a></p>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="normalize_lexically"><a class="header" href="#normalize_lexically"><code>normalize_lexically</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/134694">#134694</a></p>
 <hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="numfmt"><a class="header" href="#numfmt"><code>numfmt</code></a></h1>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
