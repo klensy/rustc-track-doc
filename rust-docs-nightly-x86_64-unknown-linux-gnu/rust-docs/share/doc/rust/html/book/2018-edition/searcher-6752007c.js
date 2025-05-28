@@ -356,7 +356,7 @@ window.search = window.search || {};
             }
             showSearch(false);
             marker.unmark();
-        } else if (!hasFocus() && (e.key === 'S' || e.key === '/')) {
+        } else if (!hasFocus() && (e.key === 's' || e.key === '/')) {
             e.preventDefault();
             showSearch(true);
             window.scrollTo(0, 0);
@@ -524,6 +524,6 @@ window.search = window.search || {};
         document.head.append(script);
     }
 
-    loadScript(path_to_root + 'searchindex-9b69e75b.js', 'search-index');
+    loadScript(path_to_root + 'searchindex-c553fdeb.js', 'search-index');
 
 })(window.search);
