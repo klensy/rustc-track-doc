@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/mut_ptr.rs`."><title>mut_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (4d08223c0 2025-05-31)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>mut_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/mut_ptr.rs`."><title>mut_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (99e7c15e8 2025-06-01)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>mut_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{Equal, Greater, Less};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::const_eval_select;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, SizedTypeProperties};
@@ -448,7 +448,7 @@
 <a href=#448 id=448 data-nosnippet>448</a>
 <a href=#449 id=449 data-nosnippet>449</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset`.
 <a href=#450 id=450 data-nosnippet>450</a>        // The obtained pointer is valid for writes since the caller must
-<a href=#451 id=451 data-nosnippet>451</a>        // guarantee that it points to the same allocated object as `self`.
+<a href=#451 id=451 data-nosnippet>451</a>        // guarantee that it points to the same allocation as `self`.
 <a href=#452 id=452 data-nosnippet>452</a>        </span><span class="kw">unsafe </span>{ intrinsics::offset(<span class="self">self</span>, count) }
 <a href=#453 id=453 data-nosnippet>453</a>    }
 <a href=#454 id=454 data-nosnippet>454</a>
@@ -481,17 +481,17 @@
 <a href=#481 id=481 data-nosnippet>481</a>    ///
 <a href=#482 id=482 data-nosnippet>482</a>    /// This operation itself is always safe, but using the resulting pointer is not.
 <a href=#483 id=483 data-nosnippet>483</a>    ///
-<a href=#484 id=484 data-nosnippet>484</a>    /// The resulting pointer "remembers" the [allocated object] that `self` points to
+<a href=#484 id=484 data-nosnippet>484</a>    /// The resulting pointer "remembers" the [allocation] that `self` points to
 <a href=#485 id=485 data-nosnippet>485</a>    /// (this is called "[Provenance](ptr/index.html#provenance)").
-<a href=#486 id=486 data-nosnippet>486</a>    /// The pointer must not be used to read or write other allocated objects.
+<a href=#486 id=486 data-nosnippet>486</a>    /// The pointer must not be used to read or write other allocations.
 <a href=#487 id=487 data-nosnippet>487</a>    ///
 <a href=#488 id=488 data-nosnippet>488</a>    /// In other words, `let z = x.wrapping_offset((y as isize) - (x as isize))` does *not* make `z`
 <a href=#489 id=489 data-nosnippet>489</a>    /// the same as `y` even if we assume `T` has size `1` and there is no overflow: `z` is still
 <a href=#490 id=490 data-nosnippet>490</a>    /// attached to the object `x` is attached to, and dereferencing it is Undefined Behavior unless
-<a href=#491 id=491 data-nosnippet>491</a>    /// `x` and `y` point into the same allocated object.
+<a href=#491 id=491 data-nosnippet>491</a>    /// `x` and `y` point into the same allocation.
 <a href=#492 id=492 data-nosnippet>492</a>    ///
 <a href=#493 id=493 data-nosnippet>493</a>    /// Compared to [`offset`], this method basically delays the requirement of staying within the
-<a href=#494 id=494 data-nosnippet>494</a>    /// same allocated object: [`offset`] is immediate Undefined Behavior when crossing object
+<a href=#494 id=494 data-nosnippet>494</a>    /// same allocation: [`offset`] is immediate Undefined Behavior when crossing object
 <a href=#495 id=495 data-nosnippet>495</a>    /// boundaries; `wrapping_offset` produces a pointer but still leads to Undefined Behavior if a
 <a href=#496 id=496 data-nosnippet>496</a>    /// pointer is dereferenced when it is out-of-bounds of the object it is attached to. [`offset`]
 <a href=#497 id=497 data-nosnippet>497</a>    /// can be optimized better and is thus preferable in performance-sensitive code.
@@ -499,10 +499,10 @@
 <a href=#499 id=499 data-nosnippet>499</a>    /// The delayed check only considers the value of the pointer that was dereferenced, not the
 <a href=#500 id=500 data-nosnippet>500</a>    /// intermediate values used during the computation of the final result. For example,
 <a href=#501 id=501 data-nosnippet>501</a>    /// `x.wrapping_offset(o).wrapping_offset(o.wrapping_neg())` is always the same as `x`. In other
-<a href=#502 id=502 data-nosnippet>502</a>    /// words, leaving the allocated object and then re-entering it later is permitted.
+<a href=#502 id=502 data-nosnippet>502</a>    /// words, leaving the allocation and then re-entering it later is permitted.
 <a href=#503 id=503 data-nosnippet>503</a>    ///
 <a href=#504 id=504 data-nosnippet>504</a>    /// [`offset`]: #method.offset
-<a href=#505 id=505 data-nosnippet>505</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#505 id=505 data-nosnippet>505</a>    /// [allocation]: crate::ptr#allocation
 <a href=#506 id=506 data-nosnippet>506</a>    ///
 <a href=#507 id=507 data-nosnippet>507</a>    /// # Examples
 <a href=#508 id=508 data-nosnippet>508</a>    ///
@@ -791,7 +791,7 @@
 <a href=#791 id=791 data-nosnippet>791</a>    /// * `self` and `origin` must either
 <a href=#792 id=792 data-nosnippet>792</a>    ///
 <a href=#793 id=793 data-nosnippet>793</a>    ///   * point to the same address, or
-<a href=#794 id=794 data-nosnippet>794</a>    ///   * both be [derived from][crate::ptr#provenance] a pointer to the same [allocated object], and the memory range between
+<a href=#794 id=794 data-nosnippet>794</a>    ///   * both be [derived from][crate::ptr#provenance] a pointer to the same [allocation], and the memory range between
 <a href=#795 id=795 data-nosnippet>795</a>    ///     the two pointers must be in bounds of that object. (See below for an example.)
 <a href=#796 id=796 data-nosnippet>796</a>    ///
 <a href=#797 id=797 data-nosnippet>797</a>    /// * The distance between the pointers, in bytes, must be an exact multiple
@@ -799,10 +799,10 @@
 <a href=#799 id=799 data-nosnippet>799</a>    ///
 <a href=#800 id=800 data-nosnippet>800</a>    /// As a consequence, the absolute distance between the pointers, in bytes, computed on
 <a href=#801 id=801 data-nosnippet>801</a>    /// mathematical integers (without "wrapping around"), cannot overflow an `isize`. This is
-<a href=#802 id=802 data-nosnippet>802</a>    /// implied by the in-bounds requirement, and the fact that no allocated object can be larger
+<a href=#802 id=802 data-nosnippet>802</a>    /// implied by the in-bounds requirement, and the fact that no allocation can be larger
 <a href=#803 id=803 data-nosnippet>803</a>    /// than `isize::MAX` bytes.
 <a href=#804 id=804 data-nosnippet>804</a>    ///
-<a href=#805 id=805 data-nosnippet>805</a>    /// The requirement for pointers to be derived from the same allocated object is primarily
+<a href=#805 id=805 data-nosnippet>805</a>    /// The requirement for pointers to be derived from the same allocation is primarily
 <a href=#806 id=806 data-nosnippet>806</a>    /// needed for `const`-compatibility: the distance between pointers into *different* allocated
 <a href=#807 id=807 data-nosnippet>807</a>    /// objects is not known at compile-time. However, the requirement also exists at
 <a href=#808 id=808 data-nosnippet>808</a>    /// runtime and may be exploited by optimizations. If you wish to compute the difference between
@@ -811,7 +811,7 @@
 <a href=#811 id=811 data-nosnippet>811</a>    </span><span class="comment">// FIXME: recommend `addr()` instead of `as usize` once that is stable.
 <a href=#812 id=812 data-nosnippet>812</a>    </span><span class="doccomment">///
 <a href=#813 id=813 data-nosnippet>813</a>    /// [`add`]: #method.add
-<a href=#814 id=814 data-nosnippet>814</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#814 id=814 data-nosnippet>814</a>    /// [allocation]: crate::ptr#allocation
 <a href=#815 id=815 data-nosnippet>815</a>    ///
 <a href=#816 id=816 data-nosnippet>816</a>    /// # Panics
 <a href=#817 id=817 data-nosnippet>817</a>    ///
@@ -1061,12 +1061,12 @@
 <a href=#1061 id=1061 data-nosnippet>1061</a>    ///   "wrapping around"), must fit in an `isize`.
 <a href=#1062 id=1062 data-nosnippet>1062</a>    ///
 <a href=#1063 id=1063 data-nosnippet>1063</a>    /// * If the computed offset is non-zero, then `self` must be [derived from][crate::ptr#provenance] a pointer to some
-<a href=#1064 id=1064 data-nosnippet>1064</a>    ///   [allocated object], and the entire memory range between `self` and the result must be in
-<a href=#1065 id=1065 data-nosnippet>1065</a>    ///   bounds of that allocated object. In particular, this range must not "wrap around" the edge
+<a href=#1064 id=1064 data-nosnippet>1064</a>    ///   [allocation], and the entire memory range between `self` and the result must be in
+<a href=#1065 id=1065 data-nosnippet>1065</a>    ///   bounds of that allocation. In particular, this range must not "wrap around" the edge
 <a href=#1066 id=1066 data-nosnippet>1066</a>    ///   of the address space.
 <a href=#1067 id=1067 data-nosnippet>1067</a>    ///
-<a href=#1068 id=1068 data-nosnippet>1068</a>    /// Allocated objects can never be larger than `isize::MAX` bytes, so if the computed offset
-<a href=#1069 id=1069 data-nosnippet>1069</a>    /// stays in bounds of the allocated object, it is guaranteed to satisfy the first requirement.
+<a href=#1068 id=1068 data-nosnippet>1068</a>    /// Allocations can never be larger than `isize::MAX` bytes, so if the computed offset
+<a href=#1069 id=1069 data-nosnippet>1069</a>    /// stays in bounds of the allocation, it is guaranteed to satisfy the first requirement.
 <a href=#1070 id=1070 data-nosnippet>1070</a>    /// This implies, for instance, that `vec.as_ptr().add(vec.len())` (for `vec: Vec&lt;T&gt;`) is always
 <a href=#1071 id=1071 data-nosnippet>1071</a>    /// safe.
 <a href=#1072 id=1072 data-nosnippet>1072</a>    ///
@@ -1075,7 +1075,7 @@
 <a href=#1075 id=1075 data-nosnippet>1075</a>    /// enables more aggressive compiler optimizations.
 <a href=#1076 id=1076 data-nosnippet>1076</a>    ///
 <a href=#1077 id=1077 data-nosnippet>1077</a>    /// [`wrapping_sub`]: #method.wrapping_sub
-<a href=#1078 id=1078 data-nosnippet>1078</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#1078 id=1078 data-nosnippet>1078</a>    /// [allocation]: crate::ptr#allocation
 <a href=#1079 id=1079 data-nosnippet>1079</a>    ///
 <a href=#1080 id=1080 data-nosnippet>1080</a>    /// # Examples
 <a href=#1081 id=1081 data-nosnippet>1081</a>    ///
@@ -1165,16 +1165,16 @@
 <a href=#1165 id=1165 data-nosnippet>1165</a>    ///
 <a href=#1166 id=1166 data-nosnippet>1166</a>    /// This operation itself is always safe, but using the resulting pointer is not.
 <a href=#1167 id=1167 data-nosnippet>1167</a>    ///
-<a href=#1168 id=1168 data-nosnippet>1168</a>    /// The resulting pointer "remembers" the [allocated object] that `self` points to; it must not
-<a href=#1169 id=1169 data-nosnippet>1169</a>    /// be used to read or write other allocated objects.
+<a href=#1168 id=1168 data-nosnippet>1168</a>    /// The resulting pointer "remembers" the [allocation] that `self` points to; it must not
+<a href=#1169 id=1169 data-nosnippet>1169</a>    /// be used to read or write other allocations.
 <a href=#1170 id=1170 data-nosnippet>1170</a>    ///
 <a href=#1171 id=1171 data-nosnippet>1171</a>    /// In other words, `let z = x.wrapping_add((y as usize) - (x as usize))` does *not* make `z`
 <a href=#1172 id=1172 data-nosnippet>1172</a>    /// the same as `y` even if we assume `T` has size `1` and there is no overflow: `z` is still
 <a href=#1173 id=1173 data-nosnippet>1173</a>    /// attached to the object `x` is attached to, and dereferencing it is Undefined Behavior unless
-<a href=#1174 id=1174 data-nosnippet>1174</a>    /// `x` and `y` point into the same allocated object.
+<a href=#1174 id=1174 data-nosnippet>1174</a>    /// `x` and `y` point into the same allocation.
 <a href=#1175 id=1175 data-nosnippet>1175</a>    ///
 <a href=#1176 id=1176 data-nosnippet>1176</a>    /// Compared to [`add`], this method basically delays the requirement of staying within the
-<a href=#1177 id=1177 data-nosnippet>1177</a>    /// same allocated object: [`add`] is immediate Undefined Behavior when crossing object
+<a href=#1177 id=1177 data-nosnippet>1177</a>    /// same allocation: [`add`] is immediate Undefined Behavior when crossing object
 <a href=#1178 id=1178 data-nosnippet>1178</a>    /// boundaries; `wrapping_add` produces a pointer but still leads to Undefined Behavior if a
 <a href=#1179 id=1179 data-nosnippet>1179</a>    /// pointer is dereferenced when it is out-of-bounds of the object it is attached to. [`add`]
 <a href=#1180 id=1180 data-nosnippet>1180</a>    /// can be optimized better and is thus preferable in performance-sensitive code.
@@ -1182,10 +1182,10 @@
 <a href=#1182 id=1182 data-nosnippet>1182</a>    /// The delayed check only considers the value of the pointer that was dereferenced, not the
 <a href=#1183 id=1183 data-nosnippet>1183</a>    /// intermediate values used during the computation of the final result. For example,
 <a href=#1184 id=1184 data-nosnippet>1184</a>    /// `x.wrapping_add(o).wrapping_sub(o)` is always the same as `x`. In other words, leaving the
-<a href=#1185 id=1185 data-nosnippet>1185</a>    /// allocated object and then re-entering it later is permitted.
+<a href=#1185 id=1185 data-nosnippet>1185</a>    /// allocation and then re-entering it later is permitted.
 <a href=#1186 id=1186 data-nosnippet>1186</a>    ///
 <a href=#1187 id=1187 data-nosnippet>1187</a>    /// [`add`]: #method.add
-<a href=#1188 id=1188 data-nosnippet>1188</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#1188 id=1188 data-nosnippet>1188</a>    /// [allocation]: crate::ptr#allocation
 <a href=#1189 id=1189 data-nosnippet>1189</a>    ///
 <a href=#1190 id=1190 data-nosnippet>1190</a>    /// # Examples
 <a href=#1191 id=1191 data-nosnippet>1191</a>    ///
@@ -1241,16 +1241,16 @@
 <a href=#1241 id=1241 data-nosnippet>1241</a>    ///
 <a href=#1242 id=1242 data-nosnippet>1242</a>    /// This operation itself is always safe, but using the resulting pointer is not.
 <a href=#1243 id=1243 data-nosnippet>1243</a>    ///
-<a href=#1244 id=1244 data-nosnippet>1244</a>    /// The resulting pointer "remembers" the [allocated object] that `self` points to; it must not
-<a href=#1245 id=1245 data-nosnippet>1245</a>    /// be used to read or write other allocated objects.
+<a href=#1244 id=1244 data-nosnippet>1244</a>    /// The resulting pointer "remembers" the [allocation] that `self` points to; it must not
+<a href=#1245 id=1245 data-nosnippet>1245</a>    /// be used to read or write other allocations.
 <a href=#1246 id=1246 data-nosnippet>1246</a>    ///
 <a href=#1247 id=1247 data-nosnippet>1247</a>    /// In other words, `let z = x.wrapping_sub((x as usize) - (y as usize))` does *not* make `z`
 <a href=#1248 id=1248 data-nosnippet>1248</a>    /// the same as `y` even if we assume `T` has size `1` and there is no overflow: `z` is still
 <a href=#1249 id=1249 data-nosnippet>1249</a>    /// attached to the object `x` is attached to, and dereferencing it is Undefined Behavior unless
-<a href=#1250 id=1250 data-nosnippet>1250</a>    /// `x` and `y` point into the same allocated object.
+<a href=#1250 id=1250 data-nosnippet>1250</a>    /// `x` and `y` point into the same allocation.
 <a href=#1251 id=1251 data-nosnippet>1251</a>    ///
 <a href=#1252 id=1252 data-nosnippet>1252</a>    /// Compared to [`sub`], this method basically delays the requirement of staying within the
-<a href=#1253 id=1253 data-nosnippet>1253</a>    /// same allocated object: [`sub`] is immediate Undefined Behavior when crossing object
+<a href=#1253 id=1253 data-nosnippet>1253</a>    /// same allocation: [`sub`] is immediate Undefined Behavior when crossing object
 <a href=#1254 id=1254 data-nosnippet>1254</a>    /// boundaries; `wrapping_sub` produces a pointer but still leads to Undefined Behavior if a
 <a href=#1255 id=1255 data-nosnippet>1255</a>    /// pointer is dereferenced when it is out-of-bounds of the object it is attached to. [`sub`]
 <a href=#1256 id=1256 data-nosnippet>1256</a>    /// can be optimized better and is thus preferable in performance-sensitive code.
@@ -1258,10 +1258,10 @@
 <a href=#1258 id=1258 data-nosnippet>1258</a>    /// The delayed check only considers the value of the pointer that was dereferenced, not the
 <a href=#1259 id=1259 data-nosnippet>1259</a>    /// intermediate values used during the computation of the final result. For example,
 <a href=#1260 id=1260 data-nosnippet>1260</a>    /// `x.wrapping_add(o).wrapping_sub(o)` is always the same as `x`. In other words, leaving the
-<a href=#1261 id=1261 data-nosnippet>1261</a>    /// allocated object and then re-entering it later is permitted.
+<a href=#1261 id=1261 data-nosnippet>1261</a>    /// allocation and then re-entering it later is permitted.
 <a href=#1262 id=1262 data-nosnippet>1262</a>    ///
 <a href=#1263 id=1263 data-nosnippet>1263</a>    /// [`sub`]: #method.sub
-<a href=#1264 id=1264 data-nosnippet>1264</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#1264 id=1264 data-nosnippet>1264</a>    /// [allocation]: crate::ptr#allocation
 <a href=#1265 id=1265 data-nosnippet>1265</a>    ///
 <a href=#1266 id=1266 data-nosnippet>1266</a>    /// # Examples
 <a href=#1267 id=1267 data-nosnippet>1267</a>    ///
@@ -1770,7 +1770,7 @@
 <a href=#1770 id=1770 data-nosnippet>1770</a>    ///
 <a href=#1771 id=1771 data-nosnippet>1771</a>    /// # Safety
 <a href=#1772 id=1772 data-nosnippet>1772</a>    ///
-<a href=#1773 id=1773 data-nosnippet>1773</a>    /// `mid` must be [in-bounds] of the underlying [allocated object].
+<a href=#1773 id=1773 data-nosnippet>1773</a>    /// `mid` must be [in-bounds] of the underlying [allocation].
 <a href=#1774 id=1774 data-nosnippet>1774</a>    /// Which means `self` must be dereferenceable and span a single allocation
 <a href=#1775 id=1775 data-nosnippet>1775</a>    /// that is at least `mid * size_of::&lt;T&gt;()` bytes long. Not upholding these
 <a href=#1776 id=1776 data-nosnippet>1776</a>    /// requirements is *[undefined behavior]* even if the resulting pointers are not used.
@@ -1781,7 +1781,7 @@
 <a href=#1781 id=1781 data-nosnippet>1781</a>    ///
 <a href=#1782 id=1782 data-nosnippet>1782</a>    /// [`split_at_mut_unchecked`]: #method.split_at_mut_unchecked
 <a href=#1783 id=1783 data-nosnippet>1783</a>    /// [in-bounds]: #method.add
-<a href=#1784 id=1784 data-nosnippet>1784</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#1784 id=1784 data-nosnippet>1784</a>    /// [allocation]: crate::ptr#allocation
 <a href=#1785 id=1785 data-nosnippet>1785</a>    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 <a href=#1786 id=1786 data-nosnippet>1786</a>    ///
 <a href=#1787 id=1787 data-nosnippet>1787</a>    /// # Examples
@@ -1816,321 +1816,322 @@
 <a href=#1816 id=1816 data-nosnippet>1816</a>    ///
 <a href=#1817 id=1817 data-nosnippet>1817</a>    /// # Safety
 <a href=#1818 id=1818 data-nosnippet>1818</a>    ///
-<a href=#1819 id=1819 data-nosnippet>1819</a>    /// `mid` must be [in-bounds] of the underlying [allocated object].
+<a href=#1819 id=1819 data-nosnippet>1819</a>    /// `mid` must be [in-bounds] of the underlying [allocation].
 <a href=#1820 id=1820 data-nosnippet>1820</a>    /// Which means `self` must be dereferenceable and span a single allocation
 <a href=#1821 id=1821 data-nosnippet>1821</a>    /// that is at least `mid * size_of::&lt;T&gt;()` bytes long. Not upholding these
 <a href=#1822 id=1822 data-nosnippet>1822</a>    /// requirements is *[undefined behavior]* even if the resulting pointers are not used.
 <a href=#1823 id=1823 data-nosnippet>1823</a>    ///
 <a href=#1824 id=1824 data-nosnippet>1824</a>    /// [in-bounds]: #method.add
 <a href=#1825 id=1825 data-nosnippet>1825</a>    /// [out-of-bounds index]: #method.add
-<a href=#1826 id=1826 data-nosnippet>1826</a>    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-<a href=#1827 id=1827 data-nosnippet>1827</a>    ///
-<a href=#1828 id=1828 data-nosnippet>1828</a>    /// # Examples
-<a href=#1829 id=1829 data-nosnippet>1829</a>    ///
-<a href=#1830 id=1830 data-nosnippet>1830</a>    /// ```
-<a href=#1831 id=1831 data-nosnippet>1831</a>    /// #![feature(raw_slice_split)]
-<a href=#1832 id=1832 data-nosnippet>1832</a>    ///
-<a href=#1833 id=1833 data-nosnippet>1833</a>    /// let mut v = [1, 0, 3, 0, 5, 6];
-<a href=#1834 id=1834 data-nosnippet>1834</a>    /// // scoped to restrict the lifetime of the borrows
-<a href=#1835 id=1835 data-nosnippet>1835</a>    /// unsafe {
-<a href=#1836 id=1836 data-nosnippet>1836</a>    ///     let ptr = &amp;mut v as *mut [_];
-<a href=#1837 id=1837 data-nosnippet>1837</a>    ///     let (left, right) = ptr.split_at_mut_unchecked(2);
-<a href=#1838 id=1838 data-nosnippet>1838</a>    ///     assert_eq!(&amp;*left, [1, 0]);
-<a href=#1839 id=1839 data-nosnippet>1839</a>    ///     assert_eq!(&amp;*right, [3, 0, 5, 6]);
-<a href=#1840 id=1840 data-nosnippet>1840</a>    ///     (&amp;mut *left)[1] = 2;
-<a href=#1841 id=1841 data-nosnippet>1841</a>    ///     (&amp;mut *right)[1] = 4;
-<a href=#1842 id=1842 data-nosnippet>1842</a>    /// }
-<a href=#1843 id=1843 data-nosnippet>1843</a>    /// assert_eq!(v, [1, 2, 3, 4, 5, 6]);
-<a href=#1844 id=1844 data-nosnippet>1844</a>    /// ```
-<a href=#1845 id=1845 data-nosnippet>1845</a>    </span><span class="attr">#[inline(always)]
-<a href=#1846 id=1846 data-nosnippet>1846</a>    #[unstable(feature = <span class="string">"raw_slice_split"</span>, issue = <span class="string">"95595"</span>)]
-<a href=#1847 id=1847 data-nosnippet>1847</a>    </span><span class="kw">pub unsafe fn </span>split_at_mut_unchecked(<span class="self">self</span>, mid: usize) -&gt; (<span class="kw-2">*mut </span>[T], <span class="kw-2">*mut </span>[T]) {
-<a href=#1848 id=1848 data-nosnippet>1848</a>        <span class="kw">let </span>len = <span class="self">self</span>.len();
-<a href=#1849 id=1849 data-nosnippet>1849</a>        <span class="kw">let </span>ptr = <span class="self">self</span>.as_mut_ptr();
-<a href=#1850 id=1850 data-nosnippet>1850</a>
-<a href=#1851 id=1851 data-nosnippet>1851</a>        <span class="comment">// SAFETY: Caller must pass a valid pointer and an index that is in-bounds.
-<a href=#1852 id=1852 data-nosnippet>1852</a>        </span><span class="kw">let </span>tail = <span class="kw">unsafe </span>{ ptr.add(mid) };
-<a href=#1853 id=1853 data-nosnippet>1853</a>        (
-<a href=#1854 id=1854 data-nosnippet>1854</a>            <span class="kw">crate</span>::ptr::slice_from_raw_parts_mut(ptr, mid),
-<a href=#1855 id=1855 data-nosnippet>1855</a>            <span class="kw">crate</span>::ptr::slice_from_raw_parts_mut(tail, len - mid),
-<a href=#1856 id=1856 data-nosnippet>1856</a>        )
-<a href=#1857 id=1857 data-nosnippet>1857</a>    }
-<a href=#1858 id=1858 data-nosnippet>1858</a>
-<a href=#1859 id=1859 data-nosnippet>1859</a>    <span class="doccomment">/// Returns a raw pointer to the slice's buffer.
-<a href=#1860 id=1860 data-nosnippet>1860</a>    ///
-<a href=#1861 id=1861 data-nosnippet>1861</a>    /// This is equivalent to casting `self` to `*mut T`, but more type-safe.
-<a href=#1862 id=1862 data-nosnippet>1862</a>    ///
-<a href=#1863 id=1863 data-nosnippet>1863</a>    /// # Examples
-<a href=#1864 id=1864 data-nosnippet>1864</a>    ///
-<a href=#1865 id=1865 data-nosnippet>1865</a>    /// ```rust
-<a href=#1866 id=1866 data-nosnippet>1866</a>    /// #![feature(slice_ptr_get)]
-<a href=#1867 id=1867 data-nosnippet>1867</a>    /// use std::ptr;
-<a href=#1868 id=1868 data-nosnippet>1868</a>    ///
-<a href=#1869 id=1869 data-nosnippet>1869</a>    /// let slice: *mut [i8] = ptr::slice_from_raw_parts_mut(ptr::null_mut(), 3);
-<a href=#1870 id=1870 data-nosnippet>1870</a>    /// assert_eq!(slice.as_mut_ptr(), ptr::null_mut());
-<a href=#1871 id=1871 data-nosnippet>1871</a>    /// ```
-<a href=#1872 id=1872 data-nosnippet>1872</a>    </span><span class="attr">#[inline(always)]
-<a href=#1873 id=1873 data-nosnippet>1873</a>    #[unstable(feature = <span class="string">"slice_ptr_get"</span>, issue = <span class="string">"74265"</span>)]
-<a href=#1874 id=1874 data-nosnippet>1874</a>    </span><span class="kw">pub const fn </span>as_mut_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
-<a href=#1875 id=1875 data-nosnippet>1875</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>T
-<a href=#1876 id=1876 data-nosnippet>1876</a>    }
-<a href=#1877 id=1877 data-nosnippet>1877</a>
-<a href=#1878 id=1878 data-nosnippet>1878</a>    <span class="doccomment">/// Returns a raw pointer to an element or subslice, without doing bounds
-<a href=#1879 id=1879 data-nosnippet>1879</a>    /// checking.
-<a href=#1880 id=1880 data-nosnippet>1880</a>    ///
-<a href=#1881 id=1881 data-nosnippet>1881</a>    /// Calling this method with an [out-of-bounds index] or when `self` is not dereferenceable
-<a href=#1882 id=1882 data-nosnippet>1882</a>    /// is *[undefined behavior]* even if the resulting pointer is not used.
-<a href=#1883 id=1883 data-nosnippet>1883</a>    ///
-<a href=#1884 id=1884 data-nosnippet>1884</a>    /// [out-of-bounds index]: #method.add
-<a href=#1885 id=1885 data-nosnippet>1885</a>    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
-<a href=#1886 id=1886 data-nosnippet>1886</a>    ///
-<a href=#1887 id=1887 data-nosnippet>1887</a>    /// # Examples
-<a href=#1888 id=1888 data-nosnippet>1888</a>    ///
-<a href=#1889 id=1889 data-nosnippet>1889</a>    /// ```
-<a href=#1890 id=1890 data-nosnippet>1890</a>    /// #![feature(slice_ptr_get)]
-<a href=#1891 id=1891 data-nosnippet>1891</a>    ///
-<a href=#1892 id=1892 data-nosnippet>1892</a>    /// let x = &amp;mut [1, 2, 4] as *mut [i32];
-<a href=#1893 id=1893 data-nosnippet>1893</a>    ///
-<a href=#1894 id=1894 data-nosnippet>1894</a>    /// unsafe {
-<a href=#1895 id=1895 data-nosnippet>1895</a>    ///     assert_eq!(x.get_unchecked_mut(1), x.as_mut_ptr().add(1));
-<a href=#1896 id=1896 data-nosnippet>1896</a>    /// }
-<a href=#1897 id=1897 data-nosnippet>1897</a>    /// ```
-<a href=#1898 id=1898 data-nosnippet>1898</a>    </span><span class="attr">#[unstable(feature = <span class="string">"slice_ptr_get"</span>, issue = <span class="string">"74265"</span>)]
-<a href=#1899 id=1899 data-nosnippet>1899</a>    #[inline(always)]
-<a href=#1900 id=1900 data-nosnippet>1900</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked_mut&lt;I&gt;(<span class="self">self</span>, index: I) -&gt; <span class="kw-2">*mut </span>I::Output
-<a href=#1901 id=1901 data-nosnippet>1901</a>    <span class="kw">where
-<a href=#1902 id=1902 data-nosnippet>1902</a>        </span>I: SliceIndex&lt;[T]&gt;,
-<a href=#1903 id=1903 data-nosnippet>1903</a>    {
-<a href=#1904 id=1904 data-nosnippet>1904</a>        <span class="comment">// SAFETY: the caller ensures that `self` is dereferenceable and `index` in-bounds.
-<a href=#1905 id=1905 data-nosnippet>1905</a>        </span><span class="kw">unsafe </span>{ index.get_unchecked_mut(<span class="self">self</span>) }
-<a href=#1906 id=1906 data-nosnippet>1906</a>    }
-<a href=#1907 id=1907 data-nosnippet>1907</a>
-<a href=#1908 id=1908 data-nosnippet>1908</a>    <span class="doccomment">/// Returns `None` if the pointer is null, or else returns a shared slice to
-<a href=#1909 id=1909 data-nosnippet>1909</a>    /// the value wrapped in `Some`. In contrast to [`as_ref`], this does not require
-<a href=#1910 id=1910 data-nosnippet>1910</a>    /// that the value has to be initialized.
-<a href=#1911 id=1911 data-nosnippet>1911</a>    ///
-<a href=#1912 id=1912 data-nosnippet>1912</a>    /// For the mutable counterpart see [`as_uninit_slice_mut`].
-<a href=#1913 id=1913 data-nosnippet>1913</a>    ///
-<a href=#1914 id=1914 data-nosnippet>1914</a>    /// [`as_ref`]: pointer#method.as_ref-1
-<a href=#1915 id=1915 data-nosnippet>1915</a>    /// [`as_uninit_slice_mut`]: #method.as_uninit_slice_mut
-<a href=#1916 id=1916 data-nosnippet>1916</a>    ///
-<a href=#1917 id=1917 data-nosnippet>1917</a>    /// # Safety
-<a href=#1918 id=1918 data-nosnippet>1918</a>    ///
-<a href=#1919 id=1919 data-nosnippet>1919</a>    /// When calling this method, you have to ensure that *either* the pointer is null *or*
-<a href=#1920 id=1920 data-nosnippet>1920</a>    /// all of the following is true:
-<a href=#1921 id=1921 data-nosnippet>1921</a>    ///
-<a href=#1922 id=1922 data-nosnippet>1922</a>    /// * The pointer must be [valid] for reads for `ptr.len() * size_of::&lt;T&gt;()` many bytes,
-<a href=#1923 id=1923 data-nosnippet>1923</a>    ///   and it must be properly aligned. This means in particular:
-<a href=#1924 id=1924 data-nosnippet>1924</a>    ///
-<a href=#1925 id=1925 data-nosnippet>1925</a>    ///     * The entire memory range of this slice must be contained within a single [allocated object]!
-<a href=#1926 id=1926 data-nosnippet>1926</a>    ///       Slices can never span across multiple allocated objects.
-<a href=#1927 id=1927 data-nosnippet>1927</a>    ///
-<a href=#1928 id=1928 data-nosnippet>1928</a>    ///     * The pointer must be aligned even for zero-length slices. One
-<a href=#1929 id=1929 data-nosnippet>1929</a>    ///       reason for this is that enum layout optimizations may rely on references
-<a href=#1930 id=1930 data-nosnippet>1930</a>    ///       (including slices of any length) being aligned and non-null to distinguish
-<a href=#1931 id=1931 data-nosnippet>1931</a>    ///       them from other data. You can obtain a pointer that is usable as `data`
-<a href=#1932 id=1932 data-nosnippet>1932</a>    ///       for zero-length slices using [`NonNull::dangling()`].
-<a href=#1933 id=1933 data-nosnippet>1933</a>    ///
-<a href=#1934 id=1934 data-nosnippet>1934</a>    /// * The total size `ptr.len() * size_of::&lt;T&gt;()` of the slice must be no larger than `isize::MAX`.
-<a href=#1935 id=1935 data-nosnippet>1935</a>    ///   See the safety documentation of [`pointer::offset`].
-<a href=#1936 id=1936 data-nosnippet>1936</a>    ///
-<a href=#1937 id=1937 data-nosnippet>1937</a>    /// * You must enforce Rust's aliasing rules, since the returned lifetime `'a` is
-<a href=#1938 id=1938 data-nosnippet>1938</a>    ///   arbitrarily chosen and does not necessarily reflect the actual lifetime of the data.
-<a href=#1939 id=1939 data-nosnippet>1939</a>    ///   In particular, while this reference exists, the memory the pointer points to must
-<a href=#1940 id=1940 data-nosnippet>1940</a>    ///   not get mutated (except inside `UnsafeCell`).
-<a href=#1941 id=1941 data-nosnippet>1941</a>    ///
-<a href=#1942 id=1942 data-nosnippet>1942</a>    /// This applies even if the result of this method is unused!
-<a href=#1943 id=1943 data-nosnippet>1943</a>    ///
-<a href=#1944 id=1944 data-nosnippet>1944</a>    /// See also [`slice::from_raw_parts`][].
-<a href=#1945 id=1945 data-nosnippet>1945</a>    ///
-<a href=#1946 id=1946 data-nosnippet>1946</a>    /// [valid]: crate::ptr#safety
-<a href=#1947 id=1947 data-nosnippet>1947</a>    /// [allocated object]: crate::ptr#allocated-object
-<a href=#1948 id=1948 data-nosnippet>1948</a>    ///
-<a href=#1949 id=1949 data-nosnippet>1949</a>    /// # Panics during const evaluation
-<a href=#1950 id=1950 data-nosnippet>1950</a>    ///
-<a href=#1951 id=1951 data-nosnippet>1951</a>    /// This method will panic during const evaluation if the pointer cannot be
-<a href=#1952 id=1952 data-nosnippet>1952</a>    /// determined to be null or not. See [`is_null`] for more information.
-<a href=#1953 id=1953 data-nosnippet>1953</a>    ///
-<a href=#1954 id=1954 data-nosnippet>1954</a>    /// [`is_null`]: #method.is_null-1
-<a href=#1955 id=1955 data-nosnippet>1955</a>    </span><span class="attr">#[inline]
-<a href=#1956 id=1956 data-nosnippet>1956</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
-<a href=#1957 id=1957 data-nosnippet>1957</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[MaybeUninit&lt;T&gt;]&gt; {
-<a href=#1958 id=1958 data-nosnippet>1958</a>        <span class="kw">if </span><span class="self">self</span>.is_null() {
-<a href=#1959 id=1959 data-nosnippet>1959</a>            <span class="prelude-val">None
-<a href=#1960 id=1960 data-nosnippet>1960</a>        </span>} <span class="kw">else </span>{
-<a href=#1961 id=1961 data-nosnippet>1961</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `as_uninit_slice`.
-<a href=#1962 id=1962 data-nosnippet>1962</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ slice::from_raw_parts(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>MaybeUninit&lt;T&gt;, <span class="self">self</span>.len()) })
-<a href=#1963 id=1963 data-nosnippet>1963</a>        }
-<a href=#1964 id=1964 data-nosnippet>1964</a>    }
-<a href=#1965 id=1965 data-nosnippet>1965</a>
-<a href=#1966 id=1966 data-nosnippet>1966</a>    <span class="doccomment">/// Returns `None` if the pointer is null, or else returns a unique slice to
-<a href=#1967 id=1967 data-nosnippet>1967</a>    /// the value wrapped in `Some`. In contrast to [`as_mut`], this does not require
-<a href=#1968 id=1968 data-nosnippet>1968</a>    /// that the value has to be initialized.
-<a href=#1969 id=1969 data-nosnippet>1969</a>    ///
-<a href=#1970 id=1970 data-nosnippet>1970</a>    /// For the shared counterpart see [`as_uninit_slice`].
-<a href=#1971 id=1971 data-nosnippet>1971</a>    ///
-<a href=#1972 id=1972 data-nosnippet>1972</a>    /// [`as_mut`]: #method.as_mut
-<a href=#1973 id=1973 data-nosnippet>1973</a>    /// [`as_uninit_slice`]: #method.as_uninit_slice-1
-<a href=#1974 id=1974 data-nosnippet>1974</a>    ///
-<a href=#1975 id=1975 data-nosnippet>1975</a>    /// # Safety
-<a href=#1976 id=1976 data-nosnippet>1976</a>    ///
-<a href=#1977 id=1977 data-nosnippet>1977</a>    /// When calling this method, you have to ensure that *either* the pointer is null *or*
-<a href=#1978 id=1978 data-nosnippet>1978</a>    /// all of the following is true:
-<a href=#1979 id=1979 data-nosnippet>1979</a>    ///
-<a href=#1980 id=1980 data-nosnippet>1980</a>    /// * The pointer must be [valid] for reads and writes for `ptr.len() * size_of::&lt;T&gt;()`
-<a href=#1981 id=1981 data-nosnippet>1981</a>    ///   many bytes, and it must be properly aligned. This means in particular:
-<a href=#1982 id=1982 data-nosnippet>1982</a>    ///
-<a href=#1983 id=1983 data-nosnippet>1983</a>    ///     * The entire memory range of this slice must be contained within a single [allocated object]!
-<a href=#1984 id=1984 data-nosnippet>1984</a>    ///       Slices can never span across multiple allocated objects.
-<a href=#1985 id=1985 data-nosnippet>1985</a>    ///
-<a href=#1986 id=1986 data-nosnippet>1986</a>    ///     * The pointer must be aligned even for zero-length slices. One
-<a href=#1987 id=1987 data-nosnippet>1987</a>    ///       reason for this is that enum layout optimizations may rely on references
-<a href=#1988 id=1988 data-nosnippet>1988</a>    ///       (including slices of any length) being aligned and non-null to distinguish
-<a href=#1989 id=1989 data-nosnippet>1989</a>    ///       them from other data. You can obtain a pointer that is usable as `data`
-<a href=#1990 id=1990 data-nosnippet>1990</a>    ///       for zero-length slices using [`NonNull::dangling()`].
-<a href=#1991 id=1991 data-nosnippet>1991</a>    ///
-<a href=#1992 id=1992 data-nosnippet>1992</a>    /// * The total size `ptr.len() * size_of::&lt;T&gt;()` of the slice must be no larger than `isize::MAX`.
-<a href=#1993 id=1993 data-nosnippet>1993</a>    ///   See the safety documentation of [`pointer::offset`].
-<a href=#1994 id=1994 data-nosnippet>1994</a>    ///
-<a href=#1995 id=1995 data-nosnippet>1995</a>    /// * You must enforce Rust's aliasing rules, since the returned lifetime `'a` is
-<a href=#1996 id=1996 data-nosnippet>1996</a>    ///   arbitrarily chosen and does not necessarily reflect the actual lifetime of the data.
-<a href=#1997 id=1997 data-nosnippet>1997</a>    ///   In particular, while this reference exists, the memory the pointer points to must
-<a href=#1998 id=1998 data-nosnippet>1998</a>    ///   not get accessed (read or written) through any other pointer.
-<a href=#1999 id=1999 data-nosnippet>1999</a>    ///
-<a href=#2000 id=2000 data-nosnippet>2000</a>    /// This applies even if the result of this method is unused!
-<a href=#2001 id=2001 data-nosnippet>2001</a>    ///
-<a href=#2002 id=2002 data-nosnippet>2002</a>    /// See also [`slice::from_raw_parts_mut`][].
-<a href=#2003 id=2003 data-nosnippet>2003</a>    ///
-<a href=#2004 id=2004 data-nosnippet>2004</a>    /// [valid]: crate::ptr#safety
-<a href=#2005 id=2005 data-nosnippet>2005</a>    /// [allocated object]: crate::ptr#allocated-object
-<a href=#2006 id=2006 data-nosnippet>2006</a>    ///
-<a href=#2007 id=2007 data-nosnippet>2007</a>    /// # Panics during const evaluation
-<a href=#2008 id=2008 data-nosnippet>2008</a>    ///
-<a href=#2009 id=2009 data-nosnippet>2009</a>    /// This method will panic during const evaluation if the pointer cannot be
-<a href=#2010 id=2010 data-nosnippet>2010</a>    /// determined to be null or not. See [`is_null`] for more information.
-<a href=#2011 id=2011 data-nosnippet>2011</a>    ///
-<a href=#2012 id=2012 data-nosnippet>2012</a>    /// [`is_null`]: #method.is_null-1
-<a href=#2013 id=2013 data-nosnippet>2013</a>    </span><span class="attr">#[inline]
-<a href=#2014 id=2014 data-nosnippet>2014</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
-<a href=#2015 id=2015 data-nosnippet>2015</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice_mut&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;]&gt; {
-<a href=#2016 id=2016 data-nosnippet>2016</a>        <span class="kw">if </span><span class="self">self</span>.is_null() {
-<a href=#2017 id=2017 data-nosnippet>2017</a>            <span class="prelude-val">None
-<a href=#2018 id=2018 data-nosnippet>2018</a>        </span>} <span class="kw">else </span>{
-<a href=#2019 id=2019 data-nosnippet>2019</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `as_uninit_slice_mut`.
-<a href=#2020 id=2020 data-nosnippet>2020</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ slice::from_raw_parts_mut(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>MaybeUninit&lt;T&gt;, <span class="self">self</span>.len()) })
-<a href=#2021 id=2021 data-nosnippet>2021</a>        }
-<a href=#2022 id=2022 data-nosnippet>2022</a>    }
-<a href=#2023 id=2023 data-nosnippet>2023</a>}
-<a href=#2024 id=2024 data-nosnippet>2024</a>
-<a href=#2025 id=2025 data-nosnippet>2025</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; <span class="kw-2">*mut </span>[T; N] {
-<a href=#2026 id=2026 data-nosnippet>2026</a>    <span class="doccomment">/// Returns a raw pointer to the array's buffer.
-<a href=#2027 id=2027 data-nosnippet>2027</a>    ///
-<a href=#2028 id=2028 data-nosnippet>2028</a>    /// This is equivalent to casting `self` to `*mut T`, but more type-safe.
-<a href=#2029 id=2029 data-nosnippet>2029</a>    ///
-<a href=#2030 id=2030 data-nosnippet>2030</a>    /// # Examples
-<a href=#2031 id=2031 data-nosnippet>2031</a>    ///
-<a href=#2032 id=2032 data-nosnippet>2032</a>    /// ```rust
-<a href=#2033 id=2033 data-nosnippet>2033</a>    /// #![feature(array_ptr_get)]
-<a href=#2034 id=2034 data-nosnippet>2034</a>    /// use std::ptr;
-<a href=#2035 id=2035 data-nosnippet>2035</a>    ///
-<a href=#2036 id=2036 data-nosnippet>2036</a>    /// let arr: *mut [i8; 3] = ptr::null_mut();
-<a href=#2037 id=2037 data-nosnippet>2037</a>    /// assert_eq!(arr.as_mut_ptr(), ptr::null_mut());
-<a href=#2038 id=2038 data-nosnippet>2038</a>    /// ```
-<a href=#2039 id=2039 data-nosnippet>2039</a>    </span><span class="attr">#[inline]
-<a href=#2040 id=2040 data-nosnippet>2040</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
-<a href=#2041 id=2041 data-nosnippet>2041</a>    </span><span class="kw">pub const fn </span>as_mut_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
-<a href=#2042 id=2042 data-nosnippet>2042</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>T
-<a href=#2043 id=2043 data-nosnippet>2043</a>    }
-<a href=#2044 id=2044 data-nosnippet>2044</a>
-<a href=#2045 id=2045 data-nosnippet>2045</a>    <span class="doccomment">/// Returns a raw pointer to a mutable slice containing the entire array.
-<a href=#2046 id=2046 data-nosnippet>2046</a>    ///
-<a href=#2047 id=2047 data-nosnippet>2047</a>    /// # Examples
-<a href=#2048 id=2048 data-nosnippet>2048</a>    ///
-<a href=#2049 id=2049 data-nosnippet>2049</a>    /// ```
-<a href=#2050 id=2050 data-nosnippet>2050</a>    /// #![feature(array_ptr_get)]
-<a href=#2051 id=2051 data-nosnippet>2051</a>    ///
-<a href=#2052 id=2052 data-nosnippet>2052</a>    /// let mut arr = [1, 2, 5];
-<a href=#2053 id=2053 data-nosnippet>2053</a>    /// let ptr: *mut [i32; 3] = &amp;mut arr;
-<a href=#2054 id=2054 data-nosnippet>2054</a>    /// unsafe {
-<a href=#2055 id=2055 data-nosnippet>2055</a>    ///     (&amp;mut *ptr.as_mut_slice())[..2].copy_from_slice(&amp;[3, 4]);
-<a href=#2056 id=2056 data-nosnippet>2056</a>    /// }
-<a href=#2057 id=2057 data-nosnippet>2057</a>    /// assert_eq!(arr, [3, 4, 5]);
-<a href=#2058 id=2058 data-nosnippet>2058</a>    /// ```
-<a href=#2059 id=2059 data-nosnippet>2059</a>    </span><span class="attr">#[inline]
-<a href=#2060 id=2060 data-nosnippet>2060</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
-<a href=#2061 id=2061 data-nosnippet>2061</a>    </span><span class="kw">pub const fn </span>as_mut_slice(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>[T] {
-<a href=#2062 id=2062 data-nosnippet>2062</a>        <span class="self">self
-<a href=#2063 id=2063 data-nosnippet>2063</a>    </span>}
-<a href=#2064 id=2064 data-nosnippet>2064</a>}
-<a href=#2065 id=2065 data-nosnippet>2065</a>
-<a href=#2066 id=2066 data-nosnippet>2066</a><span class="doccomment">/// Pointer equality is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
-<a href=#2067 id=2067 data-nosnippet>2067</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2068 id=2068 data-nosnippet>2068</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; PartialEq <span class="kw">for </span><span class="kw-2">*mut </span>T {
-<a href=#2069 id=2069 data-nosnippet>2069</a>    <span class="attr">#[inline(always)]
-<a href=#2070 id=2070 data-nosnippet>2070</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2071 id=2071 data-nosnippet>2071</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
-<a href=#2072 id=2072 data-nosnippet>2072</a>        <span class="kw-2">*</span><span class="self">self </span>== <span class="kw-2">*</span>other
-<a href=#2073 id=2073 data-nosnippet>2073</a>    }
-<a href=#2074 id=2074 data-nosnippet>2074</a>}
-<a href=#2075 id=2075 data-nosnippet>2075</a>
-<a href=#2076 id=2076 data-nosnippet>2076</a><span class="doccomment">/// Pointer equality is an equivalence relation.
-<a href=#2077 id=2077 data-nosnippet>2077</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2078 id=2078 data-nosnippet>2078</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Eq <span class="kw">for </span><span class="kw-2">*mut </span>T {}
-<a href=#2079 id=2079 data-nosnippet>2079</a>
-<a href=#2080 id=2080 data-nosnippet>2080</a><span class="doccomment">/// Pointer comparison is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
-<a href=#2081 id=2081 data-nosnippet>2081</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2082 id=2082 data-nosnippet>2082</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Ord <span class="kw">for </span><span class="kw-2">*mut </span>T {
-<a href=#2083 id=2083 data-nosnippet>2083</a>    <span class="attr">#[inline]
-<a href=#2084 id=2084 data-nosnippet>2084</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2085 id=2085 data-nosnippet>2085</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; Ordering {
-<a href=#2086 id=2086 data-nosnippet>2086</a>        <span class="kw">if </span><span class="self">self </span>&lt; other {
-<a href=#2087 id=2087 data-nosnippet>2087</a>            Less
-<a href=#2088 id=2088 data-nosnippet>2088</a>        } <span class="kw">else if </span><span class="self">self </span>== other {
-<a href=#2089 id=2089 data-nosnippet>2089</a>            Equal
-<a href=#2090 id=2090 data-nosnippet>2090</a>        } <span class="kw">else </span>{
-<a href=#2091 id=2091 data-nosnippet>2091</a>            Greater
-<a href=#2092 id=2092 data-nosnippet>2092</a>        }
-<a href=#2093 id=2093 data-nosnippet>2093</a>    }
-<a href=#2094 id=2094 data-nosnippet>2094</a>}
-<a href=#2095 id=2095 data-nosnippet>2095</a>
-<a href=#2096 id=2096 data-nosnippet>2096</a><span class="doccomment">/// Pointer comparison is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
-<a href=#2097 id=2097 data-nosnippet>2097</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2098 id=2098 data-nosnippet>2098</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; PartialOrd <span class="kw">for </span><span class="kw-2">*mut </span>T {
-<a href=#2099 id=2099 data-nosnippet>2099</a>    <span class="attr">#[inline(always)]
-<a href=#2100 id=2100 data-nosnippet>2100</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2101 id=2101 data-nosnippet>2101</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
-<a href=#2102 id=2102 data-nosnippet>2102</a>        <span class="prelude-val">Some</span>(<span class="self">self</span>.cmp(other))
-<a href=#2103 id=2103 data-nosnippet>2103</a>    }
-<a href=#2104 id=2104 data-nosnippet>2104</a>
-<a href=#2105 id=2105 data-nosnippet>2105</a>    <span class="attr">#[inline(always)]
-<a href=#2106 id=2106 data-nosnippet>2106</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2107 id=2107 data-nosnippet>2107</a>    </span><span class="kw">fn </span>lt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
-<a href=#2108 id=2108 data-nosnippet>2108</a>        <span class="kw-2">*</span><span class="self">self </span>&lt; <span class="kw-2">*</span>other
-<a href=#2109 id=2109 data-nosnippet>2109</a>    }
-<a href=#2110 id=2110 data-nosnippet>2110</a>
-<a href=#2111 id=2111 data-nosnippet>2111</a>    <span class="attr">#[inline(always)]
-<a href=#2112 id=2112 data-nosnippet>2112</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2113 id=2113 data-nosnippet>2113</a>    </span><span class="kw">fn </span>le(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
-<a href=#2114 id=2114 data-nosnippet>2114</a>        <span class="kw-2">*</span><span class="self">self </span>&lt;= <span class="kw-2">*</span>other
-<a href=#2115 id=2115 data-nosnippet>2115</a>    }
-<a href=#2116 id=2116 data-nosnippet>2116</a>
-<a href=#2117 id=2117 data-nosnippet>2117</a>    <span class="attr">#[inline(always)]
-<a href=#2118 id=2118 data-nosnippet>2118</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2119 id=2119 data-nosnippet>2119</a>    </span><span class="kw">fn </span>gt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
-<a href=#2120 id=2120 data-nosnippet>2120</a>        <span class="kw-2">*</span><span class="self">self </span>&gt; <span class="kw-2">*</span>other
-<a href=#2121 id=2121 data-nosnippet>2121</a>    }
-<a href=#2122 id=2122 data-nosnippet>2122</a>
-<a href=#2123 id=2123 data-nosnippet>2123</a>    <span class="attr">#[inline(always)]
-<a href=#2124 id=2124 data-nosnippet>2124</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#2125 id=2125 data-nosnippet>2125</a>    </span><span class="kw">fn </span>ge(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
-<a href=#2126 id=2126 data-nosnippet>2126</a>        <span class="kw-2">*</span><span class="self">self </span>&gt;= <span class="kw-2">*</span>other
-<a href=#2127 id=2127 data-nosnippet>2127</a>    }
-<a href=#2128 id=2128 data-nosnippet>2128</a>}
-<a href=#2129 id=2129 data-nosnippet>2129</a>
-<a href=#2130 id=2130 data-nosnippet>2130</a><span class="attr">#[stable(feature = <span class="string">"raw_ptr_default"</span>, since = <span class="string">"1.88.0"</span>)]
-<a href=#2131 id=2131 data-nosnippet>2131</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Thin&gt; Default <span class="kw">for </span><span class="kw-2">*mut </span>T {
-<a href=#2132 id=2132 data-nosnippet>2132</a>    <span class="doccomment">/// Returns the default value of [`null_mut()`][crate::ptr::null_mut].
-<a href=#2133 id=2133 data-nosnippet>2133</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#2134 id=2134 data-nosnippet>2134</a>        <span class="kw">crate</span>::ptr::null_mut()
-<a href=#2135 id=2135 data-nosnippet>2135</a>    }
-<a href=#2136 id=2136 data-nosnippet>2136</a>}</code></pre></div></section></main></body></html>
+<a href=#1826 id=1826 data-nosnippet>1826</a>    /// [allocation]: crate::ptr#allocation
+<a href=#1827 id=1827 data-nosnippet>1827</a>    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+<a href=#1828 id=1828 data-nosnippet>1828</a>    ///
+<a href=#1829 id=1829 data-nosnippet>1829</a>    /// # Examples
+<a href=#1830 id=1830 data-nosnippet>1830</a>    ///
+<a href=#1831 id=1831 data-nosnippet>1831</a>    /// ```
+<a href=#1832 id=1832 data-nosnippet>1832</a>    /// #![feature(raw_slice_split)]
+<a href=#1833 id=1833 data-nosnippet>1833</a>    ///
+<a href=#1834 id=1834 data-nosnippet>1834</a>    /// let mut v = [1, 0, 3, 0, 5, 6];
+<a href=#1835 id=1835 data-nosnippet>1835</a>    /// // scoped to restrict the lifetime of the borrows
+<a href=#1836 id=1836 data-nosnippet>1836</a>    /// unsafe {
+<a href=#1837 id=1837 data-nosnippet>1837</a>    ///     let ptr = &amp;mut v as *mut [_];
+<a href=#1838 id=1838 data-nosnippet>1838</a>    ///     let (left, right) = ptr.split_at_mut_unchecked(2);
+<a href=#1839 id=1839 data-nosnippet>1839</a>    ///     assert_eq!(&amp;*left, [1, 0]);
+<a href=#1840 id=1840 data-nosnippet>1840</a>    ///     assert_eq!(&amp;*right, [3, 0, 5, 6]);
+<a href=#1841 id=1841 data-nosnippet>1841</a>    ///     (&amp;mut *left)[1] = 2;
+<a href=#1842 id=1842 data-nosnippet>1842</a>    ///     (&amp;mut *right)[1] = 4;
+<a href=#1843 id=1843 data-nosnippet>1843</a>    /// }
+<a href=#1844 id=1844 data-nosnippet>1844</a>    /// assert_eq!(v, [1, 2, 3, 4, 5, 6]);
+<a href=#1845 id=1845 data-nosnippet>1845</a>    /// ```
+<a href=#1846 id=1846 data-nosnippet>1846</a>    </span><span class="attr">#[inline(always)]
+<a href=#1847 id=1847 data-nosnippet>1847</a>    #[unstable(feature = <span class="string">"raw_slice_split"</span>, issue = <span class="string">"95595"</span>)]
+<a href=#1848 id=1848 data-nosnippet>1848</a>    </span><span class="kw">pub unsafe fn </span>split_at_mut_unchecked(<span class="self">self</span>, mid: usize) -&gt; (<span class="kw-2">*mut </span>[T], <span class="kw-2">*mut </span>[T]) {
+<a href=#1849 id=1849 data-nosnippet>1849</a>        <span class="kw">let </span>len = <span class="self">self</span>.len();
+<a href=#1850 id=1850 data-nosnippet>1850</a>        <span class="kw">let </span>ptr = <span class="self">self</span>.as_mut_ptr();
+<a href=#1851 id=1851 data-nosnippet>1851</a>
+<a href=#1852 id=1852 data-nosnippet>1852</a>        <span class="comment">// SAFETY: Caller must pass a valid pointer and an index that is in-bounds.
+<a href=#1853 id=1853 data-nosnippet>1853</a>        </span><span class="kw">let </span>tail = <span class="kw">unsafe </span>{ ptr.add(mid) };
+<a href=#1854 id=1854 data-nosnippet>1854</a>        (
+<a href=#1855 id=1855 data-nosnippet>1855</a>            <span class="kw">crate</span>::ptr::slice_from_raw_parts_mut(ptr, mid),
+<a href=#1856 id=1856 data-nosnippet>1856</a>            <span class="kw">crate</span>::ptr::slice_from_raw_parts_mut(tail, len - mid),
+<a href=#1857 id=1857 data-nosnippet>1857</a>        )
+<a href=#1858 id=1858 data-nosnippet>1858</a>    }
+<a href=#1859 id=1859 data-nosnippet>1859</a>
+<a href=#1860 id=1860 data-nosnippet>1860</a>    <span class="doccomment">/// Returns a raw pointer to the slice's buffer.
+<a href=#1861 id=1861 data-nosnippet>1861</a>    ///
+<a href=#1862 id=1862 data-nosnippet>1862</a>    /// This is equivalent to casting `self` to `*mut T`, but more type-safe.
+<a href=#1863 id=1863 data-nosnippet>1863</a>    ///
+<a href=#1864 id=1864 data-nosnippet>1864</a>    /// # Examples
+<a href=#1865 id=1865 data-nosnippet>1865</a>    ///
+<a href=#1866 id=1866 data-nosnippet>1866</a>    /// ```rust
+<a href=#1867 id=1867 data-nosnippet>1867</a>    /// #![feature(slice_ptr_get)]
+<a href=#1868 id=1868 data-nosnippet>1868</a>    /// use std::ptr;
+<a href=#1869 id=1869 data-nosnippet>1869</a>    ///
+<a href=#1870 id=1870 data-nosnippet>1870</a>    /// let slice: *mut [i8] = ptr::slice_from_raw_parts_mut(ptr::null_mut(), 3);
+<a href=#1871 id=1871 data-nosnippet>1871</a>    /// assert_eq!(slice.as_mut_ptr(), ptr::null_mut());
+<a href=#1872 id=1872 data-nosnippet>1872</a>    /// ```
+<a href=#1873 id=1873 data-nosnippet>1873</a>    </span><span class="attr">#[inline(always)]
+<a href=#1874 id=1874 data-nosnippet>1874</a>    #[unstable(feature = <span class="string">"slice_ptr_get"</span>, issue = <span class="string">"74265"</span>)]
+<a href=#1875 id=1875 data-nosnippet>1875</a>    </span><span class="kw">pub const fn </span>as_mut_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
+<a href=#1876 id=1876 data-nosnippet>1876</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>T
+<a href=#1877 id=1877 data-nosnippet>1877</a>    }
+<a href=#1878 id=1878 data-nosnippet>1878</a>
+<a href=#1879 id=1879 data-nosnippet>1879</a>    <span class="doccomment">/// Returns a raw pointer to an element or subslice, without doing bounds
+<a href=#1880 id=1880 data-nosnippet>1880</a>    /// checking.
+<a href=#1881 id=1881 data-nosnippet>1881</a>    ///
+<a href=#1882 id=1882 data-nosnippet>1882</a>    /// Calling this method with an [out-of-bounds index] or when `self` is not dereferenceable
+<a href=#1883 id=1883 data-nosnippet>1883</a>    /// is *[undefined behavior]* even if the resulting pointer is not used.
+<a href=#1884 id=1884 data-nosnippet>1884</a>    ///
+<a href=#1885 id=1885 data-nosnippet>1885</a>    /// [out-of-bounds index]: #method.add
+<a href=#1886 id=1886 data-nosnippet>1886</a>    /// [undefined behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+<a href=#1887 id=1887 data-nosnippet>1887</a>    ///
+<a href=#1888 id=1888 data-nosnippet>1888</a>    /// # Examples
+<a href=#1889 id=1889 data-nosnippet>1889</a>    ///
+<a href=#1890 id=1890 data-nosnippet>1890</a>    /// ```
+<a href=#1891 id=1891 data-nosnippet>1891</a>    /// #![feature(slice_ptr_get)]
+<a href=#1892 id=1892 data-nosnippet>1892</a>    ///
+<a href=#1893 id=1893 data-nosnippet>1893</a>    /// let x = &amp;mut [1, 2, 4] as *mut [i32];
+<a href=#1894 id=1894 data-nosnippet>1894</a>    ///
+<a href=#1895 id=1895 data-nosnippet>1895</a>    /// unsafe {
+<a href=#1896 id=1896 data-nosnippet>1896</a>    ///     assert_eq!(x.get_unchecked_mut(1), x.as_mut_ptr().add(1));
+<a href=#1897 id=1897 data-nosnippet>1897</a>    /// }
+<a href=#1898 id=1898 data-nosnippet>1898</a>    /// ```
+<a href=#1899 id=1899 data-nosnippet>1899</a>    </span><span class="attr">#[unstable(feature = <span class="string">"slice_ptr_get"</span>, issue = <span class="string">"74265"</span>)]
+<a href=#1900 id=1900 data-nosnippet>1900</a>    #[inline(always)]
+<a href=#1901 id=1901 data-nosnippet>1901</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked_mut&lt;I&gt;(<span class="self">self</span>, index: I) -&gt; <span class="kw-2">*mut </span>I::Output
+<a href=#1902 id=1902 data-nosnippet>1902</a>    <span class="kw">where
+<a href=#1903 id=1903 data-nosnippet>1903</a>        </span>I: SliceIndex&lt;[T]&gt;,
+<a href=#1904 id=1904 data-nosnippet>1904</a>    {
+<a href=#1905 id=1905 data-nosnippet>1905</a>        <span class="comment">// SAFETY: the caller ensures that `self` is dereferenceable and `index` in-bounds.
+<a href=#1906 id=1906 data-nosnippet>1906</a>        </span><span class="kw">unsafe </span>{ index.get_unchecked_mut(<span class="self">self</span>) }
+<a href=#1907 id=1907 data-nosnippet>1907</a>    }
+<a href=#1908 id=1908 data-nosnippet>1908</a>
+<a href=#1909 id=1909 data-nosnippet>1909</a>    <span class="doccomment">/// Returns `None` if the pointer is null, or else returns a shared slice to
+<a href=#1910 id=1910 data-nosnippet>1910</a>    /// the value wrapped in `Some`. In contrast to [`as_ref`], this does not require
+<a href=#1911 id=1911 data-nosnippet>1911</a>    /// that the value has to be initialized.
+<a href=#1912 id=1912 data-nosnippet>1912</a>    ///
+<a href=#1913 id=1913 data-nosnippet>1913</a>    /// For the mutable counterpart see [`as_uninit_slice_mut`].
+<a href=#1914 id=1914 data-nosnippet>1914</a>    ///
+<a href=#1915 id=1915 data-nosnippet>1915</a>    /// [`as_ref`]: pointer#method.as_ref-1
+<a href=#1916 id=1916 data-nosnippet>1916</a>    /// [`as_uninit_slice_mut`]: #method.as_uninit_slice_mut
+<a href=#1917 id=1917 data-nosnippet>1917</a>    ///
+<a href=#1918 id=1918 data-nosnippet>1918</a>    /// # Safety
+<a href=#1919 id=1919 data-nosnippet>1919</a>    ///
+<a href=#1920 id=1920 data-nosnippet>1920</a>    /// When calling this method, you have to ensure that *either* the pointer is null *or*
+<a href=#1921 id=1921 data-nosnippet>1921</a>    /// all of the following is true:
+<a href=#1922 id=1922 data-nosnippet>1922</a>    ///
+<a href=#1923 id=1923 data-nosnippet>1923</a>    /// * The pointer must be [valid] for reads for `ptr.len() * size_of::&lt;T&gt;()` many bytes,
+<a href=#1924 id=1924 data-nosnippet>1924</a>    ///   and it must be properly aligned. This means in particular:
+<a href=#1925 id=1925 data-nosnippet>1925</a>    ///
+<a href=#1926 id=1926 data-nosnippet>1926</a>    ///     * The entire memory range of this slice must be contained within a single [allocation]!
+<a href=#1927 id=1927 data-nosnippet>1927</a>    ///       Slices can never span across multiple allocations.
+<a href=#1928 id=1928 data-nosnippet>1928</a>    ///
+<a href=#1929 id=1929 data-nosnippet>1929</a>    ///     * The pointer must be aligned even for zero-length slices. One
+<a href=#1930 id=1930 data-nosnippet>1930</a>    ///       reason for this is that enum layout optimizations may rely on references
+<a href=#1931 id=1931 data-nosnippet>1931</a>    ///       (including slices of any length) being aligned and non-null to distinguish
+<a href=#1932 id=1932 data-nosnippet>1932</a>    ///       them from other data. You can obtain a pointer that is usable as `data`
+<a href=#1933 id=1933 data-nosnippet>1933</a>    ///       for zero-length slices using [`NonNull::dangling()`].
+<a href=#1934 id=1934 data-nosnippet>1934</a>    ///
+<a href=#1935 id=1935 data-nosnippet>1935</a>    /// * The total size `ptr.len() * size_of::&lt;T&gt;()` of the slice must be no larger than `isize::MAX`.
+<a href=#1936 id=1936 data-nosnippet>1936</a>    ///   See the safety documentation of [`pointer::offset`].
+<a href=#1937 id=1937 data-nosnippet>1937</a>    ///
+<a href=#1938 id=1938 data-nosnippet>1938</a>    /// * You must enforce Rust's aliasing rules, since the returned lifetime `'a` is
+<a href=#1939 id=1939 data-nosnippet>1939</a>    ///   arbitrarily chosen and does not necessarily reflect the actual lifetime of the data.
+<a href=#1940 id=1940 data-nosnippet>1940</a>    ///   In particular, while this reference exists, the memory the pointer points to must
+<a href=#1941 id=1941 data-nosnippet>1941</a>    ///   not get mutated (except inside `UnsafeCell`).
+<a href=#1942 id=1942 data-nosnippet>1942</a>    ///
+<a href=#1943 id=1943 data-nosnippet>1943</a>    /// This applies even if the result of this method is unused!
+<a href=#1944 id=1944 data-nosnippet>1944</a>    ///
+<a href=#1945 id=1945 data-nosnippet>1945</a>    /// See also [`slice::from_raw_parts`][].
+<a href=#1946 id=1946 data-nosnippet>1946</a>    ///
+<a href=#1947 id=1947 data-nosnippet>1947</a>    /// [valid]: crate::ptr#safety
+<a href=#1948 id=1948 data-nosnippet>1948</a>    /// [allocation]: crate::ptr#allocation
+<a href=#1949 id=1949 data-nosnippet>1949</a>    ///
+<a href=#1950 id=1950 data-nosnippet>1950</a>    /// # Panics during const evaluation
+<a href=#1951 id=1951 data-nosnippet>1951</a>    ///
+<a href=#1952 id=1952 data-nosnippet>1952</a>    /// This method will panic during const evaluation if the pointer cannot be
+<a href=#1953 id=1953 data-nosnippet>1953</a>    /// determined to be null or not. See [`is_null`] for more information.
+<a href=#1954 id=1954 data-nosnippet>1954</a>    ///
+<a href=#1955 id=1955 data-nosnippet>1955</a>    /// [`is_null`]: #method.is_null-1
+<a href=#1956 id=1956 data-nosnippet>1956</a>    </span><span class="attr">#[inline]
+<a href=#1957 id=1957 data-nosnippet>1957</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
+<a href=#1958 id=1958 data-nosnippet>1958</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[MaybeUninit&lt;T&gt;]&gt; {
+<a href=#1959 id=1959 data-nosnippet>1959</a>        <span class="kw">if </span><span class="self">self</span>.is_null() {
+<a href=#1960 id=1960 data-nosnippet>1960</a>            <span class="prelude-val">None
+<a href=#1961 id=1961 data-nosnippet>1961</a>        </span>} <span class="kw">else </span>{
+<a href=#1962 id=1962 data-nosnippet>1962</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `as_uninit_slice`.
+<a href=#1963 id=1963 data-nosnippet>1963</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ slice::from_raw_parts(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>MaybeUninit&lt;T&gt;, <span class="self">self</span>.len()) })
+<a href=#1964 id=1964 data-nosnippet>1964</a>        }
+<a href=#1965 id=1965 data-nosnippet>1965</a>    }
+<a href=#1966 id=1966 data-nosnippet>1966</a>
+<a href=#1967 id=1967 data-nosnippet>1967</a>    <span class="doccomment">/// Returns `None` if the pointer is null, or else returns a unique slice to
+<a href=#1968 id=1968 data-nosnippet>1968</a>    /// the value wrapped in `Some`. In contrast to [`as_mut`], this does not require
+<a href=#1969 id=1969 data-nosnippet>1969</a>    /// that the value has to be initialized.
+<a href=#1970 id=1970 data-nosnippet>1970</a>    ///
+<a href=#1971 id=1971 data-nosnippet>1971</a>    /// For the shared counterpart see [`as_uninit_slice`].
+<a href=#1972 id=1972 data-nosnippet>1972</a>    ///
+<a href=#1973 id=1973 data-nosnippet>1973</a>    /// [`as_mut`]: #method.as_mut
+<a href=#1974 id=1974 data-nosnippet>1974</a>    /// [`as_uninit_slice`]: #method.as_uninit_slice-1
+<a href=#1975 id=1975 data-nosnippet>1975</a>    ///
+<a href=#1976 id=1976 data-nosnippet>1976</a>    /// # Safety
+<a href=#1977 id=1977 data-nosnippet>1977</a>    ///
+<a href=#1978 id=1978 data-nosnippet>1978</a>    /// When calling this method, you have to ensure that *either* the pointer is null *or*
+<a href=#1979 id=1979 data-nosnippet>1979</a>    /// all of the following is true:
+<a href=#1980 id=1980 data-nosnippet>1980</a>    ///
+<a href=#1981 id=1981 data-nosnippet>1981</a>    /// * The pointer must be [valid] for reads and writes for `ptr.len() * size_of::&lt;T&gt;()`
+<a href=#1982 id=1982 data-nosnippet>1982</a>    ///   many bytes, and it must be properly aligned. This means in particular:
+<a href=#1983 id=1983 data-nosnippet>1983</a>    ///
+<a href=#1984 id=1984 data-nosnippet>1984</a>    ///     * The entire memory range of this slice must be contained within a single [allocation]!
+<a href=#1985 id=1985 data-nosnippet>1985</a>    ///       Slices can never span across multiple allocations.
+<a href=#1986 id=1986 data-nosnippet>1986</a>    ///
+<a href=#1987 id=1987 data-nosnippet>1987</a>    ///     * The pointer must be aligned even for zero-length slices. One
+<a href=#1988 id=1988 data-nosnippet>1988</a>    ///       reason for this is that enum layout optimizations may rely on references
+<a href=#1989 id=1989 data-nosnippet>1989</a>    ///       (including slices of any length) being aligned and non-null to distinguish
+<a href=#1990 id=1990 data-nosnippet>1990</a>    ///       them from other data. You can obtain a pointer that is usable as `data`
+<a href=#1991 id=1991 data-nosnippet>1991</a>    ///       for zero-length slices using [`NonNull::dangling()`].
+<a href=#1992 id=1992 data-nosnippet>1992</a>    ///
+<a href=#1993 id=1993 data-nosnippet>1993</a>    /// * The total size `ptr.len() * size_of::&lt;T&gt;()` of the slice must be no larger than `isize::MAX`.
+<a href=#1994 id=1994 data-nosnippet>1994</a>    ///   See the safety documentation of [`pointer::offset`].
+<a href=#1995 id=1995 data-nosnippet>1995</a>    ///
+<a href=#1996 id=1996 data-nosnippet>1996</a>    /// * You must enforce Rust's aliasing rules, since the returned lifetime `'a` is
+<a href=#1997 id=1997 data-nosnippet>1997</a>    ///   arbitrarily chosen and does not necessarily reflect the actual lifetime of the data.
+<a href=#1998 id=1998 data-nosnippet>1998</a>    ///   In particular, while this reference exists, the memory the pointer points to must
+<a href=#1999 id=1999 data-nosnippet>1999</a>    ///   not get accessed (read or written) through any other pointer.
+<a href=#2000 id=2000 data-nosnippet>2000</a>    ///
+<a href=#2001 id=2001 data-nosnippet>2001</a>    /// This applies even if the result of this method is unused!
+<a href=#2002 id=2002 data-nosnippet>2002</a>    ///
+<a href=#2003 id=2003 data-nosnippet>2003</a>    /// See also [`slice::from_raw_parts_mut`][].
+<a href=#2004 id=2004 data-nosnippet>2004</a>    ///
+<a href=#2005 id=2005 data-nosnippet>2005</a>    /// [valid]: crate::ptr#safety
+<a href=#2006 id=2006 data-nosnippet>2006</a>    /// [allocation]: crate::ptr#allocation
+<a href=#2007 id=2007 data-nosnippet>2007</a>    ///
+<a href=#2008 id=2008 data-nosnippet>2008</a>    /// # Panics during const evaluation
+<a href=#2009 id=2009 data-nosnippet>2009</a>    ///
+<a href=#2010 id=2010 data-nosnippet>2010</a>    /// This method will panic during const evaluation if the pointer cannot be
+<a href=#2011 id=2011 data-nosnippet>2011</a>    /// determined to be null or not. See [`is_null`] for more information.
+<a href=#2012 id=2012 data-nosnippet>2012</a>    ///
+<a href=#2013 id=2013 data-nosnippet>2013</a>    /// [`is_null`]: #method.is_null-1
+<a href=#2014 id=2014 data-nosnippet>2014</a>    </span><span class="attr">#[inline]
+<a href=#2015 id=2015 data-nosnippet>2015</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
+<a href=#2016 id=2016 data-nosnippet>2016</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice_mut&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;]&gt; {
+<a href=#2017 id=2017 data-nosnippet>2017</a>        <span class="kw">if </span><span class="self">self</span>.is_null() {
+<a href=#2018 id=2018 data-nosnippet>2018</a>            <span class="prelude-val">None
+<a href=#2019 id=2019 data-nosnippet>2019</a>        </span>} <span class="kw">else </span>{
+<a href=#2020 id=2020 data-nosnippet>2020</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `as_uninit_slice_mut`.
+<a href=#2021 id=2021 data-nosnippet>2021</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ slice::from_raw_parts_mut(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>MaybeUninit&lt;T&gt;, <span class="self">self</span>.len()) })
+<a href=#2022 id=2022 data-nosnippet>2022</a>        }
+<a href=#2023 id=2023 data-nosnippet>2023</a>    }
+<a href=#2024 id=2024 data-nosnippet>2024</a>}
+<a href=#2025 id=2025 data-nosnippet>2025</a>
+<a href=#2026 id=2026 data-nosnippet>2026</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; <span class="kw-2">*mut </span>[T; N] {
+<a href=#2027 id=2027 data-nosnippet>2027</a>    <span class="doccomment">/// Returns a raw pointer to the array's buffer.
+<a href=#2028 id=2028 data-nosnippet>2028</a>    ///
+<a href=#2029 id=2029 data-nosnippet>2029</a>    /// This is equivalent to casting `self` to `*mut T`, but more type-safe.
+<a href=#2030 id=2030 data-nosnippet>2030</a>    ///
+<a href=#2031 id=2031 data-nosnippet>2031</a>    /// # Examples
+<a href=#2032 id=2032 data-nosnippet>2032</a>    ///
+<a href=#2033 id=2033 data-nosnippet>2033</a>    /// ```rust
+<a href=#2034 id=2034 data-nosnippet>2034</a>    /// #![feature(array_ptr_get)]
+<a href=#2035 id=2035 data-nosnippet>2035</a>    /// use std::ptr;
+<a href=#2036 id=2036 data-nosnippet>2036</a>    ///
+<a href=#2037 id=2037 data-nosnippet>2037</a>    /// let arr: *mut [i8; 3] = ptr::null_mut();
+<a href=#2038 id=2038 data-nosnippet>2038</a>    /// assert_eq!(arr.as_mut_ptr(), ptr::null_mut());
+<a href=#2039 id=2039 data-nosnippet>2039</a>    /// ```
+<a href=#2040 id=2040 data-nosnippet>2040</a>    </span><span class="attr">#[inline]
+<a href=#2041 id=2041 data-nosnippet>2041</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
+<a href=#2042 id=2042 data-nosnippet>2042</a>    </span><span class="kw">pub const fn </span>as_mut_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
+<a href=#2043 id=2043 data-nosnippet>2043</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*mut </span>T
+<a href=#2044 id=2044 data-nosnippet>2044</a>    }
+<a href=#2045 id=2045 data-nosnippet>2045</a>
+<a href=#2046 id=2046 data-nosnippet>2046</a>    <span class="doccomment">/// Returns a raw pointer to a mutable slice containing the entire array.
+<a href=#2047 id=2047 data-nosnippet>2047</a>    ///
+<a href=#2048 id=2048 data-nosnippet>2048</a>    /// # Examples
+<a href=#2049 id=2049 data-nosnippet>2049</a>    ///
+<a href=#2050 id=2050 data-nosnippet>2050</a>    /// ```
+<a href=#2051 id=2051 data-nosnippet>2051</a>    /// #![feature(array_ptr_get)]
+<a href=#2052 id=2052 data-nosnippet>2052</a>    ///
+<a href=#2053 id=2053 data-nosnippet>2053</a>    /// let mut arr = [1, 2, 5];
+<a href=#2054 id=2054 data-nosnippet>2054</a>    /// let ptr: *mut [i32; 3] = &amp;mut arr;
+<a href=#2055 id=2055 data-nosnippet>2055</a>    /// unsafe {
+<a href=#2056 id=2056 data-nosnippet>2056</a>    ///     (&amp;mut *ptr.as_mut_slice())[..2].copy_from_slice(&amp;[3, 4]);
+<a href=#2057 id=2057 data-nosnippet>2057</a>    /// }
+<a href=#2058 id=2058 data-nosnippet>2058</a>    /// assert_eq!(arr, [3, 4, 5]);
+<a href=#2059 id=2059 data-nosnippet>2059</a>    /// ```
+<a href=#2060 id=2060 data-nosnippet>2060</a>    </span><span class="attr">#[inline]
+<a href=#2061 id=2061 data-nosnippet>2061</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
+<a href=#2062 id=2062 data-nosnippet>2062</a>    </span><span class="kw">pub const fn </span>as_mut_slice(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>[T] {
+<a href=#2063 id=2063 data-nosnippet>2063</a>        <span class="self">self
+<a href=#2064 id=2064 data-nosnippet>2064</a>    </span>}
+<a href=#2065 id=2065 data-nosnippet>2065</a>}
+<a href=#2066 id=2066 data-nosnippet>2066</a>
+<a href=#2067 id=2067 data-nosnippet>2067</a><span class="doccomment">/// Pointer equality is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
+<a href=#2068 id=2068 data-nosnippet>2068</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2069 id=2069 data-nosnippet>2069</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; PartialEq <span class="kw">for </span><span class="kw-2">*mut </span>T {
+<a href=#2070 id=2070 data-nosnippet>2070</a>    <span class="attr">#[inline(always)]
+<a href=#2071 id=2071 data-nosnippet>2071</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2072 id=2072 data-nosnippet>2072</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
+<a href=#2073 id=2073 data-nosnippet>2073</a>        <span class="kw-2">*</span><span class="self">self </span>== <span class="kw-2">*</span>other
+<a href=#2074 id=2074 data-nosnippet>2074</a>    }
+<a href=#2075 id=2075 data-nosnippet>2075</a>}
+<a href=#2076 id=2076 data-nosnippet>2076</a>
+<a href=#2077 id=2077 data-nosnippet>2077</a><span class="doccomment">/// Pointer equality is an equivalence relation.
+<a href=#2078 id=2078 data-nosnippet>2078</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2079 id=2079 data-nosnippet>2079</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Eq <span class="kw">for </span><span class="kw-2">*mut </span>T {}
+<a href=#2080 id=2080 data-nosnippet>2080</a>
+<a href=#2081 id=2081 data-nosnippet>2081</a><span class="doccomment">/// Pointer comparison is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
+<a href=#2082 id=2082 data-nosnippet>2082</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2083 id=2083 data-nosnippet>2083</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Ord <span class="kw">for </span><span class="kw-2">*mut </span>T {
+<a href=#2084 id=2084 data-nosnippet>2084</a>    <span class="attr">#[inline]
+<a href=#2085 id=2085 data-nosnippet>2085</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2086 id=2086 data-nosnippet>2086</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; Ordering {
+<a href=#2087 id=2087 data-nosnippet>2087</a>        <span class="kw">if </span><span class="self">self </span>&lt; other {
+<a href=#2088 id=2088 data-nosnippet>2088</a>            Less
+<a href=#2089 id=2089 data-nosnippet>2089</a>        } <span class="kw">else if </span><span class="self">self </span>== other {
+<a href=#2090 id=2090 data-nosnippet>2090</a>            Equal
+<a href=#2091 id=2091 data-nosnippet>2091</a>        } <span class="kw">else </span>{
+<a href=#2092 id=2092 data-nosnippet>2092</a>            Greater
+<a href=#2093 id=2093 data-nosnippet>2093</a>        }
+<a href=#2094 id=2094 data-nosnippet>2094</a>    }
+<a href=#2095 id=2095 data-nosnippet>2095</a>}
+<a href=#2096 id=2096 data-nosnippet>2096</a>
+<a href=#2097 id=2097 data-nosnippet>2097</a><span class="doccomment">/// Pointer comparison is by address, as produced by the [`&lt;*mut T&gt;::addr`](pointer::addr) method.
+<a href=#2098 id=2098 data-nosnippet>2098</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2099 id=2099 data-nosnippet>2099</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; PartialOrd <span class="kw">for </span><span class="kw-2">*mut </span>T {
+<a href=#2100 id=2100 data-nosnippet>2100</a>    <span class="attr">#[inline(always)]
+<a href=#2101 id=2101 data-nosnippet>2101</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2102 id=2102 data-nosnippet>2102</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
+<a href=#2103 id=2103 data-nosnippet>2103</a>        <span class="prelude-val">Some</span>(<span class="self">self</span>.cmp(other))
+<a href=#2104 id=2104 data-nosnippet>2104</a>    }
+<a href=#2105 id=2105 data-nosnippet>2105</a>
+<a href=#2106 id=2106 data-nosnippet>2106</a>    <span class="attr">#[inline(always)]
+<a href=#2107 id=2107 data-nosnippet>2107</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2108 id=2108 data-nosnippet>2108</a>    </span><span class="kw">fn </span>lt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
+<a href=#2109 id=2109 data-nosnippet>2109</a>        <span class="kw-2">*</span><span class="self">self </span>&lt; <span class="kw-2">*</span>other
+<a href=#2110 id=2110 data-nosnippet>2110</a>    }
+<a href=#2111 id=2111 data-nosnippet>2111</a>
+<a href=#2112 id=2112 data-nosnippet>2112</a>    <span class="attr">#[inline(always)]
+<a href=#2113 id=2113 data-nosnippet>2113</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2114 id=2114 data-nosnippet>2114</a>    </span><span class="kw">fn </span>le(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
+<a href=#2115 id=2115 data-nosnippet>2115</a>        <span class="kw-2">*</span><span class="self">self </span>&lt;= <span class="kw-2">*</span>other
+<a href=#2116 id=2116 data-nosnippet>2116</a>    }
+<a href=#2117 id=2117 data-nosnippet>2117</a>
+<a href=#2118 id=2118 data-nosnippet>2118</a>    <span class="attr">#[inline(always)]
+<a href=#2119 id=2119 data-nosnippet>2119</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2120 id=2120 data-nosnippet>2120</a>    </span><span class="kw">fn </span>gt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
+<a href=#2121 id=2121 data-nosnippet>2121</a>        <span class="kw-2">*</span><span class="self">self </span>&gt; <span class="kw-2">*</span>other
+<a href=#2122 id=2122 data-nosnippet>2122</a>    }
+<a href=#2123 id=2123 data-nosnippet>2123</a>
+<a href=#2124 id=2124 data-nosnippet>2124</a>    <span class="attr">#[inline(always)]
+<a href=#2125 id=2125 data-nosnippet>2125</a>    #[allow(ambiguous_wide_pointer_comparisons)]
+<a href=#2126 id=2126 data-nosnippet>2126</a>    </span><span class="kw">fn </span>ge(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*mut </span>T) -&gt; bool {
+<a href=#2127 id=2127 data-nosnippet>2127</a>        <span class="kw-2">*</span><span class="self">self </span>&gt;= <span class="kw-2">*</span>other
+<a href=#2128 id=2128 data-nosnippet>2128</a>    }
+<a href=#2129 id=2129 data-nosnippet>2129</a>}
+<a href=#2130 id=2130 data-nosnippet>2130</a>
+<a href=#2131 id=2131 data-nosnippet>2131</a><span class="attr">#[stable(feature = <span class="string">"raw_ptr_default"</span>, since = <span class="string">"1.88.0"</span>)]
+<a href=#2132 id=2132 data-nosnippet>2132</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Thin&gt; Default <span class="kw">for </span><span class="kw-2">*mut </span>T {
+<a href=#2133 id=2133 data-nosnippet>2133</a>    <span class="doccomment">/// Returns the default value of [`null_mut()`][crate::ptr::null_mut].
+<a href=#2134 id=2134 data-nosnippet>2134</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#2135 id=2135 data-nosnippet>2135</a>        <span class="kw">crate</span>::ptr::null_mut()
+<a href=#2136 id=2136 data-nosnippet>2136</a>    }
+<a href=#2137 id=2137 data-nosnippet>2137</a>}</code></pre></div></section></main></body></html>

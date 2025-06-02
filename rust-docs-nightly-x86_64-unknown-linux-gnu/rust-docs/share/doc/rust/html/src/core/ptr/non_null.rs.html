@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/non_null.rs`."><title>non_null.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (4d08223c0 2025-05-31)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>non_null.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/non_null.rs`."><title>non_null.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (99e7c15e8 2025-06-01)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>non_null.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::marker::Unsize;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::mem::{MaybeUninit, SizedTypeProperties};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::num::NonZero;
@@ -530,16 +530,16 @@
 <a href=#530 id=530 data-nosnippet>530</a>    /// * The computed offset, `count * size_of::&lt;T&gt;()` bytes, must not overflow `isize`.
 <a href=#531 id=531 data-nosnippet>531</a>    ///
 <a href=#532 id=532 data-nosnippet>532</a>    /// * If the computed offset is non-zero, then `self` must be derived from a pointer to some
-<a href=#533 id=533 data-nosnippet>533</a>    ///   [allocated object], and the entire memory range between `self` and the result must be in
-<a href=#534 id=534 data-nosnippet>534</a>    ///   bounds of that allocated object. In particular, this range must not "wrap around" the edge
+<a href=#533 id=533 data-nosnippet>533</a>    ///   [allocation], and the entire memory range between `self` and the result must be in
+<a href=#534 id=534 data-nosnippet>534</a>    ///   bounds of that allocation. In particular, this range must not "wrap around" the edge
 <a href=#535 id=535 data-nosnippet>535</a>    ///   of the address space.
 <a href=#536 id=536 data-nosnippet>536</a>    ///
-<a href=#537 id=537 data-nosnippet>537</a>    /// Allocated objects can never be larger than `isize::MAX` bytes, so if the computed offset
-<a href=#538 id=538 data-nosnippet>538</a>    /// stays in bounds of the allocated object, it is guaranteed to satisfy the first requirement.
+<a href=#537 id=537 data-nosnippet>537</a>    /// Allocations can never be larger than `isize::MAX` bytes, so if the computed offset
+<a href=#538 id=538 data-nosnippet>538</a>    /// stays in bounds of the allocation, it is guaranteed to satisfy the first requirement.
 <a href=#539 id=539 data-nosnippet>539</a>    /// This implies, for instance, that `vec.as_ptr().add(vec.len())` (for `vec: Vec&lt;T&gt;`) is always
 <a href=#540 id=540 data-nosnippet>540</a>    /// safe.
 <a href=#541 id=541 data-nosnippet>541</a>    ///
-<a href=#542 id=542 data-nosnippet>542</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#542 id=542 data-nosnippet>542</a>    /// [allocation]: crate::ptr#allocation
 <a href=#543 id=543 data-nosnippet>543</a>    ///
 <a href=#544 id=544 data-nosnippet>544</a>    /// # Examples
 <a href=#545 id=545 data-nosnippet>545</a>    ///
@@ -606,16 +606,16 @@
 <a href=#606 id=606 data-nosnippet>606</a>    /// * The computed offset, `count * size_of::&lt;T&gt;()` bytes, must not overflow `isize`.
 <a href=#607 id=607 data-nosnippet>607</a>    ///
 <a href=#608 id=608 data-nosnippet>608</a>    /// * If the computed offset is non-zero, then `self` must be derived from a pointer to some
-<a href=#609 id=609 data-nosnippet>609</a>    ///   [allocated object], and the entire memory range between `self` and the result must be in
-<a href=#610 id=610 data-nosnippet>610</a>    ///   bounds of that allocated object. In particular, this range must not "wrap around" the edge
+<a href=#609 id=609 data-nosnippet>609</a>    ///   [allocation], and the entire memory range between `self` and the result must be in
+<a href=#610 id=610 data-nosnippet>610</a>    ///   bounds of that allocation. In particular, this range must not "wrap around" the edge
 <a href=#611 id=611 data-nosnippet>611</a>    ///   of the address space.
 <a href=#612 id=612 data-nosnippet>612</a>    ///
-<a href=#613 id=613 data-nosnippet>613</a>    /// Allocated objects can never be larger than `isize::MAX` bytes, so if the computed offset
-<a href=#614 id=614 data-nosnippet>614</a>    /// stays in bounds of the allocated object, it is guaranteed to satisfy the first requirement.
+<a href=#613 id=613 data-nosnippet>613</a>    /// Allocations can never be larger than `isize::MAX` bytes, so if the computed offset
+<a href=#614 id=614 data-nosnippet>614</a>    /// stays in bounds of the allocation, it is guaranteed to satisfy the first requirement.
 <a href=#615 id=615 data-nosnippet>615</a>    /// This implies, for instance, that `vec.as_ptr().add(vec.len())` (for `vec: Vec&lt;T&gt;`) is always
 <a href=#616 id=616 data-nosnippet>616</a>    /// safe.
 <a href=#617 id=617 data-nosnippet>617</a>    ///
-<a href=#618 id=618 data-nosnippet>618</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#618 id=618 data-nosnippet>618</a>    /// [allocation]: crate::ptr#allocation
 <a href=#619 id=619 data-nosnippet>619</a>    ///
 <a href=#620 id=620 data-nosnippet>620</a>    /// # Examples
 <a href=#621 id=621 data-nosnippet>621</a>    ///
@@ -683,16 +683,16 @@
 <a href=#683 id=683 data-nosnippet>683</a>    /// * The computed offset, `count * size_of::&lt;T&gt;()` bytes, must not overflow `isize`.
 <a href=#684 id=684 data-nosnippet>684</a>    ///
 <a href=#685 id=685 data-nosnippet>685</a>    /// * If the computed offset is non-zero, then `self` must be derived from a pointer to some
-<a href=#686 id=686 data-nosnippet>686</a>    ///   [allocated object], and the entire memory range between `self` and the result must be in
-<a href=#687 id=687 data-nosnippet>687</a>    ///   bounds of that allocated object. In particular, this range must not "wrap around" the edge
+<a href=#686 id=686 data-nosnippet>686</a>    ///   [allocation], and the entire memory range between `self` and the result must be in
+<a href=#687 id=687 data-nosnippet>687</a>    ///   bounds of that allocation. In particular, this range must not "wrap around" the edge
 <a href=#688 id=688 data-nosnippet>688</a>    ///   of the address space.
 <a href=#689 id=689 data-nosnippet>689</a>    ///
-<a href=#690 id=690 data-nosnippet>690</a>    /// Allocated objects can never be larger than `isize::MAX` bytes, so if the computed offset
-<a href=#691 id=691 data-nosnippet>691</a>    /// stays in bounds of the allocated object, it is guaranteed to satisfy the first requirement.
+<a href=#690 id=690 data-nosnippet>690</a>    /// Allocations can never be larger than `isize::MAX` bytes, so if the computed offset
+<a href=#691 id=691 data-nosnippet>691</a>    /// stays in bounds of the allocation, it is guaranteed to satisfy the first requirement.
 <a href=#692 id=692 data-nosnippet>692</a>    /// This implies, for instance, that `vec.as_ptr().add(vec.len())` (for `vec: Vec&lt;T&gt;`) is always
 <a href=#693 id=693 data-nosnippet>693</a>    /// safe.
 <a href=#694 id=694 data-nosnippet>694</a>    ///
-<a href=#695 id=695 data-nosnippet>695</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#695 id=695 data-nosnippet>695</a>    /// [allocation]: crate::ptr#allocation
 <a href=#696 id=696 data-nosnippet>696</a>    ///
 <a href=#697 id=697 data-nosnippet>697</a>    /// # Examples
 <a href=#698 id=698 data-nosnippet>698</a>    ///
@@ -775,7 +775,7 @@
 <a href=#775 id=775 data-nosnippet>775</a>    /// * `self` and `origin` must either
 <a href=#776 id=776 data-nosnippet>776</a>    ///
 <a href=#777 id=777 data-nosnippet>777</a>    ///   * point to the same address, or
-<a href=#778 id=778 data-nosnippet>778</a>    ///   * both be *derived from* a pointer to the same [allocated object], and the memory range between
+<a href=#778 id=778 data-nosnippet>778</a>    ///   * both be *derived from* a pointer to the same [allocation], and the memory range between
 <a href=#779 id=779 data-nosnippet>779</a>    ///     the two pointers must be in bounds of that object. (See below for an example.)
 <a href=#780 id=780 data-nosnippet>780</a>    ///
 <a href=#781 id=781 data-nosnippet>781</a>    /// * The distance between the pointers, in bytes, must be an exact multiple
@@ -783,10 +783,10 @@
 <a href=#783 id=783 data-nosnippet>783</a>    ///
 <a href=#784 id=784 data-nosnippet>784</a>    /// As a consequence, the absolute distance between the pointers, in bytes, computed on
 <a href=#785 id=785 data-nosnippet>785</a>    /// mathematical integers (without "wrapping around"), cannot overflow an `isize`. This is
-<a href=#786 id=786 data-nosnippet>786</a>    /// implied by the in-bounds requirement, and the fact that no allocated object can be larger
+<a href=#786 id=786 data-nosnippet>786</a>    /// implied by the in-bounds requirement, and the fact that no allocation can be larger
 <a href=#787 id=787 data-nosnippet>787</a>    /// than `isize::MAX` bytes.
 <a href=#788 id=788 data-nosnippet>788</a>    ///
-<a href=#789 id=789 data-nosnippet>789</a>    /// The requirement for pointers to be derived from the same allocated object is primarily
+<a href=#789 id=789 data-nosnippet>789</a>    /// The requirement for pointers to be derived from the same allocation is primarily
 <a href=#790 id=790 data-nosnippet>790</a>    /// needed for `const`-compatibility: the distance between pointers into *different* allocated
 <a href=#791 id=791 data-nosnippet>791</a>    /// objects is not known at compile-time. However, the requirement also exists at
 <a href=#792 id=792 data-nosnippet>792</a>    /// runtime and may be exploited by optimizations. If you wish to compute the difference between
@@ -795,7 +795,7 @@
 <a href=#795 id=795 data-nosnippet>795</a>    </span><span class="comment">// FIXME: recommend `addr()` instead of `as usize` once that is stable.
 <a href=#796 id=796 data-nosnippet>796</a>    </span><span class="doccomment">///
 <a href=#797 id=797 data-nosnippet>797</a>    /// [`add`]: #method.add
-<a href=#798 id=798 data-nosnippet>798</a>    /// [allocated object]: crate::ptr#allocated-object
+<a href=#798 id=798 data-nosnippet>798</a>    /// [allocation]: crate::ptr#allocation
 <a href=#799 id=799 data-nosnippet>799</a>    ///
 <a href=#800 id=800 data-nosnippet>800</a>    /// # Panics
 <a href=#801 id=801 data-nosnippet>801</a>    ///
@@ -1475,8 +1475,8 @@
 <a href=#1475 id=1475 data-nosnippet>1475</a>    /// * The pointer must be [valid] for reads for `ptr.len() * size_of::&lt;T&gt;()` many bytes,
 <a href=#1476 id=1476 data-nosnippet>1476</a>    ///   and it must be properly aligned. This means in particular:
 <a href=#1477 id=1477 data-nosnippet>1477</a>    ///
-<a href=#1478 id=1478 data-nosnippet>1478</a>    ///     * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#1479 id=1479 data-nosnippet>1479</a>    ///       Slices can never span across multiple allocated objects.
+<a href=#1478 id=1478 data-nosnippet>1478</a>    ///     * The entire memory range of this slice must be contained within a single allocation!
+<a href=#1479 id=1479 data-nosnippet>1479</a>    ///       Slices can never span across multiple allocations.
 <a href=#1480 id=1480 data-nosnippet>1480</a>    ///
 <a href=#1481 id=1481 data-nosnippet>1481</a>    ///     * The pointer must be aligned even for zero-length slices. One
 <a href=#1482 id=1482 data-nosnippet>1482</a>    ///       reason for this is that enum layout optimizations may rely on references
@@ -1520,8 +1520,8 @@
 <a href=#1520 id=1520 data-nosnippet>1520</a>    /// * The pointer must be [valid] for reads and writes for `ptr.len() * size_of::&lt;T&gt;()`
 <a href=#1521 id=1521 data-nosnippet>1521</a>    ///   many bytes, and it must be properly aligned. This means in particular:
 <a href=#1522 id=1522 data-nosnippet>1522</a>    ///
-<a href=#1523 id=1523 data-nosnippet>1523</a>    ///     * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#1524 id=1524 data-nosnippet>1524</a>    ///       Slices can never span across multiple allocated objects.
+<a href=#1523 id=1523 data-nosnippet>1523</a>    ///     * The entire memory range of this slice must be contained within a single allocation!
+<a href=#1524 id=1524 data-nosnippet>1524</a>    ///       Slices can never span across multiple allocations.
 <a href=#1525 id=1525 data-nosnippet>1525</a>    ///
 <a href=#1526 id=1526 data-nosnippet>1526</a>    ///     * The pointer must be aligned even for zero-length slices. One
 <a href=#1527 id=1527 data-nosnippet>1527</a>    ///       reason for this is that enum layout optimizations may rely on references

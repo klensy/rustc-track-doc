@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/raw.rs`."><title>raw.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (4d08223c0 2025-05-31)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>raw.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Free functions to create `&amp;[T]` and `&amp;mut [T]`.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/raw.rs`."><title>raw.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (99e7c15e8 2025-06-01)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>raw.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Free functions to create `&amp;[T]` and `&amp;mut [T]`.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">crate</span>::ops::Range;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{array, ptr, ub_checks};
@@ -14,8 +14,8 @@
 <a href=#14 id=14 data-nosnippet>14</a>/// * `data` must be non-null, [valid] for reads for `len * size_of::&lt;T&gt;()` many bytes,
 <a href=#15 id=15 data-nosnippet>15</a>///   and it must be properly aligned. This means in particular:
 <a href=#16 id=16 data-nosnippet>16</a>///
-<a href=#17 id=17 data-nosnippet>17</a>///     * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#18 id=18 data-nosnippet>18</a>///       Slices can never span across multiple allocated objects. See [below](#incorrect-usage)
+<a href=#17 id=17 data-nosnippet>17</a>///     * The entire memory range of this slice must be contained within a single allocation!
+<a href=#18 id=18 data-nosnippet>18</a>///       Slices can never span across multiple allocations. See [below](#incorrect-usage)
 <a href=#19 id=19 data-nosnippet>19</a>///       for an example incorrectly not taking this into account.
 <a href=#20 id=20 data-nosnippet>20</a>///     * `data` must be non-null and aligned even for zero-length slices or slices of ZSTs. One
 <a href=#21 id=21 data-nosnippet>21</a>///       reason for this is that enum layout optimizations may rely on references
@@ -65,14 +65,14 @@
 <a href=#65 id=65 data-nosnippet>65</a>///     assert_eq!(fst_end, snd_start, "Slices must be contiguous!");
 <a href=#66 id=66 data-nosnippet>66</a>///     unsafe {
 <a href=#67 id=67 data-nosnippet>67</a>///         // The assertion above ensures `fst` and `snd` are contiguous, but they might
-<a href=#68 id=68 data-nosnippet>68</a>///         // still be contained within _different allocated objects_, in which case
+<a href=#68 id=68 data-nosnippet>68</a>///         // still be contained within _different allocations_, in which case
 <a href=#69 id=69 data-nosnippet>69</a>///         // creating this slice is undefined behavior.
 <a href=#70 id=70 data-nosnippet>70</a>///         slice::from_raw_parts(fst.as_ptr(), fst.len() + snd.len())
 <a href=#71 id=71 data-nosnippet>71</a>///     }
 <a href=#72 id=72 data-nosnippet>72</a>/// }
 <a href=#73 id=73 data-nosnippet>73</a>///
 <a href=#74 id=74 data-nosnippet>74</a>/// fn main() {
-<a href=#75 id=75 data-nosnippet>75</a>///     // `a` and `b` are different allocated objects...
+<a href=#75 id=75 data-nosnippet>75</a>///     // `a` and `b` are different allocations...
 <a href=#76 id=76 data-nosnippet>76</a>///     let a = 42;
 <a href=#77 id=77 data-nosnippet>77</a>///     let b = 27;
 <a href=#78 id=78 data-nosnippet>78</a>///     // ... which may nevertheless be laid out contiguously in memory: | a | b |
@@ -150,8 +150,8 @@
 <a href=#150 id=150 data-nosnippet>150</a>/// * `data` must be non-null, [valid] for both reads and writes for `len * size_of::&lt;T&gt;()` many bytes,
 <a href=#151 id=151 data-nosnippet>151</a>///   and it must be properly aligned. This means in particular:
 <a href=#152 id=152 data-nosnippet>152</a>///
-<a href=#153 id=153 data-nosnippet>153</a>///     * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#154 id=154 data-nosnippet>154</a>///       Slices can never span across multiple allocated objects.
+<a href=#153 id=153 data-nosnippet>153</a>///     * The entire memory range of this slice must be contained within a single allocation!
+<a href=#154 id=154 data-nosnippet>154</a>///       Slices can never span across multiple allocations.
 <a href=#155 id=155 data-nosnippet>155</a>///     * `data` must be non-null and aligned even for zero-length slices or slices of ZSTs. One
 <a href=#156 id=156 data-nosnippet>156</a>///       reason for this is that enum layout optimizations may rely on references
 <a href=#157 id=157 data-nosnippet>157</a>///       (including slices of any length) being aligned and non-null to distinguish
@@ -228,8 +228,8 @@
 <a href=#228 id=228 data-nosnippet>228</a>///   the last element, such that the offset from the end to the start pointer is
 <a href=#229 id=229 data-nosnippet>229</a>///   the length of the slice.
 <a href=#230 id=230 data-nosnippet>230</a>///
-<a href=#231 id=231 data-nosnippet>231</a>/// * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#232 id=232 data-nosnippet>232</a>///   Slices can never span across multiple allocated objects.
+<a href=#231 id=231 data-nosnippet>231</a>/// * The entire memory range of this slice must be contained within a single allocation!
+<a href=#232 id=232 data-nosnippet>232</a>///   Slices can never span across multiple allocations.
 <a href=#233 id=233 data-nosnippet>233</a>///
 <a href=#234 id=234 data-nosnippet>234</a>/// * The range must contain `N` consecutive properly initialized values of type `T`.
 <a href=#235 id=235 data-nosnippet>235</a>///
@@ -298,8 +298,8 @@
 <a href=#298 id=298 data-nosnippet>298</a>///   the last element, such that the offset from the end to the start pointer is
 <a href=#299 id=299 data-nosnippet>299</a>///   the length of the slice.
 <a href=#300 id=300 data-nosnippet>300</a>///
-<a href=#301 id=301 data-nosnippet>301</a>/// * The entire memory range of this slice must be contained within a single allocated object!
-<a href=#302 id=302 data-nosnippet>302</a>///   Slices can never span across multiple allocated objects.
+<a href=#301 id=301 data-nosnippet>301</a>/// * The entire memory range of this slice must be contained within a single allocation!
+<a href=#302 id=302 data-nosnippet>302</a>///   Slices can never span across multiple allocations.
 <a href=#303 id=303 data-nosnippet>303</a>///
 <a href=#304 id=304 data-nosnippet>304</a>/// * The range must contain `N` consecutive properly initialized values of type `T`.
 <a href=#305 id=305 data-nosnippet>305</a>///
