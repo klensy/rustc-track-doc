@@ -877,6 +877,7 @@ tables are required by the target an error will be emitted.</li>
 to save information after compiling a crate to be reused when recompiling the
 crate, improving re-compile times. This takes a path to a directory where
 incremental files will be stored.</p>
+<p>Using incremental compilation inhibits certain optimizations (for example by increasing the amount of codegen units) and is therefore not recommend for release builds.</p>
 <h2 id="inline-threshold"><a class="header" href="#inline-threshold">inline-threshold</a></h2>
 <p>This option is deprecated and does nothing.</p>
 <p>Consider using <code>-Cllvm-args=--inline-threshold=...</code>.</p>
@@ -889,6 +890,7 @@ with coverage tools other than those built and shipped with the compiler.</p>
 <h2 id="link-arg"><a class="header" href="#link-arg">link-arg</a></h2>
 <p>This flag lets you append a single extra argument to the linker invocation.</p>
 <p>"Append" is significant; you can pass this flag multiple times to add multiple arguments.</p>
+<p>On Unix-like targets that use <code>cc</code> as the linker driver, use <code>-Clink-arg=-Wl,$ARG</code> to pass an argument to the actual linker.</p>
 <h2 id="link-args-1"><a class="header" href="#link-args-1">link-args</a></h2>
 <p>This flag lets you append multiple extra arguments to the linker invocation. The
 options should be separated by spaces.</p>
@@ -916,6 +918,9 @@ It takes one of the following values:</p>
 path to the linker executable. If this flag is not specified, the linker will
 be inferred based on the target. See also the <a href="codegen-options/index.html#linker-flavor">linker-flavor</a>
 flag for another way to specify the linker.</p>
+<p>Note that on Unix-like targets (for example, <code>*-unknown-linux-gnu</code> or <code>*-unknown-freebsd</code>)
+the C compiler (for example <code>cc</code> or <code>clang</code>) is used as the "linker" here, serving as a linker driver.
+It will invoke the actual linker with all the necessary flags to be able to link against the system libraries like libc.</p>
 <h2 id="linker-flavor"><a class="header" href="#linker-flavor">linker-flavor</a></h2>
 <p>This flag controls the linker flavor used by <code>rustc</code>. If a linker is given with
 the <a href="codegen-options/index.html#linker"><code>-C linker</code> flag</a>, then the linker flavor is inferred from the
@@ -959,6 +964,9 @@ compilation and avoid generating object files that aren't used.</p>
 <p>This flag can be used to pass a list of arguments directly to LLVM.</p>
 <p>The list must be separated by spaces.</p>
 <p>Pass <code>--help</code> to see a list of options.</p>
+<div class="warning">
+<p>Because this flag directly talks to LLVM, it is not subject to the usual stability guarantees of rustc's CLI interface.</p>
+</div>
 <h2 id="lto"><a class="header" href="#lto">lto</a></h2>
 <p>This flag controls whether LLVM uses <a href="https://llvm.org/docs/LinkTimeOptimization.html">link time
 optimizations</a> to produce
@@ -971,7 +979,8 @@ perform optimizations across all crates within the dependency graph.</li>
 <li><code>thin</code>: perform <a href="http://blog.llvm.org/2016/06/thinlto-scalable-and-incremental-lto.html">"thin"
 LTO</a>.
 This is similar to "fat", but takes substantially less time to run while
-still achieving performance gains similar to "fat".</li>
+still achieving performance gains similar to "fat".
+For larger projects like the Rust compiler, ThinLTO can even result in better performance than fat LTO.</li>
 </ul>
 <p>If <code>-C lto</code> is not specified, then the compiler will attempt to perform "thin
 local LTO" which performs "thin" LTO on the local crate only across its
@@ -1000,6 +1009,7 @@ between two different versions of the same crate being linked.</p>
 <h2 id="no-prepopulate-passes"><a class="header" href="#no-prepopulate-passes">no-prepopulate-passes</a></h2>
 <p>This flag tells the pass manager to use an empty list of passes, instead of the
 usual pre-populated list of passes.</p>
+<p>When combined with <code>-O --emit llvm-ir</code>, it can be used to see the optimized LLVM IR emitted by rustc before any optimizations are applied by LLVM.</p>
 <h2 id="no-redzone"><a class="header" href="#no-redzone">no-redzone</a></h2>
 <p>This flag allows you to disable <a href="https://en.wikipedia.org/wiki/Red_zone_(computing)">the
 red zone</a>. It takes one
@@ -1027,7 +1037,7 @@ parallelism</a>.</p>
 <li><code>2</code>: some optimizations.</li>
 <li><code>3</code>: all optimizations.</li>
 <li><code>s</code>: optimize for binary size.</li>
-<li><code>z</code>: optimize for binary size, but also turn off loop vectorization.</li>
+<li><code>z</code>: optimize for binary size, but more aggressively. Often results in larger binaries than <code>s</code></li>
 </ul>
 <p>Note: The <a href="codegen-options/../command-line-arguments.html#option-o-optimize"><code>-O</code> flag</a> is an alias for <code>-C opt-level=3</code>.</p>
 <p>The default is <code>0</code>.</p>
@@ -1049,11 +1059,16 @@ one of the following values:</p>
 <li><code>unwind</code>: unwind the stack upon panic</li>
 </ul>
 <p>If not specified, the default depends on the target.</p>
+<p>If any crate in the crate graph uses <code>abort</code>, the final binary (<code>bin</code>, <code>dylib</code>, <code>cdylib</code>, <code>staticlib</code>) must also use <code>abort</code>.
+If <code>std</code> is used as a <code>dylib</code> with <code>unwind</code>, the final binary must also use <code>unwind</code>.</p>
 <h2 id="passes"><a class="header" href="#passes">passes</a></h2>
 <p>This flag can be used to add extra <a href="http://llvm.org/docs/Passes.html">LLVM
 passes</a> to the compilation.</p>
 <p>The list must be separated by spaces.</p>
 <p>See also the <a href="codegen-options/index.html#no-prepopulate-passes"><code>no-prepopulate-passes</code></a> flag.</p>
+<div class="warning">
+<p>Because this flag directly talks to LLVM, it not subject to the usual stability guarantees of rustc's CLI interface.</p>
+</div>
 <h2 id="prefer-dynamic"><a class="header" href="#prefer-dynamic">prefer-dynamic</a></h2>
 <p>By default, <code>rustc</code> prefers to statically link dependencies. This option will
 indicate that dynamic linking should be used if possible if both a static and
@@ -1143,12 +1158,22 @@ enables Full RELRO by default on platforms where it is supported.</p>
 <p>The list of passes should be separated by spaces.</p>
 <p><code>all</code> will remark on every pass.</p>
 <h2 id="rpath"><a class="header" href="#rpath">rpath</a></h2>
-<p>This flag controls whether <a href="https://en.wikipedia.org/wiki/Rpath"><code>rpath</code></a> is
-enabled. It takes one of the following values:</p>
+<p>This flag controls whether rustc sets an <a href="https://en.wikipedia.org/wiki/Rpath"><code>rpath</code></a> for the binary.
+It takes one of the following values:</p>
 <ul>
 <li><code>y</code>, <code>yes</code>, <code>on</code>, <code>true</code> or no value: enable rpath.</li>
 <li><code>n</code>, <code>no</code>, <code>off</code> or <code>false</code>: disable rpath (the default).</li>
 </ul>
+<p>This flag only does something on Unix-like platforms (Mach-O and ELF), it is ignored on other platforms.</p>
+<p>If enabled, rustc will add output-relative (using <code>@load_path</code> on Mach-O and <code>$ORIGIN</code> on ELF respectively) rpaths to all <code>dylib</code> dependencies.</p>
+<p>For example, for the following directory structure, with <code>libdep.so</code> being a <code>dylib</code> crate compiled with <code>-Cprefer-dynamic</code>:</p>
+<pre><code class="language-text">dep
+ |- libdep.so
+a.rs
+</code></pre>
+<p><code>rustc a.rs --extern dep=dep/libdep.so -Crpath</code> will, on x86-64 Linux, result in approximately the following <code>DT_RUNPATH</code>: <code>$ORIGIN/dep:$ORIGIN/$RELATIVE_PATH_TO_SYSROOT/lib/rustlib/x86_64-unknown-linux-gnu/lib</code> (where <code>RELATIVE_PATH_TO_SYSROOT</code> depends on the build directory location).</p>
+<p>This is primarily useful for local development, to ensure that all the <code>dylib</code> dependencies can be found appropriately.</p>
+<p>To set the rpath to a different value (which can be useful for distribution), <code>-Clink-arg</code> with a platform-specific linker argument can be used to set the rpath directly.</p>
 <h2 id="save-temps"><a class="header" href="#save-temps">save-temps</a></h2>
 <p>This flag controls whether temporary files generated during compilation are
 deleted once compilation finishes. It takes one of the following values:</p>
@@ -1163,6 +1188,7 @@ point instructions in software. It takes one of the following values:</p>
 <li><code>y</code>, <code>yes</code>, <code>on</code>, <code>true</code> or no value: use soft floats.</li>
 <li><code>n</code>, <code>no</code>, <code>off</code> or <code>false</code>: use hardware floats (the default).</li>
 </ul>
+<p>This flag only works on <code>*eabihf</code> targets and <strong>is unsound and deprecated</strong>.</p>
 <h2 id="split-debuginfo"><a class="header" href="#split-debuginfo">split-debuginfo</a></h2>
 <p>This option controls the emission of "split debuginfo" for debug information
 that <code>rustc</code> generates. The default behavior of this option is
@@ -7633,7 +7659,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-02; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-03; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -7904,7 +7930,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-02; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-03; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -9449,7 +9475,7 @@ future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #6426
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-02; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-03; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
