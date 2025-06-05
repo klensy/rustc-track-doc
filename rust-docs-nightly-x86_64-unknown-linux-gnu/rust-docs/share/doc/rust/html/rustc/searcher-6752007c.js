@@ -524,6 +524,6 @@ window.search = window.search || {};
         document.head.append(script);
     }
 
-    loadScript(path_to_root + 'searchindex-3033c479.js', 'search-index');
+    loadScript(path_to_root + 'searchindex-5bb111d4.js', 'search-index');
 
 })(window.search);
