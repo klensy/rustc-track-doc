@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["__powidf2","__powisf2","__powitf2"]};
