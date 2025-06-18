@@ -176,7 +176,7 @@
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>For known bugs in and omissions of this book, see our <a href="https://github.com/rust-lang/reference/issues">GitHub issues</a>. If you see a case where the compiler behavior and the text here do not agree, file an issue so we can think about which is correct.</p>
+<p>For known bugs and omissions in this book, see our <a href="https://github.com/rust-lang/reference/issues">GitHub issues</a>. If you see a case where the compiler behavior and the text here do not agree, file an issue so we can think about which is correct.</p>
 </blockquote>
 </div>
 <h2 id="rust-releases"><a class="header" href="#rust-releases">Rust releases</a></h2>
@@ -14588,7 +14588,7 @@ blanket_impl: counter was 1
 <p>If a static item is declared with the <code>mut</code> keyword, then it is allowed to be
 modified by the program. One of Rust’s goals is to make concurrency bugs hard
 to run into, and this is obviously a very large source of race conditions or
-other bugs</p>
+other bugs.</p>
 <div class="rule" id="r-items.static.mut.safety"><a class="rule-link" href="items/static-items.html#r-items.static.mut.safety" title="items.static.mut.safety"><span>[items<wbr>.static<wbr>.mut<wbr>.safety]</span/></a>
 </div>
 <p>For this reason, an <code>unsafe</code> block is required when either reading
@@ -16094,9 +16094,8 @@ standard C ABI on the specific platform. Other ABIs may be specified using an
 <code>abi</code> string, as shown here:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">#[cfg(any(windows, target_arch = "x86"))]
 </span>// Interface to the Windows API
-unsafe extern "stdcall" { }
+unsafe extern "system" { }
 <span class="boring">}</span></code></pre></pre>
 <div class="rule" id="r-items.extern.abi.standard"><a class="rule-link" href="items/external-blocks.html#r-items.extern.abi.standard" title="items.extern.abi.standard"><span>[items<wbr>.extern<wbr>.abi<wbr>.standard]</span/></a>
 </div>
@@ -16162,7 +16161,7 @@ API itself</li>
 <div class="rule" id="r-items.extern.abi.thiscall"><a class="rule-link" href="items/external-blocks.html#r-items.extern.abi.thiscall" title="items.extern.abi.thiscall"><span>[items<wbr>.extern<wbr>.abi<wbr>.thiscall]</span/></a>
 </div>
 <ul>
-<li><code>unsafe extern "thiscall"</code> – The default for C++ member functions on MSVC – corresponds to MSVC’s
+<li><code>unsafe extern "thiscall"</code> – The default for C++ member functions on x86_32 MSVC – corresponds to MSVC’s
 <code>__thiscall</code> and GCC and clang’s <code>__attribute__((thiscall))</code></li>
 </ul>
 <div class="rule" id="r-items.extern.abi.efiapi"><a class="rule-link" href="items/external-blocks.html#r-items.extern.abi.efiapi" title="items.extern.abi.efiapi"><span>[items<wbr>.extern<wbr>.abi<wbr>.efiapi]</span/></a>
@@ -16191,11 +16190,20 @@ identifier.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>unsafe extern "C" {
-    safe fn foo(...);
+    unsafe fn foo(...);
     unsafe fn bar(x: i32, ...);
     unsafe fn with_name(format: *const u8, args: ...);
+    // SAFETY: This function guarantees it will not access
+    // variadic arguments.
+    safe fn ignores_variadic_arguments(x: i32, ...);
 }
 <span class="boring">}</span></code></pre></pre>
+<div class="alert alert-warning">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>The <code>safe</code> qualifier should not be used on a function in an <code>extern</code> block unless that function guarantees that it will not access the variadic arguments at all. Passing an unexpected number of arguments or arguments of unexpected type to a variadic function may lead to <a href="items/../behavior-considered-undefined.html#r-undefined">undefined behavior</a>.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-items.extern.attributes"><a class="rule-link" href="items/external-blocks.html#r-items.extern.attributes" title="items.extern.attributes"><span>[items<wbr>.extern<wbr>.attributes]</span/></a>
 </div>
 <h2 id="attributes-on-extern-blocks"><a class="header" href="#attributes-on-extern-blocks">Attributes on extern blocks</a></h2>
@@ -20146,6 +20154,7 @@ Hence on this platform usage of <code>#[target_feature]</code> functions follows
 <tr><td><code>fma</code></td><td><code>avx</code></td><td><a href="https://en.wikipedia.org/wiki/FMA_instruction_set">FMA3</a> — Three-operand fused multiply-add</td></tr>
 <tr><td><code>fxsr</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/fxsave"><code>fxsave</code></a> and <a href="https://www.felixcloutier.com/x86/fxrstor"><code>fxrstor</code></a> — Save and restore x87 FPU, MMX Technology, and SSE State</td></tr>
 <tr><td><code>gfni</code></td><td><code>sse2</code></td><td><a href="https://en.wikipedia.org/wiki/AVX-512#GFNI">GFNI</a> — Galois Field New Instructions</td></tr>
+<tr><td><code>kl</code></td><td><code>sse2</code></td><td><a href="https://en.wikipedia.org/wiki/List_of_x86_cryptographic_instructions#Intel_Key_Locker_instructions">KEYLOCKER</a> — Intel Key Locker Instructions</td></tr>
 <tr><td><code>lzcnt</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/lzcnt"><code>lzcnt</code></a> — Leading zeros count</td></tr>
 <tr><td><code>movbe</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/movbe"><code>movbe</code></a> — Move data after swapping bytes</td></tr>
 <tr><td><code>pclmulqdq</code></td><td><code>sse2</code></td><td><a href="https://www.felixcloutier.com/x86/pclmulqdq"><code>pclmulqdq</code></a> — Packed carry-less multiplication quadword</td></tr>
@@ -20153,6 +20162,9 @@ Hence on this platform usage of <code>#[target_feature]</code> functions follows
 <tr><td><code>rdrand</code></td><td></td><td><a href="https://en.wikipedia.org/wiki/RdRand"><code>rdrand</code></a> — Read random number</td></tr>
 <tr><td><code>rdseed</code></td><td></td><td><a href="https://en.wikipedia.org/wiki/RdRand"><code>rdseed</code></a> — Read random seed</td></tr>
 <tr><td><code>sha</code></td><td><code>sse2</code></td><td><a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">SHA</a> — Secure Hash Algorithm</td></tr>
+<tr><td><code>sha512</code></td><td><code>avx2</code></td><td><a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">SHA512</a> — Secure Hash Algorithm with 512-bit digest</td></tr>
+<tr><td><code>sm3</code></td><td><code>avx</code></td><td><a href="https://en.wikipedia.org/wiki/List_of_x86_cryptographic_instructions#Intel_SHA_and_SM3_instructions">SM3</a> — ShangMi 3 Hash Algorithm</td></tr>
+<tr><td><code>sm4</code></td><td><code>avx2</code></td><td><a href="https://en.wikipedia.org/wiki/List_of_x86_cryptographic_instructions#Intel_SHA_and_SM3_instructions">SM4</a> — ShangMi 4 Cipher Algorithm</td></tr>
 <tr><td><code>sse</code></td><td></td><td><a href="https://en.wikipedia.org/wiki/Streaming_SIMD_Extensions">SSE</a> — Streaming <abbr title="Single Instruction Multiple Data">SIMD</abbr> Extensions</td></tr>
 <tr><td><code>sse2</code></td><td><code>sse</code></td><td><a href="https://en.wikipedia.org/wiki/SSE2">SSE2</a> — Streaming SIMD Extensions 2</td></tr>
 <tr><td><code>sse3</code></td><td><code>sse2</code></td><td><a href="https://en.wikipedia.org/wiki/SSE3">SSE3</a> — Streaming SIMD Extensions 3</td></tr>
@@ -20161,6 +20173,7 @@ Hence on this platform usage of <code>#[target_feature]</code> functions follows
 <tr><td><code>ssse3</code></td><td><code>sse3</code></td><td><a href="https://en.wikipedia.org/wiki/SSSE3">SSSE3</a> — Supplemental Streaming SIMD Extensions 3</td></tr>
 <tr><td><code>vaes</code></td><td><code>avx2</code>, <code>aes</code></td><td><a href="https://en.wikipedia.org/wiki/AVX-512#VAES">VAES</a> — Vector AES Instructions</td></tr>
 <tr><td><code>vpclmulqdq</code></td><td><code>avx</code>, <code>pclmulqdq</code></td><td><a href="https://en.wikipedia.org/wiki/AVX-512#VPCLMULQDQ">VPCLMULQDQ</a> — Vector Carry-less multiplication of Quadwords</td></tr>
+<tr><td><code>widekl</code></td><td><code>kl</code></td><td><a href="https://en.wikipedia.org/wiki/List_of_x86_cryptographic_instructions#Intel_Key_Locker_instructions">KEYLOCKER_WIDE</a> — Intel Wide Keylocker Instructions</td></tr>
 <tr><td><code>xsave</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/xsave"><code>xsave</code></a> — Save processor extended states</td></tr>
 <tr><td><code>xsavec</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/xsavec"><code>xsavec</code></a> — Save processor extended states with compaction</td></tr>
 <tr><td><code>xsaveopt</code></td><td></td><td><a href="https://www.felixcloutier.com/x86/xsaveopt"><code>xsaveopt</code></a> — Save processor extended states optimized</td></tr>
@@ -27142,7 +27155,7 @@ This process is also called <em>autoderef</em> for short.</p>
 <h2 id="borrowing"><a class="header" href="#borrowing">Borrowing</a></h2>
 <p>The fields of a struct or a reference to a struct are treated as separate entities when borrowing.
 If the struct does not implement <a href="expressions/../special-types-and-traits.html#drop"><code>Drop</code></a> and is stored in a local variable, this also applies to moving out of each of its fields.
-This also does not apply if automatic dereferencing is done though user-defined types other than <a href="expressions/../special-types-and-traits.html#boxt"><code>Box</code></a>.</p>
+This also does not apply if automatic dereferencing is done through user-defined types other than <a href="expressions/../special-types-and-traits.html#boxt"><code>Box</code></a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>struct A { f1: String, f2: String, f3: String }
@@ -30181,9 +30194,9 @@ The remaining fields can have any value and are not bound to any variables.</li>
 <p>Patterns can be used to <em>destructure</em> <a href="items/structs.html">structs</a>, <a href="items/enumerations.html">enums</a>, and <a href="types/tuple.html">tuples</a>.
 Destructuring breaks up a value into its component pieces.
 The syntax used is almost the same as when creating such values.</p>
-<div class="rule" id="r-patterns.destructure.placeholder"><a class="rule-link" href="patterns.html#r-patterns.destructure.placeholder" title="patterns.destructure.placeholder"><span>[patterns<wbr>.destructure<wbr>.placeholder]</span/></a>
+<div class="rule" id="r-patterns.destructure.wildcard"><a class="rule-link" href="patterns.html#r-patterns.destructure.wildcard" title="patterns.destructure.wildcard"><span>[patterns<wbr>.destructure<wbr>.wildcard]</span/></a>
 </div>
-<p>In a pattern whose <a href="glossary.html#scrutinee">scrutinee</a> expression has a <code>struct</code>, <code>enum</code> or <code>tuple</code> type, a placeholder (<code>_</code>) stands in for a <em>single</em> data field, whereas a wildcard <code>..</code>  stands in for <em>all</em> the remaining fields of a particular variant.</p>
+<p>In a pattern whose <a href="glossary.html#scrutinee">scrutinee</a> expression has a <code>struct</code>, <code>enum</code> or <code>tuple</code> type, a <a href="patterns.html#wildcard-pattern">wildcard pattern</a> (<code>_</code>) stands in for a <em>single</em> data field, whereas an <a href="patterns.html#grammar-StructPatternEtCetera">et cetera</a> or <a href="patterns.html#rest-patterns">rest pattern</a> (<code>..</code>) stands in for <em>all</em> the remaining fields of a particular variant.</p>
 <div class="rule" id="r-patterns.destructure.named-field-shorthand"><a class="rule-link" href="patterns.html#r-patterns.destructure.named-field-shorthand" title="patterns.destructure.named-field-shorthand"><span>[patterns<wbr>.destructure<wbr>.named-field-shorthand]</span/></a>
 </div>
 <p>When destructuring a data structure with named (but not numbered) fields, it is allowed to write <code>fieldname</code> as a shorthand for <code>fieldname: fieldname</code>.</p>
@@ -69233,7 +69246,7 @@ Uncovered rules
 <li><a href="patterns.html#r-patterns.destructure">patterns.destructure</a></li>
 <li><a href="patterns.html#r-patterns.destructure.intro">patterns.destructure.intro</a></li>
 <li><a href="patterns.html#r-patterns.destructure.named-field-shorthand">patterns.destructure.named-field-shorthand</a></li>
-<li><a href="patterns.html#r-patterns.destructure.placeholder">patterns.destructure.placeholder</a></li>
+<li><a href="patterns.html#r-patterns.destructure.wildcard">patterns.destructure.wildcard</a></li>
 <li><a href="patterns.html#r-patterns.for">patterns.for</a></li>
 <li><a href="patterns.html#r-patterns.ident">patterns.ident</a></li>
 <li><a href="patterns.html#r-patterns.ident.bare">patterns.ident.bare</a></li>

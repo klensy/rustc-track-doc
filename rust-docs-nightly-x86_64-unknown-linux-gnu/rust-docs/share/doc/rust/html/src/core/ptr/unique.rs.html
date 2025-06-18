@@ -1,5 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/unique.rs`."><title>unique.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (45acf54ee 2025-06-16)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>unique.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::marker::{PhantomData, Unsize};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/unique.rs`."><title>unique.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.89.0" data-rustdoc-version="1.89.0-nightly (f3db63916 2025-06-17)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files1.89.0.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>unique.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::marker::{PhantomData, PointeeSized, Unsize};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::ops::{CoerceUnsized, DispatchFromDyn};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::pin::PinCoerceUnsized;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::ptr::NonNull;
@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>#[repr(transparent)]
 <a href=#35 id=35 data-nosnippet>35</a></span><span class="comment">// Lang item used experimentally by Miri to define the semantics of `Unique`.
 <a href=#36 id=36 data-nosnippet>36</a></span><span class="attr">#[lang = <span class="string">"ptr_unique"</span>]
-<a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">pub struct </span>Unique&lt;T: <span class="question-mark">?</span>Sized&gt; {
+<a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">pub struct </span>Unique&lt;T: PointeeSized&gt; {
 <a href=#38 id=38 data-nosnippet>38</a>    pointer: NonNull&lt;T&gt;,
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="comment">// NOTE: this marker has no consequences for variance, but is necessary
 <a href=#40 id=40 data-nosnippet>40</a>    // for dropck to understand that we logically own a `T`.
@@ -49,14 +49,14 @@
 <a href=#49 id=49 data-nosnippet>49</a>/// unenforced by the type system; the abstraction using the
 <a href=#50 id=50 data-nosnippet>50</a>/// `Unique` must enforce it.
 <a href=#51 id=51 data-nosnippet>51</a></span><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">unsafe impl</span>&lt;T: Send + <span class="question-mark">?</span>Sized&gt; Send <span class="kw">for </span>Unique&lt;T&gt; {}
+<a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">unsafe impl</span>&lt;T: Send + PointeeSized&gt; Send <span class="kw">for </span>Unique&lt;T&gt; {}
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a><span class="doccomment">/// `Unique` pointers are `Sync` if `T` is `Sync` because the data they
 <a href=#55 id=55 data-nosnippet>55</a>/// reference is unaliased. Note that this aliasing invariant is
 <a href=#56 id=56 data-nosnippet>56</a>/// unenforced by the type system; the abstraction using the
 <a href=#57 id=57 data-nosnippet>57</a>/// `Unique` must enforce it.
 <a href=#58 id=58 data-nosnippet>58</a></span><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">unsafe impl</span>&lt;T: Sync + <span class="question-mark">?</span>Sized&gt; Sync <span class="kw">for </span>Unique&lt;T&gt; {}
+<a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">unsafe impl</span>&lt;T: Sync + PointeeSized&gt; Sync <span class="kw">for </span>Unique&lt;T&gt; {}
 <a href=#60 id=60 data-nosnippet>60</a>
 <a href=#61 id=61 data-nosnippet>61</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
 <a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">impl</span>&lt;T: Sized&gt; Unique&lt;T&gt; {
@@ -78,7 +78,7 @@
 <a href=#78 id=78 data-nosnippet>78</a>}
 <a href=#79 id=79 data-nosnippet>79</a>
 <a href=#80 id=80 data-nosnippet>80</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#81 id=81 data-nosnippet>81</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Unique&lt;T&gt; {
+<a href=#81 id=81 data-nosnippet>81</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; Unique&lt;T&gt; {
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="doccomment">/// Creates a new `Unique`.
 <a href=#83 id=83 data-nosnippet>83</a>    ///
 <a href=#84 id=84 data-nosnippet>84</a>    /// # Safety
@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>}
 <a href=#158 id=158 data-nosnippet>158</a>
 <a href=#159 id=159 data-nosnippet>159</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#160 id=160 data-nosnippet>160</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Clone <span class="kw">for </span>Unique&lt;T&gt; {
+<a href=#160 id=160 data-nosnippet>160</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; Clone <span class="kw">for </span>Unique&lt;T&gt; {
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="attr">#[inline]
 <a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#163 id=163 data-nosnippet>163</a>        <span class="kw-2">*</span><span class="self">self
@@ -165,33 +165,33 @@
 <a href=#165 id=165 data-nosnippet>165</a>}
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#168 id=168 data-nosnippet>168</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; Copy <span class="kw">for </span>Unique&lt;T&gt; {}
+<a href=#168 id=168 data-nosnippet>168</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; Copy <span class="kw">for </span>Unique&lt;T&gt; {}
 <a href=#169 id=169 data-nosnippet>169</a>
 <a href=#170 id=170 data-nosnippet>170</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, U: <span class="question-mark">?</span>Sized&gt; CoerceUnsized&lt;Unique&lt;U&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; <span class="kw">where </span>T: Unsize&lt;U&gt; {}
+<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">impl</span>&lt;T: PointeeSized, U: PointeeSized&gt; CoerceUnsized&lt;Unique&lt;U&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; <span class="kw">where </span>T: Unsize&lt;U&gt; {}
 <a href=#172 id=172 data-nosnippet>172</a>
 <a href=#173 id=173 data-nosnippet>173</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#174 id=174 data-nosnippet>174</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, U: <span class="question-mark">?</span>Sized&gt; DispatchFromDyn&lt;Unique&lt;U&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; <span class="kw">where </span>T: Unsize&lt;U&gt; {}
+<a href=#174 id=174 data-nosnippet>174</a></span><span class="kw">impl</span>&lt;T: PointeeSized, U: PointeeSized&gt; DispatchFromDyn&lt;Unique&lt;U&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; <span class="kw">where </span>T: Unsize&lt;U&gt; {}
 <a href=#175 id=175 data-nosnippet>175</a>
 <a href=#176 id=176 data-nosnippet>176</a><span class="attr">#[unstable(feature = <span class="string">"pin_coerce_unsized_trait"</span>, issue = <span class="string">"123430"</span>)]
-<a href=#177 id=177 data-nosnippet>177</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; PinCoerceUnsized <span class="kw">for </span>Unique&lt;T&gt; {}
+<a href=#177 id=177 data-nosnippet>177</a></span><span class="kw">unsafe impl</span>&lt;T: PointeeSized&gt; PinCoerceUnsized <span class="kw">for </span>Unique&lt;T&gt; {}
 <a href=#178 id=178 data-nosnippet>178</a>
 <a href=#179 id=179 data-nosnippet>179</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; fmt::Debug <span class="kw">for </span>Unique&lt;T&gt; {
+<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; fmt::Debug <span class="kw">for </span>Unique&lt;T&gt; {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
 <a href=#182 id=182 data-nosnippet>182</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.as_ptr(), f)
 <a href=#183 id=183 data-nosnippet>183</a>    }
 <a href=#184 id=184 data-nosnippet>184</a>}
 <a href=#185 id=185 data-nosnippet>185</a>
 <a href=#186 id=186 data-nosnippet>186</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; fmt::Pointer <span class="kw">for </span>Unique&lt;T&gt; {
+<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; fmt::Pointer <span class="kw">for </span>Unique&lt;T&gt; {
 <a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
 <a href=#189 id=189 data-nosnippet>189</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.as_ptr(), f)
 <a href=#190 id=190 data-nosnippet>190</a>    }
 <a href=#191 id=191 data-nosnippet>191</a>}
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#194 id=194 data-nosnippet>194</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; From&lt;<span class="kw-2">&amp;mut </span>T&gt; <span class="kw">for </span>Unique&lt;T&gt; {
+<a href=#194 id=194 data-nosnippet>194</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; From&lt;<span class="kw-2">&amp;mut </span>T&gt; <span class="kw">for </span>Unique&lt;T&gt; {
 <a href=#195 id=195 data-nosnippet>195</a>    <span class="doccomment">/// Converts a `&amp;mut T` to a `Unique&lt;T&gt;`.
 <a href=#196 id=196 data-nosnippet>196</a>    ///
 <a href=#197 id=197 data-nosnippet>197</a>    /// This conversion is infallible since references cannot be null.
@@ -202,7 +202,7 @@
 <a href=#202 id=202 data-nosnippet>202</a>}
 <a href=#203 id=203 data-nosnippet>203</a>
 <a href=#204 id=204 data-nosnippet>204</a><span class="attr">#[unstable(feature = <span class="string">"ptr_internals"</span>, issue = <span class="string">"none"</span>)]
-<a href=#205 id=205 data-nosnippet>205</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; From&lt;NonNull&lt;T&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; {
+<a href=#205 id=205 data-nosnippet>205</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; From&lt;NonNull&lt;T&gt;&gt; <span class="kw">for </span>Unique&lt;T&gt; {
 <a href=#206 id=206 data-nosnippet>206</a>    <span class="doccomment">/// Converts a `NonNull&lt;T&gt;` to a `Unique&lt;T&gt;`.
 <a href=#207 id=207 data-nosnippet>207</a>    ///
 <a href=#208 id=208 data-nosnippet>208</a>    /// This conversion is infallible since `NonNull` cannot be null.
