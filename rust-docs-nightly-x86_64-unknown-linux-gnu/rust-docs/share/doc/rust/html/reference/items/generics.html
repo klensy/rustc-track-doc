@@ -545,7 +545,7 @@ implementations, which don’t have a name, they come directly after <code>impl<
 <p>The order of generic parameters is restricted to lifetime parameters and then type and const parameters intermixed.</p>
 <div class="rule" id="r-items.generics.syntax.duplicate-params"><a class="rule-link" href="#r-items.generics.syntax.duplicate-params" title="items.generics.syntax.duplicate-params"><span>[items<wbr>.generics<wbr>.syntax<wbr>.duplicate-params]</span/></a>
 </div>
-<p>The same parameter name may not be declared more than once in a <em>GenericParams</em> list.</p>
+<p>The same parameter name may not be declared more than once in a <a href="generics.html#grammar-GenericParams">GenericParams</a> list.</p>
 <p>Some examples of items with type, const, and lifetime parameters:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -664,10 +664,7 @@ fn bad_function&lt;const N: usize&gt;() -&gt; [u8; {N + 1}] {
 <p>A const argument in a <a href="../paths.html">path</a> specifies the const value to use for that item.</p>
 <div class="rule" id="r-items.generics.const.argument.const-expr"><a class="rule-link" href="#r-items.generics.const.argument.const-expr" title="items.generics.const.argument.const-expr"><span>[items<wbr>.generics<wbr>.const<wbr>.argument<wbr>.const-expr]</span/></a>
 </div>
-<p>The argument must be a <a href="../const_eval.html#constant-expressions">const expression</a> of the type ascribed to the const
-parameter. The const expression must be a <a href="../expressions/block-expr.html">block expression</a>
-(surrounded with braces) unless it is a single path segment (an <a href="../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a>)
-or a <a href="../expressions/literal-expr.html">literal</a> (with a possibly leading <code>-</code> token).</p>
+<p>The argument must either be an <a href="generics.html#r-items.generics.const.inferred">inferred const</a> or be a <a href="../const_eval.html#constant-expressions">const expression</a> of the type ascribed to the const parameter. The const expression must be a <a href="../expressions/block-expr.html">block expression</a> (surrounded with braces) unless it is a single path segment (an <a href="../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a>) or a <a href="../expressions/literal-expr.html">literal</a> (with a possibly leading <code>-</code> token).</p>
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
@@ -676,20 +673,55 @@ or a <a href="../expressions/literal-expr.html">literal</a> (with a possibly lea
 </div>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>fn double&lt;const N: i32&gt;() {
-    println!("doubled: {}", N * 2);
-}
+</span>struct S&lt;const N: i64&gt;;
+const C: i64 = 1;
+fn f&lt;const N: i64&gt;() -&gt; S&lt;N&gt; { S }
 
-const SOME_CONST: i32 = 12;
-
-fn example() {
-    // Example usage of a const argument.
-    double::&lt;9&gt;();
-    double::&lt;-123&gt;();
-    double::&lt;{7 + 8}&gt;();
-    double::&lt;SOME_CONST&gt;();
-    double::&lt;{ SOME_CONST + 5 }&gt;();
+let _ = f::&lt;1&gt;(); // Literal.
+let _ = f::&lt;-1&gt;(); // Negative literal.
+let _ = f::&lt;{ 1 + 2 }&gt;(); // Constant expression.
+let _ = f::&lt;C&gt;(); // Single segment path.
+let _ = f::&lt;{ C + 1 }&gt;(); // Constant expression.
+let _: S&lt;1&gt; = f::&lt;_&gt;(); // Inferred const.
+let _: S&lt;1&gt; = f::&lt;(((_)))&gt;(); // Inferred const.
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>In a generic argument list, an <a href="generics.html#r-items.generics.const.inferred">inferred const</a> is parsed as an <a href="../types/inferred.html#grammar-InferredType">inferred type</a> but then semantically treated as a separate kind of <a href="generics.html#r-items.generics.const.argument">const generic argument</a>.</p>
+</blockquote>
+</div>
+<div class="rule" id="r-items.generics.const.inferred"><a class="rule-link" href="#r-items.generics.const.inferred" title="items.generics.const.inferred"><span>[items<wbr>.generics<wbr>.const<wbr>.inferred]</span/></a>
+</div>
+<p>Where a const argument is expected, an <code>_</code> (optionally surrounding by any number of matching parentheses), called the <em>inferred const</em> (<a href="../paths.html#r-paths.expr.complex-const-params">path rules</a>, <a href="../expressions/array-expr.html#r-expr.array.length-restriction">array expression rules</a>), can be used instead. This asks the compiler to infer the const argument if possible based on surrounding information.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn make_buf&lt;const N: usize&gt;() -&gt; [u8; N] {
+    [0; _]
+    //  ^ Infers `N`.
 }
+let _: [u8; 1024] = make_buf::&lt;_&gt;();
+//                             ^ Infers `1024`.
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>An <a href="generics.html#r-items.generics.const.inferred">inferred const</a> is not semantically an <a href="../expressions.html#grammar-Expression">expression</a> and so is not accepted within braces.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn f&lt;const N: usize&gt;() -&gt; [u8; N] { [0; _] }
+let _: [_; 1] = f::&lt;{ _ }&gt;();
+//                    ^ ERROR `_` not allowed here
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="rule" id="r-items.generics.const.inferred.constraint"><a class="rule-link" href="#r-items.generics.const.inferred.constraint" title="items.generics.const.inferred.constraint"><span>[items<wbr>.generics<wbr>.const<wbr>.inferred<wbr>.constraint]</span/></a>
+</div>
+<p>The inferred const cannot be used in item signatures.</p>
+<pre><pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn f&lt;const N: usize&gt;(x: [u8; N]) -&gt; [u8; _] { x }
+//                                       ^ ERROR not allowed
 <span class="boring">}</span></code></pre></pre>
 <div class="rule" id="r-items.generics.const.type-ambiguity"><a class="rule-link" href="#r-items.generics.const.type-ambiguity" title="items.generics.const.type-ambiguity"><span>[items<wbr>.generics<wbr>.const<wbr>.type-ambiguity]</span/></a>
 </div>

@@ -857,8 +857,33 @@ Vec::&lt;u8&gt;::with_capacity(1024);
 arguments, then const arguments, then equality constraints.</p>
 <div class="rule" id="r-paths.expr.complex-const-params"><a class="rule-link" href="#r-paths.expr.complex-const-params" title="paths.expr.complex-const-params"><span>[paths<wbr>.expr<wbr>.complex-const-params]</span/></a>
 </div>
-<p>Const arguments must be surrounded by braces unless they are a
-<a href="expressions/literal-expr.html">literal</a> or a single segment path.</p>
+<p>Const arguments must be surrounded by braces unless they are a <a href="expressions/literal-expr.html">literal</a>, an <a href="items/generics.html#r-items.generics.const.inferred">inferred const</a>, or a single segment path. An <a href="items/generics.html#r-items.generics.const.inferred">inferred const</a> may not be surrounded by braces.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod m {
+    pub const C: usize = 1;
+}
+const C: usize = m::C;
+fn f&lt;const N: usize&gt;() -&gt; [u8; N] { [0; N] }
+
+let _ = f::&lt;1&gt;(); // Literal.
+let _: [_; 1] = f::&lt;_&gt;(); // Inferred const.
+let _: [_; 1] = f::&lt;(((_)))&gt;(); // Inferred const.
+let _ = f::&lt;C&gt;(); // Single segment path.
+let _ = f::&lt;{ m::C }&gt;(); // Multi-segment path must be braced.
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn f&lt;const N: usize&gt;() -&gt; [u8; N] { [0; _] }
+let _: [_; 1] = f::&lt;{ _ }&gt;();
+//                    ^ ERROR `_` not allowed here
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>In a generic argument list, an <a href="items/generics.html#r-items.generics.const.inferred">inferred const</a> is parsed as an <a href="types/inferred.html#grammar-InferredType">inferred type</a> but then semantically treated as a separate kind of <a href="items/generics.html#r-items.generics.const.argument">const generic argument</a>.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-paths.expr.impl-trait-params"><a class="rule-link" href="#r-paths.expr.impl-trait-params" title="paths.expr.impl-trait-params"><span>[paths<wbr>.expr<wbr>.impl-trait-params]</span/></a>
 </div>
 <p>The synthetic type parameters corresponding to <code>impl Trait</code> types are implicit,
@@ -1302,7 +1327,7 @@ and qualified paths.</p>
 <div class="rule" id="r-paths.type.turbofish"><a class="rule-link" href="#r-paths.type.turbofish" title="paths.type.turbofish"><span>[paths<wbr>.type<wbr>.turbofish]</span/></a>
 </div>
 <p>Although the <code>::</code> token is allowed before the generics arguments, it is not required
-because there is no ambiguity like there is in <em>PathInExpression</em>.</p>
+because there is no ambiguity like there is in <a href="paths.html#grammar-PathInExpression">PathInExpression</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">mod ops {
