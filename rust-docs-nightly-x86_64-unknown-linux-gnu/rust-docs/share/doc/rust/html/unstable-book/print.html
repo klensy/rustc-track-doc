@@ -39,7 +39,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-8853c5d9.js"></script>
+        <script src="toc-b8cab94b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1050,11 +1050,11 @@ code, which can slow down compile times. This is hard to detect because the
 generated code is normally invisible to the programmer.</p>
 <p>This flag helps identify such cases. When enabled, the compiler measures the
 effect on code size of all used macros and prints a table summarizing that
-effect. For each distinct macro, it counts how many times it is used, and the
-net effect on code size (in terms of lines of code, and bytes of code). The
+effect. For each distinct macro, it counts how many times it is used, and how
+much code it produces when expanded (in lines of code, and bytes of code). The
 code size evaluation uses the compiler's internal pretty-printing, and so will
 be independent of the formatting in the original code.</p>
-<p>Note that the net effect of a macro may be negative. E.g. the <code>cfg!</code> and
+<p>Note that the output size of a macro may be zero. E.g. the <code>cfg!</code> and
 <code>#[test]</code> macros often strip out code.</p>
 <p>If a macro is identified as causing a large increase in code size, it is worth
 using <code>cargo expand</code> to inspect the post-expansion code, which includes the
@@ -4596,6 +4596,46 @@ extern "C" {}
 <div style="break-before: page; page-break-before: always;"></div><h1 id="loongarch_target_feature"><a class="header" href="#loongarch_target_feature"><code>loongarch_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/44839">#44839</a></p>
 <hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="loop_match"><a class="header" href="#loop_match"><code>loop_match</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132306">#132306</a></p>
+<hr />
+<p>The <code>#[loop_match]</code> and <code>#[const_continue]</code> attributes can be used to improve the code
+generation of logic that fits this shape:</p>
+<pre><code class="language-ignore (pseudo-rust)">loop {
+    state = 'blk: {
+        match state {
+            State::A =&gt; {
+                break 'blk State::B
+            }
+            State::B =&gt; { /* ... */ }
+            /* ... */
+        }
+    }
+}
+</code></pre>
+<p>Here the loop itself can be annotated with <code>#[loop_match]</code>, and any <code>break 'blk</code> with
+<code>#[const_continue]</code> if the value is know at compile time:</p>
+<pre><code class="language-ignore (pseudo-rust)">#[loop_match]
+loop {
+    state = 'blk: {
+        match state {
+            State::A =&gt; {
+                #[const_continue]
+                break 'blk State::B
+            }
+            State::B =&gt; { /* ... */ }
+            /* ... */
+        }
+    }
+}
+</code></pre>
+<p>The observable behavior of this loop is exactly the same as without the extra attributes.
+The difference is in the generated output: normally, when the state is <code>A</code>, control flow
+moves from the <code>A</code> branch, back to the top of the loop, then to the <code>B</code> branch. With the
+attributes, The <code>A</code> branch will immediately jump to the <code>B</code> branch.</p>
+<p>Removing the indirection can be beneficial for stack usage and branch prediction, and
+enables other optimizations by clearly splitting out the control flow paths that your
+program will actually use.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="m68k_target_feature"><a class="header" href="#m68k_target_feature"><code>m68k_target_feature</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/134328">#134328</a></p>
 <hr />
