@@ -39,7 +39,7 @@
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b8cab94b.js"></script>
+        <script src="toc-2b64d630.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -282,6 +282,7 @@ Set the <code>-Zautodiff=&lt;options&gt;</code> compiler flag to adjust the beha
 Multiple options can be separated with a comma. Valid options are:</p>
 <p><code>Enable</code> - Required flag to enable autodiff
 <code>PrintTA</code> - print Type Analysis Information
+<code>PrintTAFn</code> - print Type Analysis Information for a specific function
 <code>PrintAA</code> - print Activity Analysis Information
 <code>PrintPerf</code> - print Performance Warnings from Enzyme
 <code>PrintSteps</code> - prints all intermediate transformations
@@ -2477,7 +2478,7 @@ future with no option to fall back to the old non-spec-compliant ABI.</p>
 <p>Allows <code>extern "avr-interrupt" fn()</code> and <code>extern "avr-non-blocking-interrupt" fn()</code>.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/69664">#69664</a></p>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="abi_c_cmse_nonsecure_call"><a class="header" href="#abi_c_cmse_nonsecure_call"><code>abi_c_cmse_nonsecure_call</code></a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="abi_cmse_nonsecure_call"><a class="header" href="#abi_cmse_nonsecure_call"><code>abi_cmse_nonsecure_call</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/81391">#81391</a></p>
 <hr />
 <p>The <a href="https://developer.arm.com/documentation/100690/latest/">TrustZone-M
@@ -2487,10 +2488,9 @@ name).
 LLVM, the Rust compiler and the linker are providing
 <a href="https://developer.arm.com/documentation/ecm0359818/latest/">support</a> for the
 TrustZone-M feature.</p>
-<p>One of the things provided, with this unstable feature, is the
-<code>C-cmse-nonsecure-call</code> function ABI. This ABI is used on function pointers to
-non-secure code to mark a non-secure function call (see <a href="https://developer.arm.com/documentation/ecm0359818/latest/">section
-5.5</a> for details).</p>
+<p>One of the things provided with this unstable feature is the "cmse-nonsecure-call" function ABI.
+This ABI is used on function pointers to non-secure code to mark a non-secure function call
+(see <a href="https://developer.arm.com/documentation/ecm0359818/latest/">section 5.5</a> for details).</p>
 <p>With this ABI, the compiler will do the following to perform the call:</p>
 <ul>
 <li>save registers needed after the call to Secure memory</li>
@@ -2500,16 +2500,14 @@ non-secure code to mark a non-secure function call (see <a href="https://develop
 </ul>
 <p>To avoid using the non-secure stack, the compiler will constrain the number and
 type of parameters/return value.</p>
-<p>The <code>extern "C-cmse-nonsecure-call"</code> ABI is otherwise equivalent to the
-<code>extern "C"</code> ABI.</p>
 <!-- NOTE(ignore) this example is specific to thumbv8m targets -->
 <pre><code class="language-rust ignore">#![no_std]
-#![feature(abi_c_cmse_nonsecure_call)]
+#![feature(abi_cmse_nonsecure_call)]
 
 #[no_mangle]
 pub fn call_nonsecure_function(addr: usize) -&gt; u32 {
     let non_secure_function =
-        unsafe { core::mem::transmute::&lt;usize, extern "C-cmse-nonsecure-call" fn() -&gt; u32&gt;(addr) };
+        unsafe { core::mem::transmute::&lt;usize, extern "cmse-nonsecure-call" fn() -&gt; u32&gt;(addr) };
     non_secure_function()
 }</code></pre>
 <pre><code class="language-text">$ rustc --emit asm --crate-type lib --target thumbv8m.main-none-eabi function.rs
@@ -3465,10 +3463,9 @@ name).
 LLVM, the Rust compiler and the linker are providing
 <a href="https://developer.arm.com/documentation/ecm0359818/latest/">support</a> for the
 TrustZone-M feature.</p>
-<p>One of the things provided, with this unstable feature, is the
-<code>C-cmse-nonsecure-entry</code> ABI. This ABI marks a Secure function as an
-entry function (see <a href="https://developer.arm.com/documentation/ecm0359818/latest/">section
-5.4</a> for details).
+<p>One of the things provided with this unstable feature is the "cmse-nonsecure-entry" ABI.
+This ABI marks a Secure function as an entry function (see
+<a href="https://developer.arm.com/documentation/ecm0359818/latest/">section 5.4</a> for details).
 With this ABI, the compiler will do the following:</p>
 <ul>
 <li>add a special symbol on the function which is the <code>__acle_se_</code> prefix and the
@@ -3481,9 +3478,7 @@ information</li>
 <p>Because the stack can not be used to pass parameters, there will be compilation
 errors if:</p>
 <ul>
-<li>the total size of all parameters is too big (for example more than four 32
-bits integers)</li>
-<li>the entry function is not using a C ABI</li>
+<li>the total size of all parameters is too big (for example, more than four 32-bit integers)</li>
 </ul>
 <p>The special symbol <code>__acle_se_</code> will be used by the linker to generate a secure
 gateway veneer.</p>
@@ -3492,7 +3487,7 @@ gateway veneer.</p>
 #![feature(cmse_nonsecure_entry)]
 
 #[no_mangle]
-pub extern "C-cmse-nonsecure-entry" fn entry_function(input: u32) -&gt; u32 {
+pub extern "cmse-nonsecure-entry" fn entry_function(input: u32) -&gt; u32 {
     input + 6
 }</code></pre>
 <pre><code class="language-text">$ rustc --emit obj --crate-type lib --target thumbv8m.main-none-eabi function.rs
