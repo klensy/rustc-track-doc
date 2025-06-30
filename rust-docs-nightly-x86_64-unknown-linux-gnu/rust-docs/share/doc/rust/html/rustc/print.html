@@ -1640,7 +1640,90 @@ $
 </code></pre>
 <p>This feature is used heavily by Cargo; it will pass <code>--cap-lints allow</code> when
 compiling your dependencies, so that if they have any warnings, they do not
-pollute the output of your build.</p>
+pollute the output of your build. However, note that <code>--cap-lints allow</code> does <strong>not</strong> override lints marked as <code>force-warn</code>.</p>
+<h2 id="priority-of-lint-level-sources"><a class="header" href="#priority-of-lint-level-sources">Priority of lint level sources</a></h2>
+<p>Rust allows setting lint levels (<code>allow</code>, <code>warn</code>, <code>deny</code>, <code>forbid</code>, <code>force-warn</code>) through various sources:</p>
+<ul>
+<li><strong>Attributes</strong>: <code>#[allow(...)]</code>, <code>#![deny(...)]</code>, etc.</li>
+<li><strong>Command-line options</strong>: <code>--cap-lints</code>, <code>--force-warn</code>, <code>-A</code>, <code>-W</code>, <code>-D</code>, <code>-F</code></li>
+</ul>
+<p>Here’s how these different lint controls interact:</p>
+<ol>
+<li>
+<p><a href="lints/levels.html#force-warn"><code>--force-warn</code></a> forces a lint to warning level, and takes precedence over attributes and all other CLI flags.</p>
+<pre><code class="language-rust compile_fail">#[forbid(unused_variables)]
+fn main() {
+    let x = 42;
+}</code></pre>
+<p>Compiled with:</p>
+<pre><code class="language-bash"> $ rustc --force-warn unused_variables lib.rs
+ warning: unused variable: `x`
+   --&gt; lib.rs:3:9
+   |
+ 3 |     let x = 42;
+   |         ^ help: if this is intentional, prefix it with an underscore: `_x`
+   |
+   = note: requested on the command line with `--force-warn unused-variables`
+
+ warning: 1 warning emitted
+</code></pre>
+</li>
+<li>
+<p><a href="lints/levels.html#capping-lints"><code>--cap-lints</code></a> sets the maximum level of a lint, and takes precedence over attributes as well as the <code>-D</code>, <code>-W</code>, and <code>-F</code> CLI flags.</p>
+<pre><code class="language-rust compile_fail">#[deny(unused_variables)]
+fn main() {
+    let x = 42;
+}</code></pre>
+<p>Compiled with:</p>
+<pre><code class="language-bash"> $ rustc --cap-lints=warn lib.rs
+ warning: unused variable: `x`
+ --&gt; test1.rs:3:9
+   |
+ 3 |     let x = 42;
+   |         ^ help: if this is intentional, prefix it with an underscore: `_x`
+   |
+ note: the lint level is defined here
+ --&gt; test1.rs:1:8
+   |
+ 1 | #[deny(unused_variables)]
+   |        ^^^^^^^^^^^^^^^^
+
+ warning: 1 warning emitted
+</code></pre>
+</li>
+<li>
+<p><a href="lints/levels.html#via-compiler-flag">CLI level flags</a> take precedence over attributes.</p>
+<p>The order of the flags matter; flags on the right take precedence over earlier flags.</p>
+<pre><code class="language-rust">fn main() {
+    let x = 42;
+}</code></pre>
+<p>Compiled with:</p>
+<pre><code class="language-bash"> $ rustc -A unused_variables -D unused_variables lib.rs
+ error: unused variable: `x`
+ --&gt; test1.rs:2:9
+   |
+ 2 |     let x = 42;
+   |         ^ help: if this is intentional, prefix it with an underscore: `_x`
+   |
+   = note: requested on the command line with `-D unused-variables`
+
+ error: aborting due to 1 previous error
+</code></pre>
+</li>
+<li>
+<p>Within the source, <a href="lints/levels.html#via-an-attribute">attributes</a> at a lower-level in the syntax tree take precedence over attributes at a higher level, or from a previous attribute on the same entity as listed in left-to-right source order.</p>
+<pre><code class="language-rust">#![deny(unused_variables)]
+
+#[allow(unused_variables)]
+fn main() {
+    let x = 42; // Allow wins
+}</code></pre>
+<ul>
+<li>The exception is once a lint is set to "forbid", it is an error to try to change its level except for <code>deny</code>, which is allowed inside a forbid context, but is ignored.</li>
+</ul>
+</li>
+</ol>
+<p>In terms of priority, <a href="lints/groups.html">lint groups</a> are treated as-if they are expanded to a list of all of the lints they contain. The exception is the <code>warnings</code> group which ignores attribute and CLI order and applies to all lints that would otherwise warn within the entity.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="lint-groups"><a class="header" href="#lint-groups">Lint Groups</a></h1>
 <p><code>rustc</code> has the concept of a "lint group", where you can toggle several warnings
 through one name.</p>
@@ -7681,7 +7764,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-29; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -7952,7 +8035,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-29; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -9510,7 +9593,7 @@ future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #6426
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-06-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-06-29; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
