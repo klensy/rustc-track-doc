@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/time.rs`."><title>time.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.90.0" data-rustdoc-version="1.90.0-nightly (a84ab0ce6 2025-07-06)" data-channel="nightly" data-search-js="search-179e01a3.js" data-settings-js="settings-5514c975.js" ><script src="../../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.90.0.js"></script><script defer src="../../../../../static.files/main-673ee1e0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>time.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::num::niche_types::Nanoseconds;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/time.rs`."><title>time.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.90.0" data-rustdoc-version="1.90.0-nightly (a2d45f73c 2025-07-07)" data-channel="nightly" data-search-js="search-179e01a3.js" data-settings-js="settings-5514c975.js" ><script src="../../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.90.0.js"></script><script defer src="../../../../../static.files/main-673ee1e0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>time.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::num::niche_types::Nanoseconds;
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::time::Duration;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{fmt, io};
@@ -261,23 +261,23 @@
 <a href=#261 id=261 data-nosnippet>261</a>}
 <a href=#262 id=262 data-nosnippet>262</a>
 <a href=#263 id=263 data-nosnippet>263</a><span class="kw">impl </span>Instant {
-<a href=#264 id=264 data-nosnippet>264</a>    <span class="kw">pub fn </span>now() -&gt; Instant {
-<a href=#265 id=265 data-nosnippet>265</a>        <span class="comment">// https://www.manpagez.com/man/3/clock_gettime/
-<a href=#266 id=266 data-nosnippet>266</a>        //
-<a href=#267 id=267 data-nosnippet>267</a>        // CLOCK_UPTIME_RAW   clock that increments monotonically, in the same man-
-<a href=#268 id=268 data-nosnippet>268</a>        //                    ner as CLOCK_MONOTONIC_RAW, but that does not incre-
-<a href=#269 id=269 data-nosnippet>269</a>        //                    ment while the system is asleep.  The returned value
-<a href=#270 id=270 data-nosnippet>270</a>        //                    is identical to the result of mach_absolute_time()
-<a href=#271 id=271 data-nosnippet>271</a>        //                    after the appropriate mach_timebase conversion is
-<a href=#272 id=272 data-nosnippet>272</a>        //                    applied.
-<a href=#273 id=273 data-nosnippet>273</a>        //
-<a href=#274 id=274 data-nosnippet>274</a>        // Instant on macos was historically implemented using mach_absolute_time;
-<a href=#275 id=275 data-nosnippet>275</a>        // we preserve this value domain out of an abundance of caution.
-<a href=#276 id=276 data-nosnippet>276</a>        </span><span class="attr">#[cfg(target_vendor = <span class="string">"apple"</span>)]
-<a href=#277 id=277 data-nosnippet>277</a>        </span><span class="kw">const </span>clock_id: libc::clockid_t = libc::CLOCK_UPTIME_RAW;
-<a href=#278 id=278 data-nosnippet>278</a>        <span class="attr">#[cfg(not(target_vendor = <span class="string">"apple"</span>))]
-<a href=#279 id=279 data-nosnippet>279</a>        </span><span class="kw">const </span>clock_id: libc::clockid_t = libc::CLOCK_MONOTONIC;
-<a href=#280 id=280 data-nosnippet>280</a>        Instant { t: Timespec::now(clock_id) }
+<a href=#264 id=264 data-nosnippet>264</a>    <span class="attr">#[cfg(target_vendor = <span class="string">"apple"</span>)]
+<a href=#265 id=265 data-nosnippet>265</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLOCK_ID: libc::clockid_t = libc::CLOCK_UPTIME_RAW;
+<a href=#266 id=266 data-nosnippet>266</a>    <span class="attr">#[cfg(not(target_vendor = <span class="string">"apple"</span>))]
+<a href=#267 id=267 data-nosnippet>267</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLOCK_ID: libc::clockid_t = libc::CLOCK_MONOTONIC;
+<a href=#268 id=268 data-nosnippet>268</a>    <span class="kw">pub fn </span>now() -&gt; Instant {
+<a href=#269 id=269 data-nosnippet>269</a>        <span class="comment">// https://www.manpagez.com/man/3/clock_gettime/
+<a href=#270 id=270 data-nosnippet>270</a>        //
+<a href=#271 id=271 data-nosnippet>271</a>        // CLOCK_UPTIME_RAW   clock that increments monotonically, in the same man-
+<a href=#272 id=272 data-nosnippet>272</a>        //                    ner as CLOCK_MONOTONIC_RAW, but that does not incre-
+<a href=#273 id=273 data-nosnippet>273</a>        //                    ment while the system is asleep.  The returned value
+<a href=#274 id=274 data-nosnippet>274</a>        //                    is identical to the result of mach_absolute_time()
+<a href=#275 id=275 data-nosnippet>275</a>        //                    after the appropriate mach_timebase conversion is
+<a href=#276 id=276 data-nosnippet>276</a>        //                    applied.
+<a href=#277 id=277 data-nosnippet>277</a>        //
+<a href=#278 id=278 data-nosnippet>278</a>        // Instant on macos was historically implemented using mach_absolute_time;
+<a href=#279 id=279 data-nosnippet>279</a>        // we preserve this value domain out of an abundance of caution.
+<a href=#280 id=280 data-nosnippet>280</a>        </span>Instant { t: Timespec::now(<span class="self">Self</span>::CLOCK_ID) }
 <a href=#281 id=281 data-nosnippet>281</a>    }
 <a href=#282 id=282 data-nosnippet>282</a>
 <a href=#283 id=283 data-nosnippet>283</a>    <span class="kw">pub fn </span>checked_sub_instant(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Instant) -&gt; <span class="prelude-ty">Option</span>&lt;Duration&gt; {
@@ -291,13 +291,21 @@
 <a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">pub fn </span>checked_sub_duration(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Duration) -&gt; <span class="prelude-ty">Option</span>&lt;Instant&gt; {
 <a href=#292 id=292 data-nosnippet>292</a>        <span class="prelude-val">Some</span>(Instant { t: <span class="self">self</span>.t.checked_sub_duration(other)<span class="question-mark">? </span>})
 <a href=#293 id=293 data-nosnippet>293</a>    }
-<a href=#294 id=294 data-nosnippet>294</a>}
-<a href=#295 id=295 data-nosnippet>295</a>
-<a href=#296 id=296 data-nosnippet>296</a><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Instant {
-<a href=#297 id=297 data-nosnippet>297</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#298 id=298 data-nosnippet>298</a>        f.debug_struct(<span class="string">"Instant"</span>)
-<a href=#299 id=299 data-nosnippet>299</a>            .field(<span class="string">"tv_sec"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.t.tv_sec)
-<a href=#300 id=300 data-nosnippet>300</a>            .field(<span class="string">"tv_nsec"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.t.tv_nsec)
-<a href=#301 id=301 data-nosnippet>301</a>            .finish()
-<a href=#302 id=302 data-nosnippet>302</a>    }
-<a href=#303 id=303 data-nosnippet>303</a>}</code></pre></div></section></main></body></html>
+<a href=#294 id=294 data-nosnippet>294</a>
+<a href=#295 id=295 data-nosnippet>295</a>    <span class="attr">#[cfg_attr(
+<a href=#296 id=296 data-nosnippet>296</a>        not(target_os = <span class="string">"linux"</span>),
+<a href=#297 id=297 data-nosnippet>297</a>        allow(unused, reason = <span class="string">"needed by the `sleep_until` on some unix platforms"</span>)
+<a href=#298 id=298 data-nosnippet>298</a>    )]
+<a href=#299 id=299 data-nosnippet>299</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>into_timespec(<span class="self">self</span>) -&gt; Timespec {
+<a href=#300 id=300 data-nosnippet>300</a>        <span class="self">self</span>.t
+<a href=#301 id=301 data-nosnippet>301</a>    }
+<a href=#302 id=302 data-nosnippet>302</a>}
+<a href=#303 id=303 data-nosnippet>303</a>
+<a href=#304 id=304 data-nosnippet>304</a><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Instant {
+<a href=#305 id=305 data-nosnippet>305</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#306 id=306 data-nosnippet>306</a>        f.debug_struct(<span class="string">"Instant"</span>)
+<a href=#307 id=307 data-nosnippet>307</a>            .field(<span class="string">"tv_sec"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.t.tv_sec)
+<a href=#308 id=308 data-nosnippet>308</a>            .field(<span class="string">"tv_nsec"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.t.tv_nsec)
+<a href=#309 id=309 data-nosnippet>309</a>            .finish()
+<a href=#310 id=310 data-nosnippet>310</a>    }
+<a href=#311 id=311 data-nosnippet>311</a>}</code></pre></div></section></main></body></html>
