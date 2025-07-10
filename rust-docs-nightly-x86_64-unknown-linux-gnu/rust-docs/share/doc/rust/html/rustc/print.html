@@ -908,15 +908,30 @@ linked. It takes one of the following values:</p>
 <p>This flag was historically used to help improve some older forms of code
 coverage measurement. Its use is not recommended.</p>
 <h2 id="link-self-contained"><a class="header" href="#link-self-contained">link-self-contained</a></h2>
-<p>On <code>windows-gnu</code>, <code>linux-musl</code>, and <code>wasi</code> targets, this flag controls whether the
-linker will use libraries and objects shipped with Rust instead of those in the system.
-It takes one of the following values:</p>
+<p>This flag controls whether the linker will use libraries and objects shipped with Rust instead of
+those in the system.  It also controls which binary is used for the linker itself. This allows
+overriding cases when detection fails or the user wants to use shipped libraries.</p>
+<p>You can enable or disable the usage of any self-contained components using one of the following values:</p>
 <ul>
 <li>no value: rustc will use heuristic to disable self-contained mode if system has necessary tools.</li>
 <li><code>y</code>, <code>yes</code>, <code>on</code>, <code>true</code>: use only libraries/objects shipped with Rust.</li>
 <li><code>n</code>, <code>no</code>, <code>off</code> or <code>false</code>: rely on the user or the linker to provide non-Rust libraries/objects.</li>
 </ul>
-<p>This allows overriding cases when detection fails or user wants to use shipped libraries.</p>
+<p>It is also possible to enable or disable specific self-contained components in a more granular way.
+You can pass a comma-separated list of self-contained components, individually enabled
+(<code>+component</code>) or disabled (<code>-component</code>).</p>
+<p>Currently, only the <code>linker</code> granular option is stabilized, and only on the <code>x86_64-unknown-linux-gnu</code> target:</p>
+<ul>
+<li><code>linker</code>: toggle the usage of self-contained linker binaries (linker, dlltool, and their necessary libraries)</li>
+</ul>
+<p>Note that only the <code>-linker</code> opt-out is stable on the <code>x86_64-unknown-linux-gnu</code> target: <code>+linker</code> is
+already the default on this target.</p>
+<h4 id="implementation-notes"><a class="header" href="#implementation-notes">Implementation notes</a></h4>
+<p>On the <code>x86_64-unknown-linux-gnu</code> target, when using the default linker flavor (using <code>cc</code> as the
+linker driver) and linker features (to try using <code>lld</code>), <code>rustc</code> will try to use the self-contained
+linker by passing a <code>-B /path/to/sysroot/</code> link argument to the driver to find <code>rust-lld</code> in the
+sysroot. For backwards-compatibility, and to limit name and <code>PATH</code> collisions, this is done using a
+shim executable (the <code>lld-wrapper</code> tool) that forwards execution to the <code>rust-lld</code> executable itself.</p>
 <h2 id="linker"><a class="header" href="#linker">linker</a></h2>
 <p>This flag controls which linker <code>rustc</code> invokes to link your code. It takes a
 path to the linker executable. If this flag is not specified, the linker will
@@ -925,6 +940,33 @@ flag for another way to specify the linker.</p>
 <p>Note that on Unix-like targets (for example, <code>*-unknown-linux-gnu</code> or <code>*-unknown-freebsd</code>)
 the C compiler (for example <code>cc</code> or <code>clang</code>) is used as the "linker" here, serving as a linker driver.
 It will invoke the actual linker with all the necessary flags to be able to link against the system libraries like libc.</p>
+<h2 id="linker-features"><a class="header" href="#linker-features">linker-features</a></h2>
+<p>The <code>-Clinker-features</code> flag allows enabling or disabling specific features used during linking.</p>
+<p>These feature flags are a flexible extension mechanism that is complementary to linker flavors,
+designed to avoid the combinatorial explosion of having to create a new set of flavors for each
+linker feature we'd want to use.</p>
+<p>The flag accepts a comma-separated list of features, individually enabled (<code>+feature</code>) or disabled
+(<code>-feature</code>).</p>
+<p>Currently only one is stable, and only on the <code>x86_64-unknown-linux-gnu</code> target:</p>
+<ul>
+<li><code>lld</code>: to toggle trying to use the lld linker, either the system-installed binary, or the self-contained
+<code>rust-lld</code> linker (via the <a href="codegen-options/index.html#link-self-contained"><code>-Clink-self-contained=+linker</code></a> flag).</li>
+</ul>
+<p>For example, use:</p>
+<ul>
+<li><code>-Clinker-features=+lld</code> to opt into using the <code>lld</code> linker, when possible (see the Implementation notes below)</li>
+<li><code>-Clinker-features=-lld</code> to opt out instead, for targets where it is configured as the default linker</li>
+</ul>
+<p>Note that only the <code>-lld</code> opt-out is stable on the <code>x86_64-unknown-linux-gnu</code> target: <code>+lld</code> is
+already the default on this target.</p>
+<h4 id="implementation-notes-1"><a class="header" href="#implementation-notes-1">Implementation notes</a></h4>
+<p>On the <code>x86_64-unknown-linux-gnu</code> target, when using the default linker flavor (using <code>cc</code> as the
+linker driver), <code>rustc</code> will try to use lld by passing a <code>-fuse-ld=lld</code> link argument to the driver.
+<code>rustc</code> will also try to detect if that <em>causes</em> an error during linking (for example, if GCC is too
+old to understand the flag, and returns an error) and will then retry linking without this argument,
+as a fallback.</p>
+<p>If the user <em>also</em> passes a <code>-Clink-arg=-fuse-ld=$value</code>, both will be given to the linker
+driver but the user's will be passed last, and would generally have priority over <code>rustc</code>'s.</p>
 <h2 id="linker-flavor"><a class="header" href="#linker-flavor">linker-flavor</a></h2>
 <p>This flag controls the linker flavor used by <code>rustc</code>. If a linker is given with
 the <a href="codegen-options/index.html#linker"><code>-C linker</code> flag</a>, then the linker flavor is inferred from the
@@ -7764,7 +7806,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-07-08; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-07-09; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -8035,7 +8077,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-07-08; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-07-09; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -9593,7 +9635,7 @@ future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #6426
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-07-08; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-07-09; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
