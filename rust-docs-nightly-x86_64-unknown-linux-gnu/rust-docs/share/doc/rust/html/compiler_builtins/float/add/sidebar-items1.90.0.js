@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["__adddf3","__addsf3","__addtf3"]};

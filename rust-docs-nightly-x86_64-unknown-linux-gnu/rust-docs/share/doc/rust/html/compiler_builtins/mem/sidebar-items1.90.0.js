@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["bcmp","memcmp","memcpy","memmove","memset","strlen"]};

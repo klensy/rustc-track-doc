@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["__gnu_f2h_ieee","__truncdfhf2","__truncdfsf2","__truncsfhf2","__trunctfdf2","__trunctfhf2","__trunctfsf2"]};
