@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["random"],"struct":["DefaultRandomSource"],"trait":["Random","RandomSource"]};
+window.SIDEBAR_ITEMS = {"fn":["random"],"struct":["DefaultRandomSource"],"trait":["Distribution","RandomSource"]};

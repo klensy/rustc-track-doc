@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Random","RandomSource"]};
+window.SIDEBAR_ITEMS = {"trait":["Distribution","RandomSource"]};
