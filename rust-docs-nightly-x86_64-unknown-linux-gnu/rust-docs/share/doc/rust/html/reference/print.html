@@ -231,7 +231,7 @@ Whenever that term is used outside of that chapter, it is usually a link to the 
 <div class="alert alert-edition">
 <blockquote>
 <p class="alert-title"><span class="alert-title-edition">2018</span> Edition differences</p>
-<p>In the 2015 edition, this syntax is valid that is disallowed as of the 2018 edition.</p>
+<p>Before the 2018 edition, the behavior was this. As of the 2018 edition, the behavior is that.</p>
 </blockquote>
 </div>
 </li>
@@ -9631,8 +9631,50 @@ production.  For example, it controls the behavior of the standard library’s
 <div class="rule" id="r-cfg.attr"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr" title="cfg.attr"><span>[cfg<wbr>.attr]</span/></a>
 </div>
 <h3 id="the-cfg-attribute"><a class="header" href="#the-cfg-attribute">The <code>cfg</code> attribute</a></h3>
+<div class="rule" id="r-cfg.attr.intro"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.intro" title="cfg.attr.intro"><span>[cfg<wbr>.attr<wbr>.intro]</span/></a>
+</div>
+<p>The <em><code>cfg</code> <a href="attributes.html">attribute</a></em> conditionally includes the form to which it is attached based on a configuration predicate.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// The function is only included in the build when compiling for macOS
+#[cfg(target_os = "macos")]
+fn macos_only() {
+  // ...
+}
+
+// This function is only included when either foo or bar is defined
+#[cfg(any(foo, bar))]
+fn needs_foo_or_bar() {
+  // ...
+}
+
+// This function is only included when compiling for a unixish OS with a 32-bit
+// architecture
+#[cfg(all(unix, target_pointer_width = "32"))]
+fn on_32bit_unix() {
+  // ...
+}
+
+// This function is only included when foo is not defined
+#[cfg(not(foo))]
+fn needs_not_foo() {
+  // ...
+}
+
+// This function is only included when the panic strategy is set to unwind
+#[cfg(panic = "unwind")]
+fn when_unwinding() {
+  // ...
+}
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-cfg.attr.syntax"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.syntax" title="cfg.attr.syntax"><span>[cfg<wbr>.attr<wbr>.syntax]</span/></a>
 </div>
+<p>The syntax for the <code>cfg</code> attribute is:</p>
 <div class="grammar-container">
 <p><strong><sup>Syntax</sup></strong>
 <br>
@@ -9684,68 +9726,51 @@ ConfigurationPredicate</text>
 </svg>
 </div>
 </div>
-<!-- should we say they're active attributes here? -->
-<div class="rule" id="r-cfg.attr.general"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.general" title="cfg.attr.general"><span>[cfg<wbr>.attr<wbr>.general]</span/></a>
-</div>
-<p>The <code>cfg</code> <a href="attributes.html">attribute</a> conditionally includes the thing it is attached to based
-on a configuration predicate.</p>
-<div class="rule" id="r-cfg.attr.syntax-explanation"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.syntax-explanation" title="cfg.attr.syntax-explanation"><span>[cfg<wbr>.attr<wbr>.syntax-explanation]</span/></a>
-</div>
-<p>It is written as <code>cfg</code>, <code>(</code>, a configuration predicate, and finally <code>)</code>.</p>
-<div class="rule" id="r-cfg.attr.effect"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.effect" title="cfg.attr.effect"><span>[cfg<wbr>.attr<wbr>.effect]</span/></a>
-</div>
-<p>If the predicate is true, the thing is rewritten to not have the <code>cfg</code> attribute
-on it. If the predicate is false, the thing is removed from the source code.</p>
-<div class="rule" id="r-cfg.attr.crate-level-attrs"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.crate-level-attrs" title="cfg.attr.crate-level-attrs"><span>[cfg<wbr>.attr<wbr>.crate-level-attrs]</span/></a>
-</div>
-<p>When a crate-level <code>cfg</code> has a false predicate, the behavior is slightly
-different: any crate attributes preceding the <code>cfg</code> are kept, and any crate
-attributes following the <code>cfg</code> are removed. This allows <code>#![no_std]</code> and
-<code>#![no_core]</code> crates to avoid linking <code>std</code>/<code>core</code> even if a <code>#![cfg(...)]</code> has
-removed the entire crate.</p>
-<p>Some examples on functions:</p>
-<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// The function is only included in the build when compiling for macOS
-#[cfg(target_os = "macos")]
-fn macos_only() {
-  // ...
-}
-
-// This function is only included when either foo or bar is defined
-#[cfg(any(foo, bar))]
-fn needs_foo_or_bar() {
-  // ...
-}
-
-// This function is only included when compiling for a unixish OS with a 32-bit
-// architecture
-#[cfg(all(unix, target_pointer_width = "32"))]
-fn on_32bit_unix() {
-  // ...
-}
-
-// This function is only included when foo is not defined
-#[cfg(not(foo))]
-fn needs_not_foo() {
-  // ...
-}
-
-// This function is only included when the panic strategy is set to unwind
-#[cfg(panic = "unwind")]
-fn when_unwinding() {
-  // ...
-}
-
-<span class="boring">}</span></code></pre></pre>
-<div class="rule" id="r-cfg.attr.restriction"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.restriction" title="cfg.attr.restriction"><span>[cfg<wbr>.attr<wbr>.restriction]</span/></a>
+<div class="rule" id="r-cfg.attr.allowed-positions"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.allowed-positions" title="cfg.attr.allowed-positions"><span>[cfg<wbr>.attr<wbr>.allowed-positions]</span/></a>
 </div>
 <p>The <code>cfg</code> attribute is allowed anywhere attributes are allowed.</p>
+<div class="rule" id="r-cfg.attr.duplicates"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.duplicates" title="cfg.attr.duplicates"><span>[cfg<wbr>.attr<wbr>.duplicates]</span/></a>
+</div>
+<p>Multiple <code>cfg</code> attributes may be specified. The form to which the attribute is attached will not be included if any of the <code>cfg</code> predicates are false except as described in <a href="conditional-compilation.html#r-cfg.attr.crate-level-attrs">cfg.attr.crate-level-attrs</a>.</p>
+<div class="rule" id="r-cfg.attr.effect"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.effect" title="cfg.attr.effect"><span>[cfg<wbr>.attr<wbr>.effect]</span/></a>
+</div>
+<p>If the predicate is true, the form is rewritten to not have the <code>cfg</code> attribute on it. If the predicate is false, the form is removed from the source code.</p>
+<div class="rule" id="r-cfg.attr.crate-level-attrs"><a class="rule-link" href="conditional-compilation.html#r-cfg.attr.crate-level-attrs" title="cfg.attr.crate-level-attrs"><span>[cfg<wbr>.attr<wbr>.crate-level-attrs]</span/></a>
+</div>
+<p>When a crate-level <code>cfg</code> has a false predicate, the crate itself still exists. Any crate attributes preceding the <code>cfg</code> are kept, and any crate attributes following the <code>cfg</code> are removed as well as removing all of the following crate contents.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<p>The behavior of not removing the preceding attributes allows you to do things such as include <code>#![no_std]</code> to avoid linking <code>std</code> even if a <code>#![cfg(...)]</code> has otherwise removed the contents of the crate. For example:</p>
+<!-- ignore: test infrastructure can't handle no_std -->
+<pre><code class="language-rust ignore">// This `no_std` attribute is kept even though the crate-level `cfg`
+// attribute is false.
+#![no_std]
+#![cfg(false)]
+
+// This function is not included.
+pub fn example() {}</code></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-cfg.cfg_attr"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr" title="cfg.cfg_attr"><span>[cfg<wbr>.cfg_attr]</span/></a>
 </div>
 <h3 id="the-cfg_attr-attribute"><a class="header" href="#the-cfg_attr-attribute">The <code>cfg_attr</code> attribute</a></h3>
+<div class="rule" id="r-cfg.cfg_attr.intro"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.intro" title="cfg.cfg_attr.intro"><span>[cfg<wbr>.cfg_attr<wbr>.intro]</span/></a>
+</div>
+<p>The <em><code>cfg_attr</code> <a href="attributes.html">attribute</a></em> conditionally includes attributes based on a configuration predicate.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<p>The following module will either be found at <code>linux.rs</code> or <code>windows.rs</code> based on the target.</p>
+<!-- ignore: `mod` needs multiple files -->
+<pre><code class="language-rust ignore">#[cfg_attr(target_os = "linux", path = "linux.rs")]
+#[cfg_attr(windows, path = "windows.rs")]
+mod os;</code></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-cfg.cfg_attr.syntax"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.syntax" title="cfg.cfg_attr.syntax"><span>[cfg<wbr>.cfg_attr<wbr>.syntax]</span/></a>
 </div>
+<p>The syntax for the <code>cfg_attr</code> attribute is:</p>
 <div class="grammar-container">
 <p><strong><sup>Syntax</sup></strong>
 <br>
@@ -9872,23 +9897,24 @@ Attr</text>
 </svg>
 </div>
 </div>
-<div class="rule" id="r-cfg.cfg_attr.general"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.general" title="cfg.cfg_attr.general"><span>[cfg<wbr>.cfg_attr<wbr>.general]</span/></a>
+<div class="rule" id="r-cfg.cfg_attr.allowed-positions"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.allowed-positions" title="cfg.cfg_attr.allowed-positions"><span>[cfg<wbr>.cfg_attr<wbr>.allowed-positions]</span/></a>
 </div>
-<p>The <code>cfg_attr</code> <a href="attributes.html">attribute</a> conditionally includes <a href="attributes.html">attributes</a> based on a
-configuration predicate.</p>
-<div class="rule" id="r-cfg.cfg_attr.behaviour"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.behaviour" title="cfg.cfg_attr.behaviour"><span>[cfg<wbr>.cfg_attr<wbr>.behaviour]</span/></a>
+<p>The <code>cfg_attr</code> attribute is allowed anywhere attributes are allowed.</p>
+<div class="rule" id="r-cfg.cfg_attr.duplicates"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.duplicates" title="cfg.cfg_attr.duplicates"><span>[cfg<wbr>.cfg_attr<wbr>.duplicates]</span/></a>
 </div>
-<p>When the configuration predicate is true, this attribute expands out to the
-attributes listed after the predicate. For example, the following module will
-either be found at <code>linux.rs</code> or <code>windows.rs</code> based on the target.</p>
-<!-- ignore: `mod` needs multiple files -->
-<pre><code class="language-rust ignore">#[cfg_attr(target_os = "linux", path = "linux.rs")]
-#[cfg_attr(windows, path = "windows.rs")]
-mod os;</code></pre>
+<p>Multiple <code>cfg_attr</code> attributes may be specified.</p>
+<div class="rule" id="r-cfg.cfg_attr.attr-restriction"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.attr-restriction" title="cfg.cfg_attr.attr-restriction"><span>[cfg<wbr>.cfg_attr<wbr>.attr-restriction]</span/></a>
+</div>
+<p>The <a href="linkage.html"><code>crate_type</code></a> and <a href="crates-and-source-files.html#the-crate_name-attribute"><code>crate_name</code></a> attributes cannot be used with <code>cfg_attr</code>.</p>
+<div class="rule" id="r-cfg.cfg_attr.behavior"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.behavior" title="cfg.cfg_attr.behavior"><span>[cfg<wbr>.cfg_attr<wbr>.behavior]</span/></a>
+</div>
+<p>When the configuration predicate is true, <code>cfg_attr</code> expands out to the attributes listed after the predicate.</p>
 <div class="rule" id="r-cfg.cfg_attr.attribute-list"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.attribute-list" title="cfg.cfg_attr.attribute-list"><span>[cfg<wbr>.cfg_attr<wbr>.attribute-list]</span/></a>
 </div>
-<p>Zero, one, or more attributes may be listed. Multiple attributes will each be
-expanded into separate attributes. For example:</p>
+<p>Zero, one, or more attributes may be listed. Multiple attributes will each be expanded into separate attributes.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
 <!-- ignore: fake attributes -->
 <pre><code class="language-rust ignore">#[cfg_attr(feature = "magic", sparkles, crackles)]
 fn bewitched() {}
@@ -9897,16 +9923,14 @@ fn bewitched() {}
 #[sparkles]
 #[crackles]
 fn bewitched() {}</code></pre>
+</blockquote>
+</div>
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
 <p>The <code>cfg_attr</code> can expand to another <code>cfg_attr</code>. For example, <code>#[cfg_attr(target_os = "linux", cfg_attr(feature = "multithreaded", some_other_attribute))]</code> is valid. This example would be equivalent to <code>#[cfg_attr(all(target_os = "linux", feature ="multithreaded"), some_other_attribute)]</code>.</p>
 </blockquote>
 </div>
-<div class="rule" id="r-cfg.cfg_attr.restriction"><a class="rule-link" href="conditional-compilation.html#r-cfg.cfg_attr.restriction" title="cfg.cfg_attr.restriction"><span>[cfg<wbr>.cfg_attr<wbr>.restriction]</span/></a>
-</div>
-<p>The <code>cfg_attr</code> attribute is allowed anywhere attributes are allowed.</p>
-<p>The <a href="linkage.html"><code>crate_type</code></a> and <a href="crates-and-source-files.html#the-crate_name-attribute"><code>crate_name</code></a> attributes cannot be used with <code>cfg_attr</code>.</p>
 <div class="rule" id="r-cfg.macro"><a class="rule-link" href="conditional-compilation.html#r-cfg.macro" title="cfg.macro"><span>[cfg<wbr>.macro]</span/></a>
 </div>
 <h3 id="the-cfg-macro"><a class="header" href="#the-cfg-macro">The <code>cfg</code> macro</a></h3>
@@ -13204,18 +13228,18 @@ particular layout using the <a href="items/../type-layout.html#representations">
 <p><strong><sup>Syntax</sup></strong>
 <br>
 <span class="grammar-text grammar-production" id="grammar-Enumeration" onclick="show_railroad()"><a href="items/enumerations.html#railroad-Enumeration">Enumeration</a></span> → <br />
-    <span class="grammar-literal">enum</span> <span class="grammar-text"><a href="items/../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a></span> <span class="grammar-text"><a href="items/generics.html#grammar-GenericParams">GenericParams</a></span><sup>?</sup> <span class="grammar-text"><a href="items/generics.html#grammar-WhereClause">WhereClause</a></span><sup>?</sup> <span class="grammar-literal">{</span> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItems">EnumItems</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-EnumItems" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumItems">EnumItems</a></span> → <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItem">EnumItem</a></span> ( <span class="grammar-literal">,</span> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItem">EnumItem</a></span> )<sup>*</sup> <span class="grammar-literal">,</span><sup>?</sup></p>
-<p><span class="grammar-text grammar-production" id="grammar-EnumItem" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumItem">EnumItem</a></span> → <br />
+    <span class="grammar-literal">enum</span> <span class="grammar-text"><a href="items/../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a></span> <span class="grammar-text"><a href="items/generics.html#grammar-GenericParams">GenericParams</a></span><sup>?</sup> <span class="grammar-text"><a href="items/generics.html#grammar-WhereClause">WhereClause</a></span><sup>?</sup> <span class="grammar-literal">{</span> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariants">EnumVariants</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-EnumVariants" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumVariants">EnumVariants</a></span> → <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariant">EnumVariant</a></span> ( <span class="grammar-literal">,</span> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariant">EnumVariant</a></span> )<sup>*</sup> <span class="grammar-literal">,</span><sup>?</sup></p>
+<p><span class="grammar-text grammar-production" id="grammar-EnumVariant" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumVariant">EnumVariant</a></span> → <br />
     <span class="grammar-text"><a href="items/../attributes.html#grammar-OuterAttribute">OuterAttribute</a></span><sup>*</sup> <span class="grammar-text"><a href="items/../visibility-and-privacy.html#grammar-Visibility">Visibility</a></span><sup>?</sup> <br />
-    <span class="grammar-text"><a href="items/../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a></span> ( <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItemTuple">EnumItemTuple</a></span> | <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItemStruct">EnumItemStruct</a></span> )<sup>?</sup> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumItemDiscriminant">EnumItemDiscriminant</a></span><sup>?</sup></p>
-<p><span class="grammar-text grammar-production" id="grammar-EnumItemTuple" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumItemTuple">EnumItemTuple</a></span> → <span class="grammar-literal">(</span> <span class="grammar-text"><a href="items/structs.html#grammar-TupleFields">TupleFields</a></span><sup>?</sup> <span class="grammar-literal">)</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-EnumItemStruct" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumItemStruct">EnumItemStruct</a></span> → <span class="grammar-literal">{</span> <span class="grammar-text"><a href="items/structs.html#grammar-StructFields">StructFields</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-EnumItemDiscriminant" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumItemDiscriminant">EnumItemDiscriminant</a></span> → <span class="grammar-literal">=</span> <span class="grammar-text"><a href="items/../expressions.html#grammar-Expression">Expression</a></span></p>
+    <span class="grammar-text"><a href="items/../identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a></span> ( <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariantTuple">EnumVariantTuple</a></span> | <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariantStruct">EnumVariantStruct</a></span> )<sup>?</sup> <span class="grammar-text"><a href="items/enumerations.html#grammar-EnumVariantDiscriminant">EnumVariantDiscriminant</a></span><sup>?</sup></p>
+<p><span class="grammar-text grammar-production" id="grammar-EnumVariantTuple" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumVariantTuple">EnumVariantTuple</a></span> → <span class="grammar-literal">(</span> <span class="grammar-text"><a href="items/structs.html#grammar-TupleFields">TupleFields</a></span><sup>?</sup> <span class="grammar-literal">)</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-EnumVariantStruct" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumVariantStruct">EnumVariantStruct</a></span> → <span class="grammar-literal">{</span> <span class="grammar-text"><a href="items/structs.html#grammar-StructFields">StructFields</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-EnumVariantDiscriminant" onclick="show_railroad()"><a href="items/enumerations.html#railroad-EnumVariantDiscriminant">EnumVariantDiscriminant</a></span> → <span class="grammar-literal">=</span> <span class="grammar-text"><a href="items/../expressions.html#grammar-Expression">Expression</a></span></p>
 <p><button class="grammar-toggle-railroad" type="button" title="Toggle railroad display" onclick="toggle_railroad()">Show Railroad</button></p>
 </div>
 <div class="grammar-railroad grammar-hidden">
-<div style="width: 806px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-Enumeration"><svg class="railroad" viewBox="0 0 806 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 830px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-Enumeration"><svg class="railroad" viewBox="0 0 830 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
 <a class="link" xlink:href="items/enumerations.html#grammar-Enumeration">
@@ -13263,18 +13287,18 @@ WhereClause</text>
 {</text>
 </g>
 <g class="optional">
-<path d=" M 593 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 92 m -43 0 l -5 -5 m 0 10 l 5 -5 m 43 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItems">
+<path d=" M 593 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 116 m -55 0 l -5 -5 m 0 10 l 5 -5 m 55 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariants">
 <g class="nonterminal">
-<rect height="22" width="92" x="617" y="55"/>
-<text x="663" y="71">
-EnumItems</text>
+<rect height="22" width="116" x="617" y="55"/>
+<text x="675" y="71">
+EnumVariants</text>
 </g>
 </a>
 </g>
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="743" y="55"/>
-<text x="757" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="767" y="55"/>
+<text x="781" y="71">
 }</text>
 </g>
 <path d=" M 87 66 h 10"/>
@@ -13282,78 +13306,78 @@ EnumItems</text>
 <path d=" M 379 66 h 10"/>
 <path d=" M 545 66 h 10"/>
 <path d=" M 583 66 h 10"/>
-<path d=" M 733 66 h 10"/>
+<path d=" M 757 66 h 10"/>
 </g>
-<path d=" M 781 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 805 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 771 66 h 10"/>
+<path d=" M 795 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 444px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumItems"><svg class="railroad" viewBox="0 0 444 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 492px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumVariants"><svg class="railroad" viewBox="0 0 492 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="items/enumerations.html#grammar-EnumItems">
-<text class="comment" x="46" y="25">
-EnumItems</text>
+<a class="link" xlink:href="items/enumerations.html#grammar-EnumVariants">
+<text class="comment" x="57" y="25">
+EnumVariants</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
 <g class="sequence">
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItem">
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariant">
 <g class="nonterminal">
-<rect height="22" width="84" x="35" y="55"/>
-<text x="77" y="71">
-EnumItem</text>
+<rect height="22" width="108" x="35" y="55"/>
+<text x="89" y="71">
+EnumVariant</text>
 </g>
 </a>
 <g class="optional">
-<path d=" M 129 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 146 m -70 0 l -5 -5 m 0 10 l 5 -5 m 70 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 153 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 170 m -82 0 l -5 -5 m 0 10 l 5 -5 m 82 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="repeat">
-<path d=" M 153 66 h 12 m 122 0 h 12 m -12 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 1 -12 12 m 0 0 h -122 m 64 0 l 5 -5 m 0 10 l -5 -5 m -64 0 a 12 12 0 0 1 -12 -12 v 0 a 12 12 0 0 1 12 -12"/>
+<path d=" M 177 66 h 12 m 146 0 h 12 m -12 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 1 -12 12 m 0 0 h -146 m 76 0 l 5 -5 m 0 10 l -5 -5 m -76 0 a 12 12 0 0 1 -12 -12 v 0 a 12 12 0 0 1 12 -12"/>
 <g/>
 <g class="sequence">
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="165" y="55"/>
-<text x="179" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="189" y="55"/>
+<text x="203" y="71">
 ,</text>
 </g>
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItem">
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariant">
 <g class="nonterminal">
-<rect height="22" width="84" x="203" y="55"/>
-<text x="245" y="71">
-EnumItem</text>
+<rect height="22" width="108" x="227" y="55"/>
+<text x="281" y="71">
+EnumVariant</text>
 </g>
 </a>
-<path d=" M 193 66 h 10"/>
+<path d=" M 217 66 h 10"/>
 </g>
 </g>
 </g>
 <g class="optional">
-<path d=" M 333 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 28 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 381 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 28 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="357" y="55"/>
-<text x="371" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="405" y="55"/>
+<text x="419" y="71">
 ,</text>
 </g>
 </g>
-<path d=" M 119 66 h 10"/>
-<path d=" M 323 66 h 10"/>
+<path d=" M 143 66 h 10"/>
+<path d=" M 371 66 h 10"/>
 </g>
-<path d=" M 419 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 467 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 409 66 h 10"/>
+<path d=" M 457 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 690px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumItem"><svg class="railroad" viewBox="0 0 690 192" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 738px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumVariant"><svg class="railroad" viewBox="0 0 738 192" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="items/enumerations.html#grammar-EnumItem">
-<text class="comment" x="43" y="25">
-EnumItem</text>
+<a class="link" xlink:href="items/enumerations.html#grammar-EnumVariant">
+<text class="comment" x="53" y="25">
+EnumVariant</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -13387,7 +13411,7 @@ Visibility</text>
 </g>
 <path d=" M 251 66 h 10"/>
 </g>
-<path d=" M 631 138 h 0 a 12 12 0 0 0 12 -12 v -48 a 12 12 0 0 1 12 -12"/>
+<path d=" M 679 138 h 0 a 12 12 0 0 0 12 -12 v -48 a 12 12 0 0 1 12 -12"/>
 <g class="sequence">
 <a class="link" xlink:href="items/../identifiers.html#railroad-IDENTIFIER">
 <g class="nonterminal">
@@ -13397,54 +13421,54 @@ IDENTIFIER</text>
 </g>
 </a>
 <g class="optional">
-<path d=" M 157 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 180 m -87 0 l -5 -5 m 0 10 l 5 -5 m 87 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 157 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 204 m -99 0 l -5 -5 m 0 10 l 5 -5 m 99 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="choice">
-<path d=" M 181 138 h 24 m 124 0 h 32"/>
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItemTuple">
+<path d=" M 181 138 h 24 m 148 0 h 32"/>
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariantTuple">
 <g class="nonterminal">
-<rect height="22" width="124" x="205" y="127"/>
-<text x="267" y="143">
-EnumItemTuple</text>
+<rect height="22" width="148" x="205" y="127"/>
+<text x="279" y="143">
+EnumVariantTuple</text>
 </g>
 </a>
-<path d=" M 181 138 a 12 12 0 0 1 12 12 v 9 m 156 0 v -9 a 12 12 0 0 1 12 -12"/>
-<path d=" M 193 159 v 0 a 12 12 0 0 0 12 12 m 132 0 h 0 a 12 12 0 0 0 12 -12 v 0"/>
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItemStruct">
+<path d=" M 181 138 a 12 12 0 0 1 12 12 v 9 m 180 0 v -9 a 12 12 0 0 1 12 -12"/>
+<path d=" M 193 159 v 0 a 12 12 0 0 0 12 12 m 156 0 h 0 a 12 12 0 0 0 12 -12 v 0"/>
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariantStruct">
 <g class="nonterminal">
-<rect height="22" width="132" x="205" y="160"/>
-<text x="271" y="176">
-EnumItemStruct</text>
+<rect height="22" width="156" x="205" y="160"/>
+<text x="283" y="176">
+EnumVariantStruct</text>
 </g>
 </a>
 </g>
 </g>
 <g class="optional">
-<path d=" M 395 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 188 m -91 0 l -5 -5 m 0 10 l 5 -5 m 91 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
-<a class="link" xlink:href="items/enumerations.html#railroad-EnumItemDiscriminant">
+<path d=" M 419 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 212 m -103 0 l -5 -5 m 0 10 l 5 -5 m 103 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<a class="link" xlink:href="items/enumerations.html#railroad-EnumVariantDiscriminant">
 <g class="nonterminal">
-<rect height="22" width="188" x="419" y="127"/>
-<text x="513" y="143">
-EnumItemDiscriminant</text>
+<rect height="22" width="212" x="443" y="127"/>
+<text x="549" y="143">
+EnumVariantDiscriminant</text>
 </g>
 </a>
 </g>
 <path d=" M 147 138 h 10"/>
-<path d=" M 385 138 h 10"/>
+<path d=" M 409 138 h 10"/>
 </g>
 </g>
-<path d=" M 665 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 713 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 655 66 h 10"/>
+<path d=" M 703 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 302px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumItemTuple"><svg class="railroad" viewBox="0 0 302 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 302px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumVariantTuple"><svg class="railroad" viewBox="0 0 302 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="items/enumerations.html#grammar-EnumItemTuple">
-<text class="comment" x="60" y="25">
-EnumItemTuple</text>
+<a class="link" xlink:href="items/enumerations.html#grammar-EnumVariantTuple">
+<text class="comment" x="71" y="25">
+EnumVariantTuple</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -13479,12 +13503,12 @@ TupleFields</text>
 </g>
 </svg>
 </div>
-<div style="width: 310px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumItemStruct"><svg class="railroad" viewBox="0 0 310 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 310px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumVariantStruct"><svg class="railroad" viewBox="0 0 310 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="items/enumerations.html#grammar-EnumItemStruct">
-<text class="comment" x="64" y="25">
-EnumItemStruct</text>
+<a class="link" xlink:href="items/enumerations.html#grammar-EnumVariantStruct">
+<text class="comment" x="74" y="25">
+EnumVariantStruct</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -13519,12 +13543,12 @@ StructFields</text>
 </g>
 </svg>
 </div>
-<div style="width: 208px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumItemDiscriminant"><svg class="railroad" viewBox="0 0 208 74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 208px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-EnumVariantDiscriminant"><svg class="railroad" viewBox="0 0 208 74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="items/enumerations.html#grammar-EnumItemDiscriminant">
-<text class="comment" x="88" y="25">
-EnumItemDiscriminant</text>
+<a class="link" xlink:href="items/enumerations.html#grammar-EnumVariantDiscriminant">
+<text class="comment" x="99" y="25">
+EnumVariantDiscriminant</text>
 </a>
 <g class="sequence">
 <path d=" M 10 53 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -14319,9 +14343,39 @@ const BITS_N_STRINGS: BitsNStrings&lt;'static&gt; = BitsNStrings {
     mystring: STRING,
 };
 <span class="boring">}</span></code></pre></pre>
-<div class="rule" id="r-items.const.final-value-immutable"><a class="rule-link" href="items/constant-items.html#r-items.const.final-value-immutable" title="items.const.final-value-immutable"><span>[items<wbr>.const<wbr>.final-value-immutable]</span/></a>
+<div class="rule" id="r-items.const.no-mut-refs"><a class="rule-link" href="items/constant-items.html#r-items.const.no-mut-refs" title="items.const.no-mut-refs"><span>[items<wbr>.const<wbr>.no-mut-refs]</span/></a>
 </div>
-<p>The final value of a <code>const</code> item cannot contain references to anything mutable.</p>
+<p>The final value of a <code>const</code> item cannot contain any mutable references.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>static mut S: u8 = 0;
+const C: &amp;u8 = unsafe { &amp;mut S }; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>static S: AtomicU8 = AtomicU8::new(0);
+const C: &amp;AtomicU8 = &amp;S; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0080 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>static mut S: u8 = 0;
+const C: &amp;mut u8 = unsafe { &amp;mut S }; // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>We also disallow, in the final value, shared references to mutable statics created in the initializer for a separate reason. Consider:</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0492 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>const C: &amp;AtomicU8 = &amp;AtomicU8::new(0); // ERROR
+<span class="boring">}</span></code></pre></pre>
+<p>Here, the <code>AtomicU8</code> is a temporary that is lifetime extended to <code>'static</code> (see <a href="items/../destructors.html#r-destructors.scope.lifetime-extension.static">destructors.scope.lifetime-extension.static</a>), and references to lifetime-extended temporaries with interior mutability are not allowed in the final value of a constant expression (see <a href="items/../const_eval.html#r-const-eval.const-expr.borrows">const-eval.const-expr.borrows</a>).</p>
+</blockquote>
+</div>
 <div class="rule" id="r-items.const.expr-omission"><a class="rule-link" href="items/constant-items.html#r-items.const.expr-omission" title="items.const.expr-omission"><span>[items<wbr>.const<wbr>.expr-omission]</span/></a>
 </div>
 <p>The constant expression may only be omitted in a <a href="items/traits.html">trait definition</a>.</p>
@@ -16994,7 +17048,7 @@ let _: S&lt;1&gt; = f::&lt;(((_)))&gt;(); // Inferred const.
 </div>
 <div class="rule" id="r-items.generics.const.inferred"><a class="rule-link" href="items/generics.html#r-items.generics.const.inferred" title="items.generics.const.inferred"><span>[items<wbr>.generics<wbr>.const<wbr>.inferred]</span/></a>
 </div>
-<p>Where a const argument is expected, an <code>_</code> (optionally surrounding by any number of matching parentheses), called the <em>inferred const</em> (<a href="items/../paths.html#r-paths.expr.complex-const-params">path rules</a>, <a href="items/../expressions/array-expr.html#r-expr.array.length-restriction">array expression rules</a>), can be used instead. This asks the compiler to infer the const argument if possible based on surrounding information.</p>
+<p>Where a const argument is expected, an <code>_</code> (optionally surrounded by any number of matching parentheses), called the <em>inferred const</em> (<a href="items/../paths.html#r-paths.expr.complex-const-params">path rules</a>, <a href="items/../expressions/array-expr.html#r-expr.array.length-restriction">array expression rules</a>), can be used instead. This asks the compiler to infer the const argument if possible based on surrounding information.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn make_buf&lt;const N: usize&gt;() -&gt; [u8; N] {
@@ -17471,8 +17525,12 @@ associated function declarations’s.</p>
 </div>
 <p>An <em>associated function definition</em> defines a function associated with another
 type. It is written the same as a <a href="items/../types/function-item.html">function item</a>.</p>
-<p>An example of a common associated function is a <code>new</code> function that returns
-a value of the type the associated function is associated with.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>A common example is an associated function named <code>new</code> that returns a value of the type with which it is associated.</p>
+</blockquote>
+</div>
 <pre><pre class="playground"><code class="language-rust edition2024">struct Struct {
     field: i32
 }
@@ -18989,7 +19047,7 @@ object file.</li>
 <ul>
 <li><a href="attributes/codegen.html#the-inline-attribute"><code>inline</code></a> — Hint to inline code.</li>
 <li><a href="attributes/codegen.html#the-cold-attribute"><code>cold</code></a> — Hint that a function is unlikely to be called.</li>
-<li><a href="attributes/codegen.html#the-naked-attribute"><code>naked</code></a> — Prevent the compiler from emitting a function prologue.</li>
+<li><a href="attributes/codegen.html#the-naked-attribute"><code>naked</code></a> — Prevent the compiler from emitting a function prologue and epilogue.</li>
 <li><a href="attributes/codegen.html#the-no_builtins-attribute"><code>no_builtins</code></a> — Disables use of certain built-in functions.</li>
 <li><a href="attributes/codegen.html#the-target_feature-attribute"><code>target_feature</code></a> — Configure platform-specific code generation.</li>
 <li><a href="attributes/codegen.html#the-track_caller-attribute"><code>track_caller</code></a> — Pass the parent call location to <code>std::panic::Location::caller()</code>.</li>
@@ -19066,20 +19124,53 @@ enables the <a href="attributes/../conditional-compilation.html#test"><code>test
 <h2 id="the-test-attribute"><a class="header" href="#the-test-attribute">The <code>test</code> attribute</a></h2>
 <div class="rule" id="r-attributes.testing.test.intro"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.intro" title="attributes.testing.test.intro"><span>[attributes<wbr>.testing<wbr>.test<wbr>.intro]</span/></a>
 </div>
-<p>The <em><code>test</code> attribute</em> marks a function to be executed as a test.</p>
-<div class="rule" id="r-attributes.testing.test.enabled"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.enabled" title="attributes.testing.test.enabled"><span>[attributes<wbr>.testing<wbr>.test<wbr>.enabled]</span/></a>
+<p>The <em><code>test</code> <a href="attributes/../attributes.html">attribute</a></em> marks a function to be executed as a test.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">pub fn add(left: u64, right: u64) -&gt; u64 { left + right }
+</span>#[test]
+fn it_works() {
+    let result = add(2, 2);
+    assert_eq!(result, 4);
+}
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
 </div>
-<p>These functions are only compiled when in test mode.</p>
+<div class="rule" id="r-attributes.testing.test.syntax"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.syntax" title="attributes.testing.test.syntax"><span>[attributes<wbr>.testing<wbr>.test<wbr>.syntax]</span/></a>
+</div>
+<p>The <code>test</code> attribute uses the <a href="attributes/../attributes.html#grammar-MetaWord">MetaWord</a> syntax and thus does not take any inputs.</p>
 <div class="rule" id="r-attributes.testing.test.allowed-positions"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.allowed-positions" title="attributes.testing.test.allowed-positions"><span>[attributes<wbr>.testing<wbr>.test<wbr>.allowed-positions]</span/></a>
 </div>
-<p>Test functions must be free, monomorphic functions that take no arguments, and the return type must implement the <a href="attributes/../../std/process/trait.Termination.html"><code>Termination</code></a> trait, for example:</p>
+<p>The <code>test</code> attribute may only be applied to <a href="attributes/../glossary.html#free-item">free functions</a> that are monomorphic, that take no arguments, and where the return type implements the <a href="attributes/../../std/process/trait.Termination.html"><code>Termination</code></a> trait.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Some of types that implement the <a href="attributes/../../std/process/trait.Termination.html"><code>Termination</code></a> trait include:</p>
 <ul>
 <li><code>()</code></li>
 <li><code>Result&lt;T, E&gt; where T: Termination, E: Debug</code></li>
-<li><code>!</code></li>
 </ul>
-<!-- If the previous section needs updating (from "must take no arguments"
-  onwards, also update it in the crates-and-source-files.md file -->
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.test.duplicates"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.duplicates" title="attributes.testing.test.duplicates"><span>[attributes<wbr>.testing<wbr>.test<wbr>.duplicates]</span/></a>
+</div>
+<p>Only the first instance of <code>test</code> on a function is honored.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Subsequent <code>test</code> attributes are currently ignored and <code>rustc</code> warns about these.</p>
+</blockquote>
+</div>
+<!-- TODO: This is a minor lie. Currently rustc warns that duplicates are ignored, but it then generates multiple test entries with the same name. I would vote for rejecting this in the future. -->
+<div class="rule" id="r-attributes.testing.test.stdlib"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.stdlib" title="attributes.testing.test.stdlib"><span>[attributes<wbr>.testing<wbr>.test<wbr>.stdlib]</span/></a>
+</div>
+<p>The <code>test</code> attribute is exported from the standard library prelude as <a href="attributes/../../core/macros/builtin/attr.test.html"><code>std::prelude::v1::test</code></a>.</p>
+<div class="rule" id="r-attributes.testing.test.enabled"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.test.enabled" title="attributes.testing.test.enabled"><span>[attributes<wbr>.testing<wbr>.test<wbr>.enabled]</span/></a>
+</div>
+<p>These functions are only compiled when in test mode.</p>
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
@@ -19096,7 +19187,10 @@ In particular:</p>
 <li>Tests that return <code>ExitCode::SUCCESS</code> pass, and tests that return <code>ExitCode::FAILURE</code> fail.</li>
 <li>Tests that do not terminate neither pass nor fail.</li>
 </ul>
-<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use std::io;
 </span><span class="boring">fn setup_the_thing() -&gt; io::Result&lt;i32&gt; { Ok(1) }
@@ -19108,19 +19202,43 @@ fn test_the_thing() -&gt; io::Result&lt;()&gt; {
     Ok(())
 }
 <span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-attributes.testing.ignore"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore" title="attributes.testing.ignore"><span>[attributes<wbr>.testing<wbr>.ignore]</span/></a>
 </div>
 <h2 id="the-ignore-attribute"><a class="header" href="#the-ignore-attribute">The <code>ignore</code> attribute</a></h2>
 <div class="rule" id="r-attributes.testing.ignore.intro"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.intro" title="attributes.testing.ignore.intro"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.intro]</span/></a>
 </div>
-<p>A function annotated with the <code>test</code> attribute can also be annotated with the
-<code>ignore</code> attribute. The <em><code>ignore</code> attribute</em> tells the test harness to not
-execute that function as a test. It will still be compiled when in test mode.</p>
+<p>The <em><code>ignore</code> <a href="attributes/../attributes.html">attribute</a></em> can be used with the <a href="attributes/testing.html#r-attributes.testing.test"><code>test</code> attribute</a> to tell the test harness to not execute that function as a test.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+#[ignore]
+fn check_thing() {
+    // …
+}
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The <code>rustc</code> test harness supports the <code>--include-ignored</code> flag to force ignored tests to be run.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-attributes.testing.ignore.syntax"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.syntax" title="attributes.testing.ignore.syntax"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.syntax]</span/></a>
 </div>
-<p>The <code>ignore</code> attribute may optionally be written with the <a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a>
-syntax to specify a reason why the test is ignored.</p>
-<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+<p>The <code>ignore</code> attribute uses either the <a href="attributes/../attributes.html#grammar-MetaWord">MetaWord</a> or <a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> syntax.</p>
+<div class="rule" id="r-attributes.testing.ignore.reason"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.reason" title="attributes.testing.ignore.reason"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.reason]</span/></a>
+</div>
+<p>The <a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> form of the <code>ignore</code> attribute provides a way to specify a reason why the test is ignored.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[test]
 #[ignore = "not yet implemented"]
@@ -19128,31 +19246,39 @@ fn mytest() {
     // …
 }
 <span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.ignore.allowed-positions"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.allowed-positions" title="attributes.testing.ignore.allowed-positions"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.allowed-positions]</span/></a>
+</div>
+<p>The <code>ignore</code> attribute may be applied to functions annotated with the <code>test</code> attribute.</p>
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>The <code>rustc</code> test harness supports the <code>--include-ignored</code> flag to force ignored tests to be run.</p>
+<p><code>rustc</code> currently warns when <code>ignore</code> is used in some other situations. This may become an error in the future.</p>
 </blockquote>
 </div>
+<div class="rule" id="r-attributes.testing.ignore.duplicates"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.duplicates" title="attributes.testing.ignore.duplicates"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.duplicates]</span/></a>
+</div>
+<p>Only the first instance of <code>ignore</code> on a function is honored.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p><code>rustc</code> currently ignores duplicate <code>ignore</code> attributes. This may become an error in the future.</p>
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.ignore.behavior"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.ignore.behavior" title="attributes.testing.ignore.behavior"><span>[attributes<wbr>.testing<wbr>.ignore<wbr>.behavior]</span/></a>
+</div>
+<p>Ignored tests are still compiled when in test mode, but they are not executed.</p>
 <div class="rule" id="r-attributes.testing.should_panic"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic" title="attributes.testing.should_panic"><span>[attributes<wbr>.testing<wbr>.should_panic]</span/></a>
 </div>
 <h2 id="the-should_panic-attribute"><a class="header" href="#the-should_panic-attribute">The <code>should_panic</code> attribute</a></h2>
 <div class="rule" id="r-attributes.testing.should_panic.intro"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.intro" title="attributes.testing.should_panic.intro"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.intro]</span/></a>
 </div>
-<p>A function annotated with the <code>test</code> attribute that returns <code>()</code> can also be
-annotated with the <code>should_panic</code> attribute.</p>
-<div class="rule" id="r-attributes.testing.should_panic.behavior"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.behavior" title="attributes.testing.should_panic.behavior"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.behavior]</span/></a>
-</div>
-<p>The <em><code>should_panic</code> attribute</em>
-makes the test only pass if it actually panics.</p>
-<div class="rule" id="r-attributes.testing.should_panic.syntax"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.syntax" title="attributes.testing.should_panic.syntax"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.syntax]</span/></a>
-</div>
-<p>The <code>should_panic</code> attribute may optionally take an input string that must
-appear within the panic message. If the string is not found in the message,
-then the test will fail. The string may be passed using the
-<a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> syntax or the <a href="attributes/../attributes.html#grammar-MetaListNameValueStr">MetaListNameValueStr</a> syntax with an
-<code>expected</code> field.</p>
-<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+<p>The <em><code>should_panic</code> <a href="attributes/../attributes.html">attribute</a></em> causes a test to pass only if the <a href="attributes/testing.html#r-attributes.testing.test">test function</a> to which the attribute is applied panics.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[test]
 #[should_panic(expected = "values don't match")]
@@ -19160,6 +19286,85 @@ fn mytest() {
     assert_eq!(1, 2, "values don't match");
 }
 <span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.should_panic.syntax"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.syntax" title="attributes.testing.should_panic.syntax"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.syntax]</span/></a>
+</div>
+<p>The <code>should_panic</code> attribute has one of the following forms:</p>
+<ul>
+<li>
+<p><a href="attributes/../attributes.html#grammar-MetaWord">MetaWord</a></p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+#[should_panic]
+fn mytest() { panic!("error: some message, and more"); }
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+</li>
+<li>
+<p><a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> — The given string must appear within the panic message for the test to pass.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+#[should_panic = "some message"]
+fn mytest() { panic!("error: some message, and more"); }
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+</li>
+<li>
+<p><a href="attributes/../attributes.html#grammar-MetaListNameValueStr">MetaListNameValueStr</a> — As with the <a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> syntax, the given string must appear within the panic message.</p>
+<div class="alert alert-example">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg>Example</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+#[should_panic(expected = "some message")]
+fn mytest() { panic!("error: some message, and more"); }
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p><code>rustc</code> currently accepts the <a href="attributes/../attributes.html#grammar-MetaListNameValueStr">MetaListNameValueStr</a> form with invalid syntax between the parentheses and emits a future-compatibility warning. This may become a hard error in the future.</p>
+</blockquote>
+</div>
+</li>
+</ul>
+<div class="rule" id="r-attributes.testing.should_panic.allowed-positions"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.allowed-positions" title="attributes.testing.should_panic.allowed-positions"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.allowed-positions]</span/></a>
+</div>
+<p>The <code>should_panic</code> attribute may only be applied to functions annotated with the <code>test</code> attribute.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p><code>rustc</code> currently accepts this attribute in other positions with a warning. This may become a hard error in the future.</p>
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.should_panic.duplicates"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.duplicates" title="attributes.testing.should_panic.duplicates"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.duplicates]</span/></a>
+</div>
+<p>Only the first instance of <code>should_panic</code> on a function is honored.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p><code>rustc</code> currently ignores subsequent <code>should_panic</code> attributes and emits a future-compatibility warning. This may become a hard error in the future.</p>
+</blockquote>
+</div>
+<div class="rule" id="r-attributes.testing.should_panic.expected"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.expected" title="attributes.testing.should_panic.expected"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.expected]</span/></a>
+</div>
+<p>When the <a href="attributes/../attributes.html#grammar-MetaNameValueStr">MetaNameValueStr</a> form or the <a href="attributes/../attributes.html#grammar-MetaListNameValueStr">MetaListNameValueStr</a> form with the <code>expected</code> key is used, the given string must appear somewhere within the panic message for the test to pass.</p>
+<div class="rule" id="r-attributes.testing.should_panic.return"><a class="rule-link" href="attributes/testing.html#r-attributes.testing.should_panic.return" title="attributes.testing.should_panic.return"><span>[attributes<wbr>.testing<wbr>.should_panic<wbr>.return]</span/></a>
+</div>
+<p>The return type of the test function must be <code>()</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><div class="rule" id="r-attributes.derive"><a class="rule-link" href="attributes/derive.html#r-attributes.derive" title="attributes.derive"><span>[attributes<wbr>.derive]</span/></a>
 </div>
 <h1 id="derive"><a class="header" href="#derive">Derive</a></h1>
@@ -25986,16 +26191,16 @@ let _: [u8; C] = [0; (((_)))]; // Inferred const.
 That is, <code>[a; b]</code> creates an array containing <code>b</code> copies of the value of <code>a</code>.</p>
 <div class="rule" id="r-expr.array.repeat-copy"><a class="rule-link" href="expressions/array-expr.html#r-expr.array.repeat-copy" title="expr.array.repeat-copy"><span>[expr<wbr>.array<wbr>.repeat-copy]</span/></a>
 </div>
-<p>If the length operand has a value greater than 1 then this requires that the type of the repeat operand is <a href="expressions/../special-types-and-traits.html#copy"><code>Copy</code></a> or that it must be a <a href="expressions/path-expr.html">path</a> to a constant item.</p>
+<p>If the length operand has a value greater than 1 then this requires the repeat operand to have a type that implements <a href="expressions/../special-types-and-traits.html#copy"><code>Copy</code></a>, to be a <a href="expressions/block-expr.html#r-expr.block.const">const block expression</a>, or to be a <a href="expressions/path-expr.html">path</a> to a constant item.</p>
 <div class="rule" id="r-expr.array.repeat-const-item"><a class="rule-link" href="expressions/array-expr.html#r-expr.array.repeat-const-item" title="expr.array.repeat-const-item"><span>[expr<wbr>.array<wbr>.repeat-const-item]</span/></a>
 </div>
-<p>When the repeat operand is a constant item, it is evaluated the length operand’s value times.</p>
+<p>When the repeat operand is a const block or a path to a constant item, it is evaluated the number of times specified in the length operand.</p>
 <div class="rule" id="r-expr.array.repeat-evaluation-zero"><a class="rule-link" href="expressions/array-expr.html#r-expr.array.repeat-evaluation-zero" title="expr.array.repeat-evaluation-zero"><span>[expr<wbr>.array<wbr>.repeat-evaluation-zero]</span/></a>
 </div>
-<p>If that value is <code>0</code>, then the constant item is not evaluated at all.</p>
+<p>If that value is <code>0</code>, then the const block or constant item is not evaluated at all.</p>
 <div class="rule" id="r-expr.array.repeat-non-const"><a class="rule-link" href="expressions/array-expr.html#r-expr.array.repeat-non-const" title="expr.array.repeat-non-const"><span>[expr<wbr>.array<wbr>.repeat-non-const]</span/></a>
 </div>
-<p>For expressions that are not a constant item, it is evaluated exactly once, and then the result is copied the length operand’s value times.</p>
+<p>For expressions that are neither a const block nor a path to a constant item, it is evaluated exactly once, and then the result is copied the length operand’s value times.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>[1, 2, 3, 4];
@@ -30429,7 +30634,7 @@ PatternNoTopAlt</text>
 </div>
 <div class="rule" id="r-patterns.ident.intro"><a class="rule-link" href="patterns.html#r-patterns.ident.intro" title="patterns.ident.intro"><span>[patterns<wbr>.ident<wbr>.intro]</span/></a>
 </div>
-<p>Identifier patterns bind the value they match to a variable in the <a href="names/namespaces.html">value namespace</a>.</p>
+<p>Identifier patterns bind the value they match to a variable in the <a href="names/namespaces.html#r-names.namespaces.kinds">value namespace</a>.</p>
 <div class="rule" id="r-patterns.ident.unique"><a class="rule-link" href="patterns.html#r-patterns.ident.unique" title="patterns.ident.unique"><span>[patterns<wbr>.ident<wbr>.unique]</span/></a>
 </div>
 <p>The identifier must be unique within the pattern.</p>
@@ -31785,6 +31990,9 @@ They are also used to <a href="patterns.html#destructuring">destructure</a> a st
 <div class="rule" id="r-patterns.struct.refutable"><a class="rule-link" href="patterns.html#r-patterns.struct.refutable" title="patterns.struct.refutable"><span>[patterns<wbr>.struct<wbr>.refutable]</span/></a>
 </div>
 <p>A struct pattern is refutable if the <a href="paths.html#grammar-PathInExpression">PathInExpression</a> resolves to a constructor of an enum with more than one variant, or one of its subpatterns is refutable.</p>
+<div class="rule" id="r-patterns.struct.namespace"><a class="rule-link" href="patterns.html#r-patterns.struct.namespace" title="patterns.struct.namespace"><span>[patterns<wbr>.struct<wbr>.namespace]</span/></a>
+</div>
+<p>A struct pattern matches against the struct, union, or enum variant whose constructor is resolved from <a href="paths.html#grammar-PathInExpression">PathInExpression</a> in the <a href="names/namespaces.html#r-names.namespaces.kinds">type namespace</a>. See <a href="patterns.html#r-patterns.tuple-struct.namespace">patterns.tuple-struct.namespace</a> for more details.</p>
 <div class="rule" id="r-patterns.tuple-struct"><a class="rule-link" href="patterns.html#r-patterns.tuple-struct" title="patterns.tuple-struct"><span>[patterns<wbr>.tuple-struct]</span/></a>
 </div>
 <h2 id="tuple-struct-patterns"><a class="header" href="#tuple-struct-patterns">Tuple struct patterns</a></h2>
@@ -31911,6 +32119,45 @@ They are also used to <a href="patterns.html#destructuring">destructure</a> a tu
 <div class="rule" id="r-patterns.tuple-struct.refutable"><a class="rule-link" href="patterns.html#r-patterns.tuple-struct.refutable" title="patterns.tuple-struct.refutable"><span>[patterns<wbr>.tuple-struct<wbr>.refutable]</span/></a>
 </div>
 <p>A tuple struct pattern is refutable if the <a href="paths.html#grammar-PathInExpression">PathInExpression</a> resolves to a constructor of an enum with more than one variant, or one of its subpatterns is refutable.</p>
+<div class="rule" id="r-patterns.tuple-struct.namespace"><a class="rule-link" href="patterns.html#r-patterns.tuple-struct.namespace" title="patterns.tuple-struct.namespace"><span>[patterns<wbr>.tuple-struct<wbr>.namespace]</span/></a>
+</div>
+<p>A tuple struct pattern matches against the tuple struct or <a href="items/enumerations.html#r-items.enum.tuple-expr">tuple-like enum variant</a> whose constructor is resolved from <a href="paths.html#grammar-PathInExpression">PathInExpression</a> in the <a href="names/namespaces.html#r-names.namespaces.kinds">value namespace</a>.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Conversely, a struct pattern for a tuple struct or <a href="items/enumerations.html#r-items.enum.tuple-expr">tuple-like enum variant</a>, e.g. <code>S { 0: _ }</code>, matches against the tuple struct or variant whose constructor is resolved in the <a href="names/namespaces.html#r-names.namespaces.kinds">type namespace</a>.</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024">enum E1 { V(u16) }
+enum E2 { V(u32) }
+
+// Import `E1::V` from the type namespace only.
+mod _0 {
+    const V: () = (); // For namespace masking.
+    pub(super) use super::E1::*;
+}
+use _0::*;
+
+// Import `E2::V` from the value namespace only.
+mod _1 {
+    struct V {} // For namespace masking.
+    pub(super) use super::E2::*;
+}
+use _1::*;
+
+fn f() {
+    // This struct pattern matches against the tuple-like
+    // enum variant whose constructor was found in the type
+    // namespace.
+    let V { 0: ..=u16::MAX } = (loop {}) else { loop {} };
+    // This tuple struct pattern matches against the tuple-like
+    // enum variant whose constructor was found in the value
+    // namespace.
+    let V(..=u32::MAX) = (loop {}) else { loop {} };
+}
+<span class="boring">// Required due to the odd behavior of `super` within functions.
+</span><span class="boring">fn main() {}</span></code></pre></pre>
+<p>The Lang team has made certain decisions, such as in <a href="https://github.com/rust-lang/rust/pull/138458">PR #138458</a>, that raise questions about the desirability of using the value namespace in this way for patterns, as described in <a href="https://github.com/rust-lang/rust/pull/140593#issuecomment-2972338457">PR #140593</a>. It might be prudent to not intentionally rely on this nuance in your code.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-patterns.tuple"><a class="rule-link" href="patterns.html#r-patterns.tuple" title="patterns.tuple"><span>[patterns<wbr>.tuple]</span/></a>
 </div>
 <h2 id="tuple-patterns"><a class="header" href="#tuple-patterns">Tuple patterns</a></h2>
@@ -32383,6 +32630,9 @@ and all fields (for enums: of the active variant) have structural equality.</li>
 </div>
 <p>In particular, the value of <code>C</code> must be known at pattern-building time (which is pre-monomorphization).
 This means that associated consts that involve generic parameters cannot be used as patterns.</p>
+<div class="rule" id="r-patterns.const.immutable"><a class="rule-link" href="patterns.html#r-patterns.const.immutable" title="patterns.const.immutable"><span>[patterns<wbr>.const<wbr>.immutable]</span/></a>
+</div>
+<p>The value of <code>C</code> must not contain any references to mutable statics (<code>static mut</code> items or interior mutable <code>static</code> items) or <code>extern</code> statics.</p>
 <div class="rule" id="r-patterns.const.translation"><a class="rule-link" href="patterns.html#r-patterns.const.translation" title="patterns.const.translation"><span>[patterns<wbr>.const<wbr>.translation]</span/></a>
 </div>
 <p>After ensuring all conditions are met, the constant value is translated into a pattern, and now behaves exactly as-if that pattern had been written directly.
@@ -35960,12 +36210,6 @@ struct MyCFields { x: u32, y: u8 }
 #[derive(Copy, Clone)]
 struct MyDFields;
 <span class="boring">}</span></code></pre></pre>
-<div class="alert alert-note">
-<blockquote>
-<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p><code>union</code>s with non-<code>Copy</code> fields are unstable, see <a href="https://github.com/rust-lang/rust/issues/55149">55149</a>.</p>
-</blockquote>
-</div>
 <div class="rule" id="r-layout.repr.primitive"><a class="rule-link" href="type-layout.html#r-layout.repr.primitive" title="layout.repr.primitive"><span>[layout<wbr>.repr<wbr>.primitive]</span/></a>
 </div>
 <h3 id="primitive-representations"><a class="header" href="#primitive-representations">Primitive representations</a></h3>
@@ -36041,12 +36285,6 @@ struct MyVariantC { tag: MyEnumDiscriminant, x: u32, y: u8 }
 #[derive(Clone, Copy)]
 struct MyVariantD(MyEnumDiscriminant);
 <span class="boring">}</span></code></pre></pre>
-<div class="alert alert-note">
-<blockquote>
-<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p><code>union</code>s with non-<code>Copy</code> fields are unstable, see <a href="https://github.com/rust-lang/rust/issues/55149">55149</a>.</p>
-</blockquote>
-</div>
 <div class="rule" id="r-layout.repr.primitive-c"><a class="rule-link" href="type-layout.html#r-layout.repr.primitive-c" title="layout.repr.primitive-c"><span>[layout<wbr>.repr<wbr>.primitive-c]</span/></a>
 </div>
 <h4 id="combining-primitive-representations-of-enums-with-fields-and-reprc"><a class="header" href="#combining-primitive-representations-of-enums-with-fields-and-reprc">Combining primitive representations of enums with fields and <code>#[repr(C)]</code></a></h4>
@@ -45084,11 +45322,129 @@ operators used on integer and floating point types, <code>bool</code>, and <code
 <div class="rule" id="r-const-eval.const-expr.borrows"><a class="rule-link" href="const_eval.html#r-const-eval.const-expr.borrows" title="const-eval.const-expr.borrows"><span>[const-eval<wbr>.const-expr<wbr>.borrows]</span/></a>
 </div>
 <ul>
-<li>All forms of <a href="expressions/operator-expr.html#borrow-operators">borrow</a>s, including raw borrows, with one limitation:
-mutable borrows and shared borrows to values with interior mutability
-are only allowed to refer to <em>transient</em> places or to <em>static</em> places. A place is <em>transient</em>
-if its lifetime is strictly contained inside the current <a href="const_eval.html#const-context">const context</a>.
-A place is <em>static</em> if it is a <code>static</code> item or a <a href="destructors.html#constant-promotion">promoted expression</a>.</li>
+<li>
+<p>All forms of <a href="expressions/operator-expr.html#borrow-operators">borrow</a>s, including raw borrows, except borrows of expressions whose temporary scopes would be extended (see <a href="destructors.html#r-destructors.scope.lifetime-extension">temporary lifetime extension</a>) to the end of the program and which are either:</p>
+<ul>
+<li>Mutable borrows.</li>
+<li>Shared borrows of expressions that result in values with <a href="interior-mutability.html">interior mutability</a>.</li>
+</ul>
+<pre><pre class="playground"><code class="language-rust compile_fail E0764 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Due to being in tail position, this borrow extends the scope of the
+// temporary to the end of the program. Since the borrow is mutable,
+// this is not allowed in a const expression.
+const C: &amp;u8 = &amp;mut 0; // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0764 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Const blocks are similar to initializers of `const` items.
+let _: &amp;u8 = const { &amp;mut 0 }; // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0492 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>// This is not allowed as 1) the temporary scope is extended to the
+// end of the program and 2) the temporary has interior mutability.
+const C: &amp;AtomicU8 = &amp;AtomicU8::new(0); // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0492 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>// As above.
+let _: &amp;_ = const { &amp;AtomicU8::new(0) }; // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>// Even though this borrow is mutable, it's not of a temporary, so
+// this is allowed.
+const C: &amp;u8 = unsafe { static mut S: u8 = 0; &amp;mut S }; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>// Even though this borrow is of a value with interior mutability,
+// it's not of a temporary, so this is allowed.
+const C: &amp;AtomicU8 = {
+    static S: AtomicU8 = AtomicU8::new(0); &amp;S // OK
+};
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>// This shared borrow of an interior mutable temporary is allowed
+// because its scope is not extended.
+const C: () = { _ = &amp;AtomicU8::new(0); }; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Even though the borrow is mutable and the temporary lives to the
+// end of the program due to promotion, this is allowed because the
+// borrow is not in tail position and so the scope of the temporary
+// is not extended via temporary lifetime extension.
+const C: () = { let _: &amp;'static mut [u8] = &amp;mut []; }; // OK
+//                                              ~~
+//                                     Promoted temporary.
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>In other words — to focus on what’s allowed rather than what’s not allowed — shared borrows of interior mutable data and mutable borrows are only allowed in a <a href="const_eval.html#const-context">const context</a> when the borrowed <a href="expressions.html#r-expr.place-value.place-memory-location">place expression</a> is <em>transient</em>, <em>indirect</em>, or <em>static</em>.</p>
+<p>A place expression is <em>transient</em> if it is a variable local to the current const context or an expression whose temporary scope is contained inside the current const context.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// The borrow is of a variable local to the initializer, therefore
+// this place expresssion is transient.
+const C: () = { let mut x = 0; _ = &amp;mut x; };
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// The borrow is of a temporary whose scope has not been extended,
+// therefore this place expression is transient.
+const C: () = { _ = &amp;mut 0u8; };
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// When a temporary is promoted but not lifetime extended, its
+// place expression is still treated as transient.
+const C: () = { let _: &amp;'static mut [u8] = &amp;mut []; };
+<span class="boring">}</span></code></pre></pre>
+<p>A place expression is <em>indirect</em> if it is a <a href="expressions/operator-expr.html#the-dereference-operator">dereference expression</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const C: () = { _ = &amp;mut *(&amp;mut 0); };
+<span class="boring">}</span></code></pre></pre>
+<p>A place expression is <em>static</em> if it is a <code>static</code> item.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>const C: &amp;u8 = unsafe { static mut S: u8 = 0; &amp;mut S };
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>One surprising consequence of these rules is that we allow this,</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const C: &amp;[u8] = { let x: &amp;mut [u8] = &amp;mut []; x }; // OK
+//                                    ~~~~~~~
+// Empty arrays are promoted even behind mutable borrows.
+<span class="boring">}</span></code></pre></pre>
+<p>but we disallow this similar code:</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0764 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const C: &amp;[u8] = &amp;mut []; // ERROR
+//               ~~~~~~~
+//           Tail expression.
+<span class="boring">}</span></code></pre></pre>
+<p>The difference between these is that, in the first, the empty array is <a href="destructors.html#constant-promotion">promoted</a> but its scope does not undergo <a href="destructors.html#r-destructors.scope.lifetime-extension">temporary lifetime extension</a>, so we consider the <a href="expressions.html#r-expr.place-value.place-memory-location">place expression</a> to be transient (even though after promotion the place indeed lives to the end of the program). In the second, the scope of the empty array temporary does undergo lifetime extension, and so it is rejected due to being a mutable borrow of a lifetime-extended temporary (and therefore borrowing a non-transient place expression).</p>
+<p>The effect is surprising because temporary lifetime extension, in this case, causes less code to compile than would without it.</p>
+<p>See <a href="https://github.com/rust-lang/rust/issues/143129">issue #143129</a> for more details.</p>
+</blockquote>
+</div>
+</li>
 </ul>
 <div class="rule" id="r-const-eval.const-expr.deref"><a class="rule-link" href="const_eval.html#r-const-eval.const-expr.deref" title="const-eval.const-expr.deref"><span>[const-eval<wbr>.const-expr<wbr>.deref]</span/></a>
 </div>
@@ -51376,14 +51732,14 @@ DelimTokenTree</text>
 <p><span class="grammar-text grammar-production" id="grammar-summary-TupleFields" onclick="show_railroad()"><a href="grammar.html#railroad-summary-TupleFields">TupleFields</a></span> → <span class="grammar-text"><a href="grammar.html#grammar-summary-TupleField">TupleField</a></span> ( <span class="grammar-literal">,</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-TupleField">TupleField</a></span> )<sup>*</sup> <span class="grammar-literal">,</span><sup>?</sup></p>
 <p><span class="grammar-text grammar-production" id="grammar-summary-TupleField" onclick="show_railroad()"><a href="grammar.html#railroad-summary-TupleField">TupleField</a></span> → <span class="grammar-text"><a href="grammar.html#grammar-summary-OuterAttribute">OuterAttribute</a></span><sup>*</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-Visibility">Visibility</a></span><sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-Type">Type</a></span></p>
 <p><span class="grammar-text grammar-production" id="grammar-summary-Enumeration" onclick="show_railroad()"><a href="grammar.html#railroad-summary-Enumeration">Enumeration</a></span> → <br />
-    <span class="grammar-literal">enum</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-IDENTIFIER">IDENTIFIER</a></span> <span class="grammar-text"><a href="grammar.html#grammar-summary-GenericParams">GenericParams</a></span><sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-WhereClause">WhereClause</a></span><sup>?</sup> <span class="grammar-literal">{</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItems">EnumItems</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-summary-EnumItems" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumItems">EnumItems</a></span> → <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItem">EnumItem</a></span> ( <span class="grammar-literal">,</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItem">EnumItem</a></span> )<sup>*</sup> <span class="grammar-literal">,</span><sup>?</sup></p>
-<p><span class="grammar-text grammar-production" id="grammar-summary-EnumItem" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumItem">EnumItem</a></span> → <br />
+    <span class="grammar-literal">enum</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-IDENTIFIER">IDENTIFIER</a></span> <span class="grammar-text"><a href="grammar.html#grammar-summary-GenericParams">GenericParams</a></span><sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-WhereClause">WhereClause</a></span><sup>?</sup> <span class="grammar-literal">{</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariants">EnumVariants</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-summary-EnumVariants" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumVariants">EnumVariants</a></span> → <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariant">EnumVariant</a></span> ( <span class="grammar-literal">,</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariant">EnumVariant</a></span> )<sup>*</sup> <span class="grammar-literal">,</span><sup>?</sup></p>
+<p><span class="grammar-text grammar-production" id="grammar-summary-EnumVariant" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumVariant">EnumVariant</a></span> → <br />
     <span class="grammar-text"><a href="grammar.html#grammar-summary-OuterAttribute">OuterAttribute</a></span><sup>*</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-Visibility">Visibility</a></span><sup>?</sup> <br />
-    <span class="grammar-text"><a href="grammar.html#grammar-summary-IDENTIFIER">IDENTIFIER</a></span> ( <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItemTuple">EnumItemTuple</a></span> | <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItemStruct">EnumItemStruct</a></span> )<sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumItemDiscriminant">EnumItemDiscriminant</a></span><sup>?</sup></p>
-<p><span class="grammar-text grammar-production" id="grammar-summary-EnumItemTuple" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumItemTuple">EnumItemTuple</a></span> → <span class="grammar-literal">(</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-TupleFields">TupleFields</a></span><sup>?</sup> <span class="grammar-literal">)</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-summary-EnumItemStruct" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumItemStruct">EnumItemStruct</a></span> → <span class="grammar-literal">{</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-StructFields">StructFields</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
-<p><span class="grammar-text grammar-production" id="grammar-summary-EnumItemDiscriminant" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumItemDiscriminant">EnumItemDiscriminant</a></span> → <span class="grammar-literal">=</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-Expression">Expression</a></span></p>
+    <span class="grammar-text"><a href="grammar.html#grammar-summary-IDENTIFIER">IDENTIFIER</a></span> ( <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariantTuple">EnumVariantTuple</a></span> | <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariantStruct">EnumVariantStruct</a></span> )<sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-EnumVariantDiscriminant">EnumVariantDiscriminant</a></span><sup>?</sup></p>
+<p><span class="grammar-text grammar-production" id="grammar-summary-EnumVariantTuple" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumVariantTuple">EnumVariantTuple</a></span> → <span class="grammar-literal">(</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-TupleFields">TupleFields</a></span><sup>?</sup> <span class="grammar-literal">)</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-summary-EnumVariantStruct" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumVariantStruct">EnumVariantStruct</a></span> → <span class="grammar-literal">{</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-StructFields">StructFields</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
+<p><span class="grammar-text grammar-production" id="grammar-summary-EnumVariantDiscriminant" onclick="show_railroad()"><a href="grammar.html#railroad-summary-EnumVariantDiscriminant">EnumVariantDiscriminant</a></span> → <span class="grammar-literal">=</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-Expression">Expression</a></span></p>
 <p><span class="grammar-text grammar-production" id="grammar-summary-Union" onclick="show_railroad()"><a href="grammar.html#railroad-summary-Union">Union</a></span> → <br />
     <span class="grammar-literal">union</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-IDENTIFIER">IDENTIFIER</a></span> <span class="grammar-text"><a href="grammar.html#grammar-summary-GenericParams">GenericParams</a></span><sup>?</sup> <span class="grammar-text"><a href="grammar.html#grammar-summary-WhereClause">WhereClause</a></span><sup>?</sup> <span class="grammar-literal">{</span> <span class="grammar-text"><a href="grammar.html#grammar-summary-StructFields">StructFields</a></span><sup>?</sup> <span class="grammar-literal">}</span></p>
 <p><span class="grammar-text grammar-production" id="grammar-summary-ConstantItem" onclick="show_railroad()"><a href="grammar.html#railroad-summary-ConstantItem">ConstantItem</a></span> → <br />
@@ -53415,7 +53771,7 @@ Type</text>
 </g>
 </svg>
 </div>
-<div style="width: 806px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-Enumeration"><svg class="railroad" viewBox="0 0 806 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 830px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-Enumeration"><svg class="railroad" viewBox="0 0 830 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
 <a class="link" xlink:href="grammar.html#grammar-summary-Enumeration">
@@ -53463,18 +53819,18 @@ WhereClause</text>
 {</text>
 </g>
 <g class="optional">
-<path d=" M 593 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 92 m -43 0 l -5 -5 m 0 10 l 5 -5 m 43 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItems">
+<path d=" M 593 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 116 m -55 0 l -5 -5 m 0 10 l 5 -5 m 55 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariants">
 <g class="nonterminal">
-<rect height="22" width="92" x="617" y="55"/>
-<text x="663" y="71">
-EnumItems</text>
+<rect height="22" width="116" x="617" y="55"/>
+<text x="675" y="71">
+EnumVariants</text>
 </g>
 </a>
 </g>
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="743" y="55"/>
-<text x="757" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="767" y="55"/>
+<text x="781" y="71">
 }</text>
 </g>
 <path d=" M 87 66 h 10"/>
@@ -53482,78 +53838,78 @@ EnumItems</text>
 <path d=" M 379 66 h 10"/>
 <path d=" M 545 66 h 10"/>
 <path d=" M 583 66 h 10"/>
-<path d=" M 733 66 h 10"/>
+<path d=" M 757 66 h 10"/>
 </g>
-<path d=" M 781 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 805 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 771 66 h 10"/>
+<path d=" M 795 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 444px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumItems"><svg class="railroad" viewBox="0 0 444 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 492px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumVariants"><svg class="railroad" viewBox="0 0 492 100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="grammar.html#grammar-summary-EnumItems">
-<text class="comment" x="46" y="25">
-EnumItems</text>
+<a class="link" xlink:href="grammar.html#grammar-summary-EnumVariants">
+<text class="comment" x="57" y="25">
+EnumVariants</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
 <g class="sequence">
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItem">
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariant">
 <g class="nonterminal">
-<rect height="22" width="84" x="35" y="55"/>
-<text x="77" y="71">
-EnumItem</text>
+<rect height="22" width="108" x="35" y="55"/>
+<text x="89" y="71">
+EnumVariant</text>
 </g>
 </a>
 <g class="optional">
-<path d=" M 129 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 146 m -70 0 l -5 -5 m 0 10 l 5 -5 m 70 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 153 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 170 m -82 0 l -5 -5 m 0 10 l 5 -5 m 82 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="repeat">
-<path d=" M 153 66 h 12 m 122 0 h 12 m -12 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 1 -12 12 m 0 0 h -122 m 64 0 l 5 -5 m 0 10 l -5 -5 m -64 0 a 12 12 0 0 1 -12 -12 v 0 a 12 12 0 0 1 12 -12"/>
+<path d=" M 177 66 h 12 m 146 0 h 12 m -12 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 1 -12 12 m 0 0 h -146 m 76 0 l 5 -5 m 0 10 l -5 -5 m -76 0 a 12 12 0 0 1 -12 -12 v 0 a 12 12 0 0 1 12 -12"/>
 <g/>
 <g class="sequence">
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="165" y="55"/>
-<text x="179" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="189" y="55"/>
+<text x="203" y="71">
 ,</text>
 </g>
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItem">
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariant">
 <g class="nonterminal">
-<rect height="22" width="84" x="203" y="55"/>
-<text x="245" y="71">
-EnumItem</text>
+<rect height="22" width="108" x="227" y="55"/>
+<text x="281" y="71">
+EnumVariant</text>
 </g>
 </a>
-<path d=" M 193 66 h 10"/>
+<path d=" M 217 66 h 10"/>
 </g>
 </g>
 </g>
 <g class="optional">
-<path d=" M 333 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 28 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 381 66 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 28 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="terminal">
-<rect height="22" rx="10" ry="10" width="28" x="357" y="55"/>
-<text x="371" y="71">
+<rect height="22" rx="10" ry="10" width="28" x="405" y="55"/>
+<text x="419" y="71">
 ,</text>
 </g>
 </g>
-<path d=" M 119 66 h 10"/>
-<path d=" M 323 66 h 10"/>
+<path d=" M 143 66 h 10"/>
+<path d=" M 371 66 h 10"/>
 </g>
-<path d=" M 419 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 467 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 409 66 h 10"/>
+<path d=" M 457 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 690px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumItem"><svg class="railroad" viewBox="0 0 690 192" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 738px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumVariant"><svg class="railroad" viewBox="0 0 738 192" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="grammar.html#grammar-summary-EnumItem">
-<text class="comment" x="43" y="25">
-EnumItem</text>
+<a class="link" xlink:href="grammar.html#grammar-summary-EnumVariant">
+<text class="comment" x="53" y="25">
+EnumVariant</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -53587,7 +53943,7 @@ Visibility</text>
 </g>
 <path d=" M 251 66 h 10"/>
 </g>
-<path d=" M 631 138 h 0 a 12 12 0 0 0 12 -12 v -48 a 12 12 0 0 1 12 -12"/>
+<path d=" M 679 138 h 0 a 12 12 0 0 0 12 -12 v -48 a 12 12 0 0 1 12 -12"/>
 <g class="sequence">
 <a class="link" xlink:href="grammar.html#railroad-summary-IDENTIFIER">
 <g class="nonterminal">
@@ -53597,54 +53953,54 @@ IDENTIFIER</text>
 </g>
 </a>
 <g class="optional">
-<path d=" M 157 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 180 m -87 0 l -5 -5 m 0 10 l 5 -5 m 87 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<path d=" M 157 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 204 m -99 0 l -5 -5 m 0 10 l 5 -5 m 99 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
 <g class="choice">
-<path d=" M 181 138 h 24 m 124 0 h 32"/>
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItemTuple">
+<path d=" M 181 138 h 24 m 148 0 h 32"/>
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariantTuple">
 <g class="nonterminal">
-<rect height="22" width="124" x="205" y="127"/>
-<text x="267" y="143">
-EnumItemTuple</text>
+<rect height="22" width="148" x="205" y="127"/>
+<text x="279" y="143">
+EnumVariantTuple</text>
 </g>
 </a>
-<path d=" M 181 138 a 12 12 0 0 1 12 12 v 9 m 156 0 v -9 a 12 12 0 0 1 12 -12"/>
-<path d=" M 193 159 v 0 a 12 12 0 0 0 12 12 m 132 0 h 0 a 12 12 0 0 0 12 -12 v 0"/>
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItemStruct">
+<path d=" M 181 138 a 12 12 0 0 1 12 12 v 9 m 180 0 v -9 a 12 12 0 0 1 12 -12"/>
+<path d=" M 193 159 v 0 a 12 12 0 0 0 12 12 m 156 0 h 0 a 12 12 0 0 0 12 -12 v 0"/>
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariantStruct">
 <g class="nonterminal">
-<rect height="22" width="132" x="205" y="160"/>
-<text x="271" y="176">
-EnumItemStruct</text>
+<rect height="22" width="156" x="205" y="160"/>
+<text x="283" y="176">
+EnumVariantStruct</text>
 </g>
 </a>
 </g>
 </g>
 <g class="optional">
-<path d=" M 395 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 188 m -91 0 l -5 -5 m 0 10 l 5 -5 m 91 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
-<a class="link" xlink:href="grammar.html#railroad-summary-EnumItemDiscriminant">
+<path d=" M 419 138 h 24 m -24 0 a 12 12 0 0 0 12 -12 v 0 a 12 12 0 0 1 12 -12 h 212 m -103 0 l -5 -5 m 0 10 l 5 -5 m 103 0 a 12 12 0 0 1 12 12 v 0 a 12 12 0 0 0 12 12 h -24"/>
+<a class="link" xlink:href="grammar.html#railroad-summary-EnumVariantDiscriminant">
 <g class="nonterminal">
-<rect height="22" width="188" x="419" y="127"/>
-<text x="513" y="143">
-EnumItemDiscriminant</text>
+<rect height="22" width="212" x="443" y="127"/>
+<text x="549" y="143">
+EnumVariantDiscriminant</text>
 </g>
 </a>
 </g>
 <path d=" M 147 138 h 10"/>
-<path d=" M 385 138 h 10"/>
+<path d=" M 409 138 h 10"/>
 </g>
 </g>
-<path d=" M 665 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
+<path d=" M 713 66 h 5 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5"/>
 <path d=" M 25 66 h 10"/>
-<path d=" M 655 66 h 10"/>
+<path d=" M 703 66 h 10"/>
 </g>
 </g>
 </svg>
 </div>
-<div style="width: 302px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumItemTuple"><svg class="railroad" viewBox="0 0 302 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 302px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumVariantTuple"><svg class="railroad" viewBox="0 0 302 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="grammar.html#grammar-summary-EnumItemTuple">
-<text class="comment" x="60" y="25">
-EnumItemTuple</text>
+<a class="link" xlink:href="grammar.html#grammar-summary-EnumVariantTuple">
+<text class="comment" x="71" y="25">
+EnumVariantTuple</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -53679,12 +54035,12 @@ TupleFields</text>
 </g>
 </svg>
 </div>
-<div style="width: 310px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumItemStruct"><svg class="railroad" viewBox="0 0 310 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 310px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumVariantStruct"><svg class="railroad" viewBox="0 0 310 87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="grammar.html#grammar-summary-EnumItemStruct">
-<text class="comment" x="64" y="25">
-EnumItemStruct</text>
+<a class="link" xlink:href="grammar.html#grammar-summary-EnumVariantStruct">
+<text class="comment" x="74" y="25">
+EnumVariantStruct</text>
 </a>
 <g class="sequence">
 <path d=" M 10 66 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -53719,12 +54075,12 @@ StructFields</text>
 </g>
 </svg>
 </div>
-<div style="width: 208px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumItemDiscriminant"><svg class="railroad" viewBox="0 0 208 74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div style="width: 208px; height: auto; max-width: 100%; max-height: 100%" class="railroad-production" id="railroad-summary-EnumVariantDiscriminant"><svg class="railroad" viewBox="0 0 208 74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect class="railroad_canvas" height="100%" width="100%"/>
 <g class="verticalgrid">
-<a class="link" xlink:href="grammar.html#grammar-summary-EnumItemDiscriminant">
-<text class="comment" x="88" y="25">
-EnumItemDiscriminant</text>
+<a class="link" xlink:href="grammar.html#grammar-summary-EnumVariantDiscriminant">
+<text class="comment" x="99" y="25">
+EnumVariantDiscriminant</text>
 </a>
 <g class="sequence">
 <path d=" M 10 53 a 5 5 0 0 1 5 -5 a 5 5 0 0 1 5 5 a 5 5 0 0 1 -5 5 a 5 5 0 0 1 -5 -5 m 10 0 h 5"/>
@@ -67536,26 +67892,28 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="conditional-compilation.html">5. Conditional compilation</a></td>
-<td>73</td>
+<td>75</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(13);">73</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(13);">75</a>
 <div id="uncovered-13" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="conditional-compilation.html#r-cfg">cfg</a></li>
 <li><a href="conditional-compilation.html#r-cfg.attr">cfg.attr</a></li>
+<li><a href="conditional-compilation.html#r-cfg.attr.allowed-positions">cfg.attr.allowed-positions</a></li>
 <li><a href="conditional-compilation.html#r-cfg.attr.crate-level-attrs">cfg.attr.crate-level-attrs</a></li>
+<li><a href="conditional-compilation.html#r-cfg.attr.duplicates">cfg.attr.duplicates</a></li>
 <li><a href="conditional-compilation.html#r-cfg.attr.effect">cfg.attr.effect</a></li>
-<li><a href="conditional-compilation.html#r-cfg.attr.general">cfg.attr.general</a></li>
-<li><a href="conditional-compilation.html#r-cfg.attr.restriction">cfg.attr.restriction</a></li>
+<li><a href="conditional-compilation.html#r-cfg.attr.intro">cfg.attr.intro</a></li>
 <li><a href="conditional-compilation.html#r-cfg.attr.syntax">cfg.attr.syntax</a></li>
-<li><a href="conditional-compilation.html#r-cfg.attr.syntax-explanation">cfg.attr.syntax-explanation</a></li>
 <li><a href="conditional-compilation.html#r-cfg.attributes-macro">cfg.attributes-macro</a></li>
 <li><a href="conditional-compilation.html#r-cfg.cfg_attr">cfg.cfg_attr</a></li>
+<li><a href="conditional-compilation.html#r-cfg.cfg_attr.allowed-positions">cfg.cfg_attr.allowed-positions</a></li>
+<li><a href="conditional-compilation.html#r-cfg.cfg_attr.attr-restriction">cfg.cfg_attr.attr-restriction</a></li>
 <li><a href="conditional-compilation.html#r-cfg.cfg_attr.attribute-list">cfg.cfg_attr.attribute-list</a></li>
-<li><a href="conditional-compilation.html#r-cfg.cfg_attr.behaviour">cfg.cfg_attr.behaviour</a></li>
-<li><a href="conditional-compilation.html#r-cfg.cfg_attr.general">cfg.cfg_attr.general</a></li>
-<li><a href="conditional-compilation.html#r-cfg.cfg_attr.restriction">cfg.cfg_attr.restriction</a></li>
+<li><a href="conditional-compilation.html#r-cfg.cfg_attr.behavior">cfg.cfg_attr.behavior</a></li>
+<li><a href="conditional-compilation.html#r-cfg.cfg_attr.duplicates">cfg.cfg_attr.duplicates</a></li>
+<li><a href="conditional-compilation.html#r-cfg.cfg_attr.intro">cfg.cfg_attr.intro</a></li>
 <li><a href="conditional-compilation.html#r-cfg.cfg_attr.syntax">cfg.cfg_attr.syntax</a></li>
 <li><a href="conditional-compilation.html#r-cfg.conditional">cfg.conditional</a></li>
 <li><a href="conditional-compilation.html#r-cfg.debug_assertions">cfg.debug_assertions</a></li>
@@ -67947,9 +68305,9 @@ Uncovered rules
 <li><a href="items/constant-items.html#r-items.const.destructor">items.const.destructor</a></li>
 <li><a href="items/constant-items.html#r-items.const.eval">items.const.eval</a></li>
 <li><a href="items/constant-items.html#r-items.const.expr-omission">items.const.expr-omission</a></li>
-<li><a href="items/constant-items.html#r-items.const.final-value-immutable">items.const.final-value-immutable</a></li>
 <li><a href="items/constant-items.html#r-items.const.intro">items.const.intro</a></li>
 <li><a href="items/constant-items.html#r-items.const.namespace">items.const.namespace</a></li>
+<li><a href="items/constant-items.html#r-items.const.no-mut-refs">items.const.no-mut-refs</a></li>
 <li><a href="items/constant-items.html#r-items.const.static">items.const.static</a></li>
 <li><a href="items/constant-items.html#r-items.const.static-temporary">items.const.static-temporary</a></li>
 <li><a href="items/constant-items.html#r-items.const.syntax">items.const.syntax</a></li>
@@ -68301,25 +68659,35 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="attributes/testing.html">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7.1. Testing</a></td>
-<td>13</td>
+<td>23</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(31);">13</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(31);">23</a>
 <div id="uncovered-31" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="attributes/testing.html#r-attributes.testing">attributes.testing</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.ignore">attributes.testing.ignore</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.ignore.allowed-positions">attributes.testing.ignore.allowed-positions</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.ignore.behavior">attributes.testing.ignore.behavior</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.ignore.duplicates">attributes.testing.ignore.duplicates</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.ignore.intro">attributes.testing.ignore.intro</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.ignore.reason">attributes.testing.ignore.reason</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.ignore.syntax">attributes.testing.ignore.syntax</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.should_panic">attributes.testing.should_panic</a></li>
-<li><a href="attributes/testing.html#r-attributes.testing.should_panic.behavior">attributes.testing.should_panic.behavior</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.should_panic.allowed-positions">attributes.testing.should_panic.allowed-positions</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.should_panic.duplicates">attributes.testing.should_panic.duplicates</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.should_panic.expected">attributes.testing.should_panic.expected</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.should_panic.intro">attributes.testing.should_panic.intro</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.should_panic.return">attributes.testing.should_panic.return</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.should_panic.syntax">attributes.testing.should_panic.syntax</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.test">attributes.testing.test</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.test.allowed-positions">attributes.testing.test.allowed-positions</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.test.duplicates">attributes.testing.test.duplicates</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.test.enabled">attributes.testing.test.enabled</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.test.intro">attributes.testing.test.intro</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.test.stdlib">attributes.testing.test.stdlib</a></li>
 <li><a href="attributes/testing.html#r-attributes.testing.test.success">attributes.testing.test.success</a></li>
+<li><a href="attributes/testing.html#r-attributes.testing.test.syntax">attributes.testing.test.syntax</a></li>
 </ul></div></div></td>
 <td>0.0%</td>
 </tr>
@@ -69296,10 +69664,10 @@ Uncovered rules
 </tr>
 <tr>
 <td><a href="patterns.html">9. Patterns</a></td>
-<td>137</td>
+<td>140</td>
 <td>0</td>
 <td><div class="popup-container">
-<a href="javascript:void(0)" onclick="spec_toggle_uncovered(60);">137</a>
+<a href="javascript:void(0)" onclick="spec_toggle_uncovered(60);">140</a>
 <div id="uncovered-60" class="uncovered-rules-popup popup-hidden">
 Uncovered rules
                         <ul><li><a href="patterns.html#r-patterns">patterns</a></li>
@@ -69311,6 +69679,7 @@ Uncovered rules
 <li><a href="patterns.html#r-patterns.const.exhaustive">patterns.const.exhaustive</a></li>
 <li><a href="patterns.html#r-patterns.const.float">patterns.const.float</a></li>
 <li><a href="patterns.html#r-patterns.const.generic">patterns.const.generic</a></li>
+<li><a href="patterns.html#r-patterns.const.immutable">patterns.const.immutable</a></li>
 <li><a href="patterns.html#r-patterns.const.partial-eq">patterns.const.partial-eq</a></li>
 <li><a href="patterns.html#r-patterns.const.pointer">patterns.const.pointer</a></li>
 <li><a href="patterns.html#r-patterns.const.primitive">patterns.const.primitive</a></li>
@@ -69419,12 +69788,14 @@ Uncovered rules
 <li><a href="patterns.html#r-patterns.struct.constraint-union">patterns.struct.constraint-union</a></li>
 <li><a href="patterns.html#r-patterns.struct.ignore-rest">patterns.struct.ignore-rest</a></li>
 <li><a href="patterns.html#r-patterns.struct.intro">patterns.struct.intro</a></li>
+<li><a href="patterns.html#r-patterns.struct.namespace">patterns.struct.namespace</a></li>
 <li><a href="patterns.html#r-patterns.struct.refutable">patterns.struct.refutable</a></li>
 <li><a href="patterns.html#r-patterns.struct.syntax">patterns.struct.syntax</a></li>
 <li><a href="patterns.html#r-patterns.syntax">patterns.syntax</a></li>
 <li><a href="patterns.html#r-patterns.tuple">patterns.tuple</a></li>
 <li><a href="patterns.html#r-patterns.tuple-struct">patterns.tuple-struct</a></li>
 <li><a href="patterns.html#r-patterns.tuple-struct.intro">patterns.tuple-struct.intro</a></li>
+<li><a href="patterns.html#r-patterns.tuple-struct.namespace">patterns.tuple-struct.namespace</a></li>
 <li><a href="patterns.html#r-patterns.tuple-struct.refutable">patterns.tuple-struct.refutable</a></li>
 <li><a href="patterns.html#r-patterns.tuple-struct.syntax">patterns.tuple-struct.syntax</a></li>
 <li><a href="patterns.html#r-patterns.tuple.intro">patterns.tuple.intro</a></li>
@@ -71069,9 +71440,9 @@ Uncovered rules
 </tr>
 <tr>
 <td><b>Total:</b></td>
-<td>2734</td>
+<td>2749</td>
 <td>53</td>
-<td>2713</td>
+<td>2728</td>
 <td>0.8%</td>
 </tr>
 </table>

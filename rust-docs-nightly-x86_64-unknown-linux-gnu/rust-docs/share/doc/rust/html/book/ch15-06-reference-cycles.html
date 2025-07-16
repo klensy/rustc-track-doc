@@ -294,13 +294,13 @@ a rc count after changing a = 2
 we change the list in <code>a</code> to point to <code>b</code>. At the end of <code>main</code>, Rust drops the
 variable <code>b</code>, which decreases the reference count of the <code>b</code> <code>Rc&lt;List&gt;</code> instance
 from 2 to 1. The memory that <code>Rc&lt;List&gt;</code> has on the heap won’t be dropped at
-this point, because its reference count is 1, not 0. Then Rust drops <code>a</code>, which
+this point because its reference count is 1, not 0. Then Rust drops <code>a</code>, which
 decreases the reference count of the <code>a</code> <code>Rc&lt;List&gt;</code> instance from 2 to 1 as
 well. This instance’s memory can’t be dropped either, because the other
 <code>Rc&lt;List&gt;</code> instance still refers to it. The memory allocated to the list will
 remain uncollected forever. To visualize this reference cycle, we’ve created the
 diagram in Figure 15-4.</p>
-<img alt="Reference cycle of lists" src="img/trpl15-04.svg" class="center" />
+<img alt="A rectangle labeled 'a' that points to a rectangle containing the integer 5. A rectangle labeled 'b' that points to a rectangle containing the integer 10. The rectangle containing 5 points to the rectangle containing 10, and the rectangle containing 10 points back to the rectangle containing 5, creating a cycle" src="img/trpl15-04.svg" class="center" />
 <p><span class="caption">Figure 15-4: A reference cycle of lists <code>a</code> and <code>b</code>
 pointing to each other</span></p>
 <p>If you uncomment the last <code>println!</code> and run the program, Rust will try to print
@@ -333,10 +333,10 @@ reference cycles.</p>
 <h3 id="preventing-reference-cycles-using-weakt"><a class="header" href="#preventing-reference-cycles-using-weakt">Preventing Reference Cycles Using <code>Weak&lt;T&gt;</code></a></h3>
 <p>So far, we’ve demonstrated that calling <code>Rc::clone</code> increases the <code>strong_count</code>
 of an <code>Rc&lt;T&gt;</code> instance, and an <code>Rc&lt;T&gt;</code> instance is only cleaned up if its
-<code>strong_count</code> is 0. You can also create a <em>weak reference</em> to the value within
+<code>strong_count</code> is 0. You can also create a weak reference to the value within
 an <code>Rc&lt;T&gt;</code> instance by calling <code>Rc::downgrade</code> and passing a reference to the
-<code>Rc&lt;T&gt;</code>. Strong references are how you can share ownership of an <code>Rc&lt;T&gt;</code>
-instance. Weak references don’t express an ownership relationship, and their
+<code>Rc&lt;T&gt;</code>. <em>Strong references</em> are how you can share ownership of an <code>Rc&lt;T&gt;</code>
+instance. <em>Weak references</em> don’t express an ownership relationship, and their
 count doesn’t affect when an <code>Rc&lt;T&gt;</code> instance is cleaned up. They won’t cause a
 reference cycle because any cycle involving some weak references will be broken
 once the strong reference count of values involved is 0.</p>
@@ -423,7 +423,7 @@ parent. We’ll do that next.</p>
 <h4 id="adding-a-reference-from-a-child-to-its-parent"><a class="header" href="#adding-a-reference-from-a-child-to-its-parent">Adding a Reference from a Child to Its Parent</a></h4>
 <p>To make the child node aware of its parent, we need to add a <code>parent</code> field to
 our <code>Node</code> struct definition. The trouble is in deciding what the type of
-<code>parent</code> should be. We know it can’t contain an <code>Rc&lt;T&gt;</code> because that would
+<code>parent</code> should be. We know it can’t contain an <code>Rc&lt;T&gt;</code>, because that would
 create a reference cycle with <code>leaf.parent</code> pointing to <code>branch</code> and
 <code>branch.children</code> pointing to <code>leaf</code>, which would cause their <code>strong_count</code>
 values to never be 0.</p>
@@ -431,7 +431,7 @@ values to never be 0.</p>
 children: if a parent node is dropped, its child nodes should be dropped as
 well. However, a child should not own its parent: if we drop a child node, the
 parent should still exist. This is a case for weak references!</p>
-<p>So, instead of <code>Rc&lt;T&gt;</code>, we’ll make the type of <code>parent</code> use <code>Weak&lt;T&gt;</code>,
+<p>So instead of <code>Rc&lt;T&gt;</code>, we’ll make the type of <code>parent</code> use <code>Weak&lt;T&gt;</code>,
 specifically a <code>RefCell&lt;Weak&lt;Node&gt;&gt;</code>. Now our <code>Node</code> struct definition looks
 like this:</p>
 <p><span class="filename">Filename: src/main.rs</span></p>
@@ -498,7 +498,7 @@ node will have a way to refer to its parent, <code>branch</code>.</p>
 
     println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
 }</code></pre></pre>
-<figcaption><a href="#listing-15-28">Listing 15-28</a>: A <code>leaf</code> node with a weak reference to its parent node <code>branch</code></figcaption>
+<figcaption><a href="#listing-15-28">Listing 15-28</a>: A <code>leaf</code> node with a weak reference to its parent node, <code>branch</code></figcaption>
 </figure>
 <p>Creating the <code>leaf</code> node looks similar to Listing 15-27 with the exception of
 the <code>parent</code> field: <code>leaf</code> starts out without a parent, so we create a new,
@@ -509,7 +509,7 @@ first <code>println!</code> statement:</p>
 <pre><code class="language-text">leaf parent = None
 </code></pre>
 <p>When we create the <code>branch</code> node, it will also have a new <code>Weak&lt;Node&gt;</code>
-reference in the <code>parent</code> field, because <code>branch</code> doesn’t have a parent node.
+reference in the <code>parent</code> field because <code>branch</code> doesn’t have a parent node.
 We still have <code>leaf</code> as one of the children of <code>branch</code>. Once we have the
 <code>Node</code> instance in <code>branch</code>, we can modify <code>leaf</code> to give it a <code>Weak&lt;Node&gt;</code>
 reference to its parent. We use the <code>borrow_mut</code> method on the
@@ -603,7 +603,7 @@ from <code>leaf.parent</code> has no bearing on whether or not <code>Node</code>
 don’t get any memory leaks!</p>
 <p>If we try to access the parent of <code>leaf</code> after the end of the scope, we’ll get
 <code>None</code> again. At the end of the program, the <code>Rc&lt;Node&gt;</code> in <code>leaf</code> has a strong
-count of 1 and a weak count of 0, because the variable <code>leaf</code> is now the only
+count of 1 and a weak count of 0 because the variable <code>leaf</code> is now the only
 reference to the <code>Rc&lt;Node&gt;</code> again.</p>
 <p>All of the logic that manages the counts and value dropping is built into
 <code>Rc&lt;T&gt;</code> and <code>Weak&lt;T&gt;</code> and their implementations of the <code>Drop</code> trait. By

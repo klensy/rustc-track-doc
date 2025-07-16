@@ -712,7 +712,7 @@ PatternNoTopAlt</text>
 </div>
 <div class="rule" id="r-patterns.ident.intro"><a class="rule-link" href="#r-patterns.ident.intro" title="patterns.ident.intro"><span>[patterns<wbr>.ident<wbr>.intro]</span/></a>
 </div>
-<p>Identifier patterns bind the value they match to a variable in the <a href="names/namespaces.html">value namespace</a>.</p>
+<p>Identifier patterns bind the value they match to a variable in the <a href="names/namespaces.html#r-names.namespaces.kinds">value namespace</a>.</p>
 <div class="rule" id="r-patterns.ident.unique"><a class="rule-link" href="#r-patterns.ident.unique" title="patterns.ident.unique"><span>[patterns<wbr>.ident<wbr>.unique]</span/></a>
 </div>
 <p>The identifier must be unique within the pattern.</p>
@@ -2068,6 +2068,9 @@ They are also used to <a href="#destructuring">destructure</a> a struct, enum, o
 <div class="rule" id="r-patterns.struct.refutable"><a class="rule-link" href="#r-patterns.struct.refutable" title="patterns.struct.refutable"><span>[patterns<wbr>.struct<wbr>.refutable]</span/></a>
 </div>
 <p>A struct pattern is refutable if the <a href="paths.html#grammar-PathInExpression">PathInExpression</a> resolves to a constructor of an enum with more than one variant, or one of its subpatterns is refutable.</p>
+<div class="rule" id="r-patterns.struct.namespace"><a class="rule-link" href="#r-patterns.struct.namespace" title="patterns.struct.namespace"><span>[patterns<wbr>.struct<wbr>.namespace]</span/></a>
+</div>
+<p>A struct pattern matches against the struct, union, or enum variant whose constructor is resolved from <a href="paths.html#grammar-PathInExpression">PathInExpression</a> in the <a href="names/namespaces.html#r-names.namespaces.kinds">type namespace</a>. See <a href="patterns.html#r-patterns.tuple-struct.namespace">patterns.tuple-struct.namespace</a> for more details.</p>
 <div class="rule" id="r-patterns.tuple-struct"><a class="rule-link" href="#r-patterns.tuple-struct" title="patterns.tuple-struct"><span>[patterns<wbr>.tuple-struct]</span/></a>
 </div>
 <h2 id="tuple-struct-patterns"><a class="header" href="#tuple-struct-patterns">Tuple struct patterns</a></h2>
@@ -2194,6 +2197,45 @@ They are also used to <a href="#destructuring">destructure</a> a tuple struct or
 <div class="rule" id="r-patterns.tuple-struct.refutable"><a class="rule-link" href="#r-patterns.tuple-struct.refutable" title="patterns.tuple-struct.refutable"><span>[patterns<wbr>.tuple-struct<wbr>.refutable]</span/></a>
 </div>
 <p>A tuple struct pattern is refutable if the <a href="paths.html#grammar-PathInExpression">PathInExpression</a> resolves to a constructor of an enum with more than one variant, or one of its subpatterns is refutable.</p>
+<div class="rule" id="r-patterns.tuple-struct.namespace"><a class="rule-link" href="#r-patterns.tuple-struct.namespace" title="patterns.tuple-struct.namespace"><span>[patterns<wbr>.tuple-struct<wbr>.namespace]</span/></a>
+</div>
+<p>A tuple struct pattern matches against the tuple struct or <a href="items/enumerations.html#r-items.enum.tuple-expr">tuple-like enum variant</a> whose constructor is resolved from <a href="paths.html#grammar-PathInExpression">PathInExpression</a> in the <a href="names/namespaces.html#r-names.namespaces.kinds">value namespace</a>.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Conversely, a struct pattern for a tuple struct or <a href="items/enumerations.html#r-items.enum.tuple-expr">tuple-like enum variant</a>, e.g. <code>S { 0: _ }</code>, matches against the tuple struct or variant whose constructor is resolved in the <a href="names/namespaces.html#r-names.namespaces.kinds">type namespace</a>.</p>
+<pre><pre class="playground"><code class="language-rust no_run edition2024">enum E1 { V(u16) }
+enum E2 { V(u32) }
+
+// Import `E1::V` from the type namespace only.
+mod _0 {
+    const V: () = (); // For namespace masking.
+    pub(super) use super::E1::*;
+}
+use _0::*;
+
+// Import `E2::V` from the value namespace only.
+mod _1 {
+    struct V {} // For namespace masking.
+    pub(super) use super::E2::*;
+}
+use _1::*;
+
+fn f() {
+    // This struct pattern matches against the tuple-like
+    // enum variant whose constructor was found in the type
+    // namespace.
+    let V { 0: ..=u16::MAX } = (loop {}) else { loop {} };
+    // This tuple struct pattern matches against the tuple-like
+    // enum variant whose constructor was found in the value
+    // namespace.
+    let V(..=u32::MAX) = (loop {}) else { loop {} };
+}
+<span class="boring">// Required due to the odd behavior of `super` within functions.
+</span><span class="boring">fn main() {}</span></code></pre></pre>
+<p>The Lang team has made certain decisions, such as in <a href="https://github.com/rust-lang/rust/pull/138458">PR #138458</a>, that raise questions about the desirability of using the value namespace in this way for patterns, as described in <a href="https://github.com/rust-lang/rust/pull/140593#issuecomment-2972338457">PR #140593</a>. It might be prudent to not intentionally rely on this nuance in your code.</p>
+</blockquote>
+</div>
 <div class="rule" id="r-patterns.tuple"><a class="rule-link" href="#r-patterns.tuple" title="patterns.tuple"><span>[patterns<wbr>.tuple]</span/></a>
 </div>
 <h2 id="tuple-patterns"><a class="header" href="#tuple-patterns">Tuple patterns</a></h2>
@@ -2666,6 +2708,9 @@ and all fields (for enums: of the active variant) have structural equality.</li>
 </div>
 <p>In particular, the value of <code>C</code> must be known at pattern-building time (which is pre-monomorphization).
 This means that associated consts that involve generic parameters cannot be used as patterns.</p>
+<div class="rule" id="r-patterns.const.immutable"><a class="rule-link" href="#r-patterns.const.immutable" title="patterns.const.immutable"><span>[patterns<wbr>.const<wbr>.immutable]</span/></a>
+</div>
+<p>The value of <code>C</code> must not contain any references to mutable statics (<code>static mut</code> items or interior mutable <code>static</code> items) or <code>extern</code> statics.</p>
 <div class="rule" id="r-patterns.const.translation"><a class="rule-link" href="#r-patterns.const.translation" title="patterns.const.translation"><span>[patterns<wbr>.const<wbr>.translation]</span/></a>
 </div>
 <p>After ensuring all conditions are met, the constant value is translated into a pattern, and now behaves exactly as-if that pattern had been written directly.

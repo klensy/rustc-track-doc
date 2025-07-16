@@ -2727,7 +2727,9 @@ pub struct IterMut&lt;'a, T: 'a&gt;(VecDeque&lt;NodeIterMut&lt;'a, T&gt;&gt;);
 impl&lt;T&gt; Tree&lt;T&gt; {
     pub fn iter_mut(&amp;mut self) -&gt; IterMut&lt;T&gt; {
         let mut deque = VecDeque::new();
-        self.root.as_mut().map(|root| deque.push_front(root.iter_mut()));
+        if let Some(root) = self.root.as_mut() {
+            deque.push_front(root.iter_mut());
+        }
         IterMut(deque)
     }
 }
@@ -2736,42 +2738,33 @@ impl&lt;T&gt; Node&lt;T&gt; {
     pub fn iter_mut(&amp;mut self) -&gt; NodeIterMut&lt;T&gt; {
         NodeIterMut {
             elem: Some(&amp;mut self.elem),
-            left: self.left.as_mut().map(|node| &amp;mut **node),
-            right: self.right.as_mut().map(|node| &amp;mut **node),
+            left: self.left.as_deref_mut(),
+            right: self.right.as_deref_mut(),
         }
     }
 }
-
 
 impl&lt;'a, T&gt; Iterator for NodeIterMut&lt;'a, T&gt; {
     type Item = State&lt;'a, T&gt;;
 
     fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
-        match self.left.take() {
-            Some(node) =&gt; Some(State::Node(node)),
-            None =&gt; match self.elem.take() {
-                Some(elem) =&gt; Some(State::Elem(elem)),
-                None =&gt; match self.right.take() {
-                    Some(node) =&gt; Some(State::Node(node)),
-                    None =&gt; None,
-                }
-            }
-        }
+        self.left.take().map(State::Node).or_else(|| {
+            self.elem
+                .take()
+                .map(State::Elem)
+                .or_else(|| self.right.take().map(State::Node))
+        })
     }
 }
 
 impl&lt;'a, T&gt; DoubleEndedIterator for NodeIterMut&lt;'a, T&gt; {
     fn next_back(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
-        match self.right.take() {
-            Some(node) =&gt; Some(State::Node(node)),
-            None =&gt; match self.elem.take() {
-                Some(elem) =&gt; Some(State::Elem(elem)),
-                None =&gt; match self.left.take() {
-                    Some(node) =&gt; Some(State::Node(node)),
-                    None =&gt; None,
-                }
-            }
-        }
+        self.right.take().map(State::Node).or_else(|| {
+            self.elem
+                .take()
+                .map(State::Elem)
+                .or_else(|| self.left.take().map(State::Node))
+        })
     }
 }
 
@@ -2779,10 +2772,12 @@ impl&lt;'a, T&gt; Iterator for IterMut&lt;'a, T&gt; {
     type Item = &amp;'a mut T;
     fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
         loop {
-            match self.0.front_mut().and_then(|node_it| node_it.next()) {
+            match self.0.front_mut().and_then(Iterator::next) {
                 Some(State::Elem(elem)) =&gt; return Some(elem),
                 Some(State::Node(node)) =&gt; self.0.push_front(node.iter_mut()),
-                None =&gt; if let None = self.0.pop_front() { return None },
+                None =&gt; {
+                    self.0.pop_front()?;
+                }
             }
         }
     }
@@ -2791,10 +2786,12 @@ impl&lt;'a, T&gt; Iterator for IterMut&lt;'a, T&gt; {
 impl&lt;'a, T&gt; DoubleEndedIterator for IterMut&lt;'a, T&gt; {
     fn next_back(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
         loop {
-            match self.0.back_mut().and_then(|node_it| node_it.next_back()) {
+            match self.0.back_mut().and_then(DoubleEndedIterator::next_back) {
                 Some(State::Elem(elem)) =&gt; return Some(elem),
                 Some(State::Node(node)) =&gt; self.0.push_back(node.iter_mut()),
-                None =&gt; if let None = self.0.pop_back() { return None },
+                None =&gt; {
+                    self.0.pop_back()?;
+                }
             }
         }
     }
@@ -5517,6 +5514,18 @@ impl&lt;T&gt; DoubleEndedIterator for RawValIter&lt;T&gt; {
     }
 }</code></pre>
 <p>And that's it. Iteration works!</p>
+<p>One last thing we need to consider is that when our vector is dropped, it deallocates the memory that was allocated while it was alive. With ZSTs, we didn't allocate any memory; in fact, we never do. So, right now, our code has unsoundness: we're still trying to deallocate a <code>NonNull::dangling()</code> pointer that we use to simulate the ZST in our vector. This means we'd cause undefined behavior if we tried to deallocate something we never allocated (obviously, and for good reasons). To fix this, in our <code>RawVec</code>'s <code>Drop</code> trait, we're going to tweak it to ensure we only deallocate types that are sized.</p>
+<pre><code class="language-rust ignore">impl&lt;T&gt; Drop for RawVec&lt;T&gt; {
+    fn drop(&amp;mut self) {
+        println!("RawVec&lt;T&gt; Drop called, deallocating memory");
+        if self.cap != 0 &amp;&amp; std::mem::size_of::&lt;T&gt;() &gt; 0 {
+            let layout = std::alloc::Layout::array::&lt;T&gt;(self.cap).unwrap();
+            unsafe {
+                std::alloc::dealloc(self.ptr.as_ptr() as *mut _, layout);
+            }
+        }
+    }
+}</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="the-final-code"><a class="header" href="#the-final-code">The Final Code</a></h1>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::alloc::{self, Layout};
 use std::marker::PhantomData;
@@ -6364,6 +6373,23 @@ examples yourself, you’ll need to add <code>libc</code> to your <code>Cargo.to
 <pre><code class="language-toml">[dependencies]
 libc = "0.2.0"
 </code></pre>
+<h2 id="prepare-the-build-script"><a class="header" href="#prepare-the-build-script">Prepare the build script</a></h2>
+<p>Because <a href="https://github.com/google/snappy">snappy</a> is a static library by default.
+So there is no C++ std linked in the output artifact.
+n order to use this foreign library in Rust, we have to manually specify that we want to link stdc++ in our project.
+The easiest way to do this is by setting up a build script.</p>
+<p>First edit <code>Cargo.toml</code>, inside <code>package</code> add <code>build = "build.rs"</code>:</p>
+<pre><code class="language-toml">[package]
+...
+build = "build.rs"
+</code></pre>
+<p>Then create a new file at the root of your workspace, named <code>build.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2024">// build.rs
+fn main() {
+    println!("cargo:rustc-link-lib=dylib=stdc++"); // This line may be unnecessary for some environment.
+    println!("cargo:rustc-link-search=&lt;YOUR SNAPPY LIBRARY PATH&gt;");
+}</code></pre></pre>
+<p>For more information, please read <a href="https://doc.rust-lang.org/cargo/reference/build-scripts.html">The Cargo Book - build script</a>.</p>
 <h2 id="calling-foreign-functions"><a class="header" href="#calling-foreign-functions">Calling foreign functions</a></h2>
 <p>The following is a minimal example of calling a foreign function which will
 compile if snappy is installed:</p>

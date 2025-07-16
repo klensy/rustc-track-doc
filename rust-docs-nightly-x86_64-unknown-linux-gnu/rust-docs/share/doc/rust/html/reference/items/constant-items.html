@@ -308,9 +308,39 @@ const BITS_N_STRINGS: BitsNStrings&lt;'static&gt; = BitsNStrings {
     mystring: STRING,
 };
 <span class="boring">}</span></code></pre></pre>
-<div class="rule" id="r-items.const.final-value-immutable"><a class="rule-link" href="#r-items.const.final-value-immutable" title="items.const.final-value-immutable"><span>[items<wbr>.const<wbr>.final-value-immutable]</span/></a>
+<div class="rule" id="r-items.const.no-mut-refs"><a class="rule-link" href="#r-items.const.no-mut-refs" title="items.const.no-mut-refs"><span>[items<wbr>.const<wbr>.no-mut-refs]</span/></a>
 </div>
-<p>The final value of a <code>const</code> item cannot contain references to anything mutable.</p>
+<p>The final value of a <code>const</code> item cannot contain any mutable references.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>static mut S: u8 = 0;
+const C: &amp;u8 = unsafe { &amp;mut S }; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>static S: AtomicU8 = AtomicU8::new(0);
+const C: &amp;AtomicU8 = &amp;S; // OK
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0080 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![allow(static_mut_refs)]
+</span>static mut S: u8 = 0;
+const C: &amp;mut u8 = unsafe { &amp;mut S }; // ERROR not allowed
+<span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>We also disallow, in the final value, shared references to mutable statics created in the initializer for a separate reason. Consider:</p>
+<pre><pre class="playground"><code class="language-rust compile_fail E0492 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use core::sync::atomic::AtomicU8;
+</span>const C: &amp;AtomicU8 = &amp;AtomicU8::new(0); // ERROR
+<span class="boring">}</span></code></pre></pre>
+<p>Here, the <code>AtomicU8</code> is a temporary that is lifetime extended to <code>'static</code> (see <a href="../destructors.html#r-destructors.scope.lifetime-extension.static">destructors.scope.lifetime-extension.static</a>), and references to lifetime-extended temporaries with interior mutability are not allowed in the final value of a constant expression (see <a href="../const_eval.html#r-const-eval.const-expr.borrows">const-eval.const-expr.borrows</a>).</p>
+</blockquote>
+</div>
 <div class="rule" id="r-items.const.expr-omission"><a class="rule-link" href="#r-items.const.expr-omission" title="items.const.expr-omission"><span>[items<wbr>.const<wbr>.expr-omission]</span/></a>
 </div>
 <p>The constant expression may only be omitted in a <a href="traits.html">trait definition</a>.</p>
