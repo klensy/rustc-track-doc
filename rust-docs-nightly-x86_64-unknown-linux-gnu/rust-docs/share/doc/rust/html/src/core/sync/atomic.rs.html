@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.90.0" data-rustdoc-version="1.90.0-nightly (498ae9fed 2025-07-28)" data-channel="nightly" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.90.0.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.90.0" data-rustdoc-version="1.90.0-nightly (ba7e63b63 2025-07-29)" data-channel="nightly" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.90.0.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Atomic types provide primitive shared-memory communication between
 <a href=#4 id=4 data-nosnippet>4</a>//! threads, and are the building blocks of other concurrent
@@ -1245,8 +1245,8 @@
 <a href=#1245 id=1245 data-nosnippet>1245</a>    /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
 <a href=#1246 id=1246 data-nosnippet>1246</a>    /// atomic types work with interior mutability. All modifications of an atomic change the value
 <a href=#1247 id=1247 data-nosnippet>1247</a>    /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-<a href=#1248 id=1248 data-nosnippet>1248</a>    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-<a href=#1249 id=1249 data-nosnippet>1249</a>    /// restriction in [Memory model for atomic accesses].
+<a href=#1248 id=1248 data-nosnippet>1248</a>    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the
+<a href=#1249 id=1249 data-nosnippet>1249</a>    /// requirements of the [memory model].
 <a href=#1250 id=1250 data-nosnippet>1250</a>    ///
 <a href=#1251 id=1251 data-nosnippet>1251</a>    /// # Examples
 <a href=#1252 id=1252 data-nosnippet>1252</a>    ///
@@ -1265,7 +1265,7 @@
 <a href=#1265 id=1265 data-nosnippet>1265</a>    /// # }
 <a href=#1266 id=1266 data-nosnippet>1266</a>    /// ```
 <a href=#1267 id=1267 data-nosnippet>1267</a>    ///
-<a href=#1268 id=1268 data-nosnippet>1268</a>    /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+<a href=#1268 id=1268 data-nosnippet>1268</a>    /// [memory model]: self#memory-model-for-atomic-accesses
 <a href=#1269 id=1269 data-nosnippet>1269</a>    </span><span class="attr">#[inline]
 <a href=#1270 id=1270 data-nosnippet>1270</a>    #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#1271 id=1271 data-nosnippet>1271</a>    #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
@@ -2489,8 +2489,8 @@
 <a href=#2489 id=2489 data-nosnippet>2489</a>    /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
 <a href=#2490 id=2490 data-nosnippet>2490</a>    /// atomic types work with interior mutability. All modifications of an atomic change the value
 <a href=#2491 id=2491 data-nosnippet>2491</a>    /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-<a href=#2492 id=2492 data-nosnippet>2492</a>    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-<a href=#2493 id=2493 data-nosnippet>2493</a>    /// restriction in [Memory model for atomic accesses].
+<a href=#2492 id=2492 data-nosnippet>2492</a>    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the
+<a href=#2493 id=2493 data-nosnippet>2493</a>    /// requirements of the [memory model].
 <a href=#2494 id=2494 data-nosnippet>2494</a>    ///
 <a href=#2495 id=2495 data-nosnippet>2495</a>    /// # Examples
 <a href=#2496 id=2496 data-nosnippet>2496</a>    ///
@@ -2510,7 +2510,7 @@
 <a href=#2510 id=2510 data-nosnippet>2510</a>    /// }
 <a href=#2511 id=2511 data-nosnippet>2511</a>    /// ```
 <a href=#2512 id=2512 data-nosnippet>2512</a>    ///
-<a href=#2513 id=2513 data-nosnippet>2513</a>    /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+<a href=#2513 id=2513 data-nosnippet>2513</a>    /// [memory model]: self#memory-model-for-atomic-accesses
 <a href=#2514 id=2514 data-nosnippet>2514</a>    </span><span class="attr">#[inline]
 <a href=#2515 id=2515 data-nosnippet>2515</a>    #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#2516 id=2516 data-nosnippet>2516</a>    #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
@@ -3623,8 +3623,8 @@
 <a href=#3623 id=3623 data-nosnippet>3623</a>            /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
 <a href=#3624 id=3624 data-nosnippet>3624</a>            /// atomic types work with interior mutability. All modifications of an atomic change the value
 <a href=#3625 id=3625 data-nosnippet>3625</a>            /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-<a href=#3626 id=3626 data-nosnippet>3626</a>            /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-<a href=#3627 id=3627 data-nosnippet>3627</a>            /// restriction in [Memory model for atomic accesses].
+<a href=#3626 id=3626 data-nosnippet>3626</a>            /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the
+<a href=#3627 id=3627 data-nosnippet>3627</a>            /// requirements of the [memory model].
 <a href=#3628 id=3628 data-nosnippet>3628</a>            ///
 <a href=#3629 id=3629 data-nosnippet>3629</a>            /// # Examples
 <a href=#3630 id=3630 data-nosnippet>3630</a>            ///
@@ -3645,7 +3645,7 @@
 <a href=#3645 id=3645 data-nosnippet>3645</a>            /// # }
 <a href=#3646 id=3646 data-nosnippet>3646</a>            /// ```
 <a href=#3647 id=3647 data-nosnippet>3647</a>            ///
-<a href=#3648 id=3648 data-nosnippet>3648</a>            /// [Memory model for atomic accesses]: self#memory-model-for-atomic-accesses
+<a href=#3648 id=3648 data-nosnippet>3648</a>            /// [memory model]: self#memory-model-for-atomic-accesses
 <a href=#3649 id=3649 data-nosnippet>3649</a>            </span><span class="attr">#[inline]
 <a href=#3650 id=3650 data-nosnippet>3650</a>            #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#3651 id=3651 data-nosnippet>3651</a>            #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
