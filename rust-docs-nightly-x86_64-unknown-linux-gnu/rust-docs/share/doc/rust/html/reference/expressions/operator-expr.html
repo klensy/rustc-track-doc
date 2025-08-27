@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-826eda24.js";
+            window.path_to_searchindex_js = "../searchindex-00f0d4d1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-4adb5027.js"></script>
@@ -2423,66 +2423,114 @@ assert!(x == 6);
 <p>Attempting to use a value expression is a compiler error rather than promoting it to a temporary.</p>
 <div class="rule" id="r-expr.compound-assign.operand-order"><a class="rule-link" href="#r-expr.compound-assign.operand-order" title="expr.compound-assign.operand-order"><span>[expr<wbr>.compound-assign<wbr>.operand-order]</span/></a>
 </div>
-<p>Evaluation of compound assignment expressions depends on the types of the operators.</p>
-<div class="rule" id="r-expr.compound-assign.primitive-order"><a class="rule-link" href="#r-expr.compound-assign.primitive-order" title="expr.compound-assign.primitive-order"><span>[expr<wbr>.compound-assign<wbr>.primitive-order]</span/></a>
+<p>Evaluation of compound assignment expressions depends on the types of the operands.</p>
+<div class="rule" id="r-expr.compound-assign.primitives"><a class="rule-link" href="#r-expr.compound-assign.primitives" title="expr.compound-assign.primitives"><span>[expr<wbr>.compound-assign<wbr>.primitives]</span/></a>
 </div>
-<p>If both types are primitives, then the modifying operand will be evaluated first followed by the assigned operand.
-It will then set the value of the assigned operand’s place to the value of performing the operation of the operator with the values of the assigned operand and modifying operand.</p>
+<p>If the types of both operands are known, prior to monomorphization, to be primitive, the right hand side is evaluated first, the left hand side is evaluated next, and the place given by the evaluation of the left hand side is mutated by applying the operator to the values of both sides.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">use core::{num::Wrapping, ops::AddAssign};
+</span><span class="boring">
+</span>trait Equate {}
+impl&lt;T&gt; Equate for (T, T) {}
+
+fn f1(x: (u8,)) {
+    let mut order = vec![];
+    // The RHS is evaluated first as both operands are of primitive
+    // type.
+    { order.push(2); x }.0 += { order.push(1); x }.0;
+    assert!(order.is_sorted());
+}
+
+fn f2(x: (Wrapping&lt;u8&gt;,)) {
+    let mut order = vec![];
+    // The LHS is evaluated first as `Wrapping&lt;_&gt;` is not a primitive
+    // type.
+    { order.push(1); x }.0 += { order.push(2); (0u8,) }.0;
+    assert!(order.is_sorted());
+}
+
+fn f3&lt;T: AddAssign&lt;u8&gt; + Copy&gt;(x: (T,)) where (T, u8): Equate {
+    let mut order = vec![];
+    // The LHS is evaluated first as one of the operands is a generic
+    // parameter, even though that generic parameter can be unified
+    // with a primitive type due to the where clause bound.
+    { order.push(1); x }.0 += { order.push(2); (0u8,) }.0;
+    assert!(order.is_sorted());
+}
+
+fn main() {
+    f1((0u8,));
+    f2((Wrapping(0u8),));
+    // We supply a primitive type as the generic argument, but this
+    // does not affect the evaluation order in `f3` when
+    // monomorphized.
+    f3::&lt;u8&gt;((0u8,));
+}</code></pre></pre>
 <div class="alert alert-note">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>This is different than other expressions in that the right operand is evaluated before the left one.</p>
+<p>This is unusual. Elsewhere left to right evaluation is the norm.</p>
+<p>See the <a href="https://github.com/rust-lang/rust/blob/1.58.0/src/test/ui/expr/compound-assignment/eval-order.rs">eval order test</a> for more examples.</p>
 </blockquote>
 </div>
 <div class="rule" id="r-expr.compound-assign.trait"><a class="rule-link" href="#r-expr.compound-assign.trait" title="expr.compound-assign.trait"><span>[expr<wbr>.compound-assign<wbr>.trait]</span/></a>
 </div>
-<p>Otherwise, this expression is syntactic sugar for calling the function of the overloading compound assignment trait of the operator (see the table earlier in this chapter).
-A mutable borrow of the assigned operand is automatically taken.</p>
-<p>For example, the following expression statements in <code>example</code> are equivalent:</p>
+<p>Otherwise, this expression is syntactic sugar for using the corresponding trait for the operator (see <a href="operator-expr.html#r-expr.arith-logic.behavior">expr.arith-logic.behavior</a>) and calling its method with the left hand side as the <a href="method-call-expr.html#r-expr.method.intro">receiver</a> and the right hand side as the next argument.</p>
+<p>For example, the following two statements are equivalent:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">struct Addable;
 </span><span class="boring">use std::ops::AddAssign;
-</span>
-impl AddAssign&lt;Addable&gt; for Addable {
-    /* */
-<span class="boring">fn add_assign(&amp;mut self, other: Addable) {}
-</span>}
-
-fn example() {
-<span class="boring">let (mut a1, a2) = (Addable, Addable);
-</span>  a1 += a2;
-
-<span class="boring">let (mut a1, a2) = (Addable, Addable);
-</span>  AddAssign::add_assign(&amp;mut a1, a2);
+</span>fn f&lt;T: AddAssign + Copy&gt;(mut x: T, y: T) {
+    x += y; // Statement 1.
+    x.add_assign(y); // Statement 2.
 }
 <span class="boring">}</span></code></pre></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Surprisingly, desugaring this further to a fully qualified method call is not equivalent, as there is special borrow checker behavior when the mutable reference to the first operand is taken via <a href="method-call-expr.html#r-expr.method.candidate-receivers-refs">autoref</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::ops::AddAssign;
+</span>fn f&lt;T: AddAssign + Copy&gt;(mut x: T) {
+    // Here we used `x` as both the LHS and the RHS. Because the
+    // mutable borrow of the LHS needed to call the trait method
+    // is taken implicitly by autoref, this is OK.
+    x += x; //~ OK
+    x.add_assign(x); //~ OK
+}
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0503 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::ops::AddAssign;
+</span>fn f&lt;T: AddAssign + Copy&gt;(mut x: T) {
+    // We can't desugar the above to the below, as once we take the
+    // mutable borrow of `x` to pass the first argument, we can't
+    // pass `x` by value in the second argument because the mutable
+    // reference is still live.
+    &lt;T as AddAssign&gt;::add_assign(&amp;mut x, x);
+    //~^ ERROR cannot use `x` because it was mutably borrowed
+}
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust compile_fail E0503 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::ops::AddAssign;
+</span>fn f&lt;T: AddAssign + Copy&gt;(mut x: T) {
+    // As above.
+    (&amp;mut x).add_assign(x);
+    //~^ ERROR cannot use `x` because it was mutably borrowed
+}
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-expr.compound-assign.result"><a class="rule-link" href="#r-expr.compound-assign.result" title="expr.compound-assign.result"><span>[expr<wbr>.compound-assign<wbr>.result]</span/></a>
 </div>
-<p>Like assignment expressions, compound assignment expressions always produce <a href="../types/tuple.html">the unit value</a>.</p>
+<p>As with normal assignment expressions, compound assignment expressions always produce <a href="../types/tuple.html">the unit value</a>.</p>
 <div class="alert alert-warning">
 <blockquote>
 <p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
-<p>The evaluation order of operands swaps depending on the types of the operands:
-with primitive types the right-hand side will get evaluated first, while with non-primitive types the left-hand side will get evaluated first.
-Try not to write code that depends on the evaluation order of operands in compound assignment expressions.
-See <a href="https://github.com/rust-lang/rust/blob/1.58.0/src/test/ui/expr/compound-assignment/eval-order.rs">this test</a> for an example of using this dependency.</p>
+<p>Avoid writing code that depends on the evaluation order of operands in compound assignments as it can be unusual and surprising.</p>
 </blockquote>
 </div>
-<script>
-(function() {
-    var fragments = {
-        "#slice-dst-pointer-to-pointer-cast": "operator-expr.html#pointer-to-pointer-cast",
-        "#the-question-mark-operator": "operator-expr.html#the-try-propagation-expression",
-    };
-    var target = fragments[window.location.hash];
-    if (target) {
-        var url = window.location.toString();
-        var base = url.substring(0, url.lastIndexOf('/'));
-        window.location.replace(base + "/" + target);
-    }
-})();
-</script>
 <hr>
 <ol class="footnote-definition"><li id="footnote-meta-compat">
 <p>where <code>T</code> and <code>V</code> have compatible metadata:</p>
@@ -2554,6 +2602,18 @@ See <a href="https://github.com/rust-lang/rust/blob/1.58.0/src/test/ui/expr/comp
         <script src="../theme/reference-cfed9ca5.js"></script>
 
 
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const fragmentMap =
+                    {"#slice-dst-pointer-to-pointer-cast":"operator-expr.html#pointer-to-pointer-cast","#the-question-mark-operator":"operator-expr.html#the-try-propagation-expression"}
+                ;
+                const target = fragmentMap[window.location.hash];
+                if (target) {
+                    let url = new URL(target, window.location.href);
+                    window.location.replace(url.href);
+                }
+            });
+        </script>
 
     </div>
     </body>
