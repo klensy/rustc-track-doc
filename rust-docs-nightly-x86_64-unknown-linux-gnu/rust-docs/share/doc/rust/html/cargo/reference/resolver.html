@@ -40,10 +40,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c0402d70.js";
+            window.path_to_searchindex_js = "../searchindex-cbc680a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-ff85ecd7.js"></script>
+        <script src="../toc-4c5cc278.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,7 +189,7 @@
 <p>One of Cargo’s primary tasks is to determine the versions of dependencies to
 use based on the version requirements specified in each package. This process
 is called “dependency resolution” and is performed by the “resolver”. The
-result of the resolution is stored in the <code>Cargo.lock</code> file which “locks” the
+result of the resolution is stored in the <a href="../guide/cargo-toml-vs-cargo-lock.html"><code>Cargo.lock</code> file</a> which “locks” the
 dependencies to specific versions, and keeps them fixed over time.
 The <a href="../commands/cargo-tree.html"><code>cargo tree</code></a> command can be used to visualize the result of the
 resolver.</p>
@@ -203,7 +203,7 @@ To understand how these interact, it is helpful to have a coarse understanding o
 </span>pub fn resolve(workspace: &amp;[Package], policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
     let dep_queue = Queue::new(workspace);
     let resolved = ResolveGraph::new();
-    resolve_next(pkq_queue, resolved, policy)
+    resolve_next(dep_queue, resolved, policy)
 }
 
 fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
@@ -346,6 +346,23 @@ that you are properly using them, especially if it is ever possible for the
 types from different versions to be used together. The <a href="../commands/cargo-tree.html"><code>cargo tree -d</code></a> command can be used to identify duplicate versions and
 where they come from. Similarly, it is important to consider the impact on the
 ecosystem if you publish a SemVer-incompatible version of a popular library.</p>
+<h3 id="lock-file"><a class="header" href="#lock-file">Lock file</a></h3>
+<p>Cargo gives the highest priority to versions contained in the <a href="../guide/cargo-toml-vs-cargo-lock.html"><code>Cargo.lock</code> file</a>, when used.
+This is intended to balance reproducible builds with adjusting to changes in the manifest.</p>
+<p>For example, if you had a package in the resolve graph with:</p>
+<pre><code class="language-toml">[dependencies]
+bitflags = "*"
+</code></pre>
+<p>If at the time your <code>Cargo.lock</code> file is generated, the greatest version of
+<code>bitflags</code> is <code>1.2.1</code>, then the package will use <code>1.2.1</code> and recorded in the <code>Cargo.lock</code> file.</p>
+<p>By the time Cargo next runs, <code>bitflags</code> <code>1.3.5</code> is out.
+When resolving dependencies,
+<code>1.2.1</code> will still be used because it is present in your <code>Cargo.lock</code> file.</p>
+<p>The package is then edited to:</p>
+<pre><code class="language-toml">[dependencies]
+bitflags = "1.3.0"
+</code></pre>
+<p><code>bitflags</code> <code>1.2.1</code> does not match this version requirement and so that entry in your <code>Cargo.lock</code> file is ignored and version <code>1.3.5</code> will now be used and recorded in your <code>Cargo.lock</code> file.</p>
 <h3 id="rust-version"><a class="header" href="#rust-version">Rust version</a></h3>
 <p>To support developing software with a minimum supported <a href="rust-version.html">Rust version</a>,
 the resolver can take into account a dependency version’s compatibility with your Rust version.

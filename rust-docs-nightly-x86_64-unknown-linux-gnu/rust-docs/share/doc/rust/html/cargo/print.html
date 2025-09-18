@@ -41,10 +41,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c0402d70.js";
+            window.path_to_searchindex_js = "searchindex-cbc680a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-ff85ecd7.js"></script>
+        <script src="toc-4c5cc278.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -304,6 +304,7 @@ develop Rust packages.</p>
 <li><a href="guide/continuous-integration.html">Continuous Integration</a></li>
 <li><a href="guide/../reference/publishing.html">Publishing on crates.io</a></li>
 <li><a href="guide/cargo-home.html">Cargo Home</a></li>
+<li><a href="guide/build-performance.html">Optimizing Build Performance</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="why-cargo-exists"><a class="header" href="#why-cargo-exists">Why Cargo Exists</a></h1>
 <h2 id="preliminaries"><a class="header" href="#preliminaries">Preliminaries</a></h2>
@@ -1144,6 +1145,78 @@ That can unnecessarily slow down the build as downloading, extracting, recompres
 <h2 id="clearing-the-cache"><a class="header" href="#clearing-the-cache">Clearing the cache</a></h2>
 <p>In theory, you can always remove any part of the cache and Cargo will do its best to restore sources if a crate needs them either by reextracting an archive or checking out a bare repo or by simply redownloading the sources from the web.</p>
 <p>Alternatively, the <a href="https://crates.io/crates/cargo-cache">cargo-cache</a> crate provides a simple CLI tool to only clear selected parts of the cache or show sizes of its components in your command-line.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="optimizing-build-performance"><a class="header" href="#optimizing-build-performance">Optimizing Build Performance</a></h1>
+<p>Cargo configuration options and source code organization patterns can help improve build performance, by prioritizing it over other aspects which may not be as important for your circumstances.</p>
+<p>Same as when optimizing runtime performance, be sure to measure these changes against the workflows you actually care about, as we provide general guidelines and your circumstances may be different, it is possible that some of these approaches might actually make build performance worse for your use-case.</p>
+<p>Example workflows to consider include:</p>
+<ul>
+<li>Compiler feedback as you develop (<code>cargo check</code> after making a code change)</li>
+<li>Test feedback as you develop (<code>cargo test</code> after making a code change)</li>
+<li>CI builds</li>
+</ul>
+<h2 id="cargo-and-compiler-configuration"><a class="header" href="#cargo-and-compiler-configuration">Cargo and Compiler Configuration</a></h2>
+<p>Cargo uses configuration defaults that try to balance several aspects, including debuggability, runtime performance, build performance, binary size and others. This section describes several approaches for changing these defaults that should be designed to maximize build performance.</p>
+<p>You can set the described options either in the <a href="guide/../reference/profiles.html"><code>Cargo.toml</code> manifest</a>, which will make them available for all developers who work on the given crate/project, or in the <a href="guide/../reference/config.html"><code>config.toml</code> configuration file</a>, where you can apply them only for you or even globally for all your local projects.</p>
+<h3 id="reduce-amount-of-generated-debug-information"><a class="header" href="#reduce-amount-of-generated-debug-information">Reduce amount of generated debug information</a></h3>
+<p>Recommendation: Add to your <code>Cargo.toml</code> or <code>.cargo/config.toml</code>:</p>
+<pre><code class="language-toml">[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.debugging]
+inherits = "dev"
+debug = true
+</code></pre>
+<p>This will:</p>
+<ul>
+<li>Change the <a href="guide/../reference/profiles.html#dev"><code>dev</code> profile</a> (default for development commands) to:
+<ul>
+<li>Limit <a href="guide/../reference/profiles.html#debug">debug information</a> for workspace members to what is needed for useful panic backtraces</li>
+<li>Avoid generating any debug information for dependencies</li>
+</ul>
+</li>
+<li>Provide an opt-in for when debugging via <a href="guide/../reference/profiles.html#custom-profiles"><code>--profile debugging</code></a></li>
+</ul>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster build times</li>
+<li>✅ Faster link times</li>
+<li>✅ Smaller disk usage of the <code>target</code> directory</li>
+<li>❌ Requires a full rebuild to have a high-quality debugger experience</li>
+</ul>
+<h3 id="use-an-alternative-codegen-backend"><a class="header" href="#use-an-alternative-codegen-backend">Use an alternative codegen backend</a></h3>
+<p>Recommendation:</p>
+<ul>
+<li>Install the Cranelift codegen backend rustup component
+<pre><code class="language-console">$ rustup component add rustc-codegen-cranelift-preview --toolchain nightly
+</code></pre>
+</li>
+<li>Add to your <code>Cargo.toml</code> or <code>.cargo/config.toml</code>:
+<pre><code class="language-toml">[profile.dev]
+codegen-backend = "cranelift"
+</code></pre>
+</li>
+<li>Run Cargo with <code>-Z codegen-backend</code> or enable the <a href="guide/../reference/unstable.html#codegen-backend"><code>codegen-backend</code></a> feature in <code>.cargo/config.toml</code>.
+<ul>
+<li>This is required because this is currently an unstable feature.</li>
+</ul>
+</li>
+</ul>
+<p>This will change the <a href="guide/../reference/profiles.html#dev"><code>dev</code> profile</a> to use the <a href="https://github.com/rust-lang/rustc_codegen_cranelift">Cranelift codegen backend</a> for generating machine code, instead of the default LLVM backend. The Cranelift backend should generate code faster than LLVM, which should result in improved build performance.</p>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster code generation (<code>cargo build</code>)</li>
+<li>❌ <strong>Requires using nightly Rust and an unstable Cargo feature</strong></li>
+<li>❌ Worse runtime performance of the generated code
+<ul>
+<li>Speeds up build part of <code>cargo test</code>, but might increase its test execution part</li>
+</ul>
+</li>
+<li>❌ Only available for <a href="https://github.com/rust-lang/rustc_codegen_cranelift?tab=readme-ov-file#platform-support">certain targets</a></li>
+<li>❌ Might not support all Rust features (e.g. unwinding)</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cargo-reference"><a class="header" href="#cargo-reference">Cargo Reference</a></h1>
 <p>The reference covers the details of various areas of Cargo.</p>
 <ul>
@@ -3274,7 +3347,7 @@ modifications.</p>
 <p>One of Cargo’s primary tasks is to determine the versions of dependencies to
 use based on the version requirements specified in each package. This process
 is called “dependency resolution” and is performed by the “resolver”. The
-result of the resolution is stored in the <code>Cargo.lock</code> file which “locks” the
+result of the resolution is stored in the <a href="reference/../guide/cargo-toml-vs-cargo-lock.html"><code>Cargo.lock</code> file</a> which “locks” the
 dependencies to specific versions, and keeps them fixed over time.
 The <a href="reference/../commands/cargo-tree.html"><code>cargo tree</code></a> command can be used to visualize the result of the
 resolver.</p>
@@ -3288,7 +3361,7 @@ To understand how these interact, it is helpful to have a coarse understanding o
 </span>pub fn resolve(workspace: &amp;[Package], policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
     let dep_queue = Queue::new(workspace);
     let resolved = ResolveGraph::new();
-    resolve_next(pkq_queue, resolved, policy)
+    resolve_next(dep_queue, resolved, policy)
 }
 
 fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
@@ -3431,6 +3504,23 @@ that you are properly using them, especially if it is ever possible for the
 types from different versions to be used together. The <a href="reference/../commands/cargo-tree.html"><code>cargo tree -d</code></a> command can be used to identify duplicate versions and
 where they come from. Similarly, it is important to consider the impact on the
 ecosystem if you publish a SemVer-incompatible version of a popular library.</p>
+<h3 id="lock-file"><a class="header" href="#lock-file">Lock file</a></h3>
+<p>Cargo gives the highest priority to versions contained in the <a href="reference/../guide/cargo-toml-vs-cargo-lock.html"><code>Cargo.lock</code> file</a>, when used.
+This is intended to balance reproducible builds with adjusting to changes in the manifest.</p>
+<p>For example, if you had a package in the resolve graph with:</p>
+<pre><code class="language-toml">[dependencies]
+bitflags = "*"
+</code></pre>
+<p>If at the time your <code>Cargo.lock</code> file is generated, the greatest version of
+<code>bitflags</code> is <code>1.2.1</code>, then the package will use <code>1.2.1</code> and recorded in the <code>Cargo.lock</code> file.</p>
+<p>By the time Cargo next runs, <code>bitflags</code> <code>1.3.5</code> is out.
+When resolving dependencies,
+<code>1.2.1</code> will still be used because it is present in your <code>Cargo.lock</code> file.</p>
+<p>The package is then edited to:</p>
+<pre><code class="language-toml">[dependencies]
+bitflags = "1.3.0"
+</code></pre>
+<p><code>bitflags</code> <code>1.2.1</code> does not match this version requirement and so that entry in your <code>Cargo.lock</code> file is ignored and version <code>1.3.5</code> will now be used and recorded in your <code>Cargo.lock</code> file.</p>
 <h3 id="rust-version-1"><a class="header" href="#rust-version-1">Rust version</a></h3>
 <p>To support developing software with a minimum supported <a href="reference/rust-version.html">Rust version</a>,
 the resolver can take into account a dependency version’s compatibility with your Rust version.
@@ -6003,7 +6093,7 @@ compiler version information.</li>
 <li><code>HTTP_TIMEOUT</code> — The HTTP timeout in seconds, see <a href="reference/config.html#httptimeout"><code>http.timeout</code></a> for more
 detail.</li>
 <li><code>TERM</code> — If this is set to <code>dumb</code>, it disables the progress bar.</li>
-<li><code>BROWSER</code> — The web browser to execute to open documentation with <a href="reference/../commands/cargo-doc.html"><code>cargo doc</code></a>’s’ <code>--open</code> flag, see <a href="reference/config.html#docbrowser"><code>doc.browser</code></a> for more details.</li>
+<li><code>BROWSER</code> — The web browser to execute to open documentation with <a href="reference/../commands/cargo-doc.html"><code>cargo doc</code></a>’s <code>--open</code> flag, see <a href="reference/config.html#docbrowser"><code>doc.browser</code></a> for more details.</li>
 <li><code>RUSTFMT</code> — Instead of running <code>rustfmt</code>,
 <a href="https://github.com/rust-lang/rustfmt"><code>cargo fmt</code></a> will execute this specified
 <code>rustfmt</code> instance instead.</li>
@@ -8039,7 +8129,7 @@ explaining the format of the entry.</p>
             // https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html.
             "req": "^0.6",
             // Array of features (as strings) enabled for this dependency.
-            // May be omitted since Cargo 1.84.
+            // Since Cargo 1.84, defaults to `[]` if not specified.
             "features": ["i128_support"],
             // Boolean of whether or not this is an optional dependency.
             // Since Cargo 1.84, defaults to `false` if not specified.
@@ -8069,7 +8159,7 @@ explaining the format of the entry.</p>
     "cksum": "d867001db0e2b6e0496f9fac96930e2d42233ecd3ca0413e0753d4c7695d289c",
     // Set of features defined for the package.
     // Each feature maps to an array of features or dependencies it enables.
-    // May be omitted since Cargo 1.84.
+    // Since Cargo 1.84, defaults to `{}` if not specified.
     "features": {
         "extras": ["rand/simd_support"]
     },
@@ -27228,7 +27318,7 @@ capabilities of a CPU.</p>
 <h2 id="index"><a class="header" href="#index">Index</a></h2>
 <p>The <em>index</em> is the searchable list of <a href="appendix/glossary.html#crate"><em>crates</em></a> in a
 <a href="appendix/glossary.html#registry"><em>registry</em></a>.</p>
-<h2 id="lock-file"><a class="header" href="#lock-file">Lock file</a></h2>
+<h2 id="lock-file-1"><a class="header" href="#lock-file-1">Lock file</a></h2>
 <p>The <code>Cargo.lock</code> <em>lock file</em> is a file that captures the exact version of
 every dependency used in a <a href="appendix/glossary.html#workspace"><em>workspace</em></a> or
 <a href="appendix/glossary.html#package"><em>package</em></a>. It is automatically generated by Cargo. See
