@@ -41,7 +41,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cbc680a5.js";
+            window.path_to_searchindex_js = "searchindex-7a5be9be.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4c5cc278.js"></script>
@@ -1208,7 +1208,7 @@ codegen-backend = "cranelift"
 <p>Trade-offs:</p>
 <ul>
 <li>✅ Faster code generation (<code>cargo build</code>)</li>
-<li>❌ <strong>Requires using nightly Rust and an unstable Cargo feature</strong></li>
+<li>❌ <strong>Requires using nightly Rust and an <a href="guide/../reference/unstable.html#codegen-backend">unstable Cargo feature</a></strong></li>
 <li>❌ Worse runtime performance of the generated code
 <ul>
 <li>Speeds up build part of <code>cargo test</code>, but might increase its test execution part</li>
@@ -1216,6 +1216,17 @@ codegen-backend = "cranelift"
 </li>
 <li>❌ Only available for <a href="https://github.com/rust-lang/rustc_codegen_cranelift?tab=readme-ov-file#platform-support">certain targets</a></li>
 <li>❌ Might not support all Rust features (e.g. unwinding)</li>
+</ul>
+<h3 id="enable-the-experimental-parallel-frontend"><a class="header" href="#enable-the-experimental-parallel-frontend">Enable the experimental parallel frontend</a></h3>
+<p>Recommendation: Add to your <code>.cargo/config.toml</code>:</p>
+<pre><code class="language-toml">[build]
+rustflags = "-Zthreads=8"
+</code></pre>
+<p>This <a href="guide/../reference/config.html#buildrustflags"><code>rustflags</code></a> will enable the <a href="https://blog.rust-lang.org/2023/11/09/parallel-rustc/">parallel frontend</a> of the Rust compiler, and tell it to use <code>n</code> threads. The value of <code>n</code> should be chosen according to the number of cores available on your system, although there are diminishing returns. We recommend using at most <code>8</code> threads.</p>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster build times</li>
+<li>❌ <strong>Requires using nightly Rust and an <a href="https://github.com/rust-lang/rust/issues/113349">unstable Rust feature</a></strong></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cargo-reference"><a class="header" href="#cargo-reference">Cargo Reference</a></h1>
 <p>The reference covers the details of various areas of Cargo.</p>
@@ -2531,7 +2542,9 @@ exact version to depend on.</p>
 <p><span id="multiple-requirements"></span></p>
 <h3 id="multiple-version-requirements"><a class="header" href="#multiple-version-requirements">Multiple version requirements</a></h3>
 <p>As shown in the examples above, multiple version requirements can be
-separated with a comma, e.g., <code>&gt;= 1.2, &lt; 1.5</code>.</p>
+separated with a comma, e.g., <code>&gt;= 1.2, &lt; 1.5</code>.
+All requirements must be satisfied,
+so non-overlapping requirements like <code>&lt;1.2, ^1.2.2</code> result in no matching versions.</p>
 <h3 id="pre-releases"><a class="header" href="#pre-releases">Pre-releases</a></h3>
 <p>Version requirements exclude <a href="reference/manifest.html#the-version-field">pre-release versions</a>, such as <code>1.0.0-alpha</code>,
 unless specifically asked for.
@@ -3234,9 +3247,12 @@ crates that have been published to <a href="https://crates.io/">crates.io</a>. Y
 to tell Cargo how to find local unpublished crates.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="source-replacement"><a class="header" href="#source-replacement">Source Replacement</a></h1>
-<p>This document is about replacing the crate index. You can read about overriding
-dependencies in the <a href="reference/overriding-dependencies.html">overriding dependencies</a> section of this
-documentation.</p>
+<p>This document is about redirecting communication with <a href="reference/registries.html">registries</a>
+or repositories of <a href="reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories">git-based dependencies</a> to another data source, such as a
+server mirroring the original registry or an exact local copy.</p>
+<p>If you want to patch individual dependencies, see <a href="reference/overriding-dependencies.html">overriding dependencies</a> section of this
+documentation. If you want to control how Cargo makes network requests, see <a href="reference/config.html#http"><code>[http]</code></a>
+and <a href="reference/config.html#net"><code>[net]</code></a> configuration.</p>
 <p>A <em>source</em> is a provider that contains crates that may be included as
 dependencies for a package. Cargo supports the ability to <strong>replace one source
 with another</strong> to express strategies such as:</p>
@@ -3306,12 +3322,19 @@ git = "https://example.com/path/to/repo"
 # rev = "313f44e8"
 </code></pre>
 <h2 id="registry-sources"><a class="header" href="#registry-sources">Registry Sources</a></h2>
-<p>A “registry source” is one that is the same as crates.io itself. That is, it has
-an index served in a git repository which matches the format of the
-<a href="https://github.com/rust-lang/crates.io-index">crates.io index</a>. That repository
-then has configuration indicating where to download crates from.</p>
-<p>Currently there is not an already-available project for setting up a mirror of
-crates.io. Stay tuned though!</p>
+<p>A “registry source” is one that works like crates.io itself. It’s an index
+that conforms to the specification at https://doc.rust-lang.org/cargo/reference/registry-index.html
+with a configuration file indicating where to download crates from.</p>
+<p>Registry sources can use <a href="reference/registries.html#registry-protocols">either git or sparse HTTP protocol</a>:</p>
+<pre><code class="language-toml"># Git protocol
+registry = "ssh://git@example.com/path/to/index.git"
+
+# Sparse HTTP protocol  
+registry = "sparse+https://example.com/path/to/index"
+
+# HTTPS git protocol
+registry = "https://example.com/path/to/index"
+</code></pre>
 <h2 id="local-registry-sources"><a class="header" href="#local-registry-sources">Local Registry Sources</a></h2>
 <p>A “local registry source” is intended to be a subset of another registry
 source, but available on the local filesystem (aka vendoring). Local registries
@@ -3339,6 +3362,11 @@ is placed on the name of each directory.</p>
 <p>Each crate in a directory source also has an associated metadata file indicating
 the checksum of each file in the crate to protect against accidental
 modifications.</p>
+<h2 id="git-sources"><a class="header" href="#git-sources">Git sources</a></h2>
+<p>Git sources represent repositories used by <a href="reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories">git-based dependencies</a>. They’re
+used to specify which git-based dependencies should be replaced with alternative sources.</p>
+<p>Git sources are <em>not</em> related to the <a href="reference/registries.html#registry-protocols">git registries</a>,
+and can’t be used to replace registry sources.</p>
 <hr>
 <ol class="footnote-definition"><li id="footnote-1">
 <p>Examples of such commands are in <a href="reference/../commands/publishing-commands.html">Publishing Commands</a>. <a href="#fr-1-1">↩</a></p>
@@ -5163,7 +5191,7 @@ the final invocation is <code>$RUSTC_WRAPPER $RUSTC_WORKSPACE_WRAPPER $RUSTC</co
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="reference/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>Can be overridden with the <code>--target</code> CLI option.</p>
@@ -10683,20 +10711,41 @@ as well as the features that were enabled during each unit’s compilation.</p>
 <h2 id="warn-by-default"><a class="header" href="#warn-by-default">Warn-by-default</a></h2>
 <p>These lints are all set to the ‘warn’ level by default.</p>
 <ul>
+<li><a href="reference/lints.html#blanket_hint_mostly_unused"><code>blanket_hint_mostly_unused</code></a></li>
 <li><a href="reference/lints.html#unknown_lints"><code>unknown_lints</code></a></li>
 </ul>
-<h2 id="unknown_lints"><a class="header" href="#unknown_lints"><code>unknown_lints</code></a></h2>
+<h2 id="blanket_hint_mostly_unused"><a class="header" href="#blanket_hint_mostly_unused"><code>blanket_hint_mostly_unused</code></a></h2>
 <p>Set to <code>warn</code> by default</p>
 <h3 id="what-it-does"><a class="header" href="#what-it-does">What it does</a></h3>
-<p>Checks for unknown lints in the <code>[lints.cargo]</code> table</p>
+<p>Checks if <code>hint-mostly-unused</code> being applied to all dependencies.</p>
 <h3 id="why-it-is-bad"><a class="header" href="#why-it-is-bad">Why it is bad</a></h3>
+<p><code>hint-mostly-unused</code> indicates that most of a crate’s API surface will go
+unused by anything depending on it; this hint can speed up the build by
+attempting to minimize compilation time for items that aren’t used at all.
+Misapplication to crates that don’t fit that criteria will slow down the build
+rather than speeding it up. It should be selectively applied to dependencies
+that meet these criteria. Applying it globally is always a misapplication and
+will likely slow down the build.</p>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<pre><code class="language-toml">[profile.dev.package."*"]
+hint-mostly-unused = true
+</code></pre>
+<p>Should instead be:</p>
+<pre><code class="language-toml">[profile.dev.package.huge-mostly-unused-dependency]
+hint-mostly-unused = true
+</code></pre>
+<h2 id="unknown_lints"><a class="header" href="#unknown_lints"><code>unknown_lints</code></a></h2>
+<p>Set to <code>warn</code> by default</p>
+<h3 id="what-it-does-1"><a class="header" href="#what-it-does-1">What it does</a></h3>
+<p>Checks for unknown lints in the <code>[lints.cargo]</code> table</p>
+<h3 id="why-it-is-bad-1"><a class="header" href="#why-it-is-bad-1">Why it is bad</a></h3>
 <ul>
 <li>The lint name could be misspelled, leading to confusion as to why it is
 not working as expected</li>
 <li>The unknown lint could end up causing an error if <code>cargo</code> decides to make
 a lint with the same name in the future</li>
 </ul>
-<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
 <pre><code class="language-toml">[lints.cargo]
 this-lint-does-not-exist = "warn"
 </code></pre>
@@ -13101,7 +13150,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -13415,7 +13464,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -13740,7 +13789,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -13983,7 +14032,7 @@ Defaults to <code>target</code> in the root of the workspace.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -14215,7 +14264,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -14428,7 +14477,7 @@ you plan to use Cargo without a network with the <code>--offline</code> flag.</p
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -14711,7 +14760,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -15030,7 +15079,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -15334,7 +15383,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -15670,7 +15719,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -16065,7 +16114,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -18589,7 +18638,7 @@ be specified multiple times, which enables all specified features.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -19584,7 +19633,7 @@ single quotes or double quotes around each pattern.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>
@@ -19835,7 +19884,7 @@ single quotes or double quotes around each pattern.</dd>
 <p>Possible values:</p>
 <ul>
 <li>Any supported target in <code>rustc --print target-list</code>.</li>
-<li><code>"host"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
+<li><code>"host-tuple"</code>, which will internally be substituted by the host’s target. This can be particularly useful if you’re cross-compiling some crates, and don’t want to specify your host’s machine as a target (for instance, an <code>xtask</code> in a shared project that may be worked on by many hosts).</li>
 <li>A path to a custom target specification. See <a href="commands/../../rustc/targets/custom.html#custom-target-lookup-path">Custom Target Lookup Path</a> for more information.</li>
 </ul>
 <p>This may also be specified with the <code>build.target</code> <a href="commands/../reference/config.html">config value</a>.</p>

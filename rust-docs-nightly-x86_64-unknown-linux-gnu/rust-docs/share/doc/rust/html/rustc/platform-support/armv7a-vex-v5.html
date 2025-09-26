@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c2b3a276.js";
+            window.path_to_searchindex_js = "../searchindex-a55e64fb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-59e61e94.js"></script>
@@ -185,7 +185,7 @@
                         <h1 id="armv7a-vex-v5"><a class="header" href="#armv7a-vex-v5"><code>armv7a-vex-v5</code></a></h1>
 <p><strong>Tier: 3</strong></p>
 <p>Allows compiling user programs for the <a href="https://www.vexrobotics.com/276-4810.html">VEX V5 Brain</a>, a microcontroller for educational and competitive robotics.</p>
-<p>Rust support for this target is not affiliated with VEX Robotics or IFI.</p>
+<p>Rust support for this target is not affiliated with VEX Robotics or IFI, and does not link to any official VEX SDK.</p>
 <h2 id="target-maintainers"><a class="header" href="#target-maintainers">Target maintainers</a></h2>
 <p>This target is maintained by members of the <a href="https://github.com/vexide">vexide</a> organization:</p>
 <ul>
@@ -195,16 +195,25 @@
 <li><a href="https://github.com/max-niederman">@max-niederman</a></li>
 </ul>
 <h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
-<p>This target is cross-compiled and currently requires <code>#![no_std]</code>. Dynamic linking is unsupported.</p>
-<p>When compiling for this target, the "C" calling convention maps to AAPCS with VFP registers (hard float ABI) and the "system" calling convention maps to AAPCS without VFP registers (soft float ABI).</p>
-<p>This target generates binaries in the ELF format that may uploaded to the brain with external tools.</p>
+<p>This target is cross-compiled. Dynamic linking is unsupported.</p>
+<p><code>#![no_std]</code> crates can be built using <code>build-std</code> to build <code>core</code> and <code>panic_abort</code> and optionally <code>alloc</code>. Unwinding panics are not yet supported on this target.</p>
+<p><code>std</code> has only partial support due platform limitations. Notably:</p>
+<ul>
+<li><code>std::process</code> and <code>std::net</code> are unimplemented. <code>std::thread</code> only supports sleeping and yielding, as this is a single-threaded environment.</li>
+<li><code>std::time</code> has full support for <code>Instant</code>, but no support for <code>SystemTime</code>.</li>
+<li><code>std::io</code> has full support for <code>stdin</code>/<code>stdout</code>/<code>stderr</code>. <code>stdout</code> and <code>stderr</code> both write to to USB channel 1 on this platform and are not differentiated.</li>
+<li><code>std::fs</code> has limited support for reading or writing to files. Directory operations, file deletion, and some file opening features are unsupported and will return errors.</li>
+<li>A global allocator implemented on top of <code>dlmalloc</code> is provided.</li>
+<li>Modules that do not need to interact with the OS beyond allocation such as <code>std::collections</code>, <code>std::hash</code>, <code>std::future</code>, <code>std::sync</code>, etc are fully supported.</li>
+<li>Random number generation and hashing is insecure, as there is no reliable source of entropy on this platform.</li>
+</ul>
+<p>In order to support some APIs, users are expected to provide a supporting runtime SDK for <code>libstd</code> to link against. This library may be provided either by <a href="https://github.com/vexide/vex-sdk/tree/main/packages/vex-sdk-build"><code>vex-sdk-build</code></a> (which will download an official SDK from VEX) or through an open-source implementation such as <a href="https://crates.io/crates/vex-sdk-jumptable"><code>vex-sdk-jumptable</code></a>.</p>
+<p>When compiling for this target, the "C" calling convention maps to AAPCS with VFP registers (hard float ABI) and the "system" calling convention maps to AAPCS without VFP registers (softfp ABI).</p>
+<p>This target generates binaries in the ELF format that may be uploaded to the brain with external tools.</p>
 <h2 id="building-the-target"><a class="header" href="#building-the-target">Building the target</a></h2>
 <p>You can build Rust with support for this target by adding it to the <code>target</code> list in <code>bootstrap.toml</code>, and then running <code>./x build --target armv7a-vex-v5 compiler</code>.</p>
 <h2 id="building-rust-programs"><a class="header" href="#building-rust-programs">Building Rust programs</a></h2>
-<p>Rust does not yet ship pre-compiled artifacts for this target. To compile for
-this target, you will either need to build Rust with the target enabled (see
-"Building the target" above), or build your own copy of <code>core</code> by using
-<code>build-std</code> or similar.</p>
+<p>Rust does not yet ship pre-compiled artifacts for this target. To compile for this target, you will either need to build Rust with the target enabled (see "Building the target" above), or build your own copy of <code>core</code> by using <code>build-std</code> or similar.</p>
 <p>When the compiler builds a binary, an ELF build artifact will be produced. Additional tools are required for this artifact to be recognizable to VEXos as a user program.</p>
 <p>The <a href="https://github.com/vexide/cargo-v5">cargo-v5</a> tool is capable of creating binaries that can be uploaded to the V5 brain. This tool wraps the <code>cargo build</code> command by supplying arguments necessary to build the target and produce an artifact recognizable to VEXos, while also providing functionality for uploading over USB to a V5 Controller or Brain.</p>
 <p>To install the tool, run:</p>

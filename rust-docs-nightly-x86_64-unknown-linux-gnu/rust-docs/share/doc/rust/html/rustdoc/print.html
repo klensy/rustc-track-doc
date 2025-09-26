@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8c9d6225.js";
+            window.path_to_searchindex_js = "searchindex-f9b24dee.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-3a0c9359.js"></script>
@@ -2788,17 +2788,24 @@ result right away (which is often the best match) use the following instead:</p>
 </code></pre>
 <p>This URL adds the <code>go_to_first=true</code> query parameter which can be appended to any <code>rustdoc</code> search URL
 to automatically go to the first result.</p>
-<h2 id="reprtransparent-documenting-the-transparent-representation"><a class="header" href="#reprtransparent-documenting-the-transparent-representation"><code>#[repr(transparent)]</code>: Documenting the transparent representation</a></h2>
+<h2 id="repr-documenting-the-representation-of-a-type"><a class="header" href="#repr-documenting-the-representation-of-a-type"><code>#[repr(...)]</code>: Documenting the representation of a type</a></h2>
+<p>Generally, rustdoc only displays the representation of a given type if none of its variants are
+<code>#[doc(hidden)]</code> and if all of its fields are public and not <code>#[doc(hidden)]</code> since it's likely
+not meant to be considered part of the public ABI otherwise.</p>
+<p>Note that there's no way to overwrite that heuristic and force rustdoc to show the representation
+regardless.</p>
+<h3 id="reprtransparent"><a class="header" href="#reprtransparent"><code>#[repr(transparent)]</code></a></h3>
 <p>You can read more about <code>#[repr(transparent)]</code> itself in the <a href="https://doc.rust-lang.org/reference/type-layout.html#the-transparent-representation">Rust Reference</a> and
 in the <a href="https://doc.rust-lang.org/nomicon/other-reprs.html#reprtransparent">Rustonomicon</a>.</p>
 <p>Since this representation is only considered part of the public ABI if the single field with non-trivial
-size or alignment is public and if the documentation does not state otherwise, Rustdoc helpfully displays
-the attribute if and only if the non-1-ZST field is public or at least one field is public in case all
-fields are 1-ZST fields. The term <em>1-ZST</em> refers to types that are one-aligned and zero-sized.</p>
+size or alignment is public and if the documentation does not state otherwise, rustdoc helpfully displays
+the attribute if and only if the non-1-ZST field is public and not <code>#[doc(hidden)]</code> or
+– in case all fields are 1-ZST fields — at least one field is public and not <code>#[doc(hidden)]</code>.
+The term <em>1-ZST</em> refers to types that are one-aligned and zero-sized.</p>
 <p>It would seem that one can manually hide the attribute with <code>#[cfg_attr(not(doc), repr(transparent))]</code>
 if one wishes to declare the representation as private even if the non-1-ZST field is public.
 However, due to <a href="https://github.com/rust-lang/rust/issues/114952">current limitations</a>, this method is not always guaranteed to work.
-Therefore, if you would like to do so, you should always write it down in prose independently of whether
+Therefore, if you would like to do so, you should always write that down in prose independently of whether
 you use <code>cfg_attr</code> or not.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="unstable-features"><a class="header" href="#unstable-features">Unstable features</a></h1>
 <p>Rustdoc is under active development, and like the Rust compiler, some features are only available
@@ -3369,7 +3376,7 @@ $ rustdoc -Zunstable-options \
 The first argument to the program will be the test builder program.</p>
 <p>This flag can be passed multiple times to nest wrappers.</p>
 <h2 id="passing-arguments-to-rustc-when-compiling-doctests"><a class="header" href="#passing-arguments-to-rustc-when-compiling-doctests">Passing arguments to rustc when compiling doctests</a></h2>
-<p>You can use the <code>--doctest-compilation-args</code> flag if you want to add options when compiling the
+<p>You can use the <code>--doctest-build-arg</code> flag if you want to add options when compiling the
 doctest. For example if you have:</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -3410,27 +3417,16 @@ failures:
 
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 </code></pre>
-<p>But if you can limit the lint level to warning by using <code>--doctest_compilation_args=--cap-lints=warn</code>:</p>
-<pre><code class="language-console">$ rustdoc --test --doctest_compilation_args=--cap-lints=warn file.rs
+<p>But if you can limit the lint level to warning by using <code>--doctest-build-arg=--cap-lints=warn</code>:</p>
+<pre><code class="language-console">$ rustdoc --test --doctest-build-arg=--cap-lints=warn file.rs
 
 running 1 test
 test tests/rustdoc-ui/doctest/rustflags.rs - Bar (line 5) ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
 </code></pre>
-<p>The parsing of arguments works as follows: if it encounters a <code>"</code> or a <code>'</code>, it will continue
-until it finds the character unescaped (without a prepending <code>\</code>). If not inside a string, a
-whitespace character will also split arguments. Example:</p>
-<pre><code class="language-text">"hello 'a'\" ok" how are   'you today?'
-</code></pre>
-<p>will be split as follows:</p>
-<pre><code class="language-text">[
-    "hello 'a'\" ok",
-    "how",
-    "are",
-    "you today?",
-]
-</code></pre>
+<p>In order to pass multiple arguments to the underlying compiler,
+pass <code>--doctest-build-arg ARG</code> for each argument <code>ARG</code>.</p>
 <h2 id="--generate-macro-expansion-generate-macros-expansion-toggles-in-source-code"><a class="header" href="#--generate-macro-expansion-generate-macros-expansion-toggles-in-source-code"><code>--generate-macro-expansion</code>: Generate macros expansion toggles in source code</a></h2>
 <p>This flag enables the generation of toggles to expand macros in the HTML source code pages.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="deprecated-features"><a class="header" href="#deprecated-features">Deprecated features</a></h1>
