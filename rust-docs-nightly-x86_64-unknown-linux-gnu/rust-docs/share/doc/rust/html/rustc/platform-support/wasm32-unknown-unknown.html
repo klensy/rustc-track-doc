@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce8d8425.js";
+            window.path_to_searchindex_js = "../searchindex-f63d72d8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8b15af32.js"></script>
@@ -306,7 +306,7 @@ nightly compiler.</p>
 $ cargo +nightly build -Zbuild-std=panic_abort,std --target wasm32-unknown-unknown
 </code></pre>
 <p>Here the <code>mvp</code> "cpu" is a placeholder in LLVM for disabling all supported
-features by default. Cargo's <code>-Zbuild-std</code> feature, a Nightly Rust feature, is
+features by default. Cargo's <a href="../../cargo/reference/unstable.html#build-std"><code>-Zbuild-std</code></a> feature, a Nightly Rust feature, is
 then used to recompile the standard library in addition to your own code. This
 will produce a binary that uses only the original WebAssembly features by
 default and no proposals since its inception.</p>
@@ -341,6 +341,49 @@ conditionally compile code instead. This is notably different to the way native
 platforms such as x86_64 work, and this is due to the fact that WebAssembly
 binaries must only contain code the engine understands. Native binaries work so
 long as the CPU doesn't execute unknown code dynamically at runtime.</p>
+<h2 id="unwinding"><a class="header" href="#unwinding">Unwinding</a></h2>
+<p>By default the <code>wasm32-unknown-unknown</code> target is compiled with <code>-Cpanic=abort</code>.
+Historically this was due to the fact that there was no way to catch panics in
+wasm, but since mid-2025 the WebAssembly <a href="https://github.com/WebAssembly/exception-handling"><code>exception-handling</code>
+proposal</a> reached
+stabilization. LLVM has support for this proposal as well and when this is all
+combined together it's possible to enable <code>-Cpanic=unwind</code> on wasm targets.</p>
+<p>Compiling wasm targets with <code>-Cpanic=unwind</code> is not as easy as just passing
+<code>-Cpanic=unwind</code>, however:</p>
+<pre><code class="language-sh">$ rustc foo.rs -Cpanic=unwind --target wasm32-unknown-unknown
+error: the crate `panic_unwind` does not have the panic strategy `unwind`
+</code></pre>
+<p>Notably the precompiled standard library that is shipped through Rustup is
+compiled with <code>-Cpanic=abort</code>, not <code>-Cpanic=unwind</code>. While this is the case
+you're going to be required to use Cargo's <a href="../../cargo/reference/unstable.html#build-std"><code>-Zbuild-std</code></a> feature to build with
+unwinding support:</p>
+<pre><code class="language-sh">$ RUSTFLAGS='-Cpanic=unwind' cargo +nightly build --target wasm32-unknown-unknown -Zbuild-std
+</code></pre>
+<p>Note, however, that as of 2025-10-03 LLVM is still using the "legacy exception
+instructions" by default, not the officially standard version of the
+exception-handling proposal:</p>
+<pre><code class="language-sh">$ wasm-tools validate target/wasm32-unknown-unknown/debug/foo.wasm
+error: &lt;sysroot&gt;/library/std/src/sys/backtrace.rs:161:5
+function `std::sys::backtrace::__rust_begin_short_backtrace` failed to validate
+
+Caused by:
+    0: func 2 failed to validate
+    1: legacy_exceptions feature required for try instruction (at offset 0x880)
+</code></pre>
+<p>Fixing this requires passing <code>-Cllvm-args=-wasm-use-legacy-eh=false</code> to the Rust
+compiler as well:</p>
+<pre><code class="language-sh">$ RUSTFLAGS='-Cpanic=unwind -Cllvm-args=-wasm-use-legacy-eh=false' cargo +nightly build --target wasm32-unknown-unknown -Zbuild-std
+$ wasm-tools validate target/wasm32-unknown-unknown/debug/foo.wasm
+</code></pre>
+<p>At this time there are no concrete plans for adding new targets to the Rust
+compiler which have <code>-Cpanic=unwind</code> enabled-by-default. The most likely route
+to having this enabled is that in a few years when the <code>exception-handling</code>
+target feature is enabled by default in LLVM (due to browsers/runtime support
+propagating widely enough) the targets will switch to using <code>-Cpanic=unwind</code> by
+default. This is not for certain, however, and will likely be accompanied with
+either an MCP or an RFC about changing all wasm targets in the same manner. In
+the meantime using <code>-Cpanic=unwind</code> will require using <a href="../../cargo/reference/unstable.html#build-std"><code>-Zbuild-std</code></a> and
+passing the appropriate flags to rustc.</p>
 
                     </main>
 
