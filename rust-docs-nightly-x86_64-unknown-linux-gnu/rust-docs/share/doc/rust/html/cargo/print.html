@@ -41,7 +41,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-bfbae89d.js";
+            window.path_to_searchindex_js = "searchindex-dbd16225.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4c5cc278.js"></script>
@@ -1228,6 +1228,22 @@ rustflags = "-Zthreads=8"
 <li>✅ Faster build times</li>
 <li>❌ <strong>Requires using nightly Rust and an <a href="https://github.com/rust-lang/rust/issues/113349">unstable Rust feature</a></strong></li>
 </ul>
+<h2 id="reducing-built-code"><a class="header" href="#reducing-built-code">Reducing built code</a></h2>
+<h3 id="removing-unused-dependencies"><a class="header" href="#removing-unused-dependencies">Removing unused dependencies</a></h3>
+<p>Recommendation: Periodically review unused dependencies for removal using third-party tools like
+<a href="https://crates.io/crates/cargo-machete">cargo-machete</a>,
+<a href="https://crates.io/crates/cargo-udeps">cargo-udeps</a>,
+<a href="https://crates.io/crates/cargo-shear">cargo-shear</a>.</p>
+<p>When changing code,
+it can be easy to miss that a dependency is no longer used and can be removed.</p>
+<blockquote>
+<p><em>Note:</em> native support for this in Cargo is being tracked in <a href="https://github.com/rust-lang/cargo/issues/15813">#15813</a>.</p>
+</blockquote>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster full build and link times</li>
+<li>❌ May incorrectly flag dependencies as unused or miss some</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cargo-reference"><a class="header" href="#cargo-reference">Cargo Reference</a></h1>
 <p>The reference covers the details of various areas of Cargo.</p>
 <ul>
@@ -2111,7 +2127,7 @@ A user can opt-in to an unsupported build of a package with the <code>--ignore-r
 If that isn’t the latest version, <code>cargo add</code> will inform users so they can make the choice on whether to keep it or update your <code>rust-version</code>.</p>
 <p>The <a href="reference/resolver.html#rust-version">resolver</a> may take Rust version into account when picking dependencies.</p>
 <p>Other tools may also take advantage of it, like <code>cargo clippy</code>’s
-<a href="https://rust-lang.github.io/rust-clippy/stable/index.html#/incompatible_msrv"><code>incompatible_msrv</code> lint</a>.</p>
+<a href="https://rust-lang.github.io/rust-clippy/stable/index.html#incompatible_msrv"><code>incompatible_msrv</code> lint</a>.</p>
 <blockquote>
 <p><strong>Note:</strong> The <code>rust-version</code> may be ignored using the <code>--ignore-rust-version</code> option.</p>
 </blockquote>
@@ -12210,12 +12226,25 @@ cargo clean gc -Zgc --max-git-size=0 --max-download-size=100MB
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/16042">#16042</a></li>
 <li>Upstream Tracking Issue: <a href="https://github.com/rust-lang/rust/issues/147286">rust-lang/rust#147286</a></li>
 </ul>
-<p>Allow use of <a href="reference/../../rustc/codegen-options/index.html#panic"><code>-Cpanic=immediate-abort</code></a> through a Cargo profile</p>
-<p>This can be enabled like so:</p>
-<pre><code class="language-toml">cargo-features = ["immediate-abort"]
+<p>Extends the <code>panic</code> profile setting to support the
+<a href="reference/../../rustc/codegen-options/index.html#panic"><code>immediate-abort</code></a> panic strategy.
+This can be enabled like so:</p>
+<pre><code class="language-toml"># Cargo.toml
+cargo-features = ["panic-immediate-abort"]
 
 [package]
 # ...
+
+[profile.release]
+panic = "immediate-abort"
+</code></pre>
+<p>To set this in a profile in Cargo configuration,
+you need to use either <code>-Z panic-immediate-abort</code> CLI flag
+or the <code>[unstable]</code> table to enable it.
+For example,</p>
+<pre><code class="language-toml"># .cargo/config.toml
+[unstable]
+panic-immediate-abort = true
 
 [profile.release]
 panic = "immediate-abort"
@@ -19839,8 +19868,9 @@ checks on the crate.</li>
 and may timeout. In that case, you will need to check for completion
 manually. This timeout does not affect the upload.</li>
 </ol>
-<p>This command requires you to be authenticated with either the <code>--token</code> option
-or using <a href="commands/cargo-login.html">cargo-login(1)</a>.</p>
+<p>This command requires you to be authenticated using <a href="commands/cargo-login.html">cargo-login(1)</a>
+or environment variables of the <a href="commands/../reference/config.html#registrytoken"><code>registry.token</code></a>
+and <a href="commands/../reference/config.html#registriesnametoken"><code>registries.&lt;name&gt;.token</code></a> config fields.</p>
 <p>See <a href="commands/../reference/publishing.html">the reference</a> for more details about
 packaging and publishing.</p>
 <h2 id="options-33"><a class="header" href="#options-33">OPTIONS</a></h2>
@@ -19848,15 +19878,6 @@ packaging and publishing.</p>
 <dl>
 <dt class="option-term" id="option-cargo-publish---dry-run"><a class="option-anchor" href="commands/cargo-publish.html#option-cargo-publish---dry-run"></a><code>--dry-run</code></dt>
 <dd class="option-desc">Perform all checks without uploading.</dd>
-<dt class="option-term" id="option-cargo-publish---token"><a class="option-anchor" href="commands/cargo-publish.html#option-cargo-publish---token"></a><code>--token</code> <em>token</em></dt>
-<dd class="option-desc">API token to use when authenticating. This overrides the token stored in
-the credentials file (which is created by <a href="commands/cargo-login.html">cargo-login(1)</a>).</p>
-<p><a href="commands/../reference/config.html">Cargo config</a> environment variables can be
-used to override the tokens stored in the credentials file. The token for
-crates.io may be specified with the <code>CARGO_REGISTRY_TOKEN</code> environment
-variable. Tokens for other registries may be specified with environment
-variables of the form <code>CARGO_REGISTRIES_NAME_TOKEN</code> where <code>NAME</code> is the name
-of the registry in all capital letters.</dd>
 <dt class="option-term" id="option-cargo-publish---no-verify"><a class="option-anchor" href="commands/cargo-publish.html#option-cargo-publish---no-verify"></a><code>--no-verify</code></dt>
 <dd class="option-desc">Don’t verify the contents by building them.</dd>
 <dt class="option-term" id="option-cargo-publish---allow-dirty"><a class="option-anchor" href="commands/cargo-publish.html#option-cargo-publish---allow-dirty"></a><code>--allow-dirty</code></dt>
@@ -20552,6 +20573,12 @@ End users usually won’t need to interact with them, and the layout inside
 (<a href="https://doc.rust-lang.org/nightly/cargo/reference/build-cache.html">build cache doc</a>)
 <a href="https://github.com/rust-lang/cargo/pull/15833">#15833</a>
 <a href="https://github.com/rust-lang/cargo/pull/15840">#15840</a></li>
+<li>The <code>--target</code> flag and the <code>build.target</code> configuration can now take literal
+<code>"host-tuple"</code> string, which will internally be substituted by the host
+machine’s target triple.
+<a href="https://github.com/rust-lang/cargo/pull/15838">#15838</a>
+<a href="https://github.com/rust-lang/cargo/pull/16003">#16003</a>
+<a href="https://github.com/rust-lang/cargo/pull/16032">#16032</a></li>
 </ul>
 <h3 id="changed-1"><a class="header" href="#changed-1">Changed</a></h3>
 <ul>
