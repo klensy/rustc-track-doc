@@ -40,7 +40,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-dbd16225.js";
+            window.path_to_searchindex_js = "../searchindex-8fc2a0db.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-4c5cc278.js"></script>
@@ -196,7 +196,26 @@
 </ul>
 <h2 id="cargo-and-compiler-configuration"><a class="header" href="#cargo-and-compiler-configuration">Cargo and Compiler Configuration</a></h2>
 <p>Cargo uses configuration defaults that try to balance several aspects, including debuggability, runtime performance, build performance, binary size and others. This section describes several approaches for changing these defaults that should be designed to maximize build performance.</p>
-<p>You can set the described options either in the <a href="../reference/profiles.html"><code>Cargo.toml</code> manifest</a>, which will make them available for all developers who work on the given crate/project, or in the <a href="../reference/config.html"><code>config.toml</code> configuration file</a>, where you can apply them only for you or even globally for all your local projects.</p>
+<p>Common locations to override defaults are:</p>
+<ul>
+<li><a href="../reference/profiles.html"><code>Cargo.toml</code> manifest</a>
+<ul>
+<li>Available to all developers contributing to your project</li>
+<li>Limited in what configuration is supported (see <a href="https://github.com/rust-lang/cargo/issues/12738">#12738</a> for expanding this)</li>
+</ul>
+</li>
+<li><a href="../reference/config.html"><code>$WORKSPACE_ROOT/.cargo/config.toml</code> configuration file</a>
+<ul>
+<li>Available to all developers contributing to your project</li>
+<li>Unlike <code>Cargo.toml</code>, this is sensitive to what directory you invoke <code>cargo</code> from (see <a href="https://github.com/rust-lang/cargo/issues/2930">#2930</a>)</li>
+</ul>
+</li>
+<li><a href="../reference/config.html"><code>$CARGO_HOME/.cargo/config.toml</code> configuration file</a>
+<ul>
+<li>For a developer to control the defaults for their development</li>
+</ul>
+</li>
+</ul>
 <h3 id="reduce-amount-of-generated-debug-information"><a class="header" href="#reduce-amount-of-generated-debug-information">Reduce amount of generated debug information</a></h3>
 <p>Recommendation: Add to your <code>Cargo.toml</code> or <code>.cargo/config.toml</code>:</p>
 <pre><code class="language-toml">[profile.dev]
@@ -221,7 +240,7 @@ debug = true
 </ul>
 <p>Trade-offs:</p>
 <ul>
-<li>✅ Faster build times</li>
+<li>✅ Faster code generation (<code>cargo build</code>)</li>
 <li>✅ Faster link times</li>
 <li>✅ Smaller disk usage of the <code>target</code> directory</li>
 <li>❌ Requires a full rebuild to have a high-quality debugger experience</li>
@@ -265,8 +284,44 @@ rustflags = "-Zthreads=8"
 <p>This <a href="../reference/config.html#buildrustflags"><code>rustflags</code></a> will enable the <a href="https://blog.rust-lang.org/2023/11/09/parallel-rustc/">parallel frontend</a> of the Rust compiler, and tell it to use <code>n</code> threads. The value of <code>n</code> should be chosen according to the number of cores available on your system, although there are diminishing returns. We recommend using at most <code>8</code> threads.</p>
 <p>Trade-offs:</p>
 <ul>
-<li>✅ Faster build times</li>
+<li>✅ Faster build times (both <code>cargo check</code> and <code>cargo build</code>)</li>
 <li>❌ <strong>Requires using nightly Rust and an <a href="https://github.com/rust-lang/rust/issues/113349">unstable Rust feature</a></strong></li>
+</ul>
+<h3 id="use-an-alternative-linker"><a class="header" href="#use-an-alternative-linker">Use an alternative linker</a></h3>
+<p>Consider: installing and configuring an alternative linker, like <a href="https://lld.llvm.org/">LLD</a>, <a href="https://github.com/rui314/mold">mold</a> or <a href="https://github.com/davidlattimore/wild">wild</a>. For example, to configure mold on Linux, you can add to your <code>.cargo/config.toml</code>:</p>
+<pre><code class="language-toml">[target.'cfg(target_os = "linux")']
+# mold, if you have GCC 12+
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+# mold, otherwise
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=/path/to/mold"]
+</code></pre>
+<p>While dependencies may be built in parallel, linking all of your dependencies happens at once at the end of your build, which can make linking dominate your build times, especially for incremental rebuilds. Often, the linker Rust uses is already fairly fast and the gains from switching may not be worth it, but it is not always the case. For example, Linux targets besides <code>x86_64-unknown-linux-gnu</code> still use the Linux system linker which is quite slow (see <a href="https://github.com/rust-lang/rust/issues/39915">rust#39915</a> for more details).</p>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster link times</li>
+<li>❌ Might not support all use-cases, in particular if you depend on C or C++ dependencies</li>
+</ul>
+<h3 id="resolve-features-for-the-whole-workspace"><a class="header" href="#resolve-features-for-the-whole-workspace">Resolve features for the whole workspace</a></h3>
+<p>Consider: adding to your project’s <code>.cargo/config.toml</code></p>
+<pre><code class="language-toml">[resolver]
+feature-unification = "workspace"
+</code></pre>
+<p>When invoking <code>cargo</code>,
+<a href="../reference/resolver.html#features">features get activated</a> based on which workspace members you have selected.
+However, when contributing to an application,
+you may need to build and test various packages within the application,
+which can cause extraneous rebuilds because different sets of features may be activated for common dependencies.
+With <a href="../reference/unstable.html#feature-unification"><code>feauture-unification</code></a>,
+you can reuse more dependency builds by ensuring the same set of dependency features are activated,
+independent of which package you are currently building and testing.</p>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Fewer rebuilds when building different packages in a workspace</li>
+<li>❌ <strong>Requires using nightly Rust and an <a href="../reference/unstable.html#feature-unification">unstable Cargo feature</a></strong></li>
+<li>❌ A package activating a feature can mask bugs in other packages that should activate it but don’t</li>
+<li>❌ If the feature unification from <code>--workspace</code> doesn’t work for you, then this won’t either</li>
 </ul>
 <h2 id="reducing-built-code"><a class="header" href="#reducing-built-code">Reducing built code</a></h2>
 <h3 id="removing-unused-dependencies"><a class="header" href="#removing-unused-dependencies">Removing unused dependencies</a></h3>
@@ -277,12 +332,28 @@ rustflags = "-Zthreads=8"
 <p>When changing code,
 it can be easy to miss that a dependency is no longer used and can be removed.</p>
 <blockquote>
-<p><em>Note:</em> native support for this in Cargo is being tracked in <a href="https://github.com/rust-lang/cargo/issues/15813">#15813</a>.</p>
+<p><strong>Note:</strong> native support for this in Cargo is being tracked in <a href="https://github.com/rust-lang/cargo/issues/15813">#15813</a>.</p>
 </blockquote>
 <p>Trade-offs:</p>
 <ul>
 <li>✅ Faster full build and link times</li>
 <li>❌ May incorrectly flag dependencies as unused or miss some</li>
+</ul>
+<h3 id="removing-unused-features-from-dependencies"><a class="header" href="#removing-unused-features-from-dependencies">Removing unused features from dependencies</a></h3>
+<p>Recommendation: Periodically review unused features from dependencies for removal using third-party tools like
+<a href="https://crates.io/crates/cargo-features-manager">cargo-features-manager</a>,
+<a href="https://crates.io/crates/cargo-unused-features">cargo-unused-features</a>.</p>
+<p>When changing code,
+it can be easy to miss that a dependency’s feature is no longer used and can be removed.
+This can reduce the number of transitive dependencies being built or
+reduce the amount of code within a crate being built.
+When removing features, extra caution is needed because features
+may also be used for desired behavior or performance changes
+which may not always be obvious from compiling or testing.</p>
+<p>Trade-offs:</p>
+<ul>
+<li>✅ Faster full build and link times</li>
+<li>❌ May incorrectly flag features as unused</li>
 </ul>
 
                     </main>
