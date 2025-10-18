@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b361398b.js";
+            window.path_to_searchindex_js = "../searchindex-e535c144.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-c06a5134.js"></script>
@@ -198,20 +198,20 @@ the <a href="https://doc.rust-lang.org/beta/nightly-rustc/rustc_hir/hir/enum.Exp
 </span><span class="boring">fn main() {
 </span>use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_span::sym;
-use clippy_utils::is_trait_method;
+use clippy_utils::res::{MaybeDef, MaybeTypeckRes};
+use clippy_utils::sym;
 
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for OurFancyMethodLint {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, expr: &amp;'tcx hir::Expr&lt;'_&gt;) {
         // Check our expr is calling a method with pattern matching
         if let hir::ExprKind::MethodCall(path, _, [self_arg, ..], _) = &amp;expr.kind
             // Check if the name of this method is `our_fancy_method`
-            &amp;&amp; path.ident.name.as_str() == "our_fancy_method"
+            &amp;&amp; path.ident.name == sym::our_fancy_method
             // We can check the type of the self argument whenever necessary.
             // (It's necessary if we want to check that method is specifically belonging to a specific trait,
             // for example, a `map` method could belong to user-defined trait instead of to `Iterator`)
             // See the next section for more information.
-            &amp;&amp; is_trait_method(cx, self_arg, sym::OurFancyTrait)
+            &amp;&amp; cx.ty_based_def(self_arg).opt_parent(cx).is_diag_item(cx, sym::OurFancyTrait)
         {
             println!("`expr` is a method call for `our_fancy_method`");
         }
@@ -222,6 +222,9 @@ impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for OurFancyMethodLint {
 information on the pattern matching. As mentioned in <a href="defining_lints.html#lint-types">Define
 Lints</a>, the <code>methods</code> lint type is full of pattern
 matching with <code>MethodCall</code> in case the reader wishes to explore more.</p>
+<p>New symbols such as <code>our_fancy_method</code> need to be added to the <code>clippy_utils::sym</code> module.
+This module extends the list of symbols already provided by the compiler crates
+in <code>rustc_span::sym</code>.</p>
 <h2 id="checking-if-a-impl-block-implements-a-method"><a class="header" href="#checking-if-a-impl-block-implements-a-method">Checking if a <code>impl</code> block implements a method</a></h2>
 <p>While sometimes we want to check whether a method is being called or not, other
 times we want to know if our <code>Ty</code> defines a method.</p>
@@ -234,11 +237,10 @@ with an <a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_hir/hir/st
 <code>our_fancy_method</code> on a type:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::is_type_diagnostic_item;
-use clippy_utils::return_ty;
+</span>use clippy_utils::{return_ty, sym};
+use clippy_utils::res::MaybeDef;
 use rustc_hir::{ImplItem, ImplItemKind};
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_span::symbol::sym;
 
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
     fn check_impl_item(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, impl_item: &amp;'tcx ImplItem&lt;'_&gt;) {
@@ -249,7 +251,7 @@ impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
             // We can also check it has a parameter `self`
             &amp;&amp; signature.decl.implicit_self.has_implicit_self()
             // We can go even further and even check if its return type is `String`
-            &amp;&amp; is_type_diagnostic_item(cx, return_ty(cx, impl_item.hir_id), sym::String)
+            &amp;&amp; return_ty(cx, impl_item.hir_id).is_diag_item(cx, sym::String)
         {
             println!("`our_fancy_method` is implemented!");
         }

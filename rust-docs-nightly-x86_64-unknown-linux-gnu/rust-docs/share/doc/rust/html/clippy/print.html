@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b361398b.js";
+            window.path_to_searchindex_js = "searchindex-e535c144.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-c06a5134.js"></script>
@@ -987,6 +987,14 @@ for _ in &amp;mut *rmvec {}
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#ifs_same_cond"><code>ifs_same_cond</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#mutable_key_type"><code>mutable_key_type</code></a></li>
 </ul>
+<h2 id="inherent-impl-lint-scope"><a class="header" href="#inherent-impl-lint-scope"><code>inherent-impl-lint-scope</code></a></h2>
+<p>Sets the scope ("crate", "file", or "module") in which duplicate inherent <code>impl</code> blocks for the same type are linted.</p>
+<p><strong>Default Value:</strong> <code>"crate"</code></p>
+<hr />
+<p><strong>Affected lints:</strong></p>
+<ul>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#multiple_inherent_impl"><code>multiple_inherent_impl</code></a></li>
+</ul>
 <h2 id="large-error-threshold"><a class="header" href="#large-error-threshold"><code>large-error-threshold</code></a></h2>
 <p>The maximum size of the <code>Err</code>-variant in a <code>Result</code> returned from a function</p>
 <p><strong>Default Value:</strong> <code>128</code></p>
@@ -1207,6 +1215,14 @@ exported visibility, or whether they are marked as "pub".</p>
 <p><strong>Affected lints:</strong></p>
 <ul>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#pub_underscore_fields"><code>pub_underscore_fields</code></a></li>
+</ul>
+<h2 id="recursive-self-in-type-definitions"><a class="header" href="#recursive-self-in-type-definitions"><code>recursive-self-in-type-definitions</code></a></h2>
+<p>Whether the type itself in a struct or enum should be replaced with <code>Self</code> when encountering recursive types.</p>
+<p><strong>Default Value:</strong> <code>true</code></p>
+<hr />
+<p><strong>Affected lints:</strong></p>
+<ul>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#use_self"><code>use_self</code></a></li>
 </ul>
 <h2 id="semicolon-inside-block-ignore-singleline"><a class="header" href="#semicolon-inside-block-ignore-singleline"><code>semicolon-inside-block-ignore-singleline</code></a></h2>
 <p>Whether to lint only if it's multiline.</p>
@@ -2379,8 +2395,7 @@ should be linted by Clippy. The test can otherwise be written as usual.</li>
 <p>Here are some pointers to things you are likely going to need for every lint:</p>
 <ul>
 <li><a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/index.html">Clippy utils</a> - Various helper functions. Maybe the function you need
-is already in here (<a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/ty/fn.is_type_diagnostic_item.html"><code>is_type_diagnostic_item</code></a>, <a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/ty/fn.implements_trait.html"><code>implements_trait</code></a>,
-<a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/source/fn.snippet.html"><code>snippet</code></a>, etc)</li>
+is already in here (<a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/ty/fn.implements_trait.html"><code>implements_trait</code></a>, <a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/source/fn.snippet.html"><code>snippet</code></a>, etc)</li>
 <li><a href="https://github.com/rust-lang/rust-clippy/blob/master/clippy_utils/src/diagnostics.rs">Clippy diagnostics</a></li>
 <li><a href="https://github.com/rust-lang/rust/pull/94927">Let chains</a></li>
 <li><a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_span/struct.Span.html#method.from_expansion"><code>from_expansion</code></a> and
@@ -3132,10 +3147,10 @@ providing the <code>LateContext</code> (<code>cx</code>), our expression at hand
 the symbol of the trait in question:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::implements_trait;
+</span>use clippy_utils::sym;
+use clippy_utils::ty::implements_trait;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_span::symbol::sym;
 
 impl LateLintPass&lt;'_&gt; for CheckIteratorTraitLint {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'_&gt;, expr: &amp;Expr&lt;'_&gt;) {
@@ -3165,7 +3180,7 @@ to many Rustaceans.</p>
 we can check that the <code>Ty</code> of the <code>expr</code> implements the trait:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::implements_trait;
+</span>use clippy_utils::ty::implements_trait;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass};
 
@@ -3189,7 +3204,8 @@ impl LateLintPass&lt;'_&gt; for CheckDropTraitLint {
 <p>Below, we check if the given <code>expr</code> implements <a href="https://doc.rust-lang.org/std/iter/trait.Step.html"><code>core::iter::Step</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::{implements_trait, paths};
+</span>use clippy_utils::paths;
+use clippy_utils::ty::implements_trait;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass};
 
@@ -3229,8 +3245,8 @@ is implemented.</p>
 </span>
 <span class="boring">fn main() {
 </span>use rustc_middle::ty::Ty;
+use clippy_utils::sym;
 use clippy_utils::ty::implements_trait;
-use rustc_span::symbol::sym;
 
 let ty = todo!("Get the `Foo` type to check for a trait implementation");
 let borrow_id = cx.tcx.get_diagnostic_item(sym::Borrow).unwrap(); // avoid unwrap in real code
@@ -3259,20 +3275,20 @@ the <a href="https://doc.rust-lang.org/beta/nightly-rustc/rustc_hir/hir/enum.Exp
 </span><span class="boring">fn main() {
 </span>use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_span::sym;
-use clippy_utils::is_trait_method;
+use clippy_utils::res::{MaybeDef, MaybeTypeckRes};
+use clippy_utils::sym;
 
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for OurFancyMethodLint {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, expr: &amp;'tcx hir::Expr&lt;'_&gt;) {
         // Check our expr is calling a method with pattern matching
         if let hir::ExprKind::MethodCall(path, _, [self_arg, ..], _) = &amp;expr.kind
             // Check if the name of this method is `our_fancy_method`
-            &amp;&amp; path.ident.name.as_str() == "our_fancy_method"
+            &amp;&amp; path.ident.name == sym::our_fancy_method
             // We can check the type of the self argument whenever necessary.
             // (It's necessary if we want to check that method is specifically belonging to a specific trait,
             // for example, a `map` method could belong to user-defined trait instead of to `Iterator`)
             // See the next section for more information.
-            &amp;&amp; is_trait_method(cx, self_arg, sym::OurFancyTrait)
+            &amp;&amp; cx.ty_based_def(self_arg).opt_parent(cx).is_diag_item(cx, sym::OurFancyTrait)
         {
             println!("`expr` is a method call for `our_fancy_method`");
         }
@@ -3283,6 +3299,9 @@ impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for OurFancyMethodLint {
 information on the pattern matching. As mentioned in <a href="development/defining_lints.html#lint-types">Define
 Lints</a>, the <code>methods</code> lint type is full of pattern
 matching with <code>MethodCall</code> in case the reader wishes to explore more.</p>
+<p>New symbols such as <code>our_fancy_method</code> need to be added to the <code>clippy_utils::sym</code> module.
+This module extends the list of symbols already provided by the compiler crates
+in <code>rustc_span::sym</code>.</p>
 <h2 id="checking-if-a-impl-block-implements-a-method"><a class="header" href="#checking-if-a-impl-block-implements-a-method">Checking if a <code>impl</code> block implements a method</a></h2>
 <p>While sometimes we want to check whether a method is being called or not, other
 times we want to know if our <code>Ty</code> defines a method.</p>
@@ -3295,11 +3314,10 @@ with an <a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_hir/hir/st
 <code>our_fancy_method</code> on a type:</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::is_type_diagnostic_item;
-use clippy_utils::return_ty;
+</span>use clippy_utils::{return_ty, sym};
+use clippy_utils::res::MaybeDef;
 use rustc_hir::{ImplItem, ImplItemKind};
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_span::symbol::sym;
 
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
     fn check_impl_item(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, impl_item: &amp;'tcx ImplItem&lt;'_&gt;) {
@@ -3310,7 +3328,7 @@ impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
             // We can also check it has a parameter `self`
             &amp;&amp; signature.decl.implicit_self.has_implicit_self()
             // We can go even further and even check if its return type is `String`
-            &amp;&amp; is_type_diagnostic_item(cx, return_ty(cx, impl_item.hir_id), sym::String)
+            &amp;&amp; return_ty(cx, impl_item.hir_id).is_diag_item(cx, sym::String)
         {
             println!("`our_fancy_method` is implemented!");
         }
@@ -3345,7 +3363,7 @@ This is also why most lints check if they are inside a macro or not
 before emitting suggestions to the end user to avoid false positives.</p>
 <h2 id="how-to-work-with-macros"><a class="header" href="#how-to-work-with-macros">How to Work with Macros</a></h2>
 <p>Several functions are available for working with macros.</p>
-<h3 id="the-spanfrom_expansion-method"><a class="header" href="#the-spanfrom_expansion-method">The <code>Span.from_expansion</code> method</a></h3>
+<h3 id="the-spanfrom_expansion-method"><a class="header" href="#the-spanfrom_expansion-method">The <code>Span::from_expansion</code> method</a></h3>
 <p>We could utilize a <code>span</code>'s <a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_span/struct.Span.html#method.from_expansion"><code>from_expansion</code></a> method, which
 detects if the <code>span</code> is from a macro expansion / desugaring.
 This is a very common first step in a lint:</p>
@@ -3356,7 +3374,7 @@ This is a very common first step in a lint:</p>
     return;
 }
 <span class="boring">}</span></code></pre></pre>
-<h3 id="spanctxt-method"><a class="header" href="#spanctxt-method"><code>Span.ctxt</code> method</a></h3>
+<h3 id="spanctxt-method"><a class="header" href="#spanctxt-method"><code>Span::ctxt</code> method</a></h3>
 <p>The <code>span</code>'s context, given by the method <a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_span/struct.Span.html#method.ctxt"><code>ctxt</code></a> and returning <a href="https://doc.rust-lang.org/stable/nightly-rustc/rustc_span/hygiene/struct.SyntaxContext.html">SyntaxContext</a>,
 represents if the span is from a macro expansion and, if it is, which
 macro call expanded this span.</p>
@@ -3581,7 +3599,7 @@ expressions, ways to resolve methods and so on.</li>
         // Check our expr is calling a method
         if let hir::ExprKind::MethodCall(path, _, _self_arg, ..) = &amp;expr.kind
             // Check the name of this method is `some_method`
-            &amp;&amp; path.ident.name.as_str() == "some_method"
+            &amp;&amp; path.ident.name == sym::some_method
             // Optionally, check the type of the self argument.
             // - See "Checking for a specific type"
         {
@@ -3596,9 +3614,8 @@ to check for. All of these methods only check for the base type, generic
 arguments have to be checked separately.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::{is_type_diagnostic_item, is_type_lang_item};
-use clippy_utils::paths;
-use rustc_span::symbol::sym;
+</span>use clippy_utils::{paths, sym};
+use clippy_utils::res::MaybeDef;
 use rustc_hir::LangItem;
 
 impl LateLintPass&lt;'_&gt; for MyStructLint {
@@ -3608,12 +3625,12 @@ impl LateLintPass&lt;'_&gt; for MyStructLint {
 
         // 1. Using diagnostic items
         // The last argument is the diagnostic item to check for
-        if is_type_diagnostic_item(cx, ty, sym::Option) {
+        if ty.is_diag_item(cx, sym::Option) {
             // The type is an `Option`
         }
 
         // 2. Using lang items
-        if is_type_lang_item(cx, ty, LangItem::RangeFull) {
+        if ty.is_lang_item(cx, LangItem::RangeFull) {
             // The type is a full range like `.drain(..)`
         }
 
@@ -3631,27 +3648,29 @@ impl LateLintPass&lt;'_&gt; for MyStructLint {
 diagnostic item, lang item or neither.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use clippy_utils::ty::implements_trait;
-use clippy_utils::is_trait_method;
-use rustc_span::symbol::sym;
+</span>use clippy_utils::sym;
+use clippy_utils::ty::implements_trait;
 
 impl LateLintPass&lt;'_&gt; for MyStructLint {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'_&gt;, expr: &amp;Expr&lt;'_&gt;) {
-        // 1. Using diagnostic items with the expression
-        // we use `is_trait_method` function from Clippy's utils
-        if is_trait_method(cx, expr, sym::Iterator) {
-            // method call in `expr` belongs to `Iterator` trait
+
+        // 1. Get the `DefId` of the trait.
+        // via lang items
+        let trait_id = cx.tcx.lang_items().drop_trait();
+        // via diagnostic items
+        let trait_id = cx.tcx.get_diagnostic_item(sym::Eq);
+
+        // 2. Check for the trait implementation via the `implements_trait` util.
+        let ty = cx.typeck_results().expr_ty(expr);
+        if trait_id.is_some_and(|id| implements_trait(cx, ty, id, &amp;[])) {
+            // `ty` implements the trait.
         }
 
-        // 2. Using lang items with the expression type
-        let ty = cx.typeck_results().expr_ty(expr);
-        if cx.tcx.lang_items()
-            // we are looking for the `DefId` of `Drop` trait in lang items
-            .drop_trait()
-            // then we use it with our type `ty` by calling `implements_trait` from Clippy's utils
-            .is_some_and(|id| implements_trait(cx, ty, id, &amp;[])) {
-                // `expr` implements `Drop` trait
-            }
+        // 3. If the trait requires additional generic arguments
+        let trait_id = cx.tcx.lang_items().eq_trait();
+        if trait_id.is_some_and(|id| implements_trait(cx, ty, id, &amp;[ty])) {
+            // `ty` implements `PartialEq&lt;Self&gt;`
+        }
     }
 }
 <span class="boring">}</span></code></pre></pre>
@@ -3679,7 +3698,7 @@ impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for MyTypeImpl {
             // We can also check it has a parameter `self`
             &amp;&amp; signature.decl.implicit_self.has_implicit_self()
             // We can go further and even check if its return type is `String`
-            &amp;&amp; is_type_lang_item(cx, return_ty(cx, impl_item.hir_id), LangItem::String)
+            &amp;&amp; return_ty(cx, impl_item.hir_id).is_lang_item(cx, LangItem::String)
         {
             // ...
         }
