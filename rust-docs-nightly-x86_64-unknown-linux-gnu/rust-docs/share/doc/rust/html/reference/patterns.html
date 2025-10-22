@@ -29,7 +29,7 @@
         <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight-56612340.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/reference-381848f0.css">
+        <link rel="stylesheet" href="theme/reference-2fc27eaa.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c123a3a9.js";
+            window.path_to_searchindex_js = "searchindex-2f68ad61.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b3debed2.js"></script>
+        <script src="toc-7a7f8620.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -802,6 +802,34 @@ Its objective is exclusively to make the matched binding a reference, instead of
 <div class="rule" id="r-patterns.ident.precedent"><a class="rule-link" href="#r-patterns.ident.precedent" title="patterns.ident.precedent"><span>[patterns<wbr>.ident<wbr>.precedent]</span></a>
 </div>
 <p><a href="#path-patterns">Path patterns</a> take precedence over identifier patterns.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewBox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>When a pattern is a single-segment identifier, the grammar is ambiguous whether it means an <a href="patterns.html#grammar-IdentifierPattern">IdentifierPattern</a> or a <a href="patterns.html#grammar-PathPattern">PathPattern</a>. This ambiguity can only be resolved after <a href="names/name-resolution.html">name resolution</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const EXPECTED_VALUE: u8 = 42;
+//    ^^^^^^^^^^^^^^ That this constant is in scope affects how the
+//                   patterns below are treated.
+
+fn check_value(x: u8) -&gt; Result&lt;u8, u8&gt; {
+    match x {
+        EXPECTED_VALUE =&gt; Ok(x),
+    //  ^^^^^^^^^^^^^^ Parsed as a `PathPattern` that resolves to
+    //                 the constant `42`.
+        other_value =&gt; Err(x),
+    //  ^^^^^^^^^^^ Parsed as an `IdentifierPattern`.
+    }
+}
+
+// If `EXPECTED_VALUE` were treated as an `IdentifierPattern` above,
+// that pattern would always match, making the function always return
+// `Ok(_) regardless of the input.
+assert_eq!(check_value(42), Ok(42));
+assert_eq!(check_value(43), Err(43));
+<span class="boring">}</span></code></pre></pre>
+</blockquote>
+</div>
 <div class="rule" id="r-patterns.ident.constraint"><a class="rule-link" href="#r-patterns.ident.constraint" title="patterns.ident.constraint"><span>[patterns<wbr>.ident<wbr>.constraint]</span></a>
 </div>
 <p>It is an error if <code>ref</code> or <code>ref mut</code> is specified and the identifier shadows a constant.</p>
@@ -2062,7 +2090,7 @@ They are also used to <a href="#destructuring">destructure</a> a struct, enum, o
 <p>A struct pattern used to match a union must specify exactly one field (see <a href="items/unions.html#pattern-matching-on-unions">Pattern matching on unions</a>).</p>
 <div class="rule" id="r-patterns.struct.binding-shorthand"><a class="rule-link" href="#r-patterns.struct.binding-shorthand" title="patterns.struct.binding-shorthand"><span>[patterns<wbr>.struct<wbr>.binding-shorthand]</span></a>
 </div>
-<p>The <code>ref</code> and/or <code>mut</code> <a href="identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a> syntax matches any value and binds it to a variable with the same name as the given field.</p>
+<p>The <a href="identifiers.html#grammar-IDENTIFIER">IDENTIFIER</a> syntax matches any value and binds it to a variable with the same name as the given field. It is a shorthand for <code>fieldname: fieldname</code>. The <code>ref</code> and <code>mut</code> qualifiers can be included with the behavior as described in <a href="patterns.html#r-patterns.ident.ref">patterns.ident.ref</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">struct Struct {
@@ -2072,7 +2100,7 @@ They are also used to <a href="#destructuring">destructure</a> a struct, enum, o
 </span><span class="boring">}
 </span><span class="boring">let struct_value = Struct{a: 10, b: 'X', c: false};
 </span><span class="boring">
-</span>let Struct{a: x, b: y, c: z} = struct_value;          // destructure all fields
+</span>let Struct { a, b, c } = struct_value;
 <span class="boring">}</span></code></pre></pre>
 <div class="rule" id="r-patterns.struct.refutable"><a class="rule-link" href="#r-patterns.struct.refutable" title="patterns.struct.refutable"><span>[patterns<wbr>.struct<wbr>.refutable]</span></a>
 </div>
