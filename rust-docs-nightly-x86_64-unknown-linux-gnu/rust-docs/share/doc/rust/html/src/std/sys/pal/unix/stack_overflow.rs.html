@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/stack_overflow.rs`."><title>stack_overflow.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (34f954f9b 2025-10-25)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>stack_overflow.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![cfg_attr(test, allow(dead_code))]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/stack_overflow.rs`."><title>stack_overflow.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (f37aa9955 2025-10-26)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>stack_overflow.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![cfg_attr(test, allow(dead_code))]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">pub use </span><span class="self">self</span>::imp::{cleanup, init};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="self">self</span>::imp::{drop_handler, make_handler};
@@ -110,7 +110,7 @@
 <a href=#110 id=110 data-nosnippet>110</a>        // called. If the signal was not caused by a memory access, this might
 <a href=#111 id=111 data-nosnippet>111</a>        // not be true. We detect this by noticing that the `si_addr` field is
 <a href=#112 id=112 data-nosnippet>112</a>        // zero if the signal is synthetic.
-<a href=#113 id=113 data-nosnippet>113</a>        </span><span class="kw">if </span>fault_addr != <span class="number">0 </span>{
+<a href=#113 id=113 data-nosnippet>113</a>        </span><span class="kw">if </span><span class="macro">fault_addr !</span>= <span class="number">0 </span>{
 <a href=#114 id=114 data-nosnippet>114</a>            with_current_info(|thread_info| {
 <a href=#115 id=115 data-nosnippet>115</a>                <span class="comment">// If the faulting address is within the guard page, then we print a
 <a href=#116 id=116 data-nosnippet>116</a>                // message saying so and abort.
@@ -161,7 +161,7 @@
 <a href=#161 id=161 data-nosnippet>161</a>            </span><span class="kw">unsafe </span>{ sigaction(signal, ptr::null_mut(), <span class="kw-2">&amp;mut </span>action) };
 <a href=#162 id=162 data-nosnippet>162</a>            <span class="comment">// Configure our signal handler if one is not already set.
 <a href=#163 id=163 data-nosnippet>163</a>            </span><span class="kw">if </span>action.sa_sigaction == SIG_DFL {
-<a href=#164 id=164 data-nosnippet>164</a>                <span class="kw">if </span>!NEED_ALTSTACK.load(Ordering::Relaxed) {
+<a href=#164 id=164 data-nosnippet>164</a>                <span class="macro">if !</span>NEED_ALTSTACK.load(Ordering::Relaxed) {
 <a href=#165 id=165 data-nosnippet>165</a>                    <span class="comment">// haven't set up our sigaltstack yet
 <a href=#166 id=166 data-nosnippet>166</a>                    </span>NEED_ALTSTACK.store(<span class="bool-val">true</span>, Ordering::Release);
 <a href=#167 id=167 data-nosnippet>167</a>                    <span class="kw">let </span>handler = <span class="kw">unsafe </span>{ make_handler(<span class="bool-val">true</span>, <span class="prelude-val">None</span>) };
@@ -227,7 +227,7 @@
 <a href=#227 id=227 data-nosnippet>227</a>            <span class="macro">panic!</span>(<span class="string">"failed to allocate an alternative stack: {}"</span>, io::Error::last_os_error());
 <a href=#228 id=228 data-nosnippet>228</a>        }
 <a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">let </span>guard_result = libc::mprotect(stackp, page_size, PROT_NONE);
-<a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">if </span>guard_result != <span class="number">0 </span>{
+<a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">if </span><span class="macro">guard_result !</span>= <span class="number">0 </span>{
 <a href=#231 id=231 data-nosnippet>231</a>            <span class="macro">panic!</span>(<span class="string">"failed to set up alternative stack guard page: {}"</span>, io::Error::last_os_error());
 <a href=#232 id=232 data-nosnippet>232</a>        }
 <a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let </span>stackp = stackp.add(page_size);
@@ -243,7 +243,7 @@
 <a href=#243 id=243 data-nosnippet>243</a>            <span class="kw">return </span>Handler::null();
 <a href=#244 id=244 data-nosnippet>244</a>        }
 <a href=#245 id=245 data-nosnippet>245</a>
-<a href=#246 id=246 data-nosnippet>246</a>        <span class="kw">if </span>!main_thread {
+<a href=#246 id=246 data-nosnippet>246</a>        <span class="macro">if !</span>main_thread {
 <a href=#247 id=247 data-nosnippet>247</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(guard_page_range) = <span class="kw">unsafe </span>{ current_guard() } {
 <a href=#248 id=248 data-nosnippet>248</a>                set_current_info(guard_page_range, thread_name);
 <a href=#249 id=249 data-nosnippet>249</a>            }
@@ -254,7 +254,7 @@
 <a href=#254 id=254 data-nosnippet>254</a>        <span class="comment">// SAFETY: reads current stack_t into stack
 <a href=#255 id=255 data-nosnippet>255</a>        </span><span class="kw">unsafe </span>{ sigaltstack(ptr::null(), <span class="kw-2">&amp;mut </span>stack) };
 <a href=#256 id=256 data-nosnippet>256</a>        <span class="comment">// Configure alternate signal stack, if one is not already set.
-<a href=#257 id=257 data-nosnippet>257</a>        </span><span class="kw">if </span>stack.ss_flags &amp; SS_DISABLE != <span class="number">0 </span>{
+<a href=#257 id=257 data-nosnippet>257</a>        </span><span class="kw">if </span>stack.ss_flags &amp; <span class="macro">SS_DISABLE !</span>= <span class="number">0 </span>{
 <a href=#258 id=258 data-nosnippet>258</a>            <span class="comment">// SAFETY: We warned our caller this would happen!
 <a href=#259 id=259 data-nosnippet>259</a>            </span><span class="kw">unsafe </span>{
 <a href=#260 id=260 data-nosnippet>260</a>                stack = get_stack();
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>    /// This disables the alternate signal stack!
 <a href=#274 id=274 data-nosnippet>274</a>    </span><span class="attr">#[forbid(unsafe_op_in_unsafe_fn)]
 <a href=#275 id=275 data-nosnippet>275</a>    </span><span class="kw">pub unsafe fn </span>drop_handler(data: <span class="kw-2">*mut </span>libc::c_void) {
-<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw">if </span>!data.is_null() {
+<a href=#276 id=276 data-nosnippet>276</a>        <span class="macro">if !</span>data.is_null() {
 <a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">let </span>sigstack_size = sigstack_size();
 <a href=#278 id=278 data-nosnippet>278</a>            <span class="kw">let </span>page_size = PAGE_SIZE.load(Ordering::Relaxed);
 <a href=#279 id=279 data-nosnippet>279</a>            <span class="kw">let </span>disabling_stack = libc::stack_t {
@@ -352,7 +352,7 @@
 <a href=#352 id=352 data-nosnippet>352</a>    </span><span class="kw">unsafe fn </span>get_stack_start() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*mut </span>libc::c_void&gt; {
 <a href=#353 id=353 data-nosnippet>353</a>        <span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="prelude-val">None</span>;
 <a href=#354 id=354 data-nosnippet>354</a>        <span class="kw">let </span><span class="kw-2">mut </span>attr: mem::MaybeUninit&lt;libc::pthread_attr_t&gt; = mem::MaybeUninit::uninit();
-<a href=#355 id=355 data-nosnippet>355</a>        <span class="kw">if </span>!<span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#355 id=355 data-nosnippet>355</a>        <span class="macro">if !cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
 <a href=#356 id=356 data-nosnippet>356</a>            attr = mem::MaybeUninit::zeroed();
 <a href=#357 id=357 data-nosnippet>357</a>        }
 <a href=#358 id=358 data-nosnippet>358</a>        <span class="attr">#[cfg(target_os = <span class="string">"freebsd"</span>)]
@@ -513,12 +513,12 @@
 <a href=#513 id=513 data-nosnippet>513</a>                <span class="number">0</span>,
 <a href=#514 id=514 data-nosnippet>514</a>            )
 <a href=#515 id=515 data-nosnippet>515</a>        };
-<a href=#516 id=516 data-nosnippet>516</a>        <span class="kw">if </span>result != stackptr || result == MAP_FAILED {
+<a href=#516 id=516 data-nosnippet>516</a>        <span class="kw">if </span><span class="macro">result !</span>= stackptr || result == MAP_FAILED {
 <a href=#517 id=517 data-nosnippet>517</a>            <span class="macro">panic!</span>(<span class="string">"failed to allocate a guard page: {}"</span>, io::Error::last_os_error());
 <a href=#518 id=518 data-nosnippet>518</a>        }
 <a href=#519 id=519 data-nosnippet>519</a>
 <a href=#520 id=520 data-nosnippet>520</a>        <span class="kw">let </span>result = <span class="kw">unsafe </span>{ mprotect(stackptr, page_size, PROT_NONE) };
-<a href=#521 id=521 data-nosnippet>521</a>        <span class="kw">if </span>result != <span class="number">0 </span>{
+<a href=#521 id=521 data-nosnippet>521</a>        <span class="kw">if </span><span class="macro">result !</span>= <span class="number">0 </span>{
 <a href=#522 id=522 data-nosnippet>522</a>            <span class="macro">panic!</span>(<span class="string">"failed to protect the guard page: {}"</span>, io::Error::last_os_error());
 <a href=#523 id=523 data-nosnippet>523</a>        }
 <a href=#524 id=524 data-nosnippet>524</a>
@@ -553,7 +553,7 @@
 <a href=#553 id=553 data-nosnippet>553</a>        <span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="prelude-val">None</span>;
 <a href=#554 id=554 data-nosnippet>554</a>
 <a href=#555 id=555 data-nosnippet>555</a>        <span class="kw">let </span><span class="kw-2">mut </span>attr: mem::MaybeUninit&lt;libc::pthread_attr_t&gt; = mem::MaybeUninit::uninit();
-<a href=#556 id=556 data-nosnippet>556</a>        <span class="kw">if </span>!<span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#556 id=556 data-nosnippet>556</a>        <span class="macro">if !cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
 <a href=#557 id=557 data-nosnippet>557</a>            attr = mem::MaybeUninit::zeroed();
 <a href=#558 id=558 data-nosnippet>558</a>        }
 <a href=#559 id=559 data-nosnippet>559</a>        <span class="attr">#[cfg(target_os = <span class="string">"freebsd"</span>)]
@@ -722,11 +722,12 @@
 <a href=#722 id=722 data-nosnippet>722</a>        main_thread: bool,
 <a href=#723 id=723 data-nosnippet>723</a>        _thread_name: <span class="prelude-ty">Option</span>&lt;Box&lt;str&gt;&gt;,
 <a href=#724 id=724 data-nosnippet>724</a>    ) -&gt; <span class="kw">super</span>::Handler {
-<a href=#725 id=725 data-nosnippet>725</a>        <span class="kw">if </span>!main_thread {
+<a href=#725 id=725 data-nosnippet>725</a>        <span class="macro">if !</span>main_thread {
 <a href=#726 id=726 data-nosnippet>726</a>            reserve_stack();
 <a href=#727 id=727 data-nosnippet>727</a>        }
 <a href=#728 id=728 data-nosnippet>728</a>        <span class="kw">super</span>::Handler::null()
 <a href=#729 id=729 data-nosnippet>729</a>    }
 <a href=#730 id=730 data-nosnippet>730</a>
 <a href=#731 id=731 data-nosnippet>731</a>    <span class="kw">pub unsafe fn </span>drop_handler(_data: <span class="kw-2">*mut </span>libc::c_void) {}
-<a href=#732 id=732 data-nosnippet>732</a>}</code></pre></div></section></main></body></html>
+<a href=#732 id=732 data-nosnippet>732</a>}
+</code></pre></div></section></main></body></html>

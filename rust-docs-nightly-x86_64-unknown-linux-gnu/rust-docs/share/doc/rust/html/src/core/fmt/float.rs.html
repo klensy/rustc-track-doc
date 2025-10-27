@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/fmt/float.rs`."><title>float.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (34f954f9b 2025-10-25)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.93.0.js"></script><script defer src="../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/fmt/</div>float.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{Debug, Display, Formatter, LowerExp, <span class="prelude-ty">Result</span>, UpperExp};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/fmt/float.rs`."><title>float.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (f37aa9955 2025-10-26)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.93.0.js"></script><script defer src="../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/fmt/</div>float.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{Debug, Display, Formatter, LowerExp, <span class="prelude-ty">Result</span>, UpperExp};
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::mem::MaybeUninit;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::num::{flt2dec, fmt <span class="kw">as </span>numfmt};
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -14,7 +14,7 @@
 <a href=#14 id=14 data-nosnippet>14</a>        $(<span class="kw">impl </span>GeneralFormat <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
 <a href=#15 id=15 data-nosnippet>15</a>            <span class="kw">fn </span>already_rounded_value_should_use_exponential(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#16 id=16 data-nosnippet>16</a>                <span class="kw">let </span>abs = <span class="macro-nonterminal">$t::abs</span>(<span class="kw-2">*</span><span class="self">self</span>);
-<a href=#17 id=17 data-nosnippet>17</a>                (abs != <span class="number">0.0 </span>&amp;&amp; abs &lt; <span class="number">1e-4</span>) || abs &gt;= <span class="number">1e+16
+<a href=#17 id=17 data-nosnippet>17</a>                (<span class="macro">abs !</span>= <span class="number">0.0 </span>&amp;&amp; abs &lt; <span class="number">1e-4</span>) || abs &gt;= <span class="number">1e+16
 <a href=#18 id=18 data-nosnippet>18</a>            </span>}
 <a href=#19 id=19 data-nosnippet>19</a>        })*
 <a href=#20 id=20 data-nosnippet>20</a>    }
@@ -32,8 +32,8 @@
 <a href=#32 id=32 data-nosnippet>32</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#33 id=33 data-nosnippet>33</a>    sign: flt2dec::Sign,
 <a href=#34 id=34 data-nosnippet>34</a>    precision: u16,
-<a href=#35 id=35 data-nosnippet>35</a>) -&gt; <span class="prelude-ty">Result</span>
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">where
+<a href=#35 id=35 data-nosnippet>35</a>) -&gt; <span class="prelude-ty">Result
+<a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">where
 <a href=#37 id=37 data-nosnippet>37</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#38 id=38 data-nosnippet>38</a>{
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">let </span><span class="kw-2">mut </span>buf: [MaybeUninit&lt;u8&gt;; <span class="number">1024</span>] = [MaybeUninit::uninit(); <span class="number">1024</span>]; <span class="comment">// enough for f32 and f64
@@ -58,8 +58,8 @@
 <a href=#58 id=58 data-nosnippet>58</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#59 id=59 data-nosnippet>59</a>    sign: flt2dec::Sign,
 <a href=#60 id=60 data-nosnippet>60</a>    precision: u16,
-<a href=#61 id=61 data-nosnippet>61</a>) -&gt; <span class="prelude-ty">Result</span>
-<a href=#62 id=62 data-nosnippet>62</a><span class="kw">where
+<a href=#61 id=61 data-nosnippet>61</a>) -&gt; <span class="prelude-ty">Result
+<a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">where
 <a href=#63 id=63 data-nosnippet>63</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#64 id=64 data-nosnippet>64</a>{
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="comment">// enough for f32 and f64
@@ -78,8 +78,8 @@
 <a href=#78 id=78 data-nosnippet>78</a>    </span><span class="kw">unsafe </span>{ fmt.pad_formatted_parts(<span class="kw-2">&amp;</span>formatted) }
 <a href=#79 id=79 data-nosnippet>79</a>}
 <a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a><span class="kw">fn </span>float_to_decimal_display&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>
-<a href=#82 id=82 data-nosnippet>82</a><span class="kw">where
+<a href=#81 id=81 data-nosnippet>81</a><span class="kw">fn </span>float_to_decimal_display&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result
+<a href=#82 id=82 data-nosnippet>82</a></span><span class="kw">where
 <a href=#83 id=83 data-nosnippet>83</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#84 id=84 data-nosnippet>84</a>{
 <a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">let </span>force_sign = fmt.sign_plus();
@@ -105,8 +105,8 @@
 <a href=#105 id=105 data-nosnippet>105</a>    sign: flt2dec::Sign,
 <a href=#106 id=106 data-nosnippet>106</a>    precision: u16,
 <a href=#107 id=107 data-nosnippet>107</a>    upper: bool,
-<a href=#108 id=108 data-nosnippet>108</a>) -&gt; <span class="prelude-ty">Result</span>
-<a href=#109 id=109 data-nosnippet>109</a><span class="kw">where
+<a href=#108 id=108 data-nosnippet>108</a>) -&gt; <span class="prelude-ty">Result
+<a href=#109 id=109 data-nosnippet>109</a></span><span class="kw">where
 <a href=#110 id=110 data-nosnippet>110</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#111 id=111 data-nosnippet>111</a>{
 <a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span><span class="kw-2">mut </span>buf: [MaybeUninit&lt;u8&gt;; <span class="number">1024</span>] = [MaybeUninit::uninit(); <span class="number">1024</span>]; <span class="comment">// enough for f32 and f64
@@ -132,8 +132,8 @@
 <a href=#132 id=132 data-nosnippet>132</a>    num: <span class="kw-2">&amp;</span>T,
 <a href=#133 id=133 data-nosnippet>133</a>    sign: flt2dec::Sign,
 <a href=#134 id=134 data-nosnippet>134</a>    upper: bool,
-<a href=#135 id=135 data-nosnippet>135</a>) -&gt; <span class="prelude-ty">Result</span>
-<a href=#136 id=136 data-nosnippet>136</a><span class="kw">where
+<a href=#135 id=135 data-nosnippet>135</a>) -&gt; <span class="prelude-ty">Result
+<a href=#136 id=136 data-nosnippet>136</a></span><span class="kw">where
 <a href=#137 id=137 data-nosnippet>137</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#138 id=138 data-nosnippet>138</a>{
 <a href=#139 id=139 data-nosnippet>139</a>    <span class="comment">// enough for f32 and f64
@@ -154,8 +154,8 @@
 <a href=#154 id=154 data-nosnippet>154</a>}
 <a href=#155 id=155 data-nosnippet>155</a>
 <a href=#156 id=156 data-nosnippet>156</a><span class="comment">// Common code of floating point LowerExp and UpperExp.
-<a href=#157 id=157 data-nosnippet>157</a></span><span class="kw">fn </span>float_to_exponential_common&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T, upper: bool) -&gt; <span class="prelude-ty">Result</span>
-<a href=#158 id=158 data-nosnippet>158</a><span class="kw">where
+<a href=#157 id=157 data-nosnippet>157</a></span><span class="kw">fn </span>float_to_exponential_common&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T, upper: bool) -&gt; <span class="prelude-ty">Result
+<a href=#158 id=158 data-nosnippet>158</a></span><span class="kw">where
 <a href=#159 id=159 data-nosnippet>159</a>    </span>T: flt2dec::DecodableFloat,
 <a href=#160 id=160 data-nosnippet>160</a>{
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">let </span>force_sign = fmt.sign_plus();
@@ -172,8 +172,8 @@
 <a href=#172 id=172 data-nosnippet>172</a>    }
 <a href=#173 id=173 data-nosnippet>173</a>}
 <a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a><span class="kw">fn </span>float_to_general_debug&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>
-<a href=#176 id=176 data-nosnippet>176</a><span class="kw">where
+<a href=#175 id=175 data-nosnippet>175</a><span class="kw">fn </span>float_to_general_debug&lt;T&gt;(fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;, num: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result
+<a href=#176 id=176 data-nosnippet>176</a></span><span class="kw">where
 <a href=#177 id=177 data-nosnippet>177</a>    </span>T: flt2dec::DecodableFloat + GeneralFormat,
 <a href=#178 id=178 data-nosnippet>178</a>{
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">let </span>force_sign = fmt.sign_plus();
@@ -202,28 +202,28 @@
 <a href=#202 id=202 data-nosnippet>202</a>        $(
 <a href=#203 id=203 data-nosnippet>203</a>            <span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#204 id=204 data-nosnippet>204</a>            </span><span class="kw">impl </span>Debug <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
-<a href=#205 id=205 data-nosnippet>205</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#205 id=205 data-nosnippet>205</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#206 id=206 data-nosnippet>206</a>                    float_to_general_debug(fmt, <span class="self">self</span>)
 <a href=#207 id=207 data-nosnippet>207</a>                }
 <a href=#208 id=208 data-nosnippet>208</a>            }
 <a href=#209 id=209 data-nosnippet>209</a>
 <a href=#210 id=210 data-nosnippet>210</a>            <span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#211 id=211 data-nosnippet>211</a>            </span><span class="kw">impl </span>Display <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
-<a href=#212 id=212 data-nosnippet>212</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#212 id=212 data-nosnippet>212</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#213 id=213 data-nosnippet>213</a>                    float_to_decimal_display(fmt, <span class="self">self</span>)
 <a href=#214 id=214 data-nosnippet>214</a>                }
 <a href=#215 id=215 data-nosnippet>215</a>            }
 <a href=#216 id=216 data-nosnippet>216</a>
 <a href=#217 id=217 data-nosnippet>217</a>            <span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#218 id=218 data-nosnippet>218</a>            </span><span class="kw">impl </span>LowerExp <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
-<a href=#219 id=219 data-nosnippet>219</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#219 id=219 data-nosnippet>219</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#220 id=220 data-nosnippet>220</a>                    float_to_exponential_common(fmt, <span class="self">self</span>, <span class="bool-val">false</span>)
 <a href=#221 id=221 data-nosnippet>221</a>                }
 <a href=#222 id=222 data-nosnippet>222</a>            }
 <a href=#223 id=223 data-nosnippet>223</a>
 <a href=#224 id=224 data-nosnippet>224</a>            <span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#225 id=225 data-nosnippet>225</a>            </span><span class="kw">impl </span>UpperExp <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
-<a href=#226 id=226 data-nosnippet>226</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#226 id=226 data-nosnippet>226</a>                <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#227 id=227 data-nosnippet>227</a>                    float_to_exponential_common(fmt, <span class="self">self</span>, <span class="bool-val">true</span>)
 <a href=#228 id=228 data-nosnippet>228</a>                }
 <a href=#229 id=229 data-nosnippet>229</a>            }
@@ -243,7 +243,7 @@
 <a href=#243 id=243 data-nosnippet>243</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#244 id=244 data-nosnippet>244</a></span><span class="kw">impl </span>Debug <span class="kw">for </span>f16 {
 <a href=#245 id=245 data-nosnippet>245</a>    <span class="attr">#[inline]
-<a href=#246 id=246 data-nosnippet>246</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#246 id=246 data-nosnippet>246</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#247 id=247 data-nosnippet>247</a>        <span class="macro">write!</span>(f, <span class="string">"{:#06x}"</span>, <span class="self">self</span>.to_bits())
 <a href=#248 id=248 data-nosnippet>248</a>    }
 <a href=#249 id=249 data-nosnippet>249</a>}
@@ -252,7 +252,7 @@
 <a href=#252 id=252 data-nosnippet>252</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#253 id=253 data-nosnippet>253</a></span><span class="kw">impl </span>Display <span class="kw">for </span>f16 {
 <a href=#254 id=254 data-nosnippet>254</a>    <span class="attr">#[inline]
-<a href=#255 id=255 data-nosnippet>255</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#255 id=255 data-nosnippet>255</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#256 id=256 data-nosnippet>256</a>        Debug::fmt(<span class="self">self</span>, fmt)
 <a href=#257 id=257 data-nosnippet>257</a>    }
 <a href=#258 id=258 data-nosnippet>258</a>}
@@ -261,7 +261,7 @@
 <a href=#261 id=261 data-nosnippet>261</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#262 id=262 data-nosnippet>262</a></span><span class="kw">impl </span>LowerExp <span class="kw">for </span>f16 {
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="attr">#[inline]
-<a href=#264 id=264 data-nosnippet>264</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#264 id=264 data-nosnippet>264</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#265 id=265 data-nosnippet>265</a>        Debug::fmt(<span class="self">self</span>, fmt)
 <a href=#266 id=266 data-nosnippet>266</a>    }
 <a href=#267 id=267 data-nosnippet>267</a>}
@@ -270,7 +270,7 @@
 <a href=#270 id=270 data-nosnippet>270</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#271 id=271 data-nosnippet>271</a></span><span class="kw">impl </span>UpperExp <span class="kw">for </span>f16 {
 <a href=#272 id=272 data-nosnippet>272</a>    <span class="attr">#[inline]
-<a href=#273 id=273 data-nosnippet>273</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#273 id=273 data-nosnippet>273</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#274 id=274 data-nosnippet>274</a>        Debug::fmt(<span class="self">self</span>, fmt)
 <a href=#275 id=275 data-nosnippet>275</a>    }
 <a href=#276 id=276 data-nosnippet>276</a>}
@@ -278,7 +278,8 @@
 <a href=#278 id=278 data-nosnippet>278</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#279 id=279 data-nosnippet>279</a></span><span class="kw">impl </span>Debug <span class="kw">for </span>f128 {
 <a href=#280 id=280 data-nosnippet>280</a>    <span class="attr">#[inline]
-<a href=#281 id=281 data-nosnippet>281</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span> {
+<a href=#281 id=281 data-nosnippet>281</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result </span>{
 <a href=#282 id=282 data-nosnippet>282</a>        <span class="macro">write!</span>(f, <span class="string">"{:#034x}"</span>, <span class="self">self</span>.to_bits())
 <a href=#283 id=283 data-nosnippet>283</a>    }
-<a href=#284 id=284 data-nosnippet>284</a>}</code></pre></div></section></main></body></html>
+<a href=#284 id=284 data-nosnippet>284</a>}
+</code></pre></div></section></main></body></html>

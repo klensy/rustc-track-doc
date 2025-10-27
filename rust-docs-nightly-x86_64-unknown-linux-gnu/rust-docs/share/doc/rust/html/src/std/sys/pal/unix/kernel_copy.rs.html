@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/kernel_copy.rs`."><title>kernel_copy.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (34f954f9b 2025-10-25)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>kernel_copy.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains specializations that can offload `io::copy()` operations on file descriptor
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/kernel_copy.rs`."><title>kernel_copy.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (f37aa9955 2025-10-26)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/</div>kernel_copy.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains specializations that can offload `io::copy()` operations on file descriptor
 <a href=#2 id=2 data-nosnippet>2</a>//! containing types (`File`, `TcpStream`, etc.) to more efficient syscalls than `read(2)` and `write(2)`.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! Specialization is only applied to wholly std-owned types so that user code can't observe
@@ -160,7 +160,7 @@
 <a href=#160 id=160 data-nosnippet>160</a>        <span class="comment">// Data going into non-pipes/non-sockets is safe because the "later changes may become visible" issue
 <a href=#161 id=161 data-nosnippet>161</a>        // only happens for pages sitting in send buffers or pipes.
 <a href=#162 id=162 data-nosnippet>162</a>        </span>(<span class="kw">_</span>, FdMeta::Metadata(meta))
-<a href=#163 id=163 data-nosnippet>163</a>            <span class="kw">if </span>!meta.file_type().is_fifo() &amp;&amp; !meta.file_type().is_socket() =&gt;
+<a href=#163 id=163 data-nosnippet>163</a>            <span class="macro">if !</span>meta.file_type().is_fifo() &amp;&amp; !meta.file_type().is_socket() =&gt;
 <a href=#164 id=164 data-nosnippet>164</a>        {
 <a href=#165 id=165 data-nosnippet>165</a>            <span class="bool-val">true
 <a href=#166 id=166 data-nosnippet>166</a>        </span>}
@@ -645,7 +645,7 @@
 <a href=#645 id=645 data-nosnippet>645</a>            </span>cvt(copy_file_range(reader, ptr::null_mut(), writer, ptr::null_mut(), bytes_to_copy, <span class="number">0</span>))
 <a href=#646 id=646 data-nosnippet>646</a>        };
 <a href=#647 id=647 data-nosnippet>647</a>
-<a href=#648 id=648 data-nosnippet>648</a>        <span class="kw">if </span>!have_probed &amp;&amp; copy_result.is_ok() {
+<a href=#648 id=648 data-nosnippet>648</a>        <span class="macro">if !</span>have_probed &amp;&amp; copy_result.is_ok() {
 <a href=#649 id=649 data-nosnippet>649</a>            have_probed = <span class="bool-val">true</span>;
 <a href=#650 id=650 data-nosnippet>650</a>            HAS_COPY_FILE_RANGE.store(AVAILABLE, Ordering::Relaxed);
 <a href=#651 id=651 data-nosnippet>651</a>        }
@@ -668,7 +668,7 @@
 <a href=#668 id=668 data-nosnippet>668</a>                    <span class="prelude-val">Some</span>(raw_os_error @ (ENOSYS | EXDEV | EINVAL | EPERM | EOPNOTSUPP | EBADF))
 <a href=#669 id=669 data-nosnippet>669</a>                        <span class="kw">if </span>written == <span class="number">0 </span>=&gt;
 <a href=#670 id=670 data-nosnippet>670</a>                    {
-<a href=#671 id=671 data-nosnippet>671</a>                        <span class="kw">if </span>!have_probed {
+<a href=#671 id=671 data-nosnippet>671</a>                        <span class="macro">if !</span>have_probed {
 <a href=#672 id=672 data-nosnippet>672</a>                            <span class="kw">let </span>available = <span class="kw">if </span><span class="macro">matches!</span>(raw_os_error, ENOSYS | EOPNOTSUPP | EPERM) {
 <a href=#673 id=673 data-nosnippet>673</a>                                <span class="comment">// EPERM can indicate seccomp filters or an
 <a href=#674 id=674 data-nosnippet>674</a>                                // immutable file. To distinguish these
@@ -742,10 +742,10 @@
 <a href=#742 id=742 data-nosnippet>742</a>    </span><span class="kw">use </span>libc::splice;
 <a href=#743 id=743 data-nosnippet>743</a>
 <a href=#744 id=744 data-nosnippet>744</a>    <span class="kw">match </span>mode {
-<a href=#745 id=745 data-nosnippet>745</a>        SpliceMode::Sendfile <span class="kw">if </span>!HAS_SENDFILE.load(Ordering::Relaxed) =&gt; {
+<a href=#745 id=745 data-nosnippet>745</a>        SpliceMode::Sendfile <span class="macro">if !</span>HAS_SENDFILE.load(Ordering::Relaxed) =&gt; {
 <a href=#746 id=746 data-nosnippet>746</a>            <span class="kw">return </span>CopyResult::Fallback(<span class="number">0</span>);
 <a href=#747 id=747 data-nosnippet>747</a>        }
-<a href=#748 id=748 data-nosnippet>748</a>        SpliceMode::Splice <span class="kw">if </span>!HAS_SPLICE.load(Ordering::Relaxed) =&gt; {
+<a href=#748 id=748 data-nosnippet>748</a>        SpliceMode::Splice <span class="macro">if !</span>HAS_SPLICE.load(Ordering::Relaxed) =&gt; {
 <a href=#749 id=749 data-nosnippet>749</a>            <span class="kw">return </span>CopyResult::Fallback(<span class="number">0</span>);
 <a href=#750 id=750 data-nosnippet>750</a>        }
 <a href=#751 id=751 data-nosnippet>751</a>        <span class="kw">_ </span>=&gt; (),
@@ -794,4 +794,5 @@
 <a href=#794 id=794 data-nosnippet>794</a>        }
 <a href=#795 id=795 data-nosnippet>795</a>    }
 <a href=#796 id=796 data-nosnippet>796</a>    CopyResult::Ended(written)
-<a href=#797 id=797 data-nosnippet>797</a>}</code></pre></div></section></main></body></html>
+<a href=#797 id=797 data-nosnippet>797</a>}
+</code></pre></div></section></main></body></html>

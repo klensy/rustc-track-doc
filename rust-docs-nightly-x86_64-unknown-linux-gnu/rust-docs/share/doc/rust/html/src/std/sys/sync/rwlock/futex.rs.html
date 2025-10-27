@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/sync/rwlock/futex.rs`."><title>futex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (34f954f9b 2025-10-25)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/sync/rwlock/</div>futex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::Ordering::{Acquire, Relaxed, Release};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/sync/rwlock/futex.rs`."><title>futex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (f37aa9955 2025-10-26)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.93.0.js"></script><script defer src="../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/sync/rwlock/</div>futex.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::Ordering::{Acquire, Relaxed, Release};
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::sys::futex::{Futex, Primitive, futex_wait, futex_wake, futex_wake_all};
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">pub struct </span>RwLock {
@@ -35,12 +35,12 @@
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="attr">#[inline]
 <a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">fn </span>has_readers_waiting(state: Primitive) -&gt; bool {
-<a href=#38 id=38 data-nosnippet>38</a>    state &amp; READERS_WAITING != <span class="number">0
+<a href=#38 id=38 data-nosnippet>38</a>    state &amp; <span class="macro">READERS_WAITING !</span>= <span class="number">0
 <a href=#39 id=39 data-nosnippet>39</a></span>}
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a><span class="attr">#[inline]
 <a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">fn </span>has_writers_waiting(state: Primitive) -&gt; bool {
-<a href=#43 id=43 data-nosnippet>43</a>    state &amp; WRITERS_WAITING != <span class="number">0
+<a href=#43 id=43 data-nosnippet>43</a>    state &amp; <span class="macro">WRITERS_WAITING !</span>= <span class="number">0
 <a href=#44 id=44 data-nosnippet>44</a></span>}
 <a href=#45 id=45 data-nosnippet>45</a>
 <a href=#46 id=46 data-nosnippet>46</a><span class="attr">#[inline]
@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a>    <span class="attr">#[inline]
 <a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>) {
 <a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>state = <span class="self">self</span>.state.load(Relaxed);
-<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">if </span>!is_read_lockable(state)
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="macro">if !</span>is_read_lockable(state)
 <a href=#97 id=97 data-nosnippet>97</a>            || <span class="self">self
 <a href=#98 id=98 data-nosnippet>98</a>                </span>.state
 <a href=#99 id=99 data-nosnippet>99</a>                .compare_exchange_weak(state, state + READ_LOCKED, Acquire, Relaxed)
@@ -143,7 +143,7 @@
 <a href=#143 id=143 data-nosnippet>143</a>            </span><span class="macro">assert!</span>(!has_reached_max_readers(state), <span class="string">"too many active read locks on RwLock"</span>);
 <a href=#144 id=144 data-nosnippet>144</a>
 <a href=#145 id=145 data-nosnippet>145</a>            <span class="comment">// Make sure the readers waiting bit is set before we go to sleep.
-<a href=#146 id=146 data-nosnippet>146</a>            </span><span class="kw">if </span>!has_readers_waiting(state) {
+<a href=#146 id=146 data-nosnippet>146</a>            </span><span class="macro">if !</span>has_readers_waiting(state) {
 <a href=#147 id=147 data-nosnippet>147</a>                <span class="kw">if let </span><span class="prelude-val">Err</span>(s) =
 <a href=#148 id=148 data-nosnippet>148</a>                    <span class="self">self</span>.state.compare_exchange(state, state | READERS_WAITING, Relaxed, Relaxed)
 <a href=#149 id=149 data-nosnippet>149</a>                {
@@ -229,7 +229,7 @@
 <a href=#229 id=229 data-nosnippet>229</a>            }
 <a href=#230 id=230 data-nosnippet>230</a>
 <a href=#231 id=231 data-nosnippet>231</a>            <span class="comment">// Set the waiting bit indicating that we're waiting on it.
-<a href=#232 id=232 data-nosnippet>232</a>            </span><span class="kw">if </span>!has_writers_waiting(state) {
+<a href=#232 id=232 data-nosnippet>232</a>            </span><span class="macro">if !</span>has_writers_waiting(state) {
 <a href=#233 id=233 data-nosnippet>233</a>                <span class="kw">if let </span><span class="prelude-val">Err</span>(s) =
 <a href=#234 id=234 data-nosnippet>234</a>                    <span class="self">self</span>.state.compare_exchange(state, state | WRITERS_WAITING, Relaxed, Relaxed)
 <a href=#235 id=235 data-nosnippet>235</a>                {
@@ -356,4 +356,5 @@
 <a href=#356 id=356 data-nosnippet>356</a>            !is_write_locked(state) || has_readers_waiting(state) || has_writers_waiting(state)
 <a href=#357 id=357 data-nosnippet>357</a>        })
 <a href=#358 id=358 data-nosnippet>358</a>    }
-<a href=#359 id=359 data-nosnippet>359</a>}</code></pre></div></section></main></body></html>
+<a href=#359 id=359 data-nosnippet>359</a>}
+</code></pre></div></section></main></body></html>

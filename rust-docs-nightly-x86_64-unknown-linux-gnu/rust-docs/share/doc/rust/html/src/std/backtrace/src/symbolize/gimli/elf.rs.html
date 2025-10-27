@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/../../backtrace/src/symbolize/gimli/elf.rs`."><title>elf.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (34f954f9b 2025-10-25)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files1.93.0.js"></script><script defer src="../../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/backtrace/src/symbolize/gimli/</div>elf.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(clippy::useless_conversion)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/../../backtrace/src/symbolize/gimli/elf.rs`."><title>elf.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (f37aa9955 2025-10-26)" data-channel="nightly" data-search-js="search-d69d8955.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files1.93.0.js"></script><script defer src="../../../../../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/backtrace/src/symbolize/gimli/</div>elf.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(clippy::useless_conversion)]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::mystd::ffi::OsStr;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::mystd::fs;
@@ -248,7 +248,7 @@
 <a href=#248 id=248 data-nosnippet>248</a>        // by ld's `--compress-debug-sections=zlib-gnu` flag. This means that if
 <a href=#249 id=249 data-nosnippet>249</a>        // we're actually asking for `.debug_info` then we need to look up a
 <a href=#250 id=250 data-nosnippet>250</a>        // section named `.zdebug_info`.
-<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="kw">if </span>!name.starts_with(<span class="string">".debug_"</span>) {
+<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="macro">if !</span>name.starts_with(<span class="string">".debug_"</span>) {
 <a href=#252 id=252 data-nosnippet>252</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
 <a href=#253 id=253 data-nosnippet>253</a>        }
 <a href=#254 id=254 data-nosnippet>254</a>        <span class="kw">let </span>debug_name = name[<span class="number">7</span>..].as_bytes();
@@ -365,7 +365,7 @@
 <a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">use </span>ruzstd::decoding::errors::{FrameDecoderError, ReadFrameHeaderError};
 <a href=#366 id=366 data-nosnippet>366</a>    <span class="kw">use </span>ruzstd::io::Read;
 <a href=#367 id=367 data-nosnippet>367</a>
-<a href=#368 id=368 data-nosnippet>368</a>    <span class="kw">while </span>!input.is_empty() {
+<a href=#368 id=368 data-nosnippet>368</a>    <span class="macro">while !</span>input.is_empty() {
 <a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">let </span><span class="kw-2">mut </span>decoder = <span class="kw">match </span>ruzstd::decoding::StreamingDecoder::new(<span class="kw-2">&amp;mut </span>input) {
 <a href=#370 id=370 data-nosnippet>370</a>            <span class="prelude-val">Ok</span>(decoder) =&gt; decoder,
 <a href=#371 id=371 data-nosnippet>371</a>            <span class="prelude-val">Err</span>(FrameDecoderError::ReadFrameHeaderError(ReadFrameHeaderError::SkipFrame {
@@ -386,7 +386,7 @@
 <a href=#386 id=386 data-nosnippet>386</a>        }
 <a href=#387 id=387 data-nosnippet>387</a>    }
 <a href=#388 id=388 data-nosnippet>388</a>
-<a href=#389 id=389 data-nosnippet>389</a>    <span class="kw">if </span>!output.is_empty() {
+<a href=#389 id=389 data-nosnippet>389</a>    <span class="macro">if !</span>output.is_empty() {
 <a href=#390 id=390 data-nosnippet>390</a>        <span class="comment">// Lengths didn't match, something is wrong.
 <a href=#391 id=391 data-nosnippet>391</a>        </span><span class="kw">return </span><span class="prelude-val">None</span>;
 <a href=#392 id=392 data-nosnippet>392</a>    }
@@ -430,7 +430,7 @@
 <a href=#430 id=430 data-nosnippet>430</a>        <span class="kw">return </span><span class="prelude-val">None</span>;
 <a href=#431 id=431 data-nosnippet>431</a>    }
 <a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a>    <span class="kw">if </span>!debug_path_exists() {
+<a href=#433 id=433 data-nosnippet>433</a>    <span class="macro">if !</span>debug_path_exists() {
 <a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">return </span><span class="prelude-val">None</span>;
 <a href=#435 id=435 data-nosnippet>435</a>    }
 <a href=#436 id=436 data-nosnippet>436</a>
@@ -469,7 +469,7 @@
 <a href=#469 id=469 data-nosnippet>469</a>    <span class="comment">// Try "/parent/filename" if it differs from "path"
 <a href=#470 id=470 data-nosnippet>470</a>    </span>f.push(parent);
 <a href=#471 id=471 data-nosnippet>471</a>    f.push(filename);
-<a href=#472 id=472 data-nosnippet>472</a>    <span class="kw">if </span>f != path &amp;&amp; f.is_file() {
+<a href=#472 id=472 data-nosnippet>472</a>    <span class="kw">if </span><span class="macro">f !</span>= path &amp;&amp; f.is_file() {
 <a href=#473 id=473 data-nosnippet>473</a>        <span class="kw">return </span><span class="prelude-val">Some</span>(f);
 <a href=#474 id=474 data-nosnippet>474</a>    }
 <a href=#475 id=475 data-nosnippet>475</a>
@@ -564,4 +564,5 @@
 <a href=#564 id=564 data-nosnippet>564</a>    }
 <a href=#565 id=565 data-nosnippet>565</a>
 <a href=#566 id=566 data-nosnippet>566</a>    <span class="prelude-val">None
-<a href=#567 id=567 data-nosnippet>567</a></span>}</code></pre></div></section></main></body></html>
+<a href=#567 id=567 data-nosnippet>567</a></span>}
+</code></pre></div></section></main></body></html>
