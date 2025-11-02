@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e535c144.js";
+            window.path_to_searchindex_js = "searchindex-5052f84b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-c06a5134.js"></script>
@@ -1143,6 +1143,7 @@ crate. For example, <code>pub(crate)</code> items.</p>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#io_other_error"><code>io_other_error</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#iter_kv_map"><code>iter_kv_map</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#legacy_numeric_constants"><code>legacy_numeric_constants</code></a></li>
+<li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#len_zero"><code>len_zero</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#lines_filter_map_ok"><code>lines_filter_map_ok</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#manual_abs_diff"><code>manual_abs_diff</code></a></li>
 <li><a href="https://rust-lang.github.io/rust-clippy/master/index.html#manual_bits"><code>manual_bits</code></a></li>
@@ -3281,14 +3282,13 @@ use clippy_utils::sym;
 impl&lt;'tcx&gt; LateLintPass&lt;'tcx&gt; for OurFancyMethodLint {
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, expr: &amp;'tcx hir::Expr&lt;'_&gt;) {
         // Check our expr is calling a method with pattern matching
-        if let hir::ExprKind::MethodCall(path, _, [self_arg, ..], _) = &amp;expr.kind
+        if let hir::ExprKind::MethodCall(path, _, _, _) = &amp;expr.kind
             // Check if the name of this method is `our_fancy_method`
             &amp;&amp; path.ident.name == sym::our_fancy_method
-            // We can check the type of the self argument whenever necessary.
-            // (It's necessary if we want to check that method is specifically belonging to a specific trait,
-            // for example, a `map` method could belong to user-defined trait instead of to `Iterator`)
+            // Check if the method belongs to the `sym::OurFancyTrait` trait.
+            // (for example, a `map` method could belong to user-defined trait instead of to `Iterator`)
             // See the next section for more information.
-            &amp;&amp; cx.ty_based_def(self_arg).opt_parent(cx).is_diag_item(cx, sym::OurFancyTrait)
+            &amp;&amp; cx.ty_based_def(expr).opt_parent(cx).is_diag_item(cx, sym::OurFancyTrait)
         {
             println!("`expr` is a method call for `our_fancy_method`");
         }
@@ -3302,6 +3302,13 @@ matching with <code>MethodCall</code> in case the reader wishes to explore more.
 <p>New symbols such as <code>our_fancy_method</code> need to be added to the <code>clippy_utils::sym</code> module.
 This module extends the list of symbols already provided by the compiler crates
 in <code>rustc_span::sym</code>.</p>
+<p>If a trait defines only one method (such as the <code>std::ops::Deref</code> trait, which only has the <code>deref()</code> method),
+one might be tempted to omit the method name check. This would work, but is not always advisable because:</p>
+<ul>
+<li>If a new method (possibly with a default implementation) were to be added to the trait, there would be a risk of
+matching the wrong method.</li>
+<li>Comparing symbols is very cheap and might prevent a more expensive lookup.</li>
+</ul>
 <h2 id="checking-if-a-impl-block-implements-a-method"><a class="header" href="#checking-if-a-impl-block-implements-a-method">Checking if a <code>impl</code> block implements a method</a></h2>
 <p>While sometimes we want to check whether a method is being called or not, other
 times we want to know if our <code>Ty</code> defines a method.</p>
