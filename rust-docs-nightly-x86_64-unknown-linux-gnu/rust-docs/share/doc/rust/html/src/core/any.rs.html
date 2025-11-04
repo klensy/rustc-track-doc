@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/any.rs`."><title>any.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (b15a874aa 2025-11-02)" data-channel="nightly" data-search-js="search-5c29b3b5.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/</div>any.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Utilities for dynamic typing or type reflection.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/any.rs`."><title>any.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (20383c9f1 2025-11-03)" data-channel="nightly" data-search-js="search-5c29b3b5.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/</div>any.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Utilities for dynamic typing or type reflection.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! # `Any` and `TypeId`
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -611,290 +611,299 @@
 <a href=#611 id=611 data-nosnippet>611</a>/// noting that the hashes and ordering will vary between Rust releases. Beware
 <a href=#612 id=612 data-nosnippet>612</a>/// of relying on them inside of your code!
 <a href=#613 id=613 data-nosnippet>613</a>///
-<a href=#614 id=614 data-nosnippet>614</a>/// # Danger of Improper Variance
+<a href=#614 id=614 data-nosnippet>614</a>/// # Layout
 <a href=#615 id=615 data-nosnippet>615</a>///
-<a href=#616 id=616 data-nosnippet>616</a>/// You might think that subtyping is impossible between two static types,
-<a href=#617 id=617 data-nosnippet>617</a>/// but this is false; there exists a static type with a static subtype.
-<a href=#618 id=618 data-nosnippet>618</a>/// To wit, `fn(&amp;str)`, which is short for `for&lt;'any&gt; fn(&amp;'any str)`, and
-<a href=#619 id=619 data-nosnippet>619</a>/// `fn(&amp;'static str)`, are two distinct, static types, and yet,
-<a href=#620 id=620 data-nosnippet>620</a>/// `fn(&amp;str)` is a subtype of `fn(&amp;'static str)`, since any value of type
-<a href=#621 id=621 data-nosnippet>621</a>/// `fn(&amp;str)` can be used where a value of type `fn(&amp;'static str)` is needed.
+<a href=#616 id=616 data-nosnippet>616</a>/// Like other [`Rust`-representation][repr-rust] types, `TypeId`'s size and layout are unstable.
+<a href=#617 id=617 data-nosnippet>617</a>/// In particular, this means that you cannot rely on the size and layout of `TypeId` remaining the
+<a href=#618 id=618 data-nosnippet>618</a>/// same between Rust releases; they are subject to change without prior notice between Rust
+<a href=#619 id=619 data-nosnippet>619</a>/// releases.
+<a href=#620 id=620 data-nosnippet>620</a>///
+<a href=#621 id=621 data-nosnippet>621</a>/// [repr-rust]: https://doc.rust-lang.org/reference/type-layout.html#r-layout.repr.rust.unspecified
 <a href=#622 id=622 data-nosnippet>622</a>///
-<a href=#623 id=623 data-nosnippet>623</a>/// This means that abstractions around `TypeId`, despite its
-<a href=#624 id=624 data-nosnippet>624</a>/// `'static` bound on arguments, still need to worry about unnecessary
-<a href=#625 id=625 data-nosnippet>625</a>/// and improper variance: it is advisable to strive for invariance
-<a href=#626 id=626 data-nosnippet>626</a>/// first. The usability impact will be negligible, while the reduction
-<a href=#627 id=627 data-nosnippet>627</a>/// in the risk of unsoundness will be most welcome.
-<a href=#628 id=628 data-nosnippet>628</a>///
-<a href=#629 id=629 data-nosnippet>629</a>/// ## Examples
-<a href=#630 id=630 data-nosnippet>630</a>///
-<a href=#631 id=631 data-nosnippet>631</a>/// Suppose `SubType` is a subtype of `SuperType`, that is,
-<a href=#632 id=632 data-nosnippet>632</a>/// a value of type `SubType` can be used wherever
-<a href=#633 id=633 data-nosnippet>633</a>/// a value of type `SuperType` is expected.
-<a href=#634 id=634 data-nosnippet>634</a>/// Suppose also that `CoVar&lt;T&gt;` is a generic type, which is covariant over `T`
-<a href=#635 id=635 data-nosnippet>635</a>/// (like many other types, including `PhantomData&lt;T&gt;` and `Vec&lt;T&gt;`).
-<a href=#636 id=636 data-nosnippet>636</a>///
-<a href=#637 id=637 data-nosnippet>637</a>/// Then, by covariance, `CoVar&lt;SubType&gt;` is a subtype of `CoVar&lt;SuperType&gt;`,
-<a href=#638 id=638 data-nosnippet>638</a>/// that is, a value of type `CoVar&lt;SubType&gt;` can be used wherever
-<a href=#639 id=639 data-nosnippet>639</a>/// a value of type `CoVar&lt;SuperType&gt;` is expected.
-<a href=#640 id=640 data-nosnippet>640</a>///
-<a href=#641 id=641 data-nosnippet>641</a>/// Then if `CoVar&lt;SuperType&gt;` relies on `TypeId::of::&lt;SuperType&gt;()` to uphold any invariants,
-<a href=#642 id=642 data-nosnippet>642</a>/// those invariants may be broken because a value of type `CoVar&lt;SuperType&gt;` can be created
-<a href=#643 id=643 data-nosnippet>643</a>/// without going through any of its methods, like so:
-<a href=#644 id=644 data-nosnippet>644</a>/// ```
-<a href=#645 id=645 data-nosnippet>645</a>/// type SubType = fn(&amp;());
-<a href=#646 id=646 data-nosnippet>646</a>/// type SuperType = fn(&amp;'static ());
-<a href=#647 id=647 data-nosnippet>647</a>/// type CoVar&lt;T&gt; = Vec&lt;T&gt;; // imagine something more complicated
-<a href=#648 id=648 data-nosnippet>648</a>///
-<a href=#649 id=649 data-nosnippet>649</a>/// let sub: CoVar&lt;SubType&gt; = CoVar::new();
-<a href=#650 id=650 data-nosnippet>650</a>/// // we have a `CoVar&lt;SuperType&gt;` instance without
-<a href=#651 id=651 data-nosnippet>651</a>/// // *ever* having called `CoVar::&lt;SuperType&gt;::new()`!
-<a href=#652 id=652 data-nosnippet>652</a>/// let fake_super: CoVar&lt;SuperType&gt; = sub;
+<a href=#623 id=623 data-nosnippet>623</a>/// # Danger of Improper Variance
+<a href=#624 id=624 data-nosnippet>624</a>///
+<a href=#625 id=625 data-nosnippet>625</a>/// You might think that subtyping is impossible between two static types,
+<a href=#626 id=626 data-nosnippet>626</a>/// but this is false; there exists a static type with a static subtype.
+<a href=#627 id=627 data-nosnippet>627</a>/// To wit, `fn(&amp;str)`, which is short for `for&lt;'any&gt; fn(&amp;'any str)`, and
+<a href=#628 id=628 data-nosnippet>628</a>/// `fn(&amp;'static str)`, are two distinct, static types, and yet,
+<a href=#629 id=629 data-nosnippet>629</a>/// `fn(&amp;str)` is a subtype of `fn(&amp;'static str)`, since any value of type
+<a href=#630 id=630 data-nosnippet>630</a>/// `fn(&amp;str)` can be used where a value of type `fn(&amp;'static str)` is needed.
+<a href=#631 id=631 data-nosnippet>631</a>///
+<a href=#632 id=632 data-nosnippet>632</a>/// This means that abstractions around `TypeId`, despite its
+<a href=#633 id=633 data-nosnippet>633</a>/// `'static` bound on arguments, still need to worry about unnecessary
+<a href=#634 id=634 data-nosnippet>634</a>/// and improper variance: it is advisable to strive for invariance
+<a href=#635 id=635 data-nosnippet>635</a>/// first. The usability impact will be negligible, while the reduction
+<a href=#636 id=636 data-nosnippet>636</a>/// in the risk of unsoundness will be most welcome.
+<a href=#637 id=637 data-nosnippet>637</a>///
+<a href=#638 id=638 data-nosnippet>638</a>/// ## Examples
+<a href=#639 id=639 data-nosnippet>639</a>///
+<a href=#640 id=640 data-nosnippet>640</a>/// Suppose `SubType` is a subtype of `SuperType`, that is,
+<a href=#641 id=641 data-nosnippet>641</a>/// a value of type `SubType` can be used wherever
+<a href=#642 id=642 data-nosnippet>642</a>/// a value of type `SuperType` is expected.
+<a href=#643 id=643 data-nosnippet>643</a>/// Suppose also that `CoVar&lt;T&gt;` is a generic type, which is covariant over `T`
+<a href=#644 id=644 data-nosnippet>644</a>/// (like many other types, including `PhantomData&lt;T&gt;` and `Vec&lt;T&gt;`).
+<a href=#645 id=645 data-nosnippet>645</a>///
+<a href=#646 id=646 data-nosnippet>646</a>/// Then, by covariance, `CoVar&lt;SubType&gt;` is a subtype of `CoVar&lt;SuperType&gt;`,
+<a href=#647 id=647 data-nosnippet>647</a>/// that is, a value of type `CoVar&lt;SubType&gt;` can be used wherever
+<a href=#648 id=648 data-nosnippet>648</a>/// a value of type `CoVar&lt;SuperType&gt;` is expected.
+<a href=#649 id=649 data-nosnippet>649</a>///
+<a href=#650 id=650 data-nosnippet>650</a>/// Then if `CoVar&lt;SuperType&gt;` relies on `TypeId::of::&lt;SuperType&gt;()` to uphold any invariants,
+<a href=#651 id=651 data-nosnippet>651</a>/// those invariants may be broken because a value of type `CoVar&lt;SuperType&gt;` can be created
+<a href=#652 id=652 data-nosnippet>652</a>/// without going through any of its methods, like so:
 <a href=#653 id=653 data-nosnippet>653</a>/// ```
-<a href=#654 id=654 data-nosnippet>654</a>///
-<a href=#655 id=655 data-nosnippet>655</a>/// The following is an example program that tries to use `TypeId::of` to
-<a href=#656 id=656 data-nosnippet>656</a>/// implement a generic type `Unique&lt;T&gt;` that guarantees unique instances for each `Unique&lt;T&gt;`,
-<a href=#657 id=657 data-nosnippet>657</a>/// that is, and for each type `T` there can be at most one value of type `Unique&lt;T&gt;` at any time.
-<a href=#658 id=658 data-nosnippet>658</a>///
-<a href=#659 id=659 data-nosnippet>659</a>/// ```
-<a href=#660 id=660 data-nosnippet>660</a>/// mod unique {
-<a href=#661 id=661 data-nosnippet>661</a>///     use std::any::TypeId;
-<a href=#662 id=662 data-nosnippet>662</a>///     use std::collections::BTreeSet;
-<a href=#663 id=663 data-nosnippet>663</a>///     use std::marker::PhantomData;
-<a href=#664 id=664 data-nosnippet>664</a>///     use std::sync::Mutex;
-<a href=#665 id=665 data-nosnippet>665</a>///
-<a href=#666 id=666 data-nosnippet>666</a>///     static ID_SET: Mutex&lt;BTreeSet&lt;TypeId&gt;&gt; = Mutex::new(BTreeSet::new());
+<a href=#654 id=654 data-nosnippet>654</a>/// type SubType = fn(&amp;());
+<a href=#655 id=655 data-nosnippet>655</a>/// type SuperType = fn(&amp;'static ());
+<a href=#656 id=656 data-nosnippet>656</a>/// type CoVar&lt;T&gt; = Vec&lt;T&gt;; // imagine something more complicated
+<a href=#657 id=657 data-nosnippet>657</a>///
+<a href=#658 id=658 data-nosnippet>658</a>/// let sub: CoVar&lt;SubType&gt; = CoVar::new();
+<a href=#659 id=659 data-nosnippet>659</a>/// // we have a `CoVar&lt;SuperType&gt;` instance without
+<a href=#660 id=660 data-nosnippet>660</a>/// // *ever* having called `CoVar::&lt;SuperType&gt;::new()`!
+<a href=#661 id=661 data-nosnippet>661</a>/// let fake_super: CoVar&lt;SuperType&gt; = sub;
+<a href=#662 id=662 data-nosnippet>662</a>/// ```
+<a href=#663 id=663 data-nosnippet>663</a>///
+<a href=#664 id=664 data-nosnippet>664</a>/// The following is an example program that tries to use `TypeId::of` to
+<a href=#665 id=665 data-nosnippet>665</a>/// implement a generic type `Unique&lt;T&gt;` that guarantees unique instances for each `Unique&lt;T&gt;`,
+<a href=#666 id=666 data-nosnippet>666</a>/// that is, and for each type `T` there can be at most one value of type `Unique&lt;T&gt;` at any time.
 <a href=#667 id=667 data-nosnippet>667</a>///
-<a href=#668 id=668 data-nosnippet>668</a>///     // TypeId has only covariant uses, which makes Unique covariant over TypeAsId 🚨
-<a href=#669 id=669 data-nosnippet>669</a>///     #[derive(Debug, PartialEq)]
-<a href=#670 id=670 data-nosnippet>670</a>///     pub struct Unique&lt;TypeAsId: 'static&gt;(
-<a href=#671 id=671 data-nosnippet>671</a>///         // private field prevents creation without `new` outside this module
-<a href=#672 id=672 data-nosnippet>672</a>///         PhantomData&lt;TypeAsId&gt;,
-<a href=#673 id=673 data-nosnippet>673</a>///     );
+<a href=#668 id=668 data-nosnippet>668</a>/// ```
+<a href=#669 id=669 data-nosnippet>669</a>/// mod unique {
+<a href=#670 id=670 data-nosnippet>670</a>///     use std::any::TypeId;
+<a href=#671 id=671 data-nosnippet>671</a>///     use std::collections::BTreeSet;
+<a href=#672 id=672 data-nosnippet>672</a>///     use std::marker::PhantomData;
+<a href=#673 id=673 data-nosnippet>673</a>///     use std::sync::Mutex;
 <a href=#674 id=674 data-nosnippet>674</a>///
-<a href=#675 id=675 data-nosnippet>675</a>///     impl&lt;TypeAsId: 'static&gt; Unique&lt;TypeAsId&gt; {
-<a href=#676 id=676 data-nosnippet>676</a>///         pub fn new() -&gt; Option&lt;Self&gt; {
-<a href=#677 id=677 data-nosnippet>677</a>///             let mut set = ID_SET.lock().unwrap();
-<a href=#678 id=678 data-nosnippet>678</a>///             (set.insert(TypeId::of::&lt;TypeAsId&gt;())).then(|| Self(PhantomData))
-<a href=#679 id=679 data-nosnippet>679</a>///         }
-<a href=#680 id=680 data-nosnippet>680</a>///     }
-<a href=#681 id=681 data-nosnippet>681</a>///
-<a href=#682 id=682 data-nosnippet>682</a>///     impl&lt;TypeAsId: 'static&gt; Drop for Unique&lt;TypeAsId&gt; {
-<a href=#683 id=683 data-nosnippet>683</a>///         fn drop(&amp;mut self) {
-<a href=#684 id=684 data-nosnippet>684</a>///             let mut set = ID_SET.lock().unwrap();
-<a href=#685 id=685 data-nosnippet>685</a>///             (!set.remove(&amp;TypeId::of::&lt;TypeAsId&gt;())).then(|| panic!("duplicity detected"));
-<a href=#686 id=686 data-nosnippet>686</a>///         }
-<a href=#687 id=687 data-nosnippet>687</a>///     }
-<a href=#688 id=688 data-nosnippet>688</a>/// }
-<a href=#689 id=689 data-nosnippet>689</a>///
-<a href=#690 id=690 data-nosnippet>690</a>/// use unique::Unique;
-<a href=#691 id=691 data-nosnippet>691</a>///
-<a href=#692 id=692 data-nosnippet>692</a>/// // `OtherRing` is a subtype of `TheOneRing`. Both are 'static, and thus have a TypeId.
-<a href=#693 id=693 data-nosnippet>693</a>/// type TheOneRing = fn(&amp;'static ());
-<a href=#694 id=694 data-nosnippet>694</a>/// type OtherRing = fn(&amp;());
-<a href=#695 id=695 data-nosnippet>695</a>///
-<a href=#696 id=696 data-nosnippet>696</a>/// fn main() {
-<a href=#697 id=697 data-nosnippet>697</a>///     let the_one_ring: Unique&lt;TheOneRing&gt; = Unique::new().unwrap();
-<a href=#698 id=698 data-nosnippet>698</a>///     assert_eq!(Unique::&lt;TheOneRing&gt;::new(), None);
-<a href=#699 id=699 data-nosnippet>699</a>///
-<a href=#700 id=700 data-nosnippet>700</a>///     let other_ring: Unique&lt;OtherRing&gt; = Unique::new().unwrap();
-<a href=#701 id=701 data-nosnippet>701</a>///     // Use that `Unique&lt;OtherRing&gt;` is a subtype of `Unique&lt;TheOneRing&gt;` 🚨
-<a href=#702 id=702 data-nosnippet>702</a>///     let fake_one_ring: Unique&lt;TheOneRing&gt; = other_ring;
-<a href=#703 id=703 data-nosnippet>703</a>///     assert_eq!(fake_one_ring, the_one_ring);
+<a href=#675 id=675 data-nosnippet>675</a>///     static ID_SET: Mutex&lt;BTreeSet&lt;TypeId&gt;&gt; = Mutex::new(BTreeSet::new());
+<a href=#676 id=676 data-nosnippet>676</a>///
+<a href=#677 id=677 data-nosnippet>677</a>///     // TypeId has only covariant uses, which makes Unique covariant over TypeAsId 🚨
+<a href=#678 id=678 data-nosnippet>678</a>///     #[derive(Debug, PartialEq)]
+<a href=#679 id=679 data-nosnippet>679</a>///     pub struct Unique&lt;TypeAsId: 'static&gt;(
+<a href=#680 id=680 data-nosnippet>680</a>///         // private field prevents creation without `new` outside this module
+<a href=#681 id=681 data-nosnippet>681</a>///         PhantomData&lt;TypeAsId&gt;,
+<a href=#682 id=682 data-nosnippet>682</a>///     );
+<a href=#683 id=683 data-nosnippet>683</a>///
+<a href=#684 id=684 data-nosnippet>684</a>///     impl&lt;TypeAsId: 'static&gt; Unique&lt;TypeAsId&gt; {
+<a href=#685 id=685 data-nosnippet>685</a>///         pub fn new() -&gt; Option&lt;Self&gt; {
+<a href=#686 id=686 data-nosnippet>686</a>///             let mut set = ID_SET.lock().unwrap();
+<a href=#687 id=687 data-nosnippet>687</a>///             (set.insert(TypeId::of::&lt;TypeAsId&gt;())).then(|| Self(PhantomData))
+<a href=#688 id=688 data-nosnippet>688</a>///         }
+<a href=#689 id=689 data-nosnippet>689</a>///     }
+<a href=#690 id=690 data-nosnippet>690</a>///
+<a href=#691 id=691 data-nosnippet>691</a>///     impl&lt;TypeAsId: 'static&gt; Drop for Unique&lt;TypeAsId&gt; {
+<a href=#692 id=692 data-nosnippet>692</a>///         fn drop(&amp;mut self) {
+<a href=#693 id=693 data-nosnippet>693</a>///             let mut set = ID_SET.lock().unwrap();
+<a href=#694 id=694 data-nosnippet>694</a>///             (!set.remove(&amp;TypeId::of::&lt;TypeAsId&gt;())).then(|| panic!("duplicity detected"));
+<a href=#695 id=695 data-nosnippet>695</a>///         }
+<a href=#696 id=696 data-nosnippet>696</a>///     }
+<a href=#697 id=697 data-nosnippet>697</a>/// }
+<a href=#698 id=698 data-nosnippet>698</a>///
+<a href=#699 id=699 data-nosnippet>699</a>/// use unique::Unique;
+<a href=#700 id=700 data-nosnippet>700</a>///
+<a href=#701 id=701 data-nosnippet>701</a>/// // `OtherRing` is a subtype of `TheOneRing`. Both are 'static, and thus have a TypeId.
+<a href=#702 id=702 data-nosnippet>702</a>/// type TheOneRing = fn(&amp;'static ());
+<a href=#703 id=703 data-nosnippet>703</a>/// type OtherRing = fn(&amp;());
 <a href=#704 id=704 data-nosnippet>704</a>///
-<a href=#705 id=705 data-nosnippet>705</a>///     std::mem::forget(fake_one_ring);
-<a href=#706 id=706 data-nosnippet>706</a>/// }
-<a href=#707 id=707 data-nosnippet>707</a>/// ```
-<a href=#708 id=708 data-nosnippet>708</a></span><span class="attr">#[derive(Copy, PartialOrd, Ord)]
-<a href=#709 id=709 data-nosnippet>709</a>#[derive_const(Clone, Eq)]
-<a href=#710 id=710 data-nosnippet>710</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#711 id=711 data-nosnippet>711</a>#[lang = <span class="string">"type_id"</span>]
-<a href=#712 id=712 data-nosnippet>712</a></span><span class="kw">pub struct </span>TypeId {
-<a href=#713 id=713 data-nosnippet>713</a>    <span class="doccomment">/// This needs to be an array of pointers, since there is provenance
-<a href=#714 id=714 data-nosnippet>714</a>    /// in the first array field. This provenance knows exactly which type
-<a href=#715 id=715 data-nosnippet>715</a>    /// the TypeId actually is, allowing CTFE and miri to operate based off it.
-<a href=#716 id=716 data-nosnippet>716</a>    /// At runtime all the pointers in the array contain bits of the hash, making
-<a href=#717 id=717 data-nosnippet>717</a>    /// the entire `TypeId` actually just be a `u128` hash of the type.
-<a href=#718 id=718 data-nosnippet>718</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) data: [<span class="kw-2">*const </span>(); <span class="number">16 </span>/ size_of::&lt;<span class="kw-2">*const </span>()&gt;()],
-<a href=#719 id=719 data-nosnippet>719</a>}
-<a href=#720 id=720 data-nosnippet>720</a>
-<a href=#721 id=721 data-nosnippet>721</a><span class="comment">// SAFETY: the raw pointer is always an integer
-<a href=#722 id=722 data-nosnippet>722</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#723 id=723 data-nosnippet>723</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>TypeId {}
-<a href=#724 id=724 data-nosnippet>724</a><span class="comment">// SAFETY: the raw pointer is always an integer
-<a href=#725 id=725 data-nosnippet>725</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#726 id=726 data-nosnippet>726</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>TypeId {}
-<a href=#727 id=727 data-nosnippet>727</a>
-<a href=#728 id=728 data-nosnippet>728</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#729 id=729 data-nosnippet>729</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
-<a href=#730 id=730 data-nosnippet>730</a></span><span class="kw">impl const </span>PartialEq <span class="kw">for </span>TypeId {
-<a href=#731 id=731 data-nosnippet>731</a>    <span class="attr">#[inline]
-<a href=#732 id=732 data-nosnippet>732</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#733 id=733 data-nosnippet>733</a>        <span class="attr">#[cfg(miri)]
-<a href=#734 id=734 data-nosnippet>734</a>        </span><span class="kw">return </span><span class="kw">crate</span>::intrinsics::type_id_eq(<span class="kw-2">*</span><span class="self">self</span>, <span class="kw-2">*</span>other);
-<a href=#735 id=735 data-nosnippet>735</a>        <span class="attr">#[cfg(not(miri))]
-<a href=#736 id=736 data-nosnippet>736</a>        </span>{
-<a href=#737 id=737 data-nosnippet>737</a>            <span class="kw">let </span>this = <span class="self">self</span>;
-<a href=#738 id=738 data-nosnippet>738</a>            <span class="macro">crate::intrinsics::const_eval_select!</span>(
-<a href=#739 id=739 data-nosnippet>739</a>                @capture { this: <span class="kw-2">&amp;</span>TypeId, other: <span class="kw-2">&amp;</span>TypeId } -&gt; bool:
-<a href=#740 id=740 data-nosnippet>740</a>                <span class="kw">if const </span>{
-<a href=#741 id=741 data-nosnippet>741</a>                    <span class="kw">crate</span>::intrinsics::type_id_eq(<span class="kw-2">*</span>this, <span class="kw-2">*</span>other)
-<a href=#742 id=742 data-nosnippet>742</a>                } <span class="kw">else </span>{
-<a href=#743 id=743 data-nosnippet>743</a>                    <span class="comment">// Ideally we would just invoke `type_id_eq` unconditionally here,
-<a href=#744 id=744 data-nosnippet>744</a>                    // but since we do not MIR inline intrinsics, because backends
-<a href=#745 id=745 data-nosnippet>745</a>                    // may want to override them (and miri does!), MIR opts do not
-<a href=#746 id=746 data-nosnippet>746</a>                    // clean up this call sufficiently for LLVM to turn repeated calls
-<a href=#747 id=747 data-nosnippet>747</a>                    // of `TypeId` comparisons against one specific `TypeId` into
-<a href=#748 id=748 data-nosnippet>748</a>                    // a lookup table.
-<a href=#749 id=749 data-nosnippet>749</a>                    // SAFETY: We know that at runtime none of the bits have provenance and all bits
-<a href=#750 id=750 data-nosnippet>750</a>                    // are initialized. So we can just convert the whole thing to a `u128` and compare that.
-<a href=#751 id=751 data-nosnippet>751</a>                    </span><span class="kw">unsafe </span>{
-<a href=#752 id=752 data-nosnippet>752</a>                        <span class="kw">crate</span>::mem::transmute::&lt;<span class="kw">_</span>, u128&gt;(<span class="kw-2">*</span>this) == <span class="kw">crate</span>::mem::transmute::&lt;<span class="kw">_</span>, u128&gt;(<span class="kw-2">*</span>other)
-<a href=#753 id=753 data-nosnippet>753</a>                    }
-<a href=#754 id=754 data-nosnippet>754</a>                }
-<a href=#755 id=755 data-nosnippet>755</a>            )
-<a href=#756 id=756 data-nosnippet>756</a>        }
-<a href=#757 id=757 data-nosnippet>757</a>    }
-<a href=#758 id=758 data-nosnippet>758</a>}
-<a href=#759 id=759 data-nosnippet>759</a>
-<a href=#760 id=760 data-nosnippet>760</a><span class="kw">impl </span>TypeId {
-<a href=#761 id=761 data-nosnippet>761</a>    <span class="doccomment">/// Returns the `TypeId` of the generic type parameter.
-<a href=#762 id=762 data-nosnippet>762</a>    ///
-<a href=#763 id=763 data-nosnippet>763</a>    /// # Examples
-<a href=#764 id=764 data-nosnippet>764</a>    ///
-<a href=#765 id=765 data-nosnippet>765</a>    /// ```
-<a href=#766 id=766 data-nosnippet>766</a>    /// use std::any::{Any, TypeId};
-<a href=#767 id=767 data-nosnippet>767</a>    ///
-<a href=#768 id=768 data-nosnippet>768</a>    /// fn is_string&lt;T: ?Sized + Any&gt;(_s: &amp;T) -&gt; bool {
-<a href=#769 id=769 data-nosnippet>769</a>    ///     TypeId::of::&lt;String&gt;() == TypeId::of::&lt;T&gt;()
-<a href=#770 id=770 data-nosnippet>770</a>    /// }
+<a href=#705 id=705 data-nosnippet>705</a>/// fn main() {
+<a href=#706 id=706 data-nosnippet>706</a>///     let the_one_ring: Unique&lt;TheOneRing&gt; = Unique::new().unwrap();
+<a href=#707 id=707 data-nosnippet>707</a>///     assert_eq!(Unique::&lt;TheOneRing&gt;::new(), None);
+<a href=#708 id=708 data-nosnippet>708</a>///
+<a href=#709 id=709 data-nosnippet>709</a>///     let other_ring: Unique&lt;OtherRing&gt; = Unique::new().unwrap();
+<a href=#710 id=710 data-nosnippet>710</a>///     // Use that `Unique&lt;OtherRing&gt;` is a subtype of `Unique&lt;TheOneRing&gt;` 🚨
+<a href=#711 id=711 data-nosnippet>711</a>///     let fake_one_ring: Unique&lt;TheOneRing&gt; = other_ring;
+<a href=#712 id=712 data-nosnippet>712</a>///     assert_eq!(fake_one_ring, the_one_ring);
+<a href=#713 id=713 data-nosnippet>713</a>///
+<a href=#714 id=714 data-nosnippet>714</a>///     std::mem::forget(fake_one_ring);
+<a href=#715 id=715 data-nosnippet>715</a>/// }
+<a href=#716 id=716 data-nosnippet>716</a>/// ```
+<a href=#717 id=717 data-nosnippet>717</a></span><span class="attr">#[derive(Copy, PartialOrd, Ord)]
+<a href=#718 id=718 data-nosnippet>718</a>#[derive_const(Clone, Eq)]
+<a href=#719 id=719 data-nosnippet>719</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#720 id=720 data-nosnippet>720</a>#[lang = <span class="string">"type_id"</span>]
+<a href=#721 id=721 data-nosnippet>721</a></span><span class="kw">pub struct </span>TypeId {
+<a href=#722 id=722 data-nosnippet>722</a>    <span class="doccomment">/// This needs to be an array of pointers, since there is provenance
+<a href=#723 id=723 data-nosnippet>723</a>    /// in the first array field. This provenance knows exactly which type
+<a href=#724 id=724 data-nosnippet>724</a>    /// the TypeId actually is, allowing CTFE and miri to operate based off it.
+<a href=#725 id=725 data-nosnippet>725</a>    /// At runtime all the pointers in the array contain bits of the hash, making
+<a href=#726 id=726 data-nosnippet>726</a>    /// the entire `TypeId` actually just be a `u128` hash of the type.
+<a href=#727 id=727 data-nosnippet>727</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) data: [<span class="kw-2">*const </span>(); <span class="number">16 </span>/ size_of::&lt;<span class="kw-2">*const </span>()&gt;()],
+<a href=#728 id=728 data-nosnippet>728</a>}
+<a href=#729 id=729 data-nosnippet>729</a>
+<a href=#730 id=730 data-nosnippet>730</a><span class="comment">// SAFETY: the raw pointer is always an integer
+<a href=#731 id=731 data-nosnippet>731</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#732 id=732 data-nosnippet>732</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>TypeId {}
+<a href=#733 id=733 data-nosnippet>733</a><span class="comment">// SAFETY: the raw pointer is always an integer
+<a href=#734 id=734 data-nosnippet>734</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#735 id=735 data-nosnippet>735</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>TypeId {}
+<a href=#736 id=736 data-nosnippet>736</a>
+<a href=#737 id=737 data-nosnippet>737</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#738 id=738 data-nosnippet>738</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
+<a href=#739 id=739 data-nosnippet>739</a></span><span class="kw">impl const </span>PartialEq <span class="kw">for </span>TypeId {
+<a href=#740 id=740 data-nosnippet>740</a>    <span class="attr">#[inline]
+<a href=#741 id=741 data-nosnippet>741</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#742 id=742 data-nosnippet>742</a>        <span class="attr">#[cfg(miri)]
+<a href=#743 id=743 data-nosnippet>743</a>        </span><span class="kw">return </span><span class="kw">crate</span>::intrinsics::type_id_eq(<span class="kw-2">*</span><span class="self">self</span>, <span class="kw-2">*</span>other);
+<a href=#744 id=744 data-nosnippet>744</a>        <span class="attr">#[cfg(not(miri))]
+<a href=#745 id=745 data-nosnippet>745</a>        </span>{
+<a href=#746 id=746 data-nosnippet>746</a>            <span class="kw">let </span>this = <span class="self">self</span>;
+<a href=#747 id=747 data-nosnippet>747</a>            <span class="macro">crate::intrinsics::const_eval_select!</span>(
+<a href=#748 id=748 data-nosnippet>748</a>                @capture { this: <span class="kw-2">&amp;</span>TypeId, other: <span class="kw-2">&amp;</span>TypeId } -&gt; bool:
+<a href=#749 id=749 data-nosnippet>749</a>                <span class="kw">if const </span>{
+<a href=#750 id=750 data-nosnippet>750</a>                    <span class="kw">crate</span>::intrinsics::type_id_eq(<span class="kw-2">*</span>this, <span class="kw-2">*</span>other)
+<a href=#751 id=751 data-nosnippet>751</a>                } <span class="kw">else </span>{
+<a href=#752 id=752 data-nosnippet>752</a>                    <span class="comment">// Ideally we would just invoke `type_id_eq` unconditionally here,
+<a href=#753 id=753 data-nosnippet>753</a>                    // but since we do not MIR inline intrinsics, because backends
+<a href=#754 id=754 data-nosnippet>754</a>                    // may want to override them (and miri does!), MIR opts do not
+<a href=#755 id=755 data-nosnippet>755</a>                    // clean up this call sufficiently for LLVM to turn repeated calls
+<a href=#756 id=756 data-nosnippet>756</a>                    // of `TypeId` comparisons against one specific `TypeId` into
+<a href=#757 id=757 data-nosnippet>757</a>                    // a lookup table.
+<a href=#758 id=758 data-nosnippet>758</a>                    // SAFETY: We know that at runtime none of the bits have provenance and all bits
+<a href=#759 id=759 data-nosnippet>759</a>                    // are initialized. So we can just convert the whole thing to a `u128` and compare that.
+<a href=#760 id=760 data-nosnippet>760</a>                    </span><span class="kw">unsafe </span>{
+<a href=#761 id=761 data-nosnippet>761</a>                        <span class="kw">crate</span>::mem::transmute::&lt;<span class="kw">_</span>, u128&gt;(<span class="kw-2">*</span>this) == <span class="kw">crate</span>::mem::transmute::&lt;<span class="kw">_</span>, u128&gt;(<span class="kw-2">*</span>other)
+<a href=#762 id=762 data-nosnippet>762</a>                    }
+<a href=#763 id=763 data-nosnippet>763</a>                }
+<a href=#764 id=764 data-nosnippet>764</a>            )
+<a href=#765 id=765 data-nosnippet>765</a>        }
+<a href=#766 id=766 data-nosnippet>766</a>    }
+<a href=#767 id=767 data-nosnippet>767</a>}
+<a href=#768 id=768 data-nosnippet>768</a>
+<a href=#769 id=769 data-nosnippet>769</a><span class="kw">impl </span>TypeId {
+<a href=#770 id=770 data-nosnippet>770</a>    <span class="doccomment">/// Returns the `TypeId` of the generic type parameter.
 <a href=#771 id=771 data-nosnippet>771</a>    ///
-<a href=#772 id=772 data-nosnippet>772</a>    /// assert_eq!(is_string(&amp;0), false);
-<a href=#773 id=773 data-nosnippet>773</a>    /// assert_eq!(is_string(&amp;"cookie monster".to_string()), true);
+<a href=#772 id=772 data-nosnippet>772</a>    /// # Examples
+<a href=#773 id=773 data-nosnippet>773</a>    ///
 <a href=#774 id=774 data-nosnippet>774</a>    /// ```
-<a href=#775 id=775 data-nosnippet>775</a>    </span><span class="attr">#[must_use]
-<a href=#776 id=776 data-nosnippet>776</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#777 id=777 data-nosnippet>777</a>    #[rustc_const_stable(feature = <span class="string">"const_type_id"</span>, since = <span class="string">"1.91.0"</span>)]
-<a href=#778 id=778 data-nosnippet>778</a>    </span><span class="kw">pub const fn </span>of&lt;T: <span class="question-mark">?</span>Sized + <span class="lifetime">'static</span>&gt;() -&gt; TypeId {
-<a href=#779 id=779 data-nosnippet>779</a>        <span class="kw">const </span>{ intrinsics::type_id::&lt;T&gt;() }
-<a href=#780 id=780 data-nosnippet>780</a>    }
-<a href=#781 id=781 data-nosnippet>781</a>
-<a href=#782 id=782 data-nosnippet>782</a>    <span class="kw">fn </span>as_u128(<span class="self">self</span>) -&gt; u128 {
-<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0</span>; <span class="number">16</span>];
-<a href=#784 id=784 data-nosnippet>784</a>
-<a href=#785 id=785 data-nosnippet>785</a>        <span class="comment">// This is a provenance-stripping memcpy.
-<a href=#786 id=786 data-nosnippet>786</a>        </span><span class="kw">for </span>(i, chunk) <span class="kw">in </span><span class="self">self</span>.data.iter().copied().enumerate() {
-<a href=#787 id=787 data-nosnippet>787</a>            <span class="kw">let </span>chunk = chunk.addr().to_ne_bytes();
-<a href=#788 id=788 data-nosnippet>788</a>            <span class="kw">let </span>start = i * chunk.len();
-<a href=#789 id=789 data-nosnippet>789</a>            bytes[start..(start + chunk.len())].copy_from_slice(<span class="kw-2">&amp;</span>chunk);
-<a href=#790 id=790 data-nosnippet>790</a>        }
-<a href=#791 id=791 data-nosnippet>791</a>        u128::from_ne_bytes(bytes)
-<a href=#792 id=792 data-nosnippet>792</a>    }
-<a href=#793 id=793 data-nosnippet>793</a>}
-<a href=#794 id=794 data-nosnippet>794</a>
-<a href=#795 id=795 data-nosnippet>795</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#796 id=796 data-nosnippet>796</a></span><span class="kw">impl </span>hash::Hash <span class="kw">for </span>TypeId {
-<a href=#797 id=797 data-nosnippet>797</a>    <span class="attr">#[inline]
-<a href=#798 id=798 data-nosnippet>798</a>    </span><span class="kw">fn </span>hash&lt;H: hash::Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
-<a href=#799 id=799 data-nosnippet>799</a>        <span class="comment">// We only hash the lower 64 bits of our (128 bit) internal numeric ID,
-<a href=#800 id=800 data-nosnippet>800</a>        // because:
-<a href=#801 id=801 data-nosnippet>801</a>        // - The hashing algorithm which backs `TypeId` is expected to be
-<a href=#802 id=802 data-nosnippet>802</a>        //   unbiased and high quality, meaning further mixing would be somewhat
-<a href=#803 id=803 data-nosnippet>803</a>        //   redundant compared to choosing (the lower) 64 bits arbitrarily.
-<a href=#804 id=804 data-nosnippet>804</a>        // - `Hasher::finish` returns a u64 anyway, so the extra entropy we'd
-<a href=#805 id=805 data-nosnippet>805</a>        //   get from hashing the full value would probably not be useful
-<a href=#806 id=806 data-nosnippet>806</a>        //   (especially given the previous point about the lower 64 bits being
-<a href=#807 id=807 data-nosnippet>807</a>        //   high quality on their own).
-<a href=#808 id=808 data-nosnippet>808</a>        // - It is correct to do so -- only hashing a subset of `self` is still
-<a href=#809 id=809 data-nosnippet>809</a>        //   compatible with an `Eq` implementation that considers the entire
-<a href=#810 id=810 data-nosnippet>810</a>        //   value, as ours does.
-<a href=#811 id=811 data-nosnippet>811</a>        </span><span class="kw">let </span>data =
-<a href=#812 id=812 data-nosnippet>812</a>        <span class="comment">// SAFETY: The `offset` stays in-bounds, it just moves the pointer to the 2nd half of the `TypeId`.
-<a href=#813 id=813 data-nosnippet>813</a>        // Only the first ptr-sized chunk ever has provenance, so that second half is always
-<a href=#814 id=814 data-nosnippet>814</a>        // fine to read at integer type.
-<a href=#815 id=815 data-nosnippet>815</a>            </span><span class="kw">unsafe </span>{ <span class="kw">crate</span>::ptr::read_unaligned(<span class="self">self</span>.data.as_ptr().cast::&lt;u64&gt;().offset(<span class="number">1</span>)) };
-<a href=#816 id=816 data-nosnippet>816</a>        data.hash(state);
-<a href=#817 id=817 data-nosnippet>817</a>    }
-<a href=#818 id=818 data-nosnippet>818</a>}
-<a href=#819 id=819 data-nosnippet>819</a>
-<a href=#820 id=820 data-nosnippet>820</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#821 id=821 data-nosnippet>821</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>TypeId {
-<a href=#822 id=822 data-nosnippet>822</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-<a href=#823 id=823 data-nosnippet>823</a>        <span class="macro">write!</span>(f, <span class="string">"TypeId({:#034x})"</span>, <span class="self">self</span>.as_u128())
-<a href=#824 id=824 data-nosnippet>824</a>    }
-<a href=#825 id=825 data-nosnippet>825</a>}
-<a href=#826 id=826 data-nosnippet>826</a>
-<a href=#827 id=827 data-nosnippet>827</a><span class="doccomment">/// Returns the name of a type as a string slice.
-<a href=#828 id=828 data-nosnippet>828</a>///
-<a href=#829 id=829 data-nosnippet>829</a>/// # Note
-<a href=#830 id=830 data-nosnippet>830</a>///
-<a href=#831 id=831 data-nosnippet>831</a>/// This is intended for diagnostic use. The exact contents and format of the
-<a href=#832 id=832 data-nosnippet>832</a>/// string returned are not specified, other than being a best-effort
-<a href=#833 id=833 data-nosnippet>833</a>/// description of the type. For example, amongst the strings
-<a href=#834 id=834 data-nosnippet>834</a>/// that `type_name::&lt;Option&lt;String&gt;&gt;()` might return are `"Option&lt;String&gt;"` and
-<a href=#835 id=835 data-nosnippet>835</a>/// `"std::option::Option&lt;std::string::String&gt;"`.
-<a href=#836 id=836 data-nosnippet>836</a>///
-<a href=#837 id=837 data-nosnippet>837</a>/// The returned string must not be considered to be a unique identifier of a
-<a href=#838 id=838 data-nosnippet>838</a>/// type as multiple types may map to the same type name. Similarly, there is no
-<a href=#839 id=839 data-nosnippet>839</a>/// guarantee that all parts of a type will appear in the returned string. In
-<a href=#840 id=840 data-nosnippet>840</a>/// addition, the output may change between versions of the compiler. For
-<a href=#841 id=841 data-nosnippet>841</a>/// example, lifetime specifiers were omitted in some earlier versions.
-<a href=#842 id=842 data-nosnippet>842</a>///
-<a href=#843 id=843 data-nosnippet>843</a>/// The current implementation uses the same infrastructure as compiler
-<a href=#844 id=844 data-nosnippet>844</a>/// diagnostics and debuginfo, but this is not guaranteed.
+<a href=#775 id=775 data-nosnippet>775</a>    /// use std::any::{Any, TypeId};
+<a href=#776 id=776 data-nosnippet>776</a>    ///
+<a href=#777 id=777 data-nosnippet>777</a>    /// fn is_string&lt;T: ?Sized + Any&gt;(_s: &amp;T) -&gt; bool {
+<a href=#778 id=778 data-nosnippet>778</a>    ///     TypeId::of::&lt;String&gt;() == TypeId::of::&lt;T&gt;()
+<a href=#779 id=779 data-nosnippet>779</a>    /// }
+<a href=#780 id=780 data-nosnippet>780</a>    ///
+<a href=#781 id=781 data-nosnippet>781</a>    /// assert_eq!(is_string(&amp;0), false);
+<a href=#782 id=782 data-nosnippet>782</a>    /// assert_eq!(is_string(&amp;"cookie monster".to_string()), true);
+<a href=#783 id=783 data-nosnippet>783</a>    /// ```
+<a href=#784 id=784 data-nosnippet>784</a>    </span><span class="attr">#[must_use]
+<a href=#785 id=785 data-nosnippet>785</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#786 id=786 data-nosnippet>786</a>    #[rustc_const_stable(feature = <span class="string">"const_type_id"</span>, since = <span class="string">"1.91.0"</span>)]
+<a href=#787 id=787 data-nosnippet>787</a>    </span><span class="kw">pub const fn </span>of&lt;T: <span class="question-mark">?</span>Sized + <span class="lifetime">'static</span>&gt;() -&gt; TypeId {
+<a href=#788 id=788 data-nosnippet>788</a>        <span class="kw">const </span>{ intrinsics::type_id::&lt;T&gt;() }
+<a href=#789 id=789 data-nosnippet>789</a>    }
+<a href=#790 id=790 data-nosnippet>790</a>
+<a href=#791 id=791 data-nosnippet>791</a>    <span class="kw">fn </span>as_u128(<span class="self">self</span>) -&gt; u128 {
+<a href=#792 id=792 data-nosnippet>792</a>        <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0</span>; <span class="number">16</span>];
+<a href=#793 id=793 data-nosnippet>793</a>
+<a href=#794 id=794 data-nosnippet>794</a>        <span class="comment">// This is a provenance-stripping memcpy.
+<a href=#795 id=795 data-nosnippet>795</a>        </span><span class="kw">for </span>(i, chunk) <span class="kw">in </span><span class="self">self</span>.data.iter().copied().enumerate() {
+<a href=#796 id=796 data-nosnippet>796</a>            <span class="kw">let </span>chunk = chunk.addr().to_ne_bytes();
+<a href=#797 id=797 data-nosnippet>797</a>            <span class="kw">let </span>start = i * chunk.len();
+<a href=#798 id=798 data-nosnippet>798</a>            bytes[start..(start + chunk.len())].copy_from_slice(<span class="kw-2">&amp;</span>chunk);
+<a href=#799 id=799 data-nosnippet>799</a>        }
+<a href=#800 id=800 data-nosnippet>800</a>        u128::from_ne_bytes(bytes)
+<a href=#801 id=801 data-nosnippet>801</a>    }
+<a href=#802 id=802 data-nosnippet>802</a>}
+<a href=#803 id=803 data-nosnippet>803</a>
+<a href=#804 id=804 data-nosnippet>804</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#805 id=805 data-nosnippet>805</a></span><span class="kw">impl </span>hash::Hash <span class="kw">for </span>TypeId {
+<a href=#806 id=806 data-nosnippet>806</a>    <span class="attr">#[inline]
+<a href=#807 id=807 data-nosnippet>807</a>    </span><span class="kw">fn </span>hash&lt;H: hash::Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+<a href=#808 id=808 data-nosnippet>808</a>        <span class="comment">// We only hash the lower 64 bits of our (128 bit) internal numeric ID,
+<a href=#809 id=809 data-nosnippet>809</a>        // because:
+<a href=#810 id=810 data-nosnippet>810</a>        // - The hashing algorithm which backs `TypeId` is expected to be
+<a href=#811 id=811 data-nosnippet>811</a>        //   unbiased and high quality, meaning further mixing would be somewhat
+<a href=#812 id=812 data-nosnippet>812</a>        //   redundant compared to choosing (the lower) 64 bits arbitrarily.
+<a href=#813 id=813 data-nosnippet>813</a>        // - `Hasher::finish` returns a u64 anyway, so the extra entropy we'd
+<a href=#814 id=814 data-nosnippet>814</a>        //   get from hashing the full value would probably not be useful
+<a href=#815 id=815 data-nosnippet>815</a>        //   (especially given the previous point about the lower 64 bits being
+<a href=#816 id=816 data-nosnippet>816</a>        //   high quality on their own).
+<a href=#817 id=817 data-nosnippet>817</a>        // - It is correct to do so -- only hashing a subset of `self` is still
+<a href=#818 id=818 data-nosnippet>818</a>        //   compatible with an `Eq` implementation that considers the entire
+<a href=#819 id=819 data-nosnippet>819</a>        //   value, as ours does.
+<a href=#820 id=820 data-nosnippet>820</a>        </span><span class="kw">let </span>data =
+<a href=#821 id=821 data-nosnippet>821</a>        <span class="comment">// SAFETY: The `offset` stays in-bounds, it just moves the pointer to the 2nd half of the `TypeId`.
+<a href=#822 id=822 data-nosnippet>822</a>        // Only the first ptr-sized chunk ever has provenance, so that second half is always
+<a href=#823 id=823 data-nosnippet>823</a>        // fine to read at integer type.
+<a href=#824 id=824 data-nosnippet>824</a>            </span><span class="kw">unsafe </span>{ <span class="kw">crate</span>::ptr::read_unaligned(<span class="self">self</span>.data.as_ptr().cast::&lt;u64&gt;().offset(<span class="number">1</span>)) };
+<a href=#825 id=825 data-nosnippet>825</a>        data.hash(state);
+<a href=#826 id=826 data-nosnippet>826</a>    }
+<a href=#827 id=827 data-nosnippet>827</a>}
+<a href=#828 id=828 data-nosnippet>828</a>
+<a href=#829 id=829 data-nosnippet>829</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#830 id=830 data-nosnippet>830</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>TypeId {
+<a href=#831 id=831 data-nosnippet>831</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+<a href=#832 id=832 data-nosnippet>832</a>        <span class="macro">write!</span>(f, <span class="string">"TypeId({:#034x})"</span>, <span class="self">self</span>.as_u128())
+<a href=#833 id=833 data-nosnippet>833</a>    }
+<a href=#834 id=834 data-nosnippet>834</a>}
+<a href=#835 id=835 data-nosnippet>835</a>
+<a href=#836 id=836 data-nosnippet>836</a><span class="doccomment">/// Returns the name of a type as a string slice.
+<a href=#837 id=837 data-nosnippet>837</a>///
+<a href=#838 id=838 data-nosnippet>838</a>/// # Note
+<a href=#839 id=839 data-nosnippet>839</a>///
+<a href=#840 id=840 data-nosnippet>840</a>/// This is intended for diagnostic use. The exact contents and format of the
+<a href=#841 id=841 data-nosnippet>841</a>/// string returned are not specified, other than being a best-effort
+<a href=#842 id=842 data-nosnippet>842</a>/// description of the type. For example, amongst the strings
+<a href=#843 id=843 data-nosnippet>843</a>/// that `type_name::&lt;Option&lt;String&gt;&gt;()` might return are `"Option&lt;String&gt;"` and
+<a href=#844 id=844 data-nosnippet>844</a>/// `"std::option::Option&lt;std::string::String&gt;"`.
 <a href=#845 id=845 data-nosnippet>845</a>///
-<a href=#846 id=846 data-nosnippet>846</a>/// # Examples
-<a href=#847 id=847 data-nosnippet>847</a>///
-<a href=#848 id=848 data-nosnippet>848</a>/// ```rust
-<a href=#849 id=849 data-nosnippet>849</a>/// assert_eq!(
-<a href=#850 id=850 data-nosnippet>850</a>///     std::any::type_name::&lt;Option&lt;String&gt;&gt;(),
-<a href=#851 id=851 data-nosnippet>851</a>///     "core::option::Option&lt;alloc::string::String&gt;",
-<a href=#852 id=852 data-nosnippet>852</a>/// );
-<a href=#853 id=853 data-nosnippet>853</a>/// ```
-<a href=#854 id=854 data-nosnippet>854</a></span><span class="attr">#[must_use]
-<a href=#855 id=855 data-nosnippet>855</a>#[stable(feature = <span class="string">"type_name"</span>, since = <span class="string">"1.38.0"</span>)]
-<a href=#856 id=856 data-nosnippet>856</a>#[rustc_const_unstable(feature = <span class="string">"const_type_name"</span>, issue = <span class="string">"63084"</span>)]
-<a href=#857 id=857 data-nosnippet>857</a></span><span class="kw">pub const fn </span>type_name&lt;T: <span class="question-mark">?</span>Sized&gt;() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
-<a href=#858 id=858 data-nosnippet>858</a>    <span class="kw">const </span>{ intrinsics::type_name::&lt;T&gt;() }
-<a href=#859 id=859 data-nosnippet>859</a>}
-<a href=#860 id=860 data-nosnippet>860</a>
-<a href=#861 id=861 data-nosnippet>861</a><span class="doccomment">/// Returns the type name of the pointed-to value as a string slice.
-<a href=#862 id=862 data-nosnippet>862</a>///
-<a href=#863 id=863 data-nosnippet>863</a>/// This is the same as `type_name::&lt;T&gt;()`, but can be used where the type of a
-<a href=#864 id=864 data-nosnippet>864</a>/// variable is not easily available.
-<a href=#865 id=865 data-nosnippet>865</a>///
-<a href=#866 id=866 data-nosnippet>866</a>/// # Note
-<a href=#867 id=867 data-nosnippet>867</a>///
-<a href=#868 id=868 data-nosnippet>868</a>/// Like [`type_name`], this is intended for diagnostic use and the exact output is not
-<a href=#869 id=869 data-nosnippet>869</a>/// guaranteed. It provides a best-effort description, but the output may change between
-<a href=#870 id=870 data-nosnippet>870</a>/// versions of the compiler.
+<a href=#846 id=846 data-nosnippet>846</a>/// The returned string must not be considered to be a unique identifier of a
+<a href=#847 id=847 data-nosnippet>847</a>/// type as multiple types may map to the same type name. Similarly, there is no
+<a href=#848 id=848 data-nosnippet>848</a>/// guarantee that all parts of a type will appear in the returned string. In
+<a href=#849 id=849 data-nosnippet>849</a>/// addition, the output may change between versions of the compiler. For
+<a href=#850 id=850 data-nosnippet>850</a>/// example, lifetime specifiers were omitted in some earlier versions.
+<a href=#851 id=851 data-nosnippet>851</a>///
+<a href=#852 id=852 data-nosnippet>852</a>/// The current implementation uses the same infrastructure as compiler
+<a href=#853 id=853 data-nosnippet>853</a>/// diagnostics and debuginfo, but this is not guaranteed.
+<a href=#854 id=854 data-nosnippet>854</a>///
+<a href=#855 id=855 data-nosnippet>855</a>/// # Examples
+<a href=#856 id=856 data-nosnippet>856</a>///
+<a href=#857 id=857 data-nosnippet>857</a>/// ```rust
+<a href=#858 id=858 data-nosnippet>858</a>/// assert_eq!(
+<a href=#859 id=859 data-nosnippet>859</a>///     std::any::type_name::&lt;Option&lt;String&gt;&gt;(),
+<a href=#860 id=860 data-nosnippet>860</a>///     "core::option::Option&lt;alloc::string::String&gt;",
+<a href=#861 id=861 data-nosnippet>861</a>/// );
+<a href=#862 id=862 data-nosnippet>862</a>/// ```
+<a href=#863 id=863 data-nosnippet>863</a></span><span class="attr">#[must_use]
+<a href=#864 id=864 data-nosnippet>864</a>#[stable(feature = <span class="string">"type_name"</span>, since = <span class="string">"1.38.0"</span>)]
+<a href=#865 id=865 data-nosnippet>865</a>#[rustc_const_unstable(feature = <span class="string">"const_type_name"</span>, issue = <span class="string">"63084"</span>)]
+<a href=#866 id=866 data-nosnippet>866</a></span><span class="kw">pub const fn </span>type_name&lt;T: <span class="question-mark">?</span>Sized&gt;() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+<a href=#867 id=867 data-nosnippet>867</a>    <span class="kw">const </span>{ intrinsics::type_name::&lt;T&gt;() }
+<a href=#868 id=868 data-nosnippet>868</a>}
+<a href=#869 id=869 data-nosnippet>869</a>
+<a href=#870 id=870 data-nosnippet>870</a><span class="doccomment">/// Returns the type name of the pointed-to value as a string slice.
 <a href=#871 id=871 data-nosnippet>871</a>///
-<a href=#872 id=872 data-nosnippet>872</a>/// In short: use this for debugging, avoid using the output to affect program behavior. More
-<a href=#873 id=873 data-nosnippet>873</a>/// information is available at [`type_name`].
+<a href=#872 id=872 data-nosnippet>872</a>/// This is the same as `type_name::&lt;T&gt;()`, but can be used where the type of a
+<a href=#873 id=873 data-nosnippet>873</a>/// variable is not easily available.
 <a href=#874 id=874 data-nosnippet>874</a>///
-<a href=#875 id=875 data-nosnippet>875</a>/// Additionally, this function does not resolve trait objects. This means that
-<a href=#876 id=876 data-nosnippet>876</a>/// `type_name_of_val(&amp;7u32 as &amp;dyn Debug)` may return `"dyn Debug"`, but will not return `"u32"`
-<a href=#877 id=877 data-nosnippet>877</a>/// at this time.
-<a href=#878 id=878 data-nosnippet>878</a>///
-<a href=#879 id=879 data-nosnippet>879</a>/// # Examples
+<a href=#875 id=875 data-nosnippet>875</a>/// # Note
+<a href=#876 id=876 data-nosnippet>876</a>///
+<a href=#877 id=877 data-nosnippet>877</a>/// Like [`type_name`], this is intended for diagnostic use and the exact output is not
+<a href=#878 id=878 data-nosnippet>878</a>/// guaranteed. It provides a best-effort description, but the output may change between
+<a href=#879 id=879 data-nosnippet>879</a>/// versions of the compiler.
 <a href=#880 id=880 data-nosnippet>880</a>///
-<a href=#881 id=881 data-nosnippet>881</a>/// Prints the default integer and float types.
-<a href=#882 id=882 data-nosnippet>882</a>///
-<a href=#883 id=883 data-nosnippet>883</a>/// ```rust
-<a href=#884 id=884 data-nosnippet>884</a>/// use std::any::type_name_of_val;
-<a href=#885 id=885 data-nosnippet>885</a>///
-<a href=#886 id=886 data-nosnippet>886</a>/// let s = "foo";
-<a href=#887 id=887 data-nosnippet>887</a>/// let x: i32 = 1;
-<a href=#888 id=888 data-nosnippet>888</a>/// let y: f32 = 1.0;
+<a href=#881 id=881 data-nosnippet>881</a>/// In short: use this for debugging, avoid using the output to affect program behavior. More
+<a href=#882 id=882 data-nosnippet>882</a>/// information is available at [`type_name`].
+<a href=#883 id=883 data-nosnippet>883</a>///
+<a href=#884 id=884 data-nosnippet>884</a>/// Additionally, this function does not resolve trait objects. This means that
+<a href=#885 id=885 data-nosnippet>885</a>/// `type_name_of_val(&amp;7u32 as &amp;dyn Debug)` may return `"dyn Debug"`, but will not return `"u32"`
+<a href=#886 id=886 data-nosnippet>886</a>/// at this time.
+<a href=#887 id=887 data-nosnippet>887</a>///
+<a href=#888 id=888 data-nosnippet>888</a>/// # Examples
 <a href=#889 id=889 data-nosnippet>889</a>///
-<a href=#890 id=890 data-nosnippet>890</a>/// assert!(type_name_of_val(&amp;s).contains("str"));
-<a href=#891 id=891 data-nosnippet>891</a>/// assert!(type_name_of_val(&amp;x).contains("i32"));
-<a href=#892 id=892 data-nosnippet>892</a>/// assert!(type_name_of_val(&amp;y).contains("f32"));
-<a href=#893 id=893 data-nosnippet>893</a>/// ```
-<a href=#894 id=894 data-nosnippet>894</a></span><span class="attr">#[must_use]
-<a href=#895 id=895 data-nosnippet>895</a>#[stable(feature = <span class="string">"type_name_of_val"</span>, since = <span class="string">"1.76.0"</span>)]
-<a href=#896 id=896 data-nosnippet>896</a>#[rustc_const_unstable(feature = <span class="string">"const_type_name"</span>, issue = <span class="string">"63084"</span>)]
-<a href=#897 id=897 data-nosnippet>897</a></span><span class="kw">pub const fn </span>type_name_of_val&lt;T: <span class="question-mark">?</span>Sized&gt;(_val: <span class="kw-2">&amp;</span>T) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
-<a href=#898 id=898 data-nosnippet>898</a>    type_name::&lt;T&gt;()
-<a href=#899 id=899 data-nosnippet>899</a>}
+<a href=#890 id=890 data-nosnippet>890</a>/// Prints the default integer and float types.
+<a href=#891 id=891 data-nosnippet>891</a>///
+<a href=#892 id=892 data-nosnippet>892</a>/// ```rust
+<a href=#893 id=893 data-nosnippet>893</a>/// use std::any::type_name_of_val;
+<a href=#894 id=894 data-nosnippet>894</a>///
+<a href=#895 id=895 data-nosnippet>895</a>/// let s = "foo";
+<a href=#896 id=896 data-nosnippet>896</a>/// let x: i32 = 1;
+<a href=#897 id=897 data-nosnippet>897</a>/// let y: f32 = 1.0;
+<a href=#898 id=898 data-nosnippet>898</a>///
+<a href=#899 id=899 data-nosnippet>899</a>/// assert!(type_name_of_val(&amp;s).contains("str"));
+<a href=#900 id=900 data-nosnippet>900</a>/// assert!(type_name_of_val(&amp;x).contains("i32"));
+<a href=#901 id=901 data-nosnippet>901</a>/// assert!(type_name_of_val(&amp;y).contains("f32"));
+<a href=#902 id=902 data-nosnippet>902</a>/// ```
+<a href=#903 id=903 data-nosnippet>903</a></span><span class="attr">#[must_use]
+<a href=#904 id=904 data-nosnippet>904</a>#[stable(feature = <span class="string">"type_name_of_val"</span>, since = <span class="string">"1.76.0"</span>)]
+<a href=#905 id=905 data-nosnippet>905</a>#[rustc_const_unstable(feature = <span class="string">"const_type_name"</span>, issue = <span class="string">"63084"</span>)]
+<a href=#906 id=906 data-nosnippet>906</a></span><span class="kw">pub const fn </span>type_name_of_val&lt;T: <span class="question-mark">?</span>Sized&gt;(_val: <span class="kw-2">&amp;</span>T) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+<a href=#907 id=907 data-nosnippet>907</a>    type_name::&lt;T&gt;()
+<a href=#908 id=908 data-nosnippet>908</a>}
 </code></pre></div></section></main></body></html>
