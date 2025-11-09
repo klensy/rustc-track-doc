@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-29494f95.js";
+            window.path_to_searchindex_js = "../searchindex-fd1f00da.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-5d95e9da.js"></script>
+        <script src="../toc-99740419.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -206,6 +206,8 @@ highest level of software quality and security.</p>
 AddressSanitizer, but based on partial hardware assistance.</li>
 <li><a href="#leaksanitizer">LeakSanitizer</a> a run-time memory leak detector.</li>
 <li><a href="#memorysanitizer">MemorySanitizer</a> a detector of uninitialized reads.</li>
+<li><a href="#realtimesanitizer">RealtimeSanitizer</a> a detector of calls to function with
+non-deterministic execution time in realtime contexts.</li>
 <li><a href="#threadsanitizer">ThreadSanitizer</a> a fast data race detector.</li>
 </ul>
 </li>
@@ -230,11 +232,11 @@ protection (aarch64 only).</li>
 </ul>
 <p>To enable a sanitizer compile with <code>-Zsanitizer=address</code>, <code>-Zsanitizer=cfi</code>,
 <code>-Zsanitizer=dataflow</code>,<code>-Zsanitizer=hwaddress</code>, <code>-Zsanitizer=leak</code>,
-<code>-Zsanitizer=memory</code>, <code>-Zsanitizer=memtag</code>, <code>-Zsanitizer=shadow-call-stack</code>, or
-<code>-Zsanitizer=thread</code>. You might also need the <code>--target</code> and <code>build-std</code> flags.
-If you're working with other languages that are also instrumented with sanitizers,
-you might need the <code>external-clangrt</code> flag. See the section on
-<a href="#working-with-other-languages">working with other languages</a>.</p>
+<code>-Zsanitizer=memory</code>, <code>-Zsanitizer=memtag</code>, <code>-Zsanitizer=realtime</code>,
+<code>-Zsanitizer=shadow-call-stack</code> or <code>-Zsanitizer=thread</code>. You might also need the
+<code>--target</code> and <code>build-std</code> flags. If you're working with other languages that are also
+instrumented with sanitizers, you might need the <code>external-clangrt</code> flag. See
+the section on <a href="#working-with-other-languages">working with other languages</a>.</p>
 <p>Example:</p>
 <pre><code class="language-shell">$ RUSTFLAGS=-Zsanitizer=address cargo build -Zbuild-std --target x86_64-unknown-linux-gnu
 </code></pre>
@@ -920,6 +922,62 @@ WARNING: ThreadSanitizer: data race (pid=10574)
 
   Location is global 'example::A::h43ac149ddf992709' of size 8 at 0x5632dfe3d030 (example+0x000000bd9030)
 </code></pre>
+<h1 id="realtimesanitizer"><a class="header" href="#realtimesanitizer">RealtimeSanitizer</a></h1>
+<p>RealtimeSanitizer detects non-deterministic execution time calls in real-time contexts.
+Functions marked with the <code>#[sanitize(realtime = "nonblocking")]</code> attribute are considered real-time functions.
+When RTSan detects a call to a function with a non-deterministic execution time, like <code>malloc</code> or <code>free</code>
+while in a real-time context, it reports an error.</p>
+<p>Besides "nonblocking" the attribute can also be used with "blocking" and "caller".</p>
+<ul>
+<li>"blocking" allows the programmer to mark their own functions as having a non-deterministic execution time.
+When reaching such a function while in a real-time context a violation will be reported. A typical use
+case is a userland spinlock.</li>
+<li>functions marked with "caller" will be sanitized if they were called from a real-time context.
+If no attribute is set, this is the default. Between entering a "nonblocking" function and exiting that
+function again the program will get sanitized.</li>
+</ul>
+<p>The santizer checks can be disabled using the external functions <code>__rtsan_disable()</code> and <code>__rtsan_enable()</code>.
+Each call to <code>__rtsan_disable()</code> must be paired with one following call to <code>__rtsan_enable()</code>, otherwise the behaviour is undefined.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>unsafe extern "C" {
+  fn __rtsan_disable();
+  fn __rtsan_enable();
+}
+<span class="boring">}</span></code></pre></pre>
+<pre><code class="language-rust ignore (log is just a example and doesn&#39;t exist)">// in a real-time context
+#[cfg(debug_assertions)]
+{
+    unsafe { __rtsan_disable() };
+    log!("logging xyz");
+    unsafe { __rtsan_enable() };
+}</code></pre>
+<p>See the [Clang RealtimeSanitizer documentation][clang-rtsan] for more details.</p>
+<h2 id="example-3"><a class="header" href="#example-3">Example</a></h2>
+<pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span>#![feature(sanitize)]
+<span class="boring">fn main() {
+</span>#[sanitize(realtime = "nonblocking")]
+fn real_time() {
+  let vec = vec![0, 1, 2]; // call to malloc is detected and reported as an error
+}
+<span class="boring">}</span></code></pre></pre>
+<pre><code class="language-shell">==8670==ERROR: RealtimeSanitizer: unsafe-library-call
+Intercepted call to real-time unsafe function `malloc` in real-time context!
+    #0 0x00010107b0d8 in malloc rtsan_interceptors_posix.cpp:792
+    #1 0x000100d94e70 in alloc::alloc::Global::alloc_impl::h9e1fc3206c868eea+0xa0 (realtime_vec:arm64+0x100000e70)
+    #2 0x000100d94d90 in alloc::alloc::exchange_malloc::hd45b5788339eb5c8+0x48 (realtime_vec:arm64+0x100000d90)
+    #3 0x000100d95020 in realtime_vec::main::hea6bd69b03eb9ca1+0x24 (realtime_vec:arm64+0x100001020)
+    #4 0x000100d94a28 in core::ops::function::FnOnce::call_once::h493b6cb9dd87d87c+0xc (realtime_vec:arm64+0x100000a28)
+    #5 0x000100d949b8 in std::sys::backtrace::__rust_begin_short_backtrace::hfcddb06c73c19eea+0x8 (realtime_vec:arm64+0x1000009b8)
+    #6 0x000100d9499c in std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h202288c05a2064f0+0xc (realtime_vec:arm64+0x10000099c)
+    #7 0x000100d9fa34 in std::rt::lang_start_internal::h6c763158a05ac05f+0x6c (realtime_vec:arm64+0x10000ba34)
+    #8 0x000100d94980 in std::rt::lang_start::h1c29cc56df0598b4+0x38 (realtime_vec:arm64+0x100000980)
+    #9 0x000100d95118 in main+0x20 (realtime_vec:arm64+0x100001118)
+    #10 0x000183a46b94 in start+0x17b8 (dyld:arm64+0xfffffffffff3ab94)
+
+SUMMARY: RealtimeSanitizer: unsafe-library-call rtsan_interceptors_posix.cpp:792 in malloc
+</code></pre>
 <h1 id="instrumentation-of-external-dependencies-and-std"><a class="header" href="#instrumentation-of-external-dependencies-and-std">Instrumentation of external dependencies and std</a></h1>
 <p>The sanitizers to varying degrees work correctly with partially instrumented
 code. On the one extreme is LeakSanitizer that doesn't use any compile time
@@ -960,6 +1018,7 @@ macros.</p>
 <li><a href="https://clang.llvm.org/docs/MemorySanitizer.html">MemorySanitizer in Clang</a></li>
 <li><a href="https://llvm.org/docs/MemTagSanitizer.html">MemTagSanitizer in LLVM</a></li>
 <li><a href="https://clang.llvm.org/docs/ThreadSanitizer.html">ThreadSanitizer in Clang</a></li>
+<li>[RealtimeSanitizer in Clang][clang-rtsan]</li>
 </ul>
 
                     </main>
