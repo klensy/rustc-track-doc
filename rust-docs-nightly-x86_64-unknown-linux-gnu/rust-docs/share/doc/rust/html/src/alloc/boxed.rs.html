@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed.rs`."><title>boxed.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (fb23dd3c6 2025-11-08)" data-channel="nightly" data-search-js="search-8e3fad08.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>boxed.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `Box&lt;T&gt;` type for heap allocation.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed.rs`."><title>boxed.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (6647be936 2025-11-09)" data-channel="nightly" data-search-js="search-8e3fad08.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>boxed.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `Box&lt;T&gt;` type for heap allocation.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! [`Box&lt;T&gt;`], casually referred to as a 'box', provides the simplest form of
 <a href=#4 id=4 data-nosnippet>4</a>//! heap allocation in Rust. Boxes provide ownership for this allocation, and
@@ -850,7 +850,7 @@
 <a href=#850 id=850 data-nosnippet>850</a>    /// This operation does not reallocate; the underlying array of the slice is simply reinterpreted as an array type.
 <a href=#851 id=851 data-nosnippet>851</a>    ///
 <a href=#852 id=852 data-nosnippet>852</a>    /// If `N` is not exactly equal to the length of `self`, then this method returns `None`.
-<a href=#853 id=853 data-nosnippet>853</a>    </span><span class="attr">#[unstable(feature = <span class="string">"slice_as_array"</span>, issue = <span class="string">"133508"</span>)]
+<a href=#853 id=853 data-nosnippet>853</a>    </span><span class="attr">#[unstable(feature = <span class="string">"alloc_slice_into_array"</span>, issue = <span class="string">"148082"</span>)]
 <a href=#854 id=854 data-nosnippet>854</a>    #[inline]
 <a href=#855 id=855 data-nosnippet>855</a>    #[must_use]
 <a href=#856 id=856 data-nosnippet>856</a>    </span><span class="kw">pub fn </span>into_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;[T; N]&gt;&gt; {
@@ -1254,7 +1254,7 @@
 <a href=#1254 id=1254 data-nosnippet>1254</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>b = mem::ManuallyDrop::new(b);
 <a href=#1255 id=1255 data-nosnippet>1255</a>        <span class="comment">// We go through the built-in deref for `Box`, which is crucial for Miri to recognize this
 <a href=#1256 id=1256 data-nosnippet>1256</a>        // operation for it's alias tracking.
-<a href=#1257 id=1257 data-nosnippet>1257</a>        </span><span class="kw-2">&amp;</span>raw <span class="kw-2">mut **</span>b
+<a href=#1257 id=1257 data-nosnippet>1257</a>        </span><span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut **</span>b
 <a href=#1258 id=1258 data-nosnippet>1258</a>    }
 <a href=#1259 id=1259 data-nosnippet>1259</a>
 <a href=#1260 id=1260 data-nosnippet>1260</a>    <span class="doccomment">/// Consumes the `Box`, returning a wrapped `NonNull` pointer.
@@ -1482,7 +1482,7 @@
 <a href=#1482 id=1482 data-nosnippet>1482</a>        // want *no* aliasing requirements here!
 <a href=#1483 id=1483 data-nosnippet>1483</a>        // In case `A` *is* `Global`, this does not quite have the right behavior; `into_raw`
 <a href=#1484 id=1484 data-nosnippet>1484</a>        // works around that.
-<a href=#1485 id=1485 data-nosnippet>1485</a>        </span><span class="kw">let </span>ptr = <span class="kw-2">&amp;</span>raw <span class="kw-2">mut **</span>b;
+<a href=#1485 id=1485 data-nosnippet>1485</a>        </span><span class="kw">let </span>ptr = <span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut **</span>b;
 <a href=#1486 id=1486 data-nosnippet>1486</a>        <span class="kw">let </span>alloc = <span class="kw">unsafe </span>{ ptr::read(<span class="kw-2">&amp;</span>b.<span class="number">1</span>) };
 <a href=#1487 id=1487 data-nosnippet>1487</a>        (ptr, alloc)
 <a href=#1488 id=1488 data-nosnippet>1488</a>    }
@@ -1593,7 +1593,7 @@
 <a href=#1593 id=1593 data-nosnippet>1593</a>    </span><span class="kw">pub fn </span>as_mut_ptr(b: <span class="kw-2">&amp;mut </span><span class="self">Self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#1594 id=1594 data-nosnippet>1594</a>        <span class="comment">// This is a primitive deref, not going through `DerefMut`, and therefore not materializing
 <a href=#1595 id=1595 data-nosnippet>1595</a>        // any references.
-<a href=#1596 id=1596 data-nosnippet>1596</a>        </span><span class="kw-2">&amp;</span>raw <span class="kw-2">mut **</span>b
+<a href=#1596 id=1596 data-nosnippet>1596</a>        </span><span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut **</span>b
 <a href=#1597 id=1597 data-nosnippet>1597</a>    }
 <a href=#1598 id=1598 data-nosnippet>1598</a>
 <a href=#1599 id=1599 data-nosnippet>1599</a>    <span class="doccomment">/// Returns a raw pointer to the `Box`'s contents.
@@ -1642,7 +1642,7 @@
 <a href=#1642 id=1642 data-nosnippet>1642</a>    </span><span class="kw">pub fn </span>as_ptr(b: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="kw-2">*const </span>T {
 <a href=#1643 id=1643 data-nosnippet>1643</a>        <span class="comment">// This is a primitive deref, not going through `DerefMut`, and therefore not materializing
 <a href=#1644 id=1644 data-nosnippet>1644</a>        // any references.
-<a href=#1645 id=1645 data-nosnippet>1645</a>        </span><span class="kw-2">&amp;</span>raw <span class="kw">const </span><span class="kw-2">**</span>b
+<a href=#1645 id=1645 data-nosnippet>1645</a>        </span><span class="kw-2">&amp;</span><span class="kw">raw const </span><span class="kw-2">**</span>b
 <a href=#1646 id=1646 data-nosnippet>1646</a>    }
 <a href=#1647 id=1647 data-nosnippet>1647</a>
 <a href=#1648 id=1648 data-nosnippet>1648</a>    <span class="doccomment">/// Returns a reference to the underlying allocator.
@@ -1785,7 +1785,7 @@
 <a href=#1785 id=1785 data-nosnippet>1785</a>            // extra stack copies of `T` in debug mode.
 <a href=#1786 id=1786 data-nosnippet>1786</a>            //
 <a href=#1787 id=1787 data-nosnippet>1787</a>            // See https://github.com/rust-lang/rust/issues/136043 for more context.
-<a href=#1788 id=1788 data-nosnippet>1788</a>            </span>ptr::write(<span class="kw-2">&amp;</span>raw <span class="kw-2">mut *</span>x <span class="kw">as </span><span class="kw-2">*mut </span>T, T::default());
+<a href=#1788 id=1788 data-nosnippet>1788</a>            </span>ptr::write(<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut *</span>x <span class="kw">as </span><span class="kw-2">*mut </span>T, T::default());
 <a href=#1789 id=1789 data-nosnippet>1789</a>            <span class="comment">// SAFETY: `x` was just initialized above.
 <a href=#1790 id=1790 data-nosnippet>1790</a>            </span>x.assume_init()
 <a href=#1791 id=1791 data-nosnippet>1791</a>        }
@@ -2241,4 +2241,56 @@
 <a href=#2241 id=2241 data-nosnippet>2241</a>        Error::provide(<span class="kw-2">&amp;**</span><span class="self">self</span>, request);
 <a href=#2242 id=2242 data-nosnippet>2242</a>    }
 <a href=#2243 id=2243 data-nosnippet>2243</a>}
+<a href=#2244 id=2244 data-nosnippet>2244</a>
+<a href=#2245 id=2245 data-nosnippet>2245</a><span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
+<a href=#2246 id=2246 data-nosnippet>2246</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; Allocator <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2247 id=2247 data-nosnippet>2247</a>    <span class="attr">#[inline]
+<a href=#2248 id=2248 data-nosnippet>2248</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2249 id=2249 data-nosnippet>2249</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate(layout)
+<a href=#2250 id=2250 data-nosnippet>2250</a>    }
+<a href=#2251 id=2251 data-nosnippet>2251</a>
+<a href=#2252 id=2252 data-nosnippet>2252</a>    <span class="attr">#[inline]
+<a href=#2253 id=2253 data-nosnippet>2253</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2254 id=2254 data-nosnippet>2254</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate_zeroed(layout)
+<a href=#2255 id=2255 data-nosnippet>2255</a>    }
+<a href=#2256 id=2256 data-nosnippet>2256</a>
+<a href=#2257 id=2257 data-nosnippet>2257</a>    <span class="attr">#[inline]
+<a href=#2258 id=2258 data-nosnippet>2258</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
+<a href=#2259 id=2259 data-nosnippet>2259</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2260 id=2260 data-nosnippet>2260</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).deallocate(ptr, layout) }
+<a href=#2261 id=2261 data-nosnippet>2261</a>    }
+<a href=#2262 id=2262 data-nosnippet>2262</a>
+<a href=#2263 id=2263 data-nosnippet>2263</a>    <span class="attr">#[inline]
+<a href=#2264 id=2264 data-nosnippet>2264</a>    </span><span class="kw">unsafe fn </span>grow(
+<a href=#2265 id=2265 data-nosnippet>2265</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2266 id=2266 data-nosnippet>2266</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2267 id=2267 data-nosnippet>2267</a>        old_layout: Layout,
+<a href=#2268 id=2268 data-nosnippet>2268</a>        new_layout: Layout,
+<a href=#2269 id=2269 data-nosnippet>2269</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2270 id=2270 data-nosnippet>2270</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2271 id=2271 data-nosnippet>2271</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow(ptr, old_layout, new_layout) }
+<a href=#2272 id=2272 data-nosnippet>2272</a>    }
+<a href=#2273 id=2273 data-nosnippet>2273</a>
+<a href=#2274 id=2274 data-nosnippet>2274</a>    <span class="attr">#[inline]
+<a href=#2275 id=2275 data-nosnippet>2275</a>    </span><span class="kw">unsafe fn </span>grow_zeroed(
+<a href=#2276 id=2276 data-nosnippet>2276</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2277 id=2277 data-nosnippet>2277</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2278 id=2278 data-nosnippet>2278</a>        old_layout: Layout,
+<a href=#2279 id=2279 data-nosnippet>2279</a>        new_layout: Layout,
+<a href=#2280 id=2280 data-nosnippet>2280</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2281 id=2281 data-nosnippet>2281</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2282 id=2282 data-nosnippet>2282</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow_zeroed(ptr, old_layout, new_layout) }
+<a href=#2283 id=2283 data-nosnippet>2283</a>    }
+<a href=#2284 id=2284 data-nosnippet>2284</a>
+<a href=#2285 id=2285 data-nosnippet>2285</a>    <span class="attr">#[inline]
+<a href=#2286 id=2286 data-nosnippet>2286</a>    </span><span class="kw">unsafe fn </span>shrink(
+<a href=#2287 id=2287 data-nosnippet>2287</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2288 id=2288 data-nosnippet>2288</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2289 id=2289 data-nosnippet>2289</a>        old_layout: Layout,
+<a href=#2290 id=2290 data-nosnippet>2290</a>        new_layout: Layout,
+<a href=#2291 id=2291 data-nosnippet>2291</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2292 id=2292 data-nosnippet>2292</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2293 id=2293 data-nosnippet>2293</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).shrink(ptr, old_layout, new_layout) }
+<a href=#2294 id=2294 data-nosnippet>2294</a>    }
+<a href=#2295 id=2295 data-nosnippet>2295</a>}
 </code></pre></div></section></main></body></html>

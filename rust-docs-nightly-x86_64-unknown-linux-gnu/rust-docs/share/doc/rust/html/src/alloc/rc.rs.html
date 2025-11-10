@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (fb23dd3c6 2025-11-08)" data-channel="nightly" data-search-js="search-8e3fad08.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (6647be936 2025-11-09)" data-channel="nightly" data-search-js="search-8e3fad08.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.93.0.js"></script><script defer src="../../static.files/main-ce535bd0.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
 <a href=#2 id=2 data-nosnippet>2</a>//! Counted'.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! The type [`Rc&lt;T&gt;`][`Rc`] provides shared ownership of a value of type `T`,
@@ -889,7 +889,7 @@
 <a href=#889 id=889 data-nosnippet>889</a>
 <a href=#890 id=890 data-nosnippet>890</a>        <span class="kw">let </span>strong = <span class="kw">unsafe </span>{
 <a href=#891 id=891 data-nosnippet>891</a>            <span class="kw">let </span>inner = init_ptr.as_ptr();
-<a href=#892 id=892 data-nosnippet>892</a>            ptr::write(<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).value, data);
+<a href=#892 id=892 data-nosnippet>892</a>            ptr::write(<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).value, data);
 <a href=#893 id=893 data-nosnippet>893</a>
 <a href=#894 id=894 data-nosnippet>894</a>            <span class="kw">let </span>prev_value = (<span class="kw-2">*</span>inner).strong.get();
 <a href=#895 id=895 data-nosnippet>895</a>            <span class="macro">debug_assert_eq!</span>(prev_value, <span class="number">0</span>, <span class="string">"No prior strong references should exist"</span>);
@@ -1166,7 +1166,7 @@
 <a href=#1166 id=1166 data-nosnippet>1166</a>    /// This operation does not reallocate; the underlying array of the slice is simply reinterpreted as an array type.
 <a href=#1167 id=1167 data-nosnippet>1167</a>    ///
 <a href=#1168 id=1168 data-nosnippet>1168</a>    /// If `N` is not exactly equal to the length of `self`, then this method returns `None`.
-<a href=#1169 id=1169 data-nosnippet>1169</a>    </span><span class="attr">#[unstable(feature = <span class="string">"slice_as_array"</span>, issue = <span class="string">"133508"</span>)]
+<a href=#1169 id=1169 data-nosnippet>1169</a>    </span><span class="attr">#[unstable(feature = <span class="string">"alloc_slice_into_array"</span>, issue = <span class="string">"148082"</span>)]
 <a href=#1170 id=1170 data-nosnippet>1170</a>    #[inline]
 <a href=#1171 id=1171 data-nosnippet>1171</a>    #[must_use]
 <a href=#1172 id=1172 data-nosnippet>1172</a>    </span><span class="kw">pub fn </span>into_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Rc&lt;[T; N]&gt;&gt; {
@@ -1558,7 +1558,7 @@
 <a href=#1558 id=1558 data-nosnippet>1558</a>        <span class="comment">// SAFETY: This cannot go through Deref::deref or Rc::inner because
 <a href=#1559 id=1559 data-nosnippet>1559</a>        // this is required to retain raw/mut provenance such that e.g. `get_mut` can
 <a href=#1560 id=1560 data-nosnippet>1560</a>        // write through the pointer after the Rc is recovered through `from_raw`.
-<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
+<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
 <a href=#1562 id=1562 data-nosnippet>1562</a>    }
 <a href=#1563 id=1563 data-nosnippet>1563</a>
 <a href=#1564 id=1564 data-nosnippet>1564</a>    <span class="doccomment">/// Constructs an `Rc&lt;T, A&gt;` from a raw pointer in the provided allocator.
@@ -2164,8 +2164,8 @@
 <a href=#2164 id=2164 data-nosnippet>2164</a>        <span class="kw">unsafe </span>{
 <a href=#2165 id=2165 data-nosnippet>2165</a>            <span class="macro">debug_assert_eq!</span>(Layout::for_value_raw(inner), layout);
 <a href=#2166 id=2166 data-nosnippet>2166</a>
-<a href=#2167 id=2167 data-nosnippet>2167</a>            (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).strong).write(Cell::new(<span class="number">1</span>));
-<a href=#2168 id=2168 data-nosnippet>2168</a>            (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).weak).write(Cell::new(<span class="number">1</span>));
+<a href=#2167 id=2167 data-nosnippet>2167</a>            (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).strong).write(Cell::new(<span class="number">1</span>));
+<a href=#2168 id=2168 data-nosnippet>2168</a>            (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>inner).weak).write(Cell::new(<span class="number">1</span>));
 <a href=#2169 id=2169 data-nosnippet>2169</a>        }
 <a href=#2170 id=2170 data-nosnippet>2170</a>
 <a href=#2171 id=2171 data-nosnippet>2171</a>        <span class="prelude-val">Ok</span>(inner)
@@ -2194,8 +2194,8 @@
 <a href=#2194 id=2194 data-nosnippet>2194</a>
 <a href=#2195 id=2195 data-nosnippet>2195</a>            <span class="comment">// Copy value as bytes
 <a href=#2196 id=2196 data-nosnippet>2196</a>            </span>ptr::copy_nonoverlapping(
-<a href=#2197 id=2197 data-nosnippet>2197</a>                (<span class="kw-2">&amp;</span>raw <span class="kw">const </span><span class="kw-2">*</span>src) <span class="kw">as </span><span class="kw-2">*const </span>u8,
-<a href=#2198 id=2198 data-nosnippet>2198</a>                (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>u8,
+<a href=#2197 id=2197 data-nosnippet>2197</a>                (<span class="kw-2">&amp;</span><span class="kw">raw const </span><span class="kw-2">*</span>src) <span class="kw">as </span><span class="kw-2">*const </span>u8,
+<a href=#2198 id=2198 data-nosnippet>2198</a>                (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>u8,
 <a href=#2199 id=2199 data-nosnippet>2199</a>                value_size,
 <a href=#2200 id=2200 data-nosnippet>2200</a>            );
 <a href=#2201 id=2201 data-nosnippet>2201</a>
@@ -2229,7 +2229,7 @@
 <a href=#2229 id=2229 data-nosnippet>2229</a>    </span><span class="kw">unsafe fn </span>copy_from_slice(v: <span class="kw-2">&amp;</span>[T]) -&gt; Rc&lt;[T]&gt; {
 <a href=#2230 id=2230 data-nosnippet>2230</a>        <span class="kw">unsafe </span>{
 <a href=#2231 id=2231 data-nosnippet>2231</a>            <span class="kw">let </span>ptr = <span class="self">Self</span>::allocate_for_slice(v.len());
-<a href=#2232 id=2232 data-nosnippet>2232</a>            ptr::copy_nonoverlapping(v.as_ptr(), (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T, v.len());
+<a href=#2232 id=2232 data-nosnippet>2232</a>            ptr::copy_nonoverlapping(v.as_ptr(), (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T, v.len());
 <a href=#2233 id=2233 data-nosnippet>2233</a>            <span class="self">Self</span>::from_ptr(ptr)
 <a href=#2234 id=2234 data-nosnippet>2234</a>        }
 <a href=#2235 id=2235 data-nosnippet>2235</a>    }
@@ -2267,7 +2267,7 @@
 <a href=#2267 id=2267 data-nosnippet>2267</a>            <span class="kw">let </span>layout = Layout::for_value_raw(ptr);
 <a href=#2268 id=2268 data-nosnippet>2268</a>
 <a href=#2269 id=2269 data-nosnippet>2269</a>            <span class="comment">// Pointer to first element
-<a href=#2270 id=2270 data-nosnippet>2270</a>            </span><span class="kw">let </span>elems = (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T;
+<a href=#2270 id=2270 data-nosnippet>2270</a>            </span><span class="kw">let </span>elems = (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T;
 <a href=#2271 id=2271 data-nosnippet>2271</a>
 <a href=#2272 id=2272 data-nosnippet>2272</a>            <span class="kw">let </span><span class="kw-2">mut </span>guard = Guard { mem: NonNull::new_unchecked(mem), elems, layout, n_elems: <span class="number">0 </span>};
 <a href=#2273 id=2273 data-nosnippet>2273</a>
@@ -2720,7 +2720,7 @@
 <a href=#2720 id=2720 data-nosnippet>2720</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#2721 id=2721 data-nosnippet>2721</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; fmt::Pointer <span class="kw">for </span>Rc&lt;T, A&gt; {
 <a href=#2722 id=2722 data-nosnippet>2722</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#2723 id=2723 data-nosnippet>2723</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>(<span class="kw-2">&amp;</span>raw <span class="kw">const </span><span class="kw-2">**</span><span class="self">self</span>), f)
+<a href=#2723 id=2723 data-nosnippet>2723</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>(<span class="kw-2">&amp;</span><span class="kw">raw const </span><span class="kw-2">**</span><span class="self">self</span>), f)
 <a href=#2724 id=2724 data-nosnippet>2724</a>    }
 <a href=#2725 id=2725 data-nosnippet>2725</a>}
 <a href=#2726 id=2726 data-nosnippet>2726</a>
@@ -2901,7 +2901,7 @@
 <a href=#2901 id=2901 data-nosnippet>2901</a>            <span class="kw">let </span>(vec_ptr, len, cap, alloc) = v.into_raw_parts_with_alloc();
 <a href=#2902 id=2902 data-nosnippet>2902</a>
 <a href=#2903 id=2903 data-nosnippet>2903</a>            <span class="kw">let </span>rc_ptr = <span class="self">Self</span>::allocate_for_slice_in(len, <span class="kw-2">&amp;</span>alloc);
-<a href=#2904 id=2904 data-nosnippet>2904</a>            ptr::copy_nonoverlapping(vec_ptr, (<span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>rc_ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T, len);
+<a href=#2904 id=2904 data-nosnippet>2904</a>            ptr::copy_nonoverlapping(vec_ptr, (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>rc_ptr).value) <span class="kw">as </span><span class="kw-2">*mut </span>T, len);
 <a href=#2905 id=2905 data-nosnippet>2905</a>
 <a href=#2906 id=2906 data-nosnippet>2906</a>            <span class="comment">// Create a `Vec&lt;T, &amp;A&gt;` with length 0, to deallocate the buffer
 <a href=#2907 id=2907 data-nosnippet>2907</a>            // without dropping its contents or the allocator
@@ -3295,7 +3295,7 @@
 <a href=#3295 id=3295 data-nosnippet>3295</a>            <span class="comment">// SAFETY: if is_dangling returns false, then the pointer is dereferenceable.
 <a href=#3296 id=3296 data-nosnippet>3296</a>            // The payload may be dropped at this point, and we have to maintain provenance,
 <a href=#3297 id=3297 data-nosnippet>3297</a>            // so use raw pointer manipulation.
-<a href=#3298 id=3298 data-nosnippet>3298</a>            </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
+<a href=#3298 id=3298 data-nosnippet>3298</a>            </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
 <a href=#3299 id=3299 data-nosnippet>3299</a>        }
 <a href=#3300 id=3300 data-nosnippet>3300</a>    }
 <a href=#3301 id=3301 data-nosnippet>3301</a>
@@ -3859,7 +3859,7 @@
 <a href=#3859 id=3859 data-nosnippet>3859</a><span class="attr">#[unstable(feature = <span class="string">"unique_rc_arc"</span>, issue = <span class="string">"112566"</span>)]
 <a href=#3860 id=3860 data-nosnippet>3860</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; fmt::Pointer <span class="kw">for </span>UniqueRc&lt;T, A&gt; {
 <a href=#3861 id=3861 data-nosnippet>3861</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#3862 id=3862 data-nosnippet>3862</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>(<span class="kw-2">&amp;</span>raw <span class="kw">const </span><span class="kw-2">**</span><span class="self">self</span>), f)
+<a href=#3862 id=3862 data-nosnippet>3862</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>(<span class="kw-2">&amp;</span><span class="kw">raw const </span><span class="kw-2">**</span><span class="self">self</span>), f)
 <a href=#3863 id=3863 data-nosnippet>3863</a>    }
 <a href=#3864 id=3864 data-nosnippet>3864</a>}
 <a href=#3865 id=3865 data-nosnippet>3865</a>
@@ -4271,7 +4271,7 @@
 <a href=#4271 id=4271 data-nosnippet>4271</a>        <span class="comment">// SAFETY: This cannot go through Deref::deref or UniqueRc::inner because
 <a href=#4272 id=4272 data-nosnippet>4272</a>        // this is required to retain raw/mut provenance such that e.g. `get_mut` can
 <a href=#4273 id=4273 data-nosnippet>4273</a>        // write through the pointer after the Rc is recovered through `from_raw`.
-<a href=#4274 id=4274 data-nosnippet>4274</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span>raw <span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
+<a href=#4274 id=4274 data-nosnippet>4274</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span>ptr).value }
 <a href=#4275 id=4275 data-nosnippet>4275</a>    }
 <a href=#4276 id=4276 data-nosnippet>4276</a>
 <a href=#4277 id=4277 data-nosnippet>4277</a>    <span class="attr">#[inline]
@@ -4413,4 +4413,56 @@
 <a href=#4413 id=4413 data-nosnippet>4413</a>        }
 <a href=#4414 id=4414 data-nosnippet>4414</a>    }
 <a href=#4415 id=4415 data-nosnippet>4415</a>}
+<a href=#4416 id=4416 data-nosnippet>4416</a>
+<a href=#4417 id=4417 data-nosnippet>4417</a><span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
+<a href=#4418 id=4418 data-nosnippet>4418</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; Allocator <span class="kw">for </span>Rc&lt;T, A&gt; {
+<a href=#4419 id=4419 data-nosnippet>4419</a>    <span class="attr">#[inline]
+<a href=#4420 id=4420 data-nosnippet>4420</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#4421 id=4421 data-nosnippet>4421</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate(layout)
+<a href=#4422 id=4422 data-nosnippet>4422</a>    }
+<a href=#4423 id=4423 data-nosnippet>4423</a>
+<a href=#4424 id=4424 data-nosnippet>4424</a>    <span class="attr">#[inline]
+<a href=#4425 id=4425 data-nosnippet>4425</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#4426 id=4426 data-nosnippet>4426</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate_zeroed(layout)
+<a href=#4427 id=4427 data-nosnippet>4427</a>    }
+<a href=#4428 id=4428 data-nosnippet>4428</a>
+<a href=#4429 id=4429 data-nosnippet>4429</a>    <span class="attr">#[inline]
+<a href=#4430 id=4430 data-nosnippet>4430</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
+<a href=#4431 id=4431 data-nosnippet>4431</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#4432 id=4432 data-nosnippet>4432</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).deallocate(ptr, layout) }
+<a href=#4433 id=4433 data-nosnippet>4433</a>    }
+<a href=#4434 id=4434 data-nosnippet>4434</a>
+<a href=#4435 id=4435 data-nosnippet>4435</a>    <span class="attr">#[inline]
+<a href=#4436 id=4436 data-nosnippet>4436</a>    </span><span class="kw">unsafe fn </span>grow(
+<a href=#4437 id=4437 data-nosnippet>4437</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#4438 id=4438 data-nosnippet>4438</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#4439 id=4439 data-nosnippet>4439</a>        old_layout: Layout,
+<a href=#4440 id=4440 data-nosnippet>4440</a>        new_layout: Layout,
+<a href=#4441 id=4441 data-nosnippet>4441</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#4442 id=4442 data-nosnippet>4442</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#4443 id=4443 data-nosnippet>4443</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow(ptr, old_layout, new_layout) }
+<a href=#4444 id=4444 data-nosnippet>4444</a>    }
+<a href=#4445 id=4445 data-nosnippet>4445</a>
+<a href=#4446 id=4446 data-nosnippet>4446</a>    <span class="attr">#[inline]
+<a href=#4447 id=4447 data-nosnippet>4447</a>    </span><span class="kw">unsafe fn </span>grow_zeroed(
+<a href=#4448 id=4448 data-nosnippet>4448</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#4449 id=4449 data-nosnippet>4449</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#4450 id=4450 data-nosnippet>4450</a>        old_layout: Layout,
+<a href=#4451 id=4451 data-nosnippet>4451</a>        new_layout: Layout,
+<a href=#4452 id=4452 data-nosnippet>4452</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#4453 id=4453 data-nosnippet>4453</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#4454 id=4454 data-nosnippet>4454</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow_zeroed(ptr, old_layout, new_layout) }
+<a href=#4455 id=4455 data-nosnippet>4455</a>    }
+<a href=#4456 id=4456 data-nosnippet>4456</a>
+<a href=#4457 id=4457 data-nosnippet>4457</a>    <span class="attr">#[inline]
+<a href=#4458 id=4458 data-nosnippet>4458</a>    </span><span class="kw">unsafe fn </span>shrink(
+<a href=#4459 id=4459 data-nosnippet>4459</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#4460 id=4460 data-nosnippet>4460</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#4461 id=4461 data-nosnippet>4461</a>        old_layout: Layout,
+<a href=#4462 id=4462 data-nosnippet>4462</a>        new_layout: Layout,
+<a href=#4463 id=4463 data-nosnippet>4463</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#4464 id=4464 data-nosnippet>4464</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#4465 id=4465 data-nosnippet>4465</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).shrink(ptr, old_layout, new_layout) }
+<a href=#4466 id=4466 data-nosnippet>4466</a>    }
+<a href=#4467 id=4467 data-nosnippet>4467</a>}
 </code></pre></div></section></main></body></html>
