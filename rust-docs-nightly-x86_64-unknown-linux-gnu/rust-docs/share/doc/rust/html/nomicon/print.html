@@ -38,7 +38,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a112dafa.js";
+            window.path_to_searchindex_js = "searchindex-3fe92c9c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-52ac7e99.js"></script>
@@ -2225,7 +2225,7 @@ strictly outlive that value.</p>
 <h2 id="an-escape-hatch"><a class="header" href="#an-escape-hatch">An Escape Hatch</a></h2>
 <p>The precise rules that govern drop checking may be less restrictive in
 the future.</p>
-<p>The current analysis is deliberately conservative and trivial; it forces all
+<p>The current analysis is deliberately conservative; it forces all
 borrowed data in a value to outlive that value, which is certainly sound.</p>
 <p>Future versions of the language may make the analysis more precise, to
 reduce the number of cases where sound code is rejected as unsafe.
@@ -4760,20 +4760,17 @@ such we will guard against this case explicitly.</p>
 impl&lt;T&gt; Vec&lt;T&gt; {
     fn grow(&amp;mut self) {
         let (new_cap, new_layout) = if self.cap == 0 {
-            (1, Layout::array::&lt;T&gt;(1).unwrap())
+            (1, Layout::array::&lt;T&gt;(1))
         } else {
             // This can't overflow since self.cap &lt;= isize::MAX.
             let new_cap = 2 * self.cap;
-
-            // `Layout::array` checks that the number of bytes is &lt;= usize::MAX,
-            // but this is redundant since old_layout.size() &lt;= isize::MAX,
-            // so the `unwrap` should never fail.
-            let new_layout = Layout::array::&lt;T&gt;(new_cap).unwrap();
-            (new_cap, new_layout)
+            (new_cap, Layout::array::&lt;T&gt;(new_cap))
         };
 
-        // Ensure that the new allocation doesn't exceed `isize::MAX` bytes.
-        assert!(new_layout.size() &lt;= isize::MAX as usize, "Allocation too large");
+        // `Layout::array` checks that the number of bytes allocated is
+        // in 1..=isize::MAX and will error otherwise.  An allocation of
+        // 0 bytes isn't possible thanks to the above condition.
+        let new_layout = new_layout.expect("Allocation too large");
 
         let new_ptr = if self.cap == 0 {
             unsafe { alloc::alloc(new_layout) }
@@ -5568,23 +5565,17 @@ impl&lt;T&gt; RawVec&lt;T&gt; {
         assert!(mem::size_of::&lt;T&gt;() != 0, "capacity overflow");
 
         let (new_cap, new_layout) = if self.cap == 0 {
-            (1, Layout::array::&lt;T&gt;(1).unwrap())
+            (1, Layout::array::&lt;T&gt;(1))
         } else {
-            // This can't overflow because we ensure self.cap &lt;= isize::MAX.
+            // This can't overflow since self.cap &lt;= isize::MAX.
             let new_cap = 2 * self.cap;
-
-            // `Layout::array` checks that the number of bytes is &lt;= usize::MAX,
-            // but this is redundant since old_layout.size() &lt;= isize::MAX,
-            // so the `unwrap` should never fail.
-            let new_layout = Layout::array::&lt;T&gt;(new_cap).unwrap();
-            (new_cap, new_layout)
+            (new_cap, Layout::array::&lt;T&gt;(new_cap))
         };
 
-        // Ensure that the new allocation doesn't exceed `isize::MAX` bytes.
-        assert!(
-            new_layout.size() &lt;= isize::MAX as usize,
-            "Allocation too large"
-        );
+        // `Layout::array` checks that the number of bytes allocated is
+        // in 1..=isize::MAX and will error otherwise.  An allocation of
+        // 0 bytes isn't possible thanks to the above condition.
+        let new_layout = new_layout.expect("Allocation too large");
 
         let new_ptr = if self.cap == 0 {
             unsafe { alloc::alloc(new_layout) }
@@ -6377,15 +6368,14 @@ snappy includes a C interface (documented in
 <a href="https://github.com/google/snappy/blob/master/snappy-c.h"><code>snappy-c.h</code></a>).</p>
 <h2 id="a-note-about-libc"><a class="header" href="#a-note-about-libc">A note about libc</a></h2>
 <p>Many of these examples use <a href="https://crates.io/crates/libc">the <code>libc</code> crate</a>, which provides various
-type definitions for C types, among other things. If you’re trying these
+type definitions for C types, among other things. If you’re trying out these
 examples yourself, you’ll need to add <code>libc</code> to your <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dependencies]
 libc = "0.2.0"
 </code></pre>
 <h2 id="prepare-the-build-script"><a class="header" href="#prepare-the-build-script">Prepare the build script</a></h2>
-<p>Because <a href="https://github.com/google/snappy">snappy</a> is a static library by default.
-So there is no C++ std linked in the output artifact.
-In order to use this foreign library in Rust, we have to manually specify that we want to link stdc++ in our project.
+<p>Because <a href="https://github.com/google/snappy">snappy</a> is a static library by default, so there is no stdc++ linked in the output artifact.
+In order to use this foreign library in Rust, we have to manually specify that we want to link stdc++ std to our project.
 The easiest way to do this is by setting up a build script.</p>
 <p>First edit <code>Cargo.toml</code>, inside <code>package</code> add <code>build = "build.rs"</code>:</p>
 <pre><code class="language-toml">[package]
@@ -6395,7 +6385,7 @@ build = "build.rs"
 <p>Then create a new file at the root of your workspace, named <code>build.rs</code>:</p>
 <pre><pre class="playground"><code class="language-rust edition2024">// build.rs
 fn main() {
-    println!("cargo:rustc-link-lib=dylib=stdc++"); // This line may be unnecessary for some environment.
+    println!("cargo:rustc-link-lib=dylib=stdc++"); // This line may be unnecessary for some environments.
     println!("cargo:rustc-link-search=&lt;YOUR SNAPPY LIBRARY PATH&gt;");
 }</code></pre></pre>
 <p>For more information, please read <a href="https://doc.rust-lang.org/cargo/reference/build-scripts.html">The Cargo Book - build script</a>.</p>
@@ -6416,7 +6406,7 @@ fn main() {
 }</code></pre>
 <p>The <code>extern</code> block is a list of function signatures in a foreign library, in
 this case with the platform's C ABI. The <code>#[link(...)]</code> attribute is used to
-instruct the linker to link against the snappy library so the symbols are
+instruct the linker to link against the snappy library so the symbols can be
 resolved.</p>
 <p>Foreign functions are assumed to be unsafe so calls to them need to be wrapped
 with <code>unsafe {}</code> as a promise to the compiler that everything contained within
@@ -6453,7 +6443,7 @@ unsafe extern "C" {
 <p>The raw C API needs to be wrapped to provide memory safety and make use of higher-level concepts
 like vectors. A library can choose to expose only the safe, high-level interface and hide the unsafe
 internal details.</p>
-<p>Wrapping the functions which expect buffers involves using the <code>slice::raw</code> module to manipulate Rust
+<p>Wrapping the functions which expect buffers involves using the <code>slice::raw</code> module to manipulate Rust's
 vectors as pointers to memory. Rust's vectors are guaranteed to be a contiguous block of memory. The
 length is the number of elements currently contained, and the capacity is the total size in elements of
 the allocated memory. The length is less than or equal to the capacity.</p>
@@ -6581,10 +6571,10 @@ mod tests {
 <h2 id="destructors-1"><a class="header" href="#destructors-1">Destructors</a></h2>
 <p>Foreign libraries often hand off ownership of resources to the calling code.
 When this occurs, we must use Rust's destructors to provide safety and guarantee
-the release of these resources (especially in the case of panic).</p>
-<p>For more about destructors, see the <a href="../std/ops/trait.Drop.html">Drop trait</a>.</p>
+the release of these resources (especially in the case of a panic).</p>
+<p>For more information about destructors, see the <a href="../std/ops/trait.Drop.html">Drop trait</a>.</p>
 <h2 id="calling-rust-code-from-c"><a class="header" href="#calling-rust-code-from-c">Calling Rust code from C</a></h2>
-<p>You may wish to compile Rust code in a way so that it can be called from C.
+<p>You may wish to compile Rust code in a way that can be called from C.
 This is fairly easy, but requires a few things.</p>
 <h3 id="rust-side"><a class="header" href="#rust-side">Rust side</a></h3>
 <p>First, we assume you have a lib crate named as <code>rust_from_c</code>.
@@ -6600,7 +6590,7 @@ The <code>no_mangle</code> attribute turns off Rust's name mangling, so that it 
 <pre><code class="language-toml">[lib]
 crate-type = ["cdylib"]
 </code></pre>
-<p>(NOTE: We could also use the <code>staticlib</code> crate type but it needs to tweak some linking flags.)</p>
+<p>(NOTE: We could also use the <code>staticlib</code> crate type but it also requires tweaking some linking flags.)</p>
 <p>Run <code>cargo build</code> and you're ready to go on the Rust side.</p>
 <h3 id="c-side"><a class="header" href="#c-side">C side</a></h3>
 <p>We'll create a C file to call the <code>hello_from_rust</code> function and compile it by <code>gcc</code>.</p>
@@ -6622,7 +6612,7 @@ Run the following to compile:</p>
 Hello from Rust!
 </code></pre>
 <p>That's it!
-For more realistic example, check the <a href="https://github.com/eqrion/cbindgen"><code>cbindgen</code></a>.</p>
+For a more realistic example, check the <a href="https://github.com/eqrion/cbindgen"><code>cbindgen</code></a>.</p>
 <h2 id="callbacks-from-c-code-to-rust-functions"><a class="header" href="#callbacks-from-c-code-to-rust-functions">Callbacks from C code to Rust functions</a></h2>
 <p>Some external libraries require the usage of callbacks to report back their
 current state or intermediate data to the caller.
@@ -6860,7 +6850,7 @@ This is currently hidden behind the <code>abi_vectorcall</code> gate and is subj
 <li><code>win64</code></li>
 <li><code>sysv64</code></li>
 </ul>
-<p>Most of the abis in this list are self-explanatory, but the <code>system</code> abi may
+<p>Most of the ABIs in this list are self-explanatory, but the <code>system</code> ABI may
 seem a little odd. This constraint selects whatever the appropriate ABI is for
 interoperating with the target's libraries. For example, on win32 with a x86
 architecture, this means that the abi used would be <code>stdcall</code>. On x86_64,
