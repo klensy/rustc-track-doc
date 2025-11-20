@@ -1,1 +1,0 @@
-rn_("BQHAAAABJ+8xLtre4hvvO+8xNvMBAWY6MAAAAgAAAAAARwABAAAAGAAAAKgAAADwf/F/goLxkfKRIa8ir7uvvK9/sICw9LD1sMyxzbHgseGx7bEFsgayErI0sjWyH74gvgu/DL9xv3K/hb+Gv8q/y7/mv+e/9r/3v/+/EsATwBXAIMAhwCzALcAvwDfAP8BKwEvATcBVwJLJn8mgybbJt8nByczJzcnYydnJ7cn4yfnJw9vE28/bYuQ89o/7lfvsAQ==")
