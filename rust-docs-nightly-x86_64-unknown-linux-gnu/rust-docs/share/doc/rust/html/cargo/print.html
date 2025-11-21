@@ -42,7 +42,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-20ad8b23.js";
+            window.path_to_searchindex_js = "searchindex-e694dc40.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4c5cc278.js"></script>
@@ -1274,7 +1274,7 @@ feature-unification = "workspace"
 However, when contributing to an application,
 you may need to build and test various packages within the application,
 which can cause extraneous rebuilds because different sets of features may be activated for common dependencies.
-With <a href="guide/../reference/unstable.html#feature-unification"><code>feauture-unification</code></a>,
+With <a href="guide/../reference/unstable.html#feature-unification"><code>feature-unification</code></a>,
 you can reuse more dependency builds by ensuring the same set of dependency features are activated,
 independent of which package you are currently building and testing.</p>
 <p>Trade-offs:</p>
@@ -7166,7 +7166,7 @@ Here’s an example:</p>
 <pre><code class="language-toml"># Cargo.toml
 
 [package]
-name = "zuser"
+name = "z_user"
 version = "0.1.0"
 edition = "2024"
 
@@ -7183,17 +7183,17 @@ script:</p>
 
 fn main() {
     let mut cfg = cc::Build::new();
-    cfg.file("src/zuser.c");
+    cfg.file("src/z_user.c");
     if let Some(include) = std::env::var_os("DEP_Z_INCLUDE") {
         cfg.include(include);
     }
-    cfg.compile("zuser");
-    println!("cargo::rerun-if-changed=src/zuser.c");
+    cfg.compile("z_user");
+    println!("cargo::rerun-if-changed=src/z_user.c");
 }</code></pre>
 <p>With <code>libz-sys</code> doing all the heavy lifting, the C source code may now include
 the zlib header, and it should find the header, even on systems where it isn’t
 already installed.</p>
-<pre><code class="language-c">// src/zuser.c
+<pre><code class="language-c">// src/z_user.c
 
 #include "zlib.h"
 
@@ -10914,6 +10914,7 @@ build-std = ["core", "alloc"]
 <li><a href="reference/unstable.html#sbom">sbom</a> — Generates SBOM pre-cursor files for compiled artifacts</li>
 <li><a href="reference/unstable.html#update-breaking">update-breaking</a> — Allows upgrading to breaking versions with <code>update --breaking</code></li>
 <li><a href="reference/unstable.html#feature-unification">feature-unification</a> — Enable new feature unification modes in workspaces</li>
+<li>[lockfile-publish-time] — Limit resolver to packages older than the specified time</li>
 </ul>
 </li>
 <li>Output behavior
@@ -12516,6 +12517,22 @@ regardless of which packages are specified for the current build.</li>
 <li><code>package</code>: Dependency features are considered on a package-by-package basis,
 preferring duplicate builds of dependencies when different sets of features are activated by the packages.</li>
 </ul>
+<h2 id="pubtime"><a class="header" href="#pubtime">pubtime</a></h2>
+<ul>
+<li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/15491">#15491</a></li>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/16270">#16270</a></li>
+</ul>
+<p>Documentation updates:</p>
+<ul>
+<li>Add <code>pubtime</code> field to the Index Summary description</li>
+</ul>
+<h2 id="lockfile-publish-time"><a class="header" href="#lockfile-publish-time">lockfile-publish-time</a></h2>
+<ul>
+<li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/5221">#5221</a></li>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/16271">#16271</a></li>
+</ul>
+<p>With <code>cargo generate-lockfile -Zunstable-options --publish-time &lt;time&gt;</code>,
+package resolution will not consider any package newer than the specified time.</p>
 <h2 id="package-message-format"><a class="header" href="#package-message-format">Package message format</a></h2>
 <ul>
 <li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/11666">#11666</a></li>
@@ -17187,6 +17204,15 @@ terminal.</li>
 <dt class="option-term" id="option-cargo-generate-lockfile---ignore-rust-version"><a class="option-anchor" href="commands/cargo-generate-lockfile.html#option-cargo-generate-lockfile---ignore-rust-version"><code>--ignore-rust-version</code></a></dt>
 <dd class="option-desc"><p>Ignore <code>rust-version</code> specification in packages.</p>
 </dd>
+<dt class="option-term" id="option-cargo-generate-lockfile---publish-time"><a class="option-anchor" href="commands/cargo-generate-lockfile.html#option-cargo-generate-lockfile---publish-time"><code>--publish-time</code> <em>yyyy-mm-ddThh:mm:ssZ</em></a></dt>
+<dd class="option-desc"><p>Latest publish time allowed for registry packages (Unstable)</p>
+<p>This is a best-effort filter on allowed packages, including:</p>
+<ul>
+<li>packages from unsupported registries are always accepted</li>
+<li>only the current yank state is respected, not the state as of <code>--publish-time</code></li>
+<li>precision of the publish time</li>
+</ul>
+</dd>
 <dt class="option-term" id="option-cargo-generate-lockfile---locked"><a class="option-anchor" href="commands/cargo-generate-lockfile.html#option-cargo-generate-lockfile---locked"><code>--locked</code></a></dt>
 <dd class="option-desc"><p>Asserts that the exact same dependencies and versions are used as when the
 existing <code>Cargo.lock</code> file was originally generated. Cargo will exit with an
@@ -18488,10 +18514,10 @@ The default is the host platform. Use the value <code>all</code> to include <em>
 <p>This is an arbitrary string which will be used to display each package. The following
 strings will be replaced with the corresponding value:</p>
 <ul>
-<li><code>{p}</code> — The package name.</li>
-<li><code>{l}</code> — The package license.</li>
-<li><code>{r}</code> — The package repository URL.</li>
-<li><code>{f}</code> — Comma-separated list of package features that are enabled.</li>
+<li><code>{p}</code>, <code>{package}</code> — The package name.</li>
+<li><code>{l}</code>, <code>{license}</code> — The package license.</li>
+<li><code>{r}</code>, <code>{repository}</code> — The package repository URL.</li>
+<li><code>{f}</code>, <code>{features}</code> — Comma-separated list of package features that are enabled.</li>
 <li><code>{lib}</code> — The name, as used in a <code>use</code> statement, of the package’s library.</li>
 </ul>
 </dd>
@@ -21005,9 +21031,10 @@ of the registry you used. For crates.io, refer to their <a href="https://crates.
 them at <a href="mailto:commands/help@crates.io">help@crates.io</a>.</p>
 <p>If credentials have been leaked, the recommended course of action is to revoke
 them immediately. Once a crate has been published, it is impossible to determine
-if the leaked credentials have been copied. Yanking the crate only prevents new
-users from downloading it, but cannot stop those who have already downloaded it
-from keeping or even spreading the leaked credentials.</p>
+if the leaked credentials have been copied. Yanking only prevents Cargo from
+selecting this version when resolving dependencies by default. Existing lock
+files or direct downloads are not affected, so yanking cannot stop further
+spreading of the leaked credentials.</p>
 <h2 id="options-34"><a class="header" href="#options-34">OPTIONS</a></h2>
 <h3 id="yank-options"><a class="header" href="#yank-options">Yank Options</a></h3>
 <dl>
@@ -24554,7 +24581,7 @@ Some notable changes:
 <ul>
 <li>Renamed <code>credential-process</code> to <code>credential-provider</code> in Cargo configurations.</li>
 <li>New JSON protocol for communicating with external credential providers via stdin/stdout.</li>
-<li>The GNOME Secert provider now dynamically loads <code>libsecert</code>.</li>
+<li>The GNOME Secret provider now dynamically loads <code>libsecert</code>.</li>
 <li>The 1password provider is no longer built-in.</li>
 <li>Changed the unstable key for asymmetric tokens from <code>registry-auth</code> to <code>credential-process</code>.</li>
 </ul>
