@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/os_str/bytes.rs`."><title>bytes.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (80d8f292d 2025-11-25)" data-channel="nightly" data-search-js="search-680b2199.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.93.0.js"></script><script defer src="../../../../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/os_str/</div>bytes.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The underlying OsString/OsStr implementation on Unix and many other
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/os_str/bytes.rs`."><title>bytes.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.93.0" data-rustdoc-version="1.93.0-nightly (1be6b13be 2025-11-26)" data-channel="nightly" data-search-js="search-680b2199.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.93.0.js"></script><script defer src="../../../../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">std/sys/os_str/</div>bytes.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The underlying OsString/OsStr implementation on Unix and many other
 <a href=#2 id=2 data-nosnippet>2</a>//! systems: just a `Vec&lt;u8&gt;`/`[u8]`.
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span>core::clone::CloneToUninit;
@@ -322,67 +322,61 @@
 <a href=#322 id=322 data-nosnippet>322</a>    }
 <a href=#323 id=323 data-nosnippet>323</a>
 <a href=#324 id=324 data-nosnippet>324</a>    <span class="attr">#[inline]
-<a href=#325 id=325 data-nosnippet>325</a>    </span><span class="kw">pub fn </span>into_box(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;Slice&gt; {
-<a href=#326 id=326 data-nosnippet>326</a>        <span class="kw">let </span>boxed: Box&lt;[u8]&gt; = <span class="self">self</span>.inner.into();
+<a href=#325 id=325 data-nosnippet>325</a>    </span><span class="kw">pub fn </span>empty_box() -&gt; Box&lt;Slice&gt; {
+<a href=#326 id=326 data-nosnippet>326</a>        <span class="kw">let </span>boxed: Box&lt;[u8]&gt; = Default::default();
 <a href=#327 id=327 data-nosnippet>327</a>        <span class="kw">unsafe </span>{ mem::transmute(boxed) }
 <a href=#328 id=328 data-nosnippet>328</a>    }
 <a href=#329 id=329 data-nosnippet>329</a>
 <a href=#330 id=330 data-nosnippet>330</a>    <span class="attr">#[inline]
-<a href=#331 id=331 data-nosnippet>331</a>    </span><span class="kw">pub fn </span>empty_box() -&gt; Box&lt;Slice&gt; {
-<a href=#332 id=332 data-nosnippet>332</a>        <span class="kw">let </span>boxed: Box&lt;[u8]&gt; = Default::default();
-<a href=#333 id=333 data-nosnippet>333</a>        <span class="kw">unsafe </span>{ mem::transmute(boxed) }
+<a href=#331 id=331 data-nosnippet>331</a>    </span><span class="kw">pub fn </span>into_arc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Slice&gt; {
+<a href=#332 id=332 data-nosnippet>332</a>        <span class="kw">let </span>arc: Arc&lt;[u8]&gt; = Arc::from(<span class="kw-2">&amp;</span><span class="self">self</span>.inner);
+<a href=#333 id=333 data-nosnippet>333</a>        <span class="kw">unsafe </span>{ Arc::from_raw(Arc::into_raw(arc) <span class="kw">as </span><span class="kw-2">*const </span>Slice) }
 <a href=#334 id=334 data-nosnippet>334</a>    }
 <a href=#335 id=335 data-nosnippet>335</a>
 <a href=#336 id=336 data-nosnippet>336</a>    <span class="attr">#[inline]
-<a href=#337 id=337 data-nosnippet>337</a>    </span><span class="kw">pub fn </span>into_arc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Slice&gt; {
-<a href=#338 id=338 data-nosnippet>338</a>        <span class="kw">let </span>arc: Arc&lt;[u8]&gt; = Arc::from(<span class="kw-2">&amp;</span><span class="self">self</span>.inner);
-<a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">unsafe </span>{ Arc::from_raw(Arc::into_raw(arc) <span class="kw">as </span><span class="kw-2">*const </span>Slice) }
+<a href=#337 id=337 data-nosnippet>337</a>    </span><span class="kw">pub fn </span>into_rc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Rc&lt;Slice&gt; {
+<a href=#338 id=338 data-nosnippet>338</a>        <span class="kw">let </span>rc: Rc&lt;[u8]&gt; = Rc::from(<span class="kw-2">&amp;</span><span class="self">self</span>.inner);
+<a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">unsafe </span>{ Rc::from_raw(Rc::into_raw(rc) <span class="kw">as </span><span class="kw-2">*const </span>Slice) }
 <a href=#340 id=340 data-nosnippet>340</a>    }
 <a href=#341 id=341 data-nosnippet>341</a>
 <a href=#342 id=342 data-nosnippet>342</a>    <span class="attr">#[inline]
-<a href=#343 id=343 data-nosnippet>343</a>    </span><span class="kw">pub fn </span>into_rc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Rc&lt;Slice&gt; {
-<a href=#344 id=344 data-nosnippet>344</a>        <span class="kw">let </span>rc: Rc&lt;[u8]&gt; = Rc::from(<span class="kw-2">&amp;</span><span class="self">self</span>.inner);
-<a href=#345 id=345 data-nosnippet>345</a>        <span class="kw">unsafe </span>{ Rc::from_raw(Rc::into_raw(rc) <span class="kw">as </span><span class="kw-2">*const </span>Slice) }
-<a href=#346 id=346 data-nosnippet>346</a>    }
-<a href=#347 id=347 data-nosnippet>347</a>
-<a href=#348 id=348 data-nosnippet>348</a>    <span class="attr">#[inline]
-<a href=#349 id=349 data-nosnippet>349</a>    </span><span class="kw">pub fn </span>make_ascii_lowercase(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#350 id=350 data-nosnippet>350</a>        <span class="self">self</span>.inner.make_ascii_lowercase()
-<a href=#351 id=351 data-nosnippet>351</a>    }
-<a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a>    <span class="attr">#[inline]
-<a href=#354 id=354 data-nosnippet>354</a>    </span><span class="kw">pub fn </span>make_ascii_uppercase(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#355 id=355 data-nosnippet>355</a>        <span class="self">self</span>.inner.make_ascii_uppercase()
-<a href=#356 id=356 data-nosnippet>356</a>    }
-<a href=#357 id=357 data-nosnippet>357</a>
-<a href=#358 id=358 data-nosnippet>358</a>    <span class="attr">#[inline]
-<a href=#359 id=359 data-nosnippet>359</a>    </span><span class="kw">pub fn </span>to_ascii_lowercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Buf {
-<a href=#360 id=360 data-nosnippet>360</a>        Buf { inner: <span class="self">self</span>.inner.to_ascii_lowercase() }
-<a href=#361 id=361 data-nosnippet>361</a>    }
-<a href=#362 id=362 data-nosnippet>362</a>
-<a href=#363 id=363 data-nosnippet>363</a>    <span class="attr">#[inline]
-<a href=#364 id=364 data-nosnippet>364</a>    </span><span class="kw">pub fn </span>to_ascii_uppercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Buf {
-<a href=#365 id=365 data-nosnippet>365</a>        Buf { inner: <span class="self">self</span>.inner.to_ascii_uppercase() }
-<a href=#366 id=366 data-nosnippet>366</a>    }
-<a href=#367 id=367 data-nosnippet>367</a>
-<a href=#368 id=368 data-nosnippet>368</a>    <span class="attr">#[inline]
-<a href=#369 id=369 data-nosnippet>369</a>    </span><span class="kw">pub fn </span>is_ascii(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#370 id=370 data-nosnippet>370</a>        <span class="self">self</span>.inner.is_ascii()
-<a href=#371 id=371 data-nosnippet>371</a>    }
+<a href=#343 id=343 data-nosnippet>343</a>    </span><span class="kw">pub fn </span>make_ascii_lowercase(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#344 id=344 data-nosnippet>344</a>        <span class="self">self</span>.inner.make_ascii_lowercase()
+<a href=#345 id=345 data-nosnippet>345</a>    }
+<a href=#346 id=346 data-nosnippet>346</a>
+<a href=#347 id=347 data-nosnippet>347</a>    <span class="attr">#[inline]
+<a href=#348 id=348 data-nosnippet>348</a>    </span><span class="kw">pub fn </span>make_ascii_uppercase(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#349 id=349 data-nosnippet>349</a>        <span class="self">self</span>.inner.make_ascii_uppercase()
+<a href=#350 id=350 data-nosnippet>350</a>    }
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a>    <span class="attr">#[inline]
+<a href=#353 id=353 data-nosnippet>353</a>    </span><span class="kw">pub fn </span>to_ascii_lowercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Buf {
+<a href=#354 id=354 data-nosnippet>354</a>        Buf { inner: <span class="self">self</span>.inner.to_ascii_lowercase() }
+<a href=#355 id=355 data-nosnippet>355</a>    }
+<a href=#356 id=356 data-nosnippet>356</a>
+<a href=#357 id=357 data-nosnippet>357</a>    <span class="attr">#[inline]
+<a href=#358 id=358 data-nosnippet>358</a>    </span><span class="kw">pub fn </span>to_ascii_uppercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Buf {
+<a href=#359 id=359 data-nosnippet>359</a>        Buf { inner: <span class="self">self</span>.inner.to_ascii_uppercase() }
+<a href=#360 id=360 data-nosnippet>360</a>    }
+<a href=#361 id=361 data-nosnippet>361</a>
+<a href=#362 id=362 data-nosnippet>362</a>    <span class="attr">#[inline]
+<a href=#363 id=363 data-nosnippet>363</a>    </span><span class="kw">pub fn </span>is_ascii(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#364 id=364 data-nosnippet>364</a>        <span class="self">self</span>.inner.is_ascii()
+<a href=#365 id=365 data-nosnippet>365</a>    }
+<a href=#366 id=366 data-nosnippet>366</a>
+<a href=#367 id=367 data-nosnippet>367</a>    <span class="attr">#[inline]
+<a href=#368 id=368 data-nosnippet>368</a>    </span><span class="kw">pub fn </span>eq_ignore_ascii_case(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="self">self</span>.inner.eq_ignore_ascii_case(<span class="kw-2">&amp;</span>other.inner)
+<a href=#370 id=370 data-nosnippet>370</a>    }
+<a href=#371 id=371 data-nosnippet>371</a>}
 <a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>    <span class="attr">#[inline]
-<a href=#374 id=374 data-nosnippet>374</a>    </span><span class="kw">pub fn </span>eq_ignore_ascii_case(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#375 id=375 data-nosnippet>375</a>        <span class="self">self</span>.inner.eq_ignore_ascii_case(<span class="kw-2">&amp;</span>other.inner)
-<a href=#376 id=376 data-nosnippet>376</a>    }
-<a href=#377 id=377 data-nosnippet>377</a>}
-<a href=#378 id=378 data-nosnippet>378</a>
-<a href=#379 id=379 data-nosnippet>379</a><span class="attr">#[unstable(feature = <span class="string">"clone_to_uninit"</span>, issue = <span class="string">"126799"</span>)]
-<a href=#380 id=380 data-nosnippet>380</a></span><span class="kw">unsafe impl </span>CloneToUninit <span class="kw">for </span>Slice {
-<a href=#381 id=381 data-nosnippet>381</a>    <span class="attr">#[inline]
-<a href=#382 id=382 data-nosnippet>382</a>    #[cfg_attr(debug_assertions, track_caller)]
-<a href=#383 id=383 data-nosnippet>383</a>    </span><span class="kw">unsafe fn </span>clone_to_uninit(<span class="kw-2">&amp;</span><span class="self">self</span>, dst: <span class="kw-2">*mut </span>u8) {
-<a href=#384 id=384 data-nosnippet>384</a>        <span class="comment">// SAFETY: we're just a transparent wrapper around [u8]
-<a href=#385 id=385 data-nosnippet>385</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.inner.clone_to_uninit(dst) }
-<a href=#386 id=386 data-nosnippet>386</a>    }
-<a href=#387 id=387 data-nosnippet>387</a>}
+<a href=#373 id=373 data-nosnippet>373</a><span class="attr">#[unstable(feature = <span class="string">"clone_to_uninit"</span>, issue = <span class="string">"126799"</span>)]
+<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">unsafe impl </span>CloneToUninit <span class="kw">for </span>Slice {
+<a href=#375 id=375 data-nosnippet>375</a>    <span class="attr">#[inline]
+<a href=#376 id=376 data-nosnippet>376</a>    #[cfg_attr(debug_assertions, track_caller)]
+<a href=#377 id=377 data-nosnippet>377</a>    </span><span class="kw">unsafe fn </span>clone_to_uninit(<span class="kw-2">&amp;</span><span class="self">self</span>, dst: <span class="kw-2">*mut </span>u8) {
+<a href=#378 id=378 data-nosnippet>378</a>        <span class="comment">// SAFETY: we're just a transparent wrapper around [u8]
+<a href=#379 id=379 data-nosnippet>379</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.inner.clone_to_uninit(dst) }
+<a href=#380 id=380 data-nosnippet>380</a>    }
+<a href=#381 id=381 data-nosnippet>381</a>}
 </code></pre></div></section></main></body></html>
