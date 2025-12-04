@@ -37,7 +37,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-5ceb6128.js";
+            window.path_to_searchindex_js = "../../searchindex-ba7fd180.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-5ae21586.js"></script>
@@ -221,6 +221,7 @@ unless you set them to a higher lint level with a flag or attribute.</p>
 <li><a href="#or-patterns-back-compat"><code>or-patterns-back-compat</code></a></li>
 <li><a href="#redundant-imports"><code>redundant_imports</code></a></li>
 <li><a href="#redundant-lifetimes"><code>redundant_lifetimes</code></a></li>
+<li><a href="#resolving-to-items-shadowing-supertrait-items"><code>resolving_to_items_shadowing_supertrait_items</code></a></li>
 <li><a href="#rust-2021-incompatible-closure-captures"><code>rust_2021_incompatible_closure_captures</code></a></li>
 <li><a href="#rust-2021-incompatible-or-patterns"><code>rust_2021_incompatible_or_patterns</code></a></li>
 <li><a href="#rust-2021-prefixes-incompatible-syntax"><code>rust_2021_prefixes_incompatible_syntax</code></a></li>
@@ -228,10 +229,9 @@ unless you set them to a higher lint level with a flag or attribute.</p>
 <li><a href="#rust-2024-guarded-string-incompatible-syntax"><code>rust_2024_guarded_string_incompatible_syntax</code></a></li>
 <li><a href="#rust-2024-incompatible-pat"><code>rust_2024_incompatible_pat</code></a></li>
 <li><a href="#rust-2024-prelude-collisions"><code>rust_2024_prelude_collisions</code></a></li>
+<li><a href="#shadowing-supertrait-items"><code>shadowing_supertrait_items</code></a></li>
 <li><a href="#single-use-lifetime"><code>single-use-lifetime</code></a></li>
 <li><a href="#single-use-lifetimes"><code>single_use_lifetimes</code></a></li>
-<li><a href="#supertrait-item-shadowing-definition"><code>supertrait_item_shadowing_definition</code></a></li>
-<li><a href="#supertrait-item-shadowing-usage"><code>supertrait_item_shadowing_usage</code></a></li>
 <li><a href="#tail-expr-drop-order"><code>tail_expr_drop_order</code></a></li>
 <li><a href="#trivial-casts"><code>trivial_casts</code></a></li>
 <li><a href="#trivial-numeric-casts"><code>trivial_numeric_casts</code></a></li>
@@ -1488,6 +1488,56 @@ note: the lint level is defined here
 <h3 id="explanation-29"><a class="header" href="#explanation-29">Explanation</a></h3>
 <p>Unused lifetime parameters may signal a mistake or unfinished code.
 Consider removing the parameter.</p>
+<h2 id="resolving-to-items-shadowing-supertrait-items"><a class="header" href="#resolving-to-items-shadowing-supertrait-items">resolving-to-items-shadowing-supertrait-items</a></h2>
+<p>The <code>resolving_to_items_shadowing_supertrait_items</code> lint detects when the
+usage of an item that is provided by both a subtrait and supertrait
+is shadowed, preferring the subtrait.</p>
+<h3 id="example-30"><a class="header" href="#example-30">Example</a></h3>
+<pre><code class="language-rust compile_fail">#![feature(supertrait_item_shadowing)]
+#![deny(resolving_to_items_shadowing_supertrait_items)]
+
+trait Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Upstream for T {}
+
+trait Downstream: Upstream {
+    fn hello(&amp;self) {}
+}
+impl&lt;T&gt; Downstream for T {}
+
+struct MyType;
+MyType.hello();</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: trait item `hello` from `Downstream` shadows identically named item from supertrait
+  --&gt; lint_example.rs:16:8
+   |
+16 | MyType.hello();
+   |        ^^^^^
+   |
+note: item from `Downstream` shadows a supertrait item
+  --&gt; lint_example.rs:11:5
+   |
+11 |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+note: item from `Upstream` is shadowed by a subtrait item
+  --&gt; lint_example.rs:6:5
+   |
+ 6 |     fn hello(&amp;self) {}
+   |     ^^^^^^^^^^^^^^^
+note: the lint level is defined here
+  --&gt; lint_example.rs:2:9
+   |
+ 2 | #![deny(resolving_to_items_shadowing_supertrait_items)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+</code></pre>
+<h3 id="explanation-30"><a class="header" href="#explanation-30">Explanation</a></h3>
+<p>RFC 3624 specified a heuristic in which a supertrait item would be
+shadowed by a subtrait item when ambiguity occurs during item
+selection. In order to mitigate side-effects of this happening
+silently, this lint detects these cases when users want to deny them
+or fix the call sites.</p>
 <h2 id="rust-2021-incompatible-closure-captures"><a class="header" href="#rust-2021-incompatible-closure-captures">rust-2021-incompatible-closure-captures</a></h2>
 <p>The <code>rust_2021_incompatible_closure_captures</code> lint detects variables that aren't completely
 captured in Rust 2021, such that the <code>Drop</code> order of their fields may differ between
@@ -1545,7 +1595,7 @@ help: add a dummy let to cause `p` to be fully captured
    |
 
 </code></pre>
-<h3 id="explanation-30"><a class="header" href="#explanation-30">Explanation</a></h3>
+<h3 id="explanation-31"><a class="header" href="#explanation-31">Explanation</a></h3>
 <p>In the above example, <code>p.y</code> will be dropped at the end of <code>f</code> instead of
 with <code>c</code> in Rust 2021.</p>
 <h3 id="example-of-auto-trait"><a class="header" href="#example-of-auto-trait">Example of auto-trait</a></h3>
@@ -1585,13 +1635,13 @@ help: add a dummy let to cause `fptr` to be fully captured
    |
 
 </code></pre>
-<h3 id="explanation-31"><a class="header" href="#explanation-31">Explanation</a></h3>
+<h3 id="explanation-32"><a class="header" href="#explanation-32">Explanation</a></h3>
 <p>In the above example, only <code>fptr.0</code> is captured in Rust 2021.
 The field is of type <code>*mut i32</code>, which doesn't implement <code>Send</code>,
 making the code invalid as the field cannot be sent between threads safely.</p>
 <h2 id="rust-2021-incompatible-or-patterns"><a class="header" href="#rust-2021-incompatible-or-patterns">rust-2021-incompatible-or-patterns</a></h2>
 <p>The <code>rust_2021_incompatible_or_patterns</code> lint detects usage of old versions of or-patterns.</p>
-<h3 id="example-30"><a class="header" href="#example-30">Example</a></h3>
+<h3 id="example-31"><a class="header" href="#example-31">Example</a></h3>
 <pre><code class="language-rust edition2018 compile_fail">#![deny(rust_2021_incompatible_or_patterns)]
 
 macro_rules! match_any {
@@ -1625,12 +1675,12 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-32"><a class="header" href="#explanation-32">Explanation</a></h3>
+<h3 id="explanation-33"><a class="header" href="#explanation-33">Explanation</a></h3>
 <p>In Rust 2021, the <code>pat</code> matcher will match additional patterns, which include the <code>|</code> character.</p>
 <h2 id="rust-2021-prefixes-incompatible-syntax"><a class="header" href="#rust-2021-prefixes-incompatible-syntax">rust-2021-prefixes-incompatible-syntax</a></h2>
 <p>The <code>rust_2021_prefixes_incompatible_syntax</code> lint detects identifiers that will be parsed as a
 prefix instead in Rust 2021.</p>
-<h3 id="example-31"><a class="header" href="#example-31">Example</a></h3>
+<h3 id="example-32"><a class="header" href="#example-32">Example</a></h3>
 <pre><code class="language-rust edition2018 compile_fail">#![deny(rust_2021_prefixes_incompatible_syntax)]
 
 macro_rules! m {
@@ -1658,7 +1708,7 @@ help: insert whitespace here to avoid this being parsed as a prefix in Rust 2021
   |     +
 
 </code></pre>
-<h3 id="explanation-33"><a class="header" href="#explanation-33">Explanation</a></h3>
+<h3 id="explanation-34"><a class="header" href="#explanation-34">Explanation</a></h3>
 <p>In Rust 2015 and 2018, <code>z"hey"</code> is two tokens: the identifier <code>z</code>
 followed by the string literal <code>"hey"</code>. In Rust 2021, the <code>z</code> is
 considered a prefix for <code>"hey"</code>.</p>
@@ -1667,7 +1717,7 @@ to keep them separated in Rust 2021.</p>
 <h2 id="rust-2021-prelude-collisions"><a class="header" href="#rust-2021-prelude-collisions">rust-2021-prelude-collisions</a></h2>
 <p>The <code>rust_2021_prelude_collisions</code> lint detects the usage of trait methods which are ambiguous
 with traits added to the prelude in future editions.</p>
-<h3 id="example-32"><a class="header" href="#example-32">Example</a></h3>
+<h3 id="example-33"><a class="header" href="#example-33">Example</a></h3>
 <pre><code class="language-rust edition2018 compile_fail">#![deny(rust_2021_prelude_collisions)]
 
 trait Foo {
@@ -1703,7 +1753,7 @@ note: the lint level is defined here
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-34"><a class="header" href="#explanation-34">Explanation</a></h3>
+<h3 id="explanation-35"><a class="header" href="#explanation-35">Explanation</a></h3>
 <p>In Rust 2021, one of the important introductions is the <a href="https://blog.rust-lang.org/inside-rust/2021/03/04/planning-rust-2021.html#prelude-changes">prelude changes</a>, which add
 <code>TryFrom</code>, <code>TryInto</code>, and <code>FromIterator</code> into the standard library's prelude. Since this
 results in an ambiguity as to which method/function to call when an existing <code>try_into</code>
@@ -1712,7 +1762,7 @@ is called directly on a type.</p>
 <h2 id="rust-2024-guarded-string-incompatible-syntax"><a class="header" href="#rust-2024-guarded-string-incompatible-syntax">rust-2024-guarded-string-incompatible-syntax</a></h2>
 <p>The <code>rust_2024_guarded_string_incompatible_syntax</code> lint detects <code>#</code> tokens
 that will be parsed as part of a guarded string literal in Rust 2024.</p>
-<h3 id="example-33"><a class="header" href="#example-33">Example</a></h3>
+<h3 id="example-34"><a class="header" href="#example-34">Example</a></h3>
 <pre><code class="language-rust edition2021 compile_fail">#![deny(rust_2024_guarded_string_incompatible_syntax)]
 
 macro_rules! m {
@@ -1756,7 +1806,7 @@ help: insert whitespace here to avoid this being parsed as a guarded string in R
    |     +
 
 </code></pre>
-<h3 id="explanation-35"><a class="header" href="#explanation-35">Explanation</a></h3>
+<h3 id="explanation-36"><a class="header" href="#explanation-36">Explanation</a></h3>
 <p>Prior to Rust 2024, <code>#"hey"#</code> is three tokens: the first <code>#</code>
 followed by the string literal <code>"hey"</code> then the final <code>#</code>.
 In Rust 2024, the whole sequence is considered a single token.</p>
@@ -1765,7 +1815,7 @@ and the string to keep them separated in Rust 2024.</p>
 <h2 id="rust-2024-incompatible-pat"><a class="header" href="#rust-2024-incompatible-pat">rust-2024-incompatible-pat</a></h2>
 <p>The <code>rust_2024_incompatible_pat</code> lint
 detects patterns whose meaning will change in the Rust 2024 edition.</p>
-<h3 id="example-34"><a class="header" href="#example-34">Example</a></h3>
+<h3 id="example-35"><a class="header" href="#example-35">Example</a></h3>
 <pre><code class="language-rust edition2021">#![warn(rust_2024_incompatible_pat)]
 
 if let Some(&amp;a) = &amp;Some(&amp;0u8) {
@@ -1818,14 +1868,14 @@ help: match on the reference with a reference pattern to avoid implicitly borrow
   |        ++++
 
 </code></pre>
-<h3 id="explanation-36"><a class="header" href="#explanation-36">Explanation</a></h3>
+<h3 id="explanation-37"><a class="header" href="#explanation-37">Explanation</a></h3>
 <p>In Rust 2024 and above, the <code>mut</code> keyword does not reset the pattern binding mode,
 and nor do <code>&amp;</code> or <code>&amp;mut</code> patterns. The lint will suggest code that
 has the same meaning in all editions.</p>
 <h2 id="rust-2024-prelude-collisions"><a class="header" href="#rust-2024-prelude-collisions">rust-2024-prelude-collisions</a></h2>
 <p>The <code>rust_2024_prelude_collisions</code> lint detects the usage of trait methods which are ambiguous
 with traits added to the prelude in future editions.</p>
-<h3 id="example-35"><a class="header" href="#example-35">Example</a></h3>
+<h3 id="example-36"><a class="header" href="#example-36">Example</a></h3>
 <pre><code class="language-rust edition2021 compile_fail">#![deny(rust_2024_prelude_collisions)]
 trait Meow {
     fn poll(&amp;self) {}
@@ -1854,58 +1904,18 @@ note: the lint level is defined here
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
-<h3 id="explanation-37"><a class="header" href="#explanation-37">Explanation</a></h3>
+<h3 id="explanation-38"><a class="header" href="#explanation-38">Explanation</a></h3>
 <p>Rust 2024, introduces two new additions to the standard library's prelude:
 <code>Future</code> and <code>IntoFuture</code>. This results in an ambiguity as to which method/function
 to call when an existing <code>poll</code>/<code>into_future</code> method is called via dot-call syntax or
 a <code>poll</code>/<code>into_future</code> associated function is called directly on a type.</p>
-<h2 id="single-use-lifetime"><a class="header" href="#single-use-lifetime">single-use-lifetime</a></h2>
-<p>The lint <code>single-use-lifetime</code> has been renamed to <a href="#single-use-lifetimes"><code>single-use-lifetimes</code></a>.</p>
-<h2 id="single-use-lifetimes"><a class="header" href="#single-use-lifetimes">single-use-lifetimes</a></h2>
-<p>The <code>single_use_lifetimes</code> lint detects lifetimes that are only used
-once.</p>
-<h3 id="example-36"><a class="header" href="#example-36">Example</a></h3>
-<pre><code class="language-rust compile_fail">#![deny(single_use_lifetimes)]
-
-fn foo&lt;'a&gt;(x: &amp;'a u32) {}</code></pre>
-<p>This will produce:</p>
-<pre><code class="language-text">error: lifetime parameter `'a` only used once
- --&gt; lint_example.rs:4:8
-  |
-4 | fn foo&lt;'a&gt;(x: &amp;'a u32) {}
-  |        ^^      -- ...is used only here
-  |        |
-  |        this lifetime...
-  |
-note: the lint level is defined here
- --&gt; lint_example.rs:1:9
-  |
-1 | #![deny(single_use_lifetimes)]
-  |         ^^^^^^^^^^^^^^^^^^^^
-help: elide the single-use lifetime
-  |
-4 - fn foo&lt;'a&gt;(x: &amp;'a u32) {}
-4 + fn foo(x: &amp;u32) {}
-  |
-
-</code></pre>
-<h3 id="explanation-38"><a class="header" href="#explanation-38">Explanation</a></h3>
-<p>Specifying an explicit lifetime like <code>'a</code> in a function or <code>impl</code>
-should only be used to link together two things. Otherwise, you should
-just use <code>'_</code> to indicate that the lifetime is not linked to anything,
-or elide the lifetime altogether if possible.</p>
-<p>This lint is "allow" by default because it was introduced at a time
-when <code>'_</code> and elided lifetimes were first being introduced, and this
-lint would be too noisy. Also, there are some known false positives
-that it produces. See <a href="https://github.com/rust-lang/rfcs/blob/master/text/2115-argument-lifetimes.md">RFC 2115</a> for historical context, and <a href="https://github.com/rust-lang/rust/issues/44752">issue
-#44752</a> for more details.</p>
-<h2 id="supertrait-item-shadowing-definition"><a class="header" href="#supertrait-item-shadowing-definition">supertrait-item-shadowing-definition</a></h2>
-<p>The <code>supertrait_item_shadowing_definition</code> lint detects when the
+<h2 id="shadowing-supertrait-items"><a class="header" href="#shadowing-supertrait-items">shadowing-supertrait-items</a></h2>
+<p>The <code>shadowing_supertrait_items</code> lint detects when the
 definition of an item that is provided by both a subtrait and
 supertrait is shadowed, preferring the subtrait.</p>
 <h3 id="example-37"><a class="header" href="#example-37">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![feature(supertrait_item_shadowing)]
-#![deny(supertrait_item_shadowing_definition)]
+#![deny(shadowing_supertrait_items)]
 
 trait Upstream {
     fn hello(&amp;self) {}
@@ -1931,8 +1941,8 @@ note: item from `Upstream` is shadowed by a subtrait item
 note: the lint level is defined here
   --&gt; lint_example.rs:2:9
    |
- 2 | #![deny(supertrait_item_shadowing_definition)]
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 2 | #![deny(shadowing_supertrait_items)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 </code></pre>
 <h3 id="explanation-39"><a class="header" href="#explanation-39">Explanation</a></h3>
@@ -1941,56 +1951,46 @@ shadowed by a subtrait item when ambiguity occurs during item
 selection. In order to mitigate side-effects of this happening
 silently, this lint detects these cases when users want to deny them
 or fix their trait definitions.</p>
-<h2 id="supertrait-item-shadowing-usage"><a class="header" href="#supertrait-item-shadowing-usage">supertrait-item-shadowing-usage</a></h2>
-<p>The <code>supertrait_item_shadowing_usage</code> lint detects when the
-usage of an item that is provided by both a subtrait and supertrait
-is shadowed, preferring the subtrait.</p>
+<h2 id="single-use-lifetime"><a class="header" href="#single-use-lifetime">single-use-lifetime</a></h2>
+<p>The lint <code>single-use-lifetime</code> has been renamed to <a href="#single-use-lifetimes"><code>single-use-lifetimes</code></a>.</p>
+<h2 id="single-use-lifetimes"><a class="header" href="#single-use-lifetimes">single-use-lifetimes</a></h2>
+<p>The <code>single_use_lifetimes</code> lint detects lifetimes that are only used
+once.</p>
 <h3 id="example-38"><a class="header" href="#example-38">Example</a></h3>
-<pre><code class="language-rust compile_fail">#![feature(supertrait_item_shadowing)]
-#![deny(supertrait_item_shadowing_usage)]
+<pre><code class="language-rust compile_fail">#![deny(single_use_lifetimes)]
 
-trait Upstream {
-    fn hello(&amp;self) {}
-}
-impl&lt;T&gt; Upstream for T {}
-
-trait Downstream: Upstream {
-    fn hello(&amp;self) {}
-}
-impl&lt;T&gt; Downstream for T {}
-
-struct MyType;
-MyType.hello();</code></pre>
+fn foo&lt;'a&gt;(x: &amp;'a u32) {}</code></pre>
 <p>This will produce:</p>
-<pre><code class="language-text">error: trait item `hello` from `Downstream` shadows identically named item from supertrait
-  --&gt; lint_example.rs:16:8
-   |
-16 | MyType.hello();
-   |        ^^^^^
-   |
-note: item from `Downstream` shadows a supertrait item
-  --&gt; lint_example.rs:11:5
-   |
-11 |     fn hello(&amp;self) {}
-   |     ^^^^^^^^^^^^^^^
-note: item from `Upstream` is shadowed by a subtrait item
-  --&gt; lint_example.rs:6:5
-   |
- 6 |     fn hello(&amp;self) {}
-   |     ^^^^^^^^^^^^^^^
+<pre><code class="language-text">error: lifetime parameter `'a` only used once
+ --&gt; lint_example.rs:4:8
+  |
+4 | fn foo&lt;'a&gt;(x: &amp;'a u32) {}
+  |        ^^      -- ...is used only here
+  |        |
+  |        this lifetime...
+  |
 note: the lint level is defined here
-  --&gt; lint_example.rs:2:9
-   |
- 2 | #![deny(supertrait_item_shadowing_usage)]
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ --&gt; lint_example.rs:1:9
+  |
+1 | #![deny(single_use_lifetimes)]
+  |         ^^^^^^^^^^^^^^^^^^^^
+help: elide the single-use lifetime
+  |
+4 - fn foo&lt;'a&gt;(x: &amp;'a u32) {}
+4 + fn foo(x: &amp;u32) {}
+  |
 
 </code></pre>
 <h3 id="explanation-40"><a class="header" href="#explanation-40">Explanation</a></h3>
-<p>RFC 3624 specified a heuristic in which a supertrait item would be
-shadowed by a subtrait item when ambiguity occurs during item
-selection. In order to mitigate side-effects of this happening
-silently, this lint detects these cases when users want to deny them
-or fix the call sites.</p>
+<p>Specifying an explicit lifetime like <code>'a</code> in a function or <code>impl</code>
+should only be used to link together two things. Otherwise, you should
+just use <code>'_</code> to indicate that the lifetime is not linked to anything,
+or elide the lifetime altogether if possible.</p>
+<p>This lint is "allow" by default because it was introduced at a time
+when <code>'_</code> and elided lifetimes were first being introduced, and this
+lint would be too noisy. Also, there are some known false positives
+that it produces. See <a href="https://github.com/rust-lang/rfcs/blob/master/text/2115-argument-lifetimes.md">RFC 2115</a> for historical context, and <a href="https://github.com/rust-lang/rust/issues/44752">issue
+#44752</a> for more details.</p>
 <h2 id="tail-expr-drop-order"><a class="header" href="#tail-expr-drop-order">tail-expr-drop-order</a></h2>
 <p>The <code>tail_expr_drop_order</code> lint looks for those values generated at the tail expression location,
 that runs a custom <code>Drop</code> destructor.
