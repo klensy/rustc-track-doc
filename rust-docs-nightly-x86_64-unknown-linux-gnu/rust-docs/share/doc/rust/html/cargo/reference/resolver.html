@@ -41,7 +41,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ffcec52e.js";
+            window.path_to_searchindex_js = "../searchindex-111e5208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-4c5cc278.js"></script>
@@ -208,7 +208,7 @@ To understand how these interact, it is helpful to have a coarse understanding o
 }
 
 fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
-    let Some(dep_spec) = policy.pick_next_dep(dep_queue) else {
+    let Some(dep_spec) = policy.pick_next_dep(&amp;mut dep_queue) else {
         // Done
         return Some(resolved);
     };
@@ -220,15 +220,15 @@ fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; 
     let dep_versions = dep_spec.lookup_versions()?;
     let mut dep_versions = policy.filter_versions(dep_spec, dep_versions);
     while let Some(dep_version) = policy.pick_next_version(&amp;mut dep_versions) {
-        if policy.needs_version_unification(dep_version, &amp;resolved) {
+        if policy.needs_version_unification(&amp;dep_version, &amp;resolved) {
             continue;
         }
 
         let mut dep_queue = dep_queue.clone();
-        dep_queue.enqueue(dep_version.dependencies);
+        dep_queue.enqueue(&amp;dep_version.dependencies);
         let mut resolved = resolved.clone();
         resolved.register(dep_version);
-        if let Some(resolved) = resolve_next(dep_queue, resolved) {
+        if let Some(resolved) = resolve_next(dep_queue, resolved, policy) {
             return Some(resolved);
         }
     }

@@ -42,7 +42,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ffcec52e.js";
+            window.path_to_searchindex_js = "searchindex-111e5208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4c5cc278.js"></script>
@@ -3484,7 +3484,7 @@ To understand how these interact, it is helpful to have a coarse understanding o
 }
 
 fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; Option&lt;ResolveGraph&gt; {
-    let Some(dep_spec) = policy.pick_next_dep(dep_queue) else {
+    let Some(dep_spec) = policy.pick_next_dep(&amp;mut dep_queue) else {
         // Done
         return Some(resolved);
     };
@@ -3496,15 +3496,15 @@ fn resolve_next(dep_queue: Queue, resolved: ResolveGraph, policy: Policy) -&gt; 
     let dep_versions = dep_spec.lookup_versions()?;
     let mut dep_versions = policy.filter_versions(dep_spec, dep_versions);
     while let Some(dep_version) = policy.pick_next_version(&amp;mut dep_versions) {
-        if policy.needs_version_unification(dep_version, &amp;resolved) {
+        if policy.needs_version_unification(&amp;dep_version, &amp;resolved) {
             continue;
         }
 
         let mut dep_queue = dep_queue.clone();
-        dep_queue.enqueue(dep_version.dependencies);
+        dep_queue.enqueue(&amp;dep_version.dependencies);
         let mut resolved = resolved.clone();
         resolved.register(dep_version);
-        if let Some(resolved) = resolve_next(dep_queue, resolved) {
+        if let Some(resolved) = resolve_next(dep_queue, resolved, policy) {
             return Some(resolved);
         }
     }
@@ -10951,6 +10951,7 @@ build-std = ["core", "alloc"]
 <li><a href="reference/unstable.html#scrape-examples">scrape-examples</a> — Shows examples within documentation.</li>
 <li><a href="reference/unstable.html#output-format-for-rustdoc">output-format</a> — Allows documentation to also be emitted in the experimental <a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustdoc_json_types/">JSON format</a>.</li>
 <li><a href="reference/unstable.html#rustdoc-depinfo">rustdoc-depinfo</a> — Use dep-info files in rustdoc rebuild detection.</li>
+<li><a href="reference/unstable.html#rustdoc-mergeable-info">rustdoc-mergeable-info</a> — Use rustdoc mergeable cross-crate-info files.</li>
 </ul>
 </li>
 <li><code>Cargo.toml</code> extensions
@@ -12639,6 +12640,17 @@ cargo +nightly check --compile-time-deps --all-targets -Z unstable-options
 <li>Tracking Issue: <a href="https://github.com/rust-lang/rust/issues/148607">rust#148607</a></li>
 </ul>
 <p>Enable <code>rustc</code>’s unicode error format in Cargo’s error messages</p>
+<h2 id="rustdoc-mergeable-info"><a class="header" href="#rustdoc-mergeable-info">rustdoc mergeable info</a></h2>
+<ul>
+<li>Original Pull Request: <a href="https://github.com/rust-lang/cargo/pull/16309">#16309</a></li>
+<li>Tracking issue: <a href="https://github.com/rust-lang/cargo/issues/16306">#16306</a></li>
+<li>Tracking rustc issue: <a href="https://github.com/rust-lang/rust/issues/130676">rust-lang/rust#130676</a></li>
+</ul>
+<p>The <code>-Z rustdoc-mergeable-info</code> leverage rustdoc’s mergeable crate info,
+so that <code>cargo doc</code> can merge cross-crate information
+(like the search index, source files index, etc.)
+from separate output directories,
+and run <code>rustdoc</code> in parallel.</p>
 <h1 id="stabilized-and-removed-features"><a class="header" href="#stabilized-and-removed-features">Stabilized and removed features</a></h1>
 <h2 id="compile-progress"><a class="header" href="#compile-progress">Compile progress</a></h2>
 <p>The compile-progress feature has been stabilized in the 1.30 release.
