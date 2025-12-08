@@ -37,10 +37,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-619ed4e9.js";
+            window.path_to_searchindex_js = "../searchindex-cd6ffbc1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-5ae21586.js"></script>
+        <script src="../toc-920d8878.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,7 +184,8 @@
                     <main>
                         <h1 id="-windows-gnullvm"><a class="header" href="#-windows-gnullvm">*-windows-gnullvm</a></h1>
 <p><strong>Tier: 2 (with host tools)</strong></p>
-<p>Windows targets similar to <code>*-windows-gnu</code> but using UCRT as the runtime and various LLVM tools/libraries instead of GCC/Binutils.</p>
+<p>Windows targets similar to <code>*-windows-gnu</code> but using UCRT as the runtime and various LLVM tools/libraries instead of
+GCC/Binutils.</p>
 <p>Target triples available so far:</p>
 <ul>
 <li><code>aarch64-pc-windows-gnullvm</code></li>
@@ -195,40 +196,30 @@
 <p><a href="https://github.com/mati865">@mati865</a>
 <a href="https://github.com/thomcc">@thomcc</a></p>
 <h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
-<p>The easiest way to obtain these targets is cross-compilation, but native build from <code>x86_64-pc-windows-gnu</code> is possible with few hacks which I don't recommend.
-Std support is expected to be on par with <code>*-windows-gnu</code>.</p>
-<p>Binaries for this target should be at least on par with <code>*-windows-gnu</code> in terms of requirements and functionality.</p>
+<p>Building those targets requires an LLVM-based C toolchain, for example, <a href="https://github.com/mstorsjo/llvm-mingw">llvm-mingw</a> or <a href="https://www.msys2.org/docs/environments">MSYS2</a> with CLANG*
+environment.</p>
+<p>Binaries for this target should be at least on par with <code>*-windows-gnu</code> in terms of requirements and functionality,
+except for implicit self-contained mode (explained in <a href="#building-rust-programs">the section below</a>).</p>
 <p>Those targets follow Windows calling convention for <code>extern "C"</code>.</p>
 <p>Like with any other Windows target, created binaries are in PE format.</p>
 <h2 id="building-the-target"><a class="header" href="#building-the-target">Building the target</a></h2>
-<p>These targets can be easily cross-compiled
-using <a href="https://github.com/mstorsjo/llvm-mingw">llvm-mingw</a> toolchain or <a href="https://www.msys2.org/docs/environments/">MSYS2 CLANG*</a> environments.
-Just fill <code>[target.*]</code> sections for both build and resulting compiler and set installation prefix in <code>bootstrap.toml</code>.
-Then run <code>./x.py install</code>.
-In my case I had ran <code>./x.py install --host x86_64-pc-windows-gnullvm --target x86_64-pc-windows-gnullvm</code> inside MSYS2 MINGW64 shell
-so <code>x86_64-pc-windows-gnu</code> was my build toolchain.</p>
-<p>Native bootstrapping is doable in two ways:</p>
-<ul>
-<li>cross-compile gnullvm host toolchain and use it as build toolchain for the next build,</li>
-<li>copy libunwind libraries and rename them to mimic libgcc like here: https://github.com/msys2/MINGW-packages/blob/68e640756df2df6df6afa60f025e3f936e7b977c/mingw-w64-rust/PKGBUILD#L108-L109, stage0 compiler will be mostly broken but good enough to build the next stage.</li>
-</ul>
-<p>The second option might stop working anytime, so it's not recommended.</p>
+<p>Both native and cross-compilation builds are supported and function similarly to other Rust targets.</p>
 <h2 id="building-rust-programs"><a class="header" href="#building-rust-programs">Building Rust programs</a></h2>
-<p>Rust does ship a pre-compiled std library for those targets.
-That means one can easily cross-compile for those targets from other hosts if C proper toolchain is installed.</p>
-<p>Alternatively full toolchain can be built as described in the previous section.</p>
+<p>Rust ships both std and host tools for those targets. That allows using them as both the host and the target.</p>
+<p>When used as the host and building pure Rust programs, no additional C toolchain is required.
+The only requirements are to install <code>rust-mingw</code> component and to set <code>rust-lld</code> as the linker.
+Otherwise, you will need to install the C toolchain mentioned previously.
+There is no automatic fallback to <code>rust-lld</code> when the C toolchain is missing yet, but it may be added in the future.</p>
 <h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
-<p>Created binaries work fine on Windows or Wine using native hardware. Testing AArch64 on x86_64 is problematic though and requires spending some time with QEMU.
-Most of x86_64 testsuite does pass when cross-compiling,
-with exception for <code>rustdoc</code> and <code>ui-fulldeps</code> that fail with and error regarding a missing library,
-they do pass in native builds though.
-The only failing test is std's <code>process::tests::test_proc_thread_attributes</code> for unknown reason.</p>
+<p>Created binaries work fine on Windows and Linux with Wine using native hardware.
+Testing AArch64 on x86_64 is problematic, though, and requires launching a whole AArch64 system with QEMU.</p>
+<p>Most of the x86_64 testsuite does pass, but because it isn't run on CI, different failures are expected over time.</p>
 <h2 id="cross-compilation-toolchains-and-c-code"><a class="header" href="#cross-compilation-toolchains-and-c-code">Cross-compilation toolchains and C code</a></h2>
-<p>Compatible C code can be built with Clang's <code>aarch64-pc-windows-gnu</code>, <code>i686-pc-windows-gnullvm</code> and <code>x86_64-pc-windows-gnu</code> targets as long as LLVM-based C toolchains are used.
-Those include:</p>
+<p>Compatible C code can be built with Clang's <code>aarch64-pc-windows-gnu</code>, <code>i686-pc-windows-gnullvm</code> and
+<code>x86_64-pc-windows-gnu</code> targets as long as LLVM-based C toolchains are used. Those include:</p>
 <ul>
 <li><a href="https://github.com/mstorsjo/llvm-mingw">llvm-mingw</a></li>
-<li><a href="https://www.msys2.org/docs/environments">MSYS2 with CLANG* environment</a></li>
+<li><a href="https://www.msys2.org/docs/environments">MSYS2</a> with CLANG* environment</li>
 </ul>
 
                     </main>
