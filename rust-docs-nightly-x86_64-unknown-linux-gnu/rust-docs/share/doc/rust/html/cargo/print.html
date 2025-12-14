@@ -42,7 +42,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-111e5208.js";
+            window.path_to_searchindex_js = "searchindex-b5999d65.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-4c5cc278.js"></script>
@@ -5115,6 +5115,58 @@ cargo --config "target.'cfg(all(target_arch = \"arm\", target_os = \"none\"))'.r
 # Example of overriding a profile setting.
 cargo --config profile.dev.package.image.opt-level=3 …
 </code></pre>
+<h2 id="including-extra-configuration-files"><a class="header" href="#including-extra-configuration-files">Including extra configuration files</a></h2>
+<p>Configuration can include other configuration files using the top-level <code>include</code> key.
+This allows sharing configuration across multiple projects
+or splitting complex configurations into multiple files.</p>
+<h3 id="include"><a class="header" href="#include"><code>include</code></a></h3>
+<ul>
+<li>Type: array of strings or tables</li>
+<li>Default: none</li>
+<li>Environment: not supported</li>
+</ul>
+<p>Loads additional configuration files.
+Paths are relative to the configuration file that includes them.
+Only paths ending with <code>.toml</code> are accepted.</p>
+<p>Supports the following formats:</p>
+<pre><code class="language-toml"># array of paths
+include = [
+    "frodo.toml",
+    "samwise.toml",
+]
+
+# inline tables for more control
+include = [
+    { path = "required.toml" },
+    { path = "optional.toml", optional = true },
+]
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> For better readability and to avoid confusion, it is recommended to:</p>
+<ul>
+<li>Place <code>include</code> at the top of the configuration file</li>
+<li>Put one include per line for clearer version control diffs</li>
+<li>Use inline table syntax when optional includes are needed</li>
+</ul>
+</blockquote>
+<p>When using table syntax, the following fields are supported:</p>
+<ul>
+<li><code>path</code> (string, required): Path to the config file to include.</li>
+<li><code>optional</code> (boolean, default: false): If <code>true</code>, missing files are silently
+skipped instead of causing an error.</li>
+</ul>
+<p>The merge behavior of <code>include</code> is different from other config values:</p>
+<ol>
+<li>Config values are first loaded from the <code>include</code> paths.
+<ul>
+<li>Included files are loaded left to right,
+with values from later files taking precedence over earlier ones.</li>
+<li>This step recurses if included config files also contain <code>include</code> keys.</li>
+</ul>
+</li>
+<li>Then, the config file’s own values are merged on top of the included config,
+taking highest precedence.</li>
+</ol>
 <h2 id="config-relative-paths"><a class="header" href="#config-relative-paths">Config-relative paths</a></h2>
 <p>Paths in config files may be absolute, relative, or a bare name without any path separators.
 Paths for executables without a path separator will use the <code>PATH</code> environment variable to search for the executable.
@@ -10486,9 +10538,9 @@ to update their Rust toolchain rapidly.</p>
 <p>Mitigation strategies:</p>
 <ul>
 <li>Document your package’s minimum-supported Rust version by setting
-<a href="https://doc.rust-lang.org/cargo/reference/rust-version.html"><code>package.rust-version</code></a>, allowing Cargo’s dependency resolution to
-attempt to <a href="https://doc.rust-lang.org/cargo/reference/resolver.html#rust-version">select older versions of your package</a> when needed.
-Be sure to consider the <a href="https://doc.rust-lang.org/cargo/reference/rust-version.html#support-expectations">support expectations</a> when doing so.</li>
+<a href="reference/rust-version.html"><code>package.rust-version</code></a>, allowing Cargo’s dependency resolution to
+attempt to <a href="reference/resolver.html#rust-version">select older versions of your package</a> when needed.
+Be sure to consider the <a href="reference/rust-version.html#support-expectations">support expectations</a> when doing so.</li>
 <li>Use <a href="reference/features.html">Cargo features</a> to make the new features opt-in.</li>
 <li>Provide a large window of support for older releases.</li>
 <li>Copy the source of new standard library items if possible so that you
@@ -10804,6 +10856,11 @@ your attention on improving that one crate to improve parallelism.</li>
 as well as the features that were enabled during each unit’s compilation.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="lints"><a class="header" href="#lints">Lints</a></h1>
 <p>Note: <a href="reference/unstable.html#lintscargo">Cargo’s linting system is unstable</a> and can only be used on nightly toolchains</p>
+<h2 id="allowed-by-default"><a class="header" href="#allowed-by-default">Allowed-by-default</a></h2>
+<p>These lints are all set to the ‘allow’ level by default.</p>
+<ul>
+<li><a href="reference/lints.html#implicit_minimum_version_req"><code>implicit_minimum_version_req</code></a></li>
+</ul>
 <h2 id="warn-by-default"><a class="header" href="#warn-by-default">Warn-by-default</a></h2>
 <p>These lints are all set to the ‘warn’ level by default.</p>
 <ul>
@@ -10830,18 +10887,52 @@ hint-mostly-unused = true
 <pre><code class="language-toml">[profile.dev.package.huge-mostly-unused-dependency]
 hint-mostly-unused = true
 </code></pre>
+<h2 id="implicit_minimum_version_req"><a class="header" href="#implicit_minimum_version_req"><code>implicit_minimum_version_req</code></a></h2>
+<p>Set to <code>allow</code> by default</p>
+<h3 id="what-it-does-1"><a class="header" href="#what-it-does-1">What it does</a></h3>
+<p>Checks for dependency version requirements
+that do not explicitly specify a full <code>major.minor.patch</code> version requirement,
+such as <code>serde = "1"</code> or <code>serde = "1.0"</code>.</p>
+<p>This lint currently only applies to caret requirements
+(the <a href="reference/specifying-dependencies.html#default-requirements">default requirements</a>).</p>
+<h3 id="why-it-is-bad-1"><a class="header" href="#why-it-is-bad-1">Why it is bad</a></h3>
+<p>Version requirements without an explicit full version
+can be misleading about the actual minimum supported version.
+For example,
+<code>serde = "1"</code> has an implicit minimum bound of <code>1.0.0</code>.
+If your code actually requires features from <code>1.0.219</code>,
+the implicit minimum bound of <code>1.0.0</code> gives a false impression about compatibility.</p>
+<p>Specifying the full version helps with:</p>
+<ul>
+<li>Accurate minimum version documentation</li>
+<li>Better compatibility with <code>-Z minimal-versions</code></li>
+<li>Clearer dependency constraints for consumers</li>
+</ul>
+<h3 id="drawbacks"><a class="header" href="#drawbacks">Drawbacks</a></h3>
+<p>Even with a fully specified version,
+the minimum bound might still be incorrect if untested.
+This lint helps make the minimum version requirement explicit
+but doesn’t guarantee correctness.</p>
+<h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
+<pre><code class="language-toml">[dependencies]
+serde = "1"
+</code></pre>
+<p>Should be written as a full specific version:</p>
+<pre><code class="language-toml">[dependencies]
+serde = "1.0.219"
+</code></pre>
 <h2 id="unknown_lints"><a class="header" href="#unknown_lints"><code>unknown_lints</code></a></h2>
 <p>Set to <code>warn</code> by default</p>
-<h3 id="what-it-does-1"><a class="header" href="#what-it-does-1">What it does</a></h3>
+<h3 id="what-it-does-2"><a class="header" href="#what-it-does-2">What it does</a></h3>
 <p>Checks for unknown lints in the <code>[lints.cargo]</code> table</p>
-<h3 id="why-it-is-bad-1"><a class="header" href="#why-it-is-bad-1">Why it is bad</a></h3>
+<h3 id="why-it-is-bad-2"><a class="header" href="#why-it-is-bad-2">Why it is bad</a></h3>
 <ul>
 <li>The lint name could be misspelled, leading to confusion as to why it is
 not working as expected</li>
 <li>The unknown lint could end up causing an error if <code>cargo</code> decides to make
 a lint with the same name in the future</li>
 </ul>
-<h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
+<h3 id="example-2"><a class="header" href="#example-2">Example</a></h3>
 <pre><code class="language-toml">[lints.cargo]
 this-lint-does-not-exist = "warn"
 </code></pre>
@@ -10977,7 +11068,6 @@ build-std = ["core", "alloc"]
 </li>
 <li>Configuration
 <ul>
-<li><a href="reference/unstable.html#config-include">config-include</a> — Adds the ability for config files to include other files.</li>
 <li><a href="reference/unstable.html#cargo-config"><code>cargo config</code></a> — Adds a new subcommand for viewing config files.</li>
 </ul>
 </li>
@@ -11424,80 +11514,6 @@ the <code>test</code> crate supports <code>-C panic=abort</code> with a test-per
 avoid compiling crate graphs multiple times.</p>
 <p>It’s currently unclear how this feature will be stabilized in Cargo, but we’d
 like to stabilize it somehow!</p>
-<h2 id="config-include"><a class="header" href="#config-include">config-include</a></h2>
-<ul>
-<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/7723">#7723</a></li>
-</ul>
-<p>This feature requires the <code>-Zconfig-include</code> command-line option.</p>
-<p>The <code>include</code> key in a config file can be used to load another config file.
-For example:</p>
-<pre><code class="language-toml"># .cargo/config.toml
-include = ["other-config.toml"]
-
-[build]
-jobs = 4
-</code></pre>
-<pre><code class="language-toml"># .cargo/other-config.toml
-[build]
-rustflags = ["-W", "unsafe-code"]
-</code></pre>
-<h3 id="documentation-updates"><a class="header" href="#documentation-updates">Documentation updates</a></h3>
-<blockquote>
-<p>put this after <code>## Command-line overrides</code> before <code>## Config-relative paths</code>
-to emphasize its special nature than other config keys.</p>
-</blockquote>
-<h4 id="including-extra-configuration-files"><a class="header" href="#including-extra-configuration-files">Including extra configuration files</a></h4>
-<p>Configuration can include other configuration files using the top-level <code>include</code> key.
-This allows sharing configuration across multiple projects
-or splitting complex configurations into multiple files.</p>
-<h5 id="include"><a class="header" href="#include"><code>include</code></a></h5>
-<ul>
-<li>Type: array of strings or tables</li>
-<li>Default: none</li>
-<li>Environment: not supported</li>
-</ul>
-<p>Loads additional configuration files.
-Paths are relative to the configuration file that includes them.
-Only paths ending with <code>.toml</code> are accepted.</p>
-<p>Supports the following formats:</p>
-<pre><code class="language-toml"># array of paths
-include = [
-    "frodo.toml",
-    "samwise.toml",
-]
-
-# inline tables for more control
-include = [
-    { path = "required.toml" },
-    { path = "optional.toml", optional = true },
-]
-</code></pre>
-<blockquote>
-<p><strong>Note:</strong> For better readability and to avoid confusion, it is recommended to:</p>
-<ul>
-<li>Place <code>include</code> at the top of the configuration file</li>
-<li>Put one include per line for clearer version control diffs</li>
-<li>Use inline table syntax when optional includes are needed</li>
-</ul>
-</blockquote>
-<p>When using table syntax, the following fields are supported:</p>
-<ul>
-<li><code>path</code> (string, required): Path to the config file to include.</li>
-<li><code>optional</code> (boolean, default: false): If <code>true</code>, missing files are silently
-skipped instead of causing an error.</li>
-</ul>
-<p>The merge behavior of <code>include</code> is different from other config values:</p>
-<ol>
-<li>Config values are first loaded from the <code>include</code> paths.
-<ul>
-<li>Included files are loaded left to right,
-with values from later files taking precedence over earlier ones.</li>
-<li>This step recurses if included config files also contain <code>include</code> keys.</li>
-</ul>
-</li>
-<li>Then, the config file’s own values are merged on top of the included config,
-taking highest precedence.</li>
-</ol>
 <h2 id="target-applies-to-host"><a class="header" href="#target-applies-to-host">target-applies-to-host</a></h2>
 <ul>
 <li>Original Pull Request: <a href="https://github.com/rust-lang/cargo/pull/9322">#9322</a></li>
@@ -12194,7 +12210,7 @@ intended for being put in <code>#!</code> lines.</p>
 <p>When running a package with an embedded manifest,
 <a href="https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#tymethod.arg0"><code>arg0</code></a> will be the scripts path.
 To get the executable’s path, see <a href="https://doc.rust-lang.org/std/env/fn.current_exe.html"><code>current_exe</code></a>.</p>
-<h3 id="documentation-updates-1"><a class="header" href="#documentation-updates-1">Documentation Updates</a></h3>
+<h3 id="documentation-updates"><a class="header" href="#documentation-updates">Documentation Updates</a></h3>
 <h2 id="profile-trim-paths-option"><a class="header" href="#profile-trim-paths-option">Profile <code>trim-paths</code> option</a></h2>
 <ul>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/12137">rust-lang/cargo#12137</a></li>
@@ -12220,7 +12236,7 @@ trim-paths = true
 [profile.release]
 trim-paths = ["diagnostics", "object"]
 </code></pre>
-<h3 id="documentation-updates-2"><a class="header" href="#documentation-updates-2">Documentation updates</a></h3>
+<h3 id="documentation-updates-1"><a class="header" href="#documentation-updates-1">Documentation updates</a></h3>
 <h4 id="trim-paths"><a class="header" href="#trim-paths">trim-paths</a></h4>
 <p><em>as a new <a href="reference/./profiles.html#profile-settings">“Profiles settings” entry</a></em></p>
 <p><code>trim-paths</code> is a profile setting which enables and controls the sanitization of file paths in build outputs.
@@ -12826,6 +12842,10 @@ See the <a href="reference/config.html#buildbuild-dir">config documentation</a> 
 <h2 id="build-plan"><a class="header" href="#build-plan">Build-plan</a></h2>
 <p>The <code>--build-plan</code> argument for the <code>build</code> command has been removed in 1.93.0-nightly.
 See <a href="https://github.com/rust-lang/cargo/issues/7614">https://github.com/rust-lang/cargo/issues/7614</a> for the reason for its removal.</p>
+<h2 id="config-include"><a class="header" href="#config-include">config-include</a></h2>
+<p>Support for including extra configuration files via the <code>include</code> config key
+has been stabilized in 1.93.0.
+See the <a href="reference/config.html#include"><code>include</code> config documentation</a> for more.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cargo-commands"><a class="header" href="#cargo-commands">Cargo Commands</a></h1>
 <ul>
 <li><a href="commands/general-commands.html">General Commands</a></li>
@@ -21385,11 +21405,11 @@ situations which may lead to a version conflict. Below we’ll walk through poss
 causes and provide diagnostic techniques to help you out there:</p>
 <ul>
 <li>
-<p>The project and its dependencies use <a href="https://doc.rust-lang.org/cargo/reference/resolver.html#links">links</a> to repeatedly link the local
+<p>The project and its dependencies use <a href="reference/resolver.html#links">links</a> to repeatedly link the local
 library. Cargo forbids linking two packages with the same native library, so
 even with multiple layers of dependencies it is not allowed. In this case, the
 error message will prompt: <code>Only one package in the dependency graph may specify the same links value</code>, you may need to manually check and delete duplicate link
-values. The community also have <a href="https://doc.rust-lang.org/cargo/reference/build-scripts.html#-sys-packages">conventions in place</a> to alleviate this.</p>
+values. The community also have <a href="reference/build-scripts.html#-sys-packages">conventions in place</a> to alleviate this.</p>
 </li>
 <li>
 <p>When depending on different crates in the project, if these crates use the same
@@ -21418,6 +21438,14 @@ ran some <code>cargo update</code> commands in your branch, you can re-run them 
 time. The community has been looking to resolve merge conflicts with <code>Cargo.lock</code>
 and <code>Cargo.toml</code> using a <a href="https://github.com/rust-lang/cargo/issues/1818">custom merge tool</a>.</p>
 </li>
+</ul>
+<h2 id="why-does-my-build-take-up-so-much-space"><a class="header" href="#why-does-my-build-take-up-so-much-space">Why does my build take up so much space?</a></h2>
+<p>Cargo trades off disk space for faster builds including:</p>
+<ul>
+<li>Maintaining a <a href="reference/build-cache.html">cache</a> of intermediate build artifacts to avoid rebuilding everything when making changes to one package</li>
+<li>Maintaining distinct <a href="reference/build-cache.html">cache</a> entries for different combinations of toolchain versions, package versions, features, etc to avoid rebuilding packages when switching back and forth between configurations</li>
+<li>Enabling <a href="reference/profiles.html#incremental">incremental compilation</a> for local packages for faster rebuilds for the package that changed</li>
+<li>Enabling <a href="reference/profiles.html#debug">debuginfo</a> in the <a href="reference/profiles.html#dev"><code>dev</code> profile</a> in case you use a debugger</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="changelog"><a class="header" href="#changelog">Changelog</a></h1>
 <h2 id="cargo-193-2026-01-22"><a class="header" href="#cargo-193-2026-01-22">Cargo 1.93 (2026-01-22)</a></h2>
@@ -24368,7 +24396,7 @@ Notable changes:
 </li>
 <li>🎉 <code>--keep-going</code> flag has been stabilized and is now available in each build command
 (except <code>bench</code> and <code>test</code>, which have <code>--no-fail-fast</code> instead).
-(<a href="https://doc.rust-lang.org/cargo/commands/cargo-build.html#option-cargo-build---keep-going">docs</a>)
+(<a href="commands/cargo-build.html#option-cargo-build---keep-going">docs</a>)
 <a href="https://github.com/rust-lang/cargo/pull/12568">#12568</a></li>
 <li>Added <code>--dry-run</code> flag and summary line at the end for <code>cargo clean</code>.
 <a href="https://github.com/rust-lang/cargo/pull/12638">#12638</a></li>
@@ -25529,7 +25557,7 @@ artifacts of only the requested package
 <ul>
 <li>🚨 <a href="https://github.com/rust-lang/cargo/security/advisories/GHSA-r5w3-xm58-jv6j">CVE-2022-46176</a>:
 Added validation of SSH host keys for git URLs.
-See <a href="https://doc.rust-lang.org/cargo/appendix/git-authentication.html#ssh-known-hosts">the docs</a> for more information on how to configure the known host keys.</li>
+See <a href="appendix/git-authentication.html#ssh-known-hosts">the docs</a> for more information on how to configure the known host keys.</li>
 </ul>
 <h2 id="cargo-166-2022-12-15"><a class="header" href="#cargo-166-2022-12-15">Cargo 1.66 (2022-12-15)</a></h2>
 <p><a href="https://github.com/rust-lang/cargo/compare/08250398...rust-1.66.0">08250398…rust-1.66.0</a></p>
@@ -28386,7 +28414,7 @@ do not support API access.
 <ul>
 <li>Registries may now display warnings after a successful publish.
 <a href="https://github.com/rust-lang/cargo/pull/6303">#6303</a></li>
-<li>Added a <a href="https://doc.rust-lang.org/cargo/appendix/glossary.html">glossary</a>
+<li>Added a <a href="appendix/glossary.html">glossary</a>
 to the documentation. <a href="https://github.com/rust-lang/cargo/pull/6321">#6321</a></li>
 <li>Added the alias <code>c</code> for <code>cargo check</code>.
 <a href="https://github.com/rust-lang/cargo/pull/6218">#6218</a></li>
