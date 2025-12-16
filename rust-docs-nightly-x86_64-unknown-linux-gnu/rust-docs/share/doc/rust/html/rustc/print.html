@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f2e5a627.js";
+            window.path_to_searchindex_js = "searchindex-95f09ada.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-2119765b.js"></script>
@@ -5241,6 +5241,7 @@ of a local that will be dropped at the end of the function.</p>
   |     ^^
   |
   = note: a dangling pointer is safe, but dereferencing one is undefined behavior
+  = note: for more information, see &lt;https://doc.rust-lang.org/reference/destructors.html&gt;
   = note: `#[warn(dangling_pointers_from_locals)]` on by default
 
 </code></pre>
@@ -5263,18 +5264,18 @@ of a temporary that will immediately get dropped.</p>
     unsafe { use_data(x) }
 }</code></pre>
 <p>This will produce:</p>
-<pre><code class="language-text">warning: a dangling pointer will be produced because the temporary `Vec&lt;u8&gt;` will be dropped
+<pre><code class="language-text">warning: this creates a dangling pointer because temporary `Vec&lt;u8&gt;` is dropped at end of statement
  --&gt; lint_example.rs:5:51
   |
 5 |     let x: *const u8 = bytes.collect::&lt;Vec&lt;u8&gt;&gt;().as_ptr();
-  |                        -------------------------- ^^^^^^ this pointer will immediately be invalid
+  |                        -------------------------- ^^^^^^ pointer created here
   |                        |
-  |                        this `Vec&lt;u8&gt;` is deallocated at the end of the statement, bind it to a variable to extend its lifetime
+  |                        this `Vec&lt;u8&gt;` is dropped at end of statement
   |
-  = note: pointers do not have a lifetime; when calling `as_ptr` the `Vec&lt;u8&gt;` will be deallocated at the end of the statement because nothing is referencing it as far as the type system is concerned
-  = help: you must make sure that the variable you bind the `Vec&lt;u8&gt;` to lives at least as long as the pointer returned by the call to `as_ptr`
-  = help: in particular, if this pointer is returned from the current function, binding the `Vec&lt;u8&gt;` inside the function will not suffice
-  = help: for more information, see &lt;https://doc.rust-lang.org/reference/destructors.html&gt;
+  = help: bind the `Vec&lt;u8&gt;` to a variable such that it outlives the pointer returned by `as_ptr`
+  = note: a dangling pointer is safe, but dereferencing one is undefined behavior
+  = note: returning a pointer to a local variable will always result in a dangling pointer
+  = note: for more information, see &lt;https://doc.rust-lang.org/reference/destructors.html&gt;
   = note: `#[warn(dangling_pointers_from_temporaries)]` on by default
 
 </code></pre>
@@ -7784,7 +7785,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-12-14; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-12-15; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -8053,7 +8054,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-12-14; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-12-15; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -10100,7 +10101,7 @@ future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #6426
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2025-12-14; consider upgrading it if it is out of date
+  = note: this compiler was built on 2025-12-15; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
@@ -15302,8 +15303,8 @@ Details about supported GPUs can be found in <a href="https://llvm.org/docs/AMDG
 The format of binaries is a linked ELF.</p>
 <p>Binaries must be built with no-std.
 They can use <code>core</code> and <code>alloc</code> (<code>alloc</code> only if an allocator is supplied).
-At least one function needs to use the <code>"gpu-kernel"</code> calling convention and should be marked with <code>no_mangle</code> for simplicity.
-Functions using the <code>"gpu-kernel"</code> calling convention are kernel entrypoints and can be used from the host runtime.</p>
+At least one function should use the <code>"gpu-kernel"</code> calling convention and should be marked with <code>no_mangle</code> or <code>export_name</code>.
+Functions using the <code>"gpu-kernel"</code> calling convention are kernel entrypoints and can be launched from the host runtime.</p>
 <h2 id="building-the-target-16"><a class="header" href="#building-the-target-16">Building the target</a></h2>
 <p>The target is included in rustc.</p>
 <h2 id="building-rust-programs-16"><a class="header" href="#building-rust-programs-16">Building Rust programs</a></h2>
@@ -15311,6 +15312,8 @@ Functions using the <code>"gpu-kernel"</code> calling convention are kernel entr
 The generations are exposed as different target-cpus in the backend.
 As there are many, Rust does not ship pre-compiled libraries for this target.
 Therefore, you have to build your own copy of <code>core</code> by using <code>cargo -Zbuild-std=core</code> or similar.</p>
+<p>An allocator and <code>println!()</code> support is provided by the <a href="https://crates.io/crates/amdgpu-device-libs"><code>amdgpu-device-libs</code></a> crate.
+Both features rely on the <a href="https://rocm.docs.amd.com/projects/HIP/">HIP</a> runtime.</p>
 <p>To build a binary, create a no-std library:</p>
 <pre><code class="language-rust ignore (platform-specific)">// src/lib.rs
 #![feature(abi_gpu_kernel)]
@@ -15336,12 +15339,15 @@ lto = true # LTO must be explicitly enabled for now
 lto = true
 </code></pre>
 <p>The target-cpu must be from the list <a href="https://llvm.org/docs/AMDGPUUsage.html#processors">supported by LLVM</a> (or printed with <code>rustc --target amdgcn-amd-amdhsa --print target-cpus</code>).
-The GPU version on the current system can be found e.g. with <a href="https://github.com/ROCm/rocminfo"><code>rocminfo</code></a>.</p>
+The GPU version on the current system can be found e.g. with <a href="https://github.com/ROCm/rocminfo"><code>rocminfo</code></a>.
+For a GPU series that has xnack support but the target GPU has not, the <code>-xnack-support</code> target-feature needs to be enabled.
+I.e. if the ISA info as printed with <a href="https://github.com/ROCm/rocminfo"><code>rocminfo</code></a> says something about <code>xnack-</code>, e.g. <code>gfx1010:xnack-</code>, add <code>-Ctarget-feature=-xnack-support</code> to the rustflags.</p>
 <p>Example <code>.cargo/config.toml</code> file to set the target and GPU generation:</p>
 <pre><code class="language-toml"># .cargo/config.toml
 [build]
 target = "amdgcn-amd-amdhsa"
 rustflags = ["-Ctarget-cpu=gfx1100"]
+# Add "-Ctarget-feature=-xnack-support" for xnack- GPUs (see above)
 
 [unstable]
 build-std = ["core"] # Optional: "alloc"
@@ -15351,7 +15357,6 @@ build-std = ["core"] # Optional: "alloc"
 On Linux and Windows, <a href="https://rocm.docs.amd.com/projects/HIP/">HIP</a> can be used to load and run binaries.
 Example code on how to load a compiled binary and run it is available in <a href="https://github.com/ROCm/rocm-examples/tree/ca8ef5b6f1390176616cd1c18fbc98785cbc73f6/HIP-Basic/module_api">ROCm examples</a>.</p>
 <p>On Linux, binaries can also run through the HSA runtime as implemented in <a href="https://github.com/ROCm/ROCR-Runtime">ROCR-Runtime</a>.</p>
-<!-- Mention an allocator once a suitable one exists for amdgpu -->
 <!--
 ## Testing
 
