@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/reference-6200eb72.css">
+        <link rel="stylesheet" href="theme/reference-ce12791d.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-70cc9502.js";
+            window.path_to_searchindex_js = "searchindex-f00906eb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-edc1c836.js"></script>
@@ -1236,6 +1236,118 @@ similarly:</p>
 }
 
 // m!(); // Error: m is not in scope.
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-macro.decl.scope.textual.shadow.path-based"><a class="rule-link" href="#r-macro.decl.scope.textual.shadow.path-based" title="macro.decl.scope.textual.shadow.path-based"><span>[macro<wbr>.decl<wbr>.scope<wbr>.textual<wbr>.shadow<wbr>.path-based]</span></a>
+</div>
+
+<p>Textual scope name bindings for macros shadow path-based scope bindings to macros.</p>
+<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>macro_rules! m2 {
+    () =&gt; {
+        println!("m2");
+    };
+}
+
+// Resolves to path-based candidate from use declaration below.
+m!(); // prints "m2\n"
+
+// Introduce second candidate for `m` with textual scope.
+//
+// This shadows path-based candidate from below for the rest of this
+// example.
+macro_rules! m {
+    () =&gt; {
+        println!("m");
+    };
+}
+
+// Introduce `m2` macro as path-based candidate.
+//
+// This item is in scope for this entire example, not just below the
+// use declaration.
+use m2 as m;
+
+// Resolves to the textual macro candidate from above the use
+// declaration.
+m!(); // prints "m\n"
+<span class="boring">}</span></code></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+
+<p>For areas where shadowing is not allowed, see <a href="names/name-resolution.html#r-names.resolution.expansion.imports.ambiguity">name resolution ambiguities</a>.</p>
+</blockquote>
+</div>
+
+<div class="rule" id="r-macro.decl.scope.path-based"><a class="rule-link" href="#r-macro.decl.scope.path-based" title="macro.decl.scope.path-based"><span>[macro<wbr>.decl<wbr>.scope<wbr>.path-based]</span></a>
+</div>
+
+<h3 id="path-based-scope"><a class="header" href="#path-based-scope">Path-based scope</a></h3>
+<div class="rule" id="r-macro.decl.scope.path-based.intro"><a class="rule-link" href="#r-macro.decl.scope.path-based.intro" title="macro.decl.scope.path-based.intro"><span>[macro<wbr>.decl<wbr>.scope<wbr>.path-based<wbr>.intro]</span></a>
+</div>
+
+<p>By default, a macro has no path-based scope. Macros can gain path-based scope in two ways:</p>
+<ul>
+<li><a href="items/use-declarations.html#use-visibility">Use declaration re-export</a></li>
+<li><a href="#the-macro_export-attribute"><code>macro_export</code></a></li>
+</ul>
+<div class="rule" id="r-macro.decl.scope.path.reexport"><a class="rule-link" href="#r-macro.decl.scope.path.reexport" title="macro.decl.scope.path.reexport"><span>[macro<wbr>.decl<wbr>.scope<wbr>.path<wbr>.reexport]</span></a>
+</div>
+
+<p>Macros can be re-exported to give them path-based scope from a module other than the crate root.</p>
+<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mac::m!(); // OK: Path-based lookup finds `m` in the mac module.
+
+mod mac {
+    // Introduce macro `m` with textual scope.
+    macro_rules! m {
+        () =&gt; {};
+    }
+
+    // Reexport with path-based scope from within `m`'s textual scope.
+    pub(crate) use m;
+}
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-macro.decl.scope.path-based.visibility"><a class="rule-link" href="#r-macro.decl.scope.path-based.visibility" title="macro.decl.scope.path-based.visibility"><span>[macro<wbr>.decl<wbr>.scope<wbr>.path-based<wbr>.visibility]</span></a>
+</div>
+
+<p>Macros have an implicit visibility of <code>pub(crate)</code>. <code>#[macro_export]</code> changes the implicit visibility to <code>pub</code>.</p>
+<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Implicit visibility is `pub(crate)`.
+macro_rules! private_m {
+    () =&gt; {};
+}
+
+// Implicit visibility is `pub`.
+#[macro_export]
+macro_rules! pub_m {
+    () =&gt; {};
+}
+
+pub(crate) use private_m as private_macro; // OK.
+pub use pub_m as pub_macro; // OK.
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust compile_fail E0364 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">// Implicit visibility is `pub(crate)`.
+</span><span class="boring">macro_rules! private_m {
+</span><span class="boring">    () =&gt; {};
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">// Implicit visibility is `pub`.
+</span><span class="boring">#[macro_export]
+</span><span class="boring">macro_rules! pub_m {
+</span><span class="boring">    () =&gt; {};
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">pub(crate) use private_m as private_macro; // OK.
+</span><span class="boring">pub use pub_m as pub_macro; // OK.
+</span><span class="boring">
+</span>pub use private_m; // ERROR: `private_m` is only public within
+                   // the crate and cannot be re-exported outside.
 <span class="boring">}</span></code></pre>
 <!-- template:attributes -->
 <div class="rule" id="r-macro.decl.scope.macro_use"><a class="rule-link" href="#r-macro.decl.scope.macro_use" title="macro.decl.scope.macro_use"><span>[macro<wbr>.decl<wbr>.scope<wbr>.macro_use]</span></a>

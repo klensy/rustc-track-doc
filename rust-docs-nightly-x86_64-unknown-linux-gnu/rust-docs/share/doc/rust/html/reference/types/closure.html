@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="../theme/reference-6200eb72.css">
+        <link rel="stylesheet" href="../theme/reference-ce12791d.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-70cc9502.js";
+            window.path_to_searchindex_js = "../searchindex-f00906eb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-edc1c836.js"></script>
@@ -275,11 +275,19 @@ let c = || {
 <div class="rule" id="r-type.closure.capture.precision.capture-path"><a class="rule-link" href="#r-type.closure.capture.precision.capture-path" title="type.closure.capture.precision.capture-path"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.capture-path]</span></a>
 </div>
 
-<p>A <em>capture path</em> is a sequence starting with a variable from the environment followed by zero or more place projections that were applied to that variable.</p>
+<p>A <em>capture path</em> is a sequence starting with a variable from the environment followed by zero or more place projections from that variable.</p>
 <div class="rule" id="r-type.closure.capture.precision.place-projection"><a class="rule-link" href="#r-type.closure.capture.precision.place-projection" title="type.closure.capture.precision.place-projection"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.place-projection]</span></a>
 </div>
 
-<p>A <em>place projection</em> is a <a href="../expressions/field-expr.html">field access</a>, <a href="../expressions/tuple-expr.html#tuple-indexing-expressions">tuple index</a>, <a href="../expressions/operator-expr.html#the-dereference-operator">dereference</a> (and automatic dereferences), or <a href="../expressions/array-expr.html#array-and-slice-indexing-expressions">array or slice index</a> expression applied to a variable.</p>
+<p>A <em>place projection</em> is a <a href="../expressions/field-expr.html">field access</a>, <a href="../expressions/tuple-expr.html#tuple-indexing-expressions">tuple index</a>, <a href="../expressions/operator-expr.html#the-dereference-operator">dereference</a> (and automatic dereferences), <a href="../expressions/array-expr.html#array-and-slice-indexing-expressions">array or slice index</a> expression, or <a href="../patterns.html#r-patterns.destructure">pattern destructuring</a> applied to a variable.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+
+<p>In <code>rustc</code>, pattern destructuring desugars into a series of dereferences and field or element accesses.</p>
+</blockquote>
+</div>
+
 <div class="rule" id="r-type.closure.capture.precision.intro"><a class="rule-link" href="#r-type.closure.capture.precision.intro" title="type.closure.capture.precision.intro"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.intro]</span></a>
 </div>
 
@@ -303,7 +311,7 @@ This closure captures an immutable borrow of <code>s.f1.1</code>.</p>
 </div>
 
 <h3 id="shared-prefix"><a class="header" href="#shared-prefix">Shared prefix</a></h3>
-<p>In the case where a capture path and one of the ancestor’s of that path are both captured by a closure, the ancestor path is captured with the highest capture mode among the two captures, <code>CaptureMode = max(AncestorCaptureMode, DescendantCaptureMode)</code>, using the strict weak ordering:</p>
+<p>In the case where a capture path and one of the ancestors of that path are both captured by a closure, the ancestor path is captured with the highest capture mode among the two captures, <code>CaptureMode = max(AncestorCaptureMode, DescendantCaptureMode)</code>, using the strict weak ordering:</p>
 <p><code>ImmBorrow &lt; UniqueImmBorrow &lt; MutBorrow &lt; ByValue</code></p>
 <p>Note that this might need to be applied recursively.</p>
 <pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
@@ -351,71 +359,101 @@ fn foo&lt;'a, 'b&gt;(m: &amp;'a MyStruct&lt;'b&gt;) -&gt; impl FnMut() + 'static
 </div>
 
 <h3 id="wildcard-pattern-bindings"><a class="header" href="#wildcard-pattern-bindings">Wildcard pattern bindings</a></h3>
-<p>Closures only capture data that needs to be read.
-Binding a value with a <a href="../patterns.html#wildcard-pattern">wildcard pattern</a> does not count as a read, and thus won’t be captured.
-For example, the following closures will not capture <code>x</code>:</p>
-<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let x = String::from("hello");
-let c = || {
-    let _ = x;  // x is not captured
-};
-c();
+<div class="rule" id="r-type.closure.capture.precision.wildcard.reads"><a class="rule-link" href="#r-type.closure.capture.precision.wildcard.reads" title="type.closure.capture.precision.wildcard.reads"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.wildcard<wbr>.reads]</span></a>
+</div>
 
-let c = || match x {  // x is not captured
-    _ =&gt; println!("Hello World!")
+<p>Closures only capture data that needs to be read. Binding a value with a <a href="../patterns.html#wildcard-pattern">wildcard pattern</a> does not read the value, so the place is not captured.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct S; // A non-`Copy` type.
+let x = S;
+let c = || {
+    let _ = x;  // Does not capture `x`.
 };
+let c = || match x {
+    _ =&gt; (), // Does not capture `x`.
+};
+x; // OK: `x` can be moved here.
 c();
 <span class="boring">}</span></code></pre>
-<p>This also includes destructuring of tuples, structs, and enums.
-Fields matched with the <a href="../patterns.html#grammar-RestPattern">RestPattern</a> or <a href="../patterns.html#grammar-StructPatternEtCetera">StructPatternEtCetera</a> are also not considered as read, and thus those fields will not be captured.
-The following illustrates some of these:</p>
-<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+<div class="rule" id="r-type.closure.capture.precision.wildcard.destructuring"><a class="rule-link" href="#r-type.closure.capture.precision.wildcard.destructuring" title="type.closure.capture.precision.wildcard.destructuring"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.wildcard<wbr>.destructuring]</span></a>
+</div>
+
+<p>Destructuring tuples, structs, and single-variant enums does not, by itself, cause a read or the place to be captured.</p>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+
+<p>Enums marked with <a href="../attributes/type_system.html#r-attributes.type-system.non_exhaustive"><code>#[non_exhaustive]</code></a> from other crates are always treated as having multiple variants. See <em><a href="closure.html#r-type.closure.capture.precision.discriminants.non_exhaustive">type.closure.capture.precision.discriminants.non_exhaustive</a></em>.</p>
+</blockquote>
+</div>
+
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let x = (String::from("a"), String::from("b"));
+</span>struct S; // A non-`Copy` type.
+
+// Destructuring tuples does not cause a read or capture.
+let x = (S,);
 let c = || {
-    let (first, ..) = x;  // captures `x.0` ByValue
+    let (..) = x; // Does not capture `x`.
 };
-// The first tuple field has been moved into the closure.
-// The second tuple field is still accessible.
-println!("{:?}", x.1);
+x; // OK: `x` can be moved here.
+c();
+
+// Destructuring unit structs does not cause a read or capture.
+let x = S;
+let c = || {
+    let S = x; // Does not capture `x`.
+};
+x; // OK: `x` can be moved here.
+c();
+
+// Destructuring structs does not cause a read or capture.
+struct W&lt;T&gt;(T);
+let x = W(S);
+let c = || {
+    let W(..) = x; // Does not capture `x`.
+};
+x; // OK: `x` can be moved here.
+c();
+
+// Destructuring single-variant enums does not cause a read
+// or capture.
+enum E&lt;T&gt; { V(T) }
+let x = E::V(S);
+let c = || {
+    let E::V(..) = x; // Does not capture `x`.
+};
+x; // OK: `x` can be moved here.
 c();
 <span class="boring">}</span></code></pre>
-<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>struct Example {
-    f1: String,
-    f2: String,
-}
+<div class="rule" id="r-type.closure.capture.precision.wildcard.fields"><a class="rule-link" href="#r-type.closure.capture.precision.wildcard.fields" title="type.closure.capture.precision.wildcard.fields"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.wildcard<wbr>.fields]</span></a>
+</div>
 
-let e = Example {
-    f1: String::from("first"),
-    f2: String::from("second"),
-};
+<p>Fields matched against <a href="../patterns.html#grammar-RestPattern">RestPattern</a> (<code>..</code>) or <a href="../patterns.html#grammar-StructPatternEtCetera">StructPatternEtCetera</a> (also <code>..</code>) are not read, and those fields are not captured.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct S; // A non-`Copy` type.
+let x = (S, S);
 let c = || {
-    let Example { f2, .. } = e; // captures `e.f2` ByValue
+    let (x0, ..) = x;  // Captures `x.0` by `ByValue`.
 };
-// Field f2 cannot be accessed since it is moved into the closure.
-// Field f1 is still accessible.
-println!("{:?}", e.f1);
+// Only the first tuple field was captured by the closure.
+x.1; // OK: `x.1` can be moved here.
 c();
 <span class="boring">}</span></code></pre>
 <div class="rule" id="r-type.closure.capture.precision.wildcard.array-slice"><a class="rule-link" href="#r-type.closure.capture.precision.wildcard.array-slice" title="type.closure.capture.precision.wildcard.array-slice"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.wildcard<wbr>.array-slice]</span></a>
 </div>
 
-<p>Partial captures of arrays and slices are not supported; the entire slice or array is always captured even if used with wildcard pattern matching, indexing, or sub-slicing.
-For example:</p>
+<p>Partial captures of arrays and slices are not supported; the entire slice or array is always captured even if used with wildcard pattern matching, indexing, or sub-slicing.</p>
 <pre class="playground"><code class="language-rust compile_fail E0382 edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>#[derive(Debug)]
-struct Example;
-let x = [Example, Example];
-
+</span>struct S; // A non-`Copy` type.
+let mut x = [S, S];
 let c = || {
-    let [first, _] = x; // captures all of `x` ByValue
+    let [x0, _] = x; // Captures all of `x` by `ByValue`.
 };
-c();
-println!("{:?}", x[1]); // ERROR: borrow of moved value: `x`
+let _ = &amp;mut x[1]; // ERROR: Borrow of moved value.
 <span class="boring">}</span></code></pre>
 <div class="rule" id="r-type.closure.capture.precision.wildcard.initialized"><a class="rule-link" href="#r-type.closure.capture.precision.wildcard.initialized" title="type.closure.capture.precision.wildcard.initialized"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.wildcard<wbr>.initialized]</span></a>
 </div>
@@ -423,10 +461,177 @@ println!("{:?}", x[1]); // ERROR: borrow of moved value: `x`
 <p>Values that are matched with wildcards must still be initialized.</p>
 <pre class="playground"><code class="language-rust compile_fail E0381 edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let x: i32;
+</span>let x: u8;
 let c = || {
-    let _ = x; // ERROR: used binding `x` isn't initialized
+    let _ = x; // ERROR: Binding `x` isn't initialized.
 };
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-type.closure.capture.precision.discriminants"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants" title="type.closure.capture.precision.discriminants"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants]</span></a>
+</div>
+
+<h3 id="capturing-for-discriminant-reads"><a class="header" href="#capturing-for-discriminant-reads">Capturing for discriminant reads</a></h3>
+<div class="rule" id="r-type.closure.capture.precision.discriminants.reads"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants.reads" title="type.closure.capture.precision.discriminants.reads"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants<wbr>.reads]</span></a>
+</div>
+
+<p>If pattern matching reads a discriminant, the place containing that discriminant is captured by <code>ImmBorrow</code>.</p>
+<div class="rule" id="r-type.closure.capture.precision.discriminants.multiple-variant"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants.multiple-variant" title="type.closure.capture.precision.discriminants.multiple-variant"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants<wbr>.multiple-variant]</span></a>
+</div>
+
+<p>Matching against a variant of an enum that has more than one variant reads the discriminant, capturing the place by <code>ImmBorrow</code>.</p>
+<pre class="playground"><code class="language-rust compile_fail E0502 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct S; // A non-`Copy` type.
+let mut x = (Some(S), S);
+let c = || match x {
+    (None, _) =&gt; (),
+//   ^^^^
+// This pattern requires reading the discriminant, which
+// causes `x.0` to be captured by `ImmBorrow`.
+    _ =&gt; (),
+};
+let _ = &amp;mut x.0; // ERROR: Cannot borrow `x.0` as mutable.
+//           ^^^
+// The closure is still live, so `x.0` is still immutably
+// borrowed here.
+c();
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct S; // A non-`Copy` type.
+</span><span class="boring">let x = (Some(S), S);
+</span>let c = || match x { // Captures `x.0` by `ImmBorrow`.
+    (None, _) =&gt; (),
+    _ =&gt; (),
+};
+// Though `x.0` is captured due to the discriminant read,
+// `x.1` is not captured.
+x.1; // OK: `x.1` can be moved here.
+c();
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-type.closure.capture.precision.discriminants.single-variant"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants.single-variant" title="type.closure.capture.precision.discriminants.single-variant"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants<wbr>.single-variant]</span></a>
+</div>
+
+<p>Matching against the only variant of a single-variant enum does not read the discriminant and does not capture the place.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>enum E&lt;T&gt; { V(T) } // A single-variant enum.
+let x = E::V(());
+let c = || {
+    let E::V(_) = x; // Does not capture `x`.
+};
+x; // OK: `x` can be moved here.
+c();
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-type.closure.capture.precision.discriminants.non_exhaustive"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants.non_exhaustive" title="type.closure.capture.precision.discriminants.non_exhaustive"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants<wbr>.non_exhaustive]</span></a>
+</div>
+
+<p>If <a href="../attributes/type_system.html#r-attributes.type-system.non_exhaustive"><code>#[non_exhaustive]</code></a> is applied to an enum defined in an external crate, the enum is treated as having multiple variants for the purpose of deciding whether a read occurs, even if it actually has only one variant.</p>
+<div class="rule" id="r-type.closure.capture.precision.discriminants.uninhabited-variants"><a class="rule-link" href="#r-type.closure.capture.precision.discriminants.uninhabited-variants" title="type.closure.capture.precision.discriminants.uninhabited-variants"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.discriminants<wbr>.uninhabited-variants]</span></a>
+</div>
+
+<p>Even if all variants but the one being matched against are uninhabited, making the pattern <a href="../patterns.html#r-patterns.refutable">irrefutable</a>, the discriminant is still read if it otherwise would be.</p>
+<pre class="playground"><code class="language-rust compile_fail E0502 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>enum Empty {}
+let mut x = Ok::&lt;_, Empty&gt;(42);
+let c = || {
+    let Ok(_) = x; // Captures `x` by `ImmBorrow`.
+};
+let _ = &amp;mut x; // ERROR: Cannot borrow `x` as mutable.
+c();
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-type.closure.capture.precision.range-patterns"><a class="rule-link" href="#r-type.closure.capture.precision.range-patterns" title="type.closure.capture.precision.range-patterns"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.range-patterns]</span></a>
+</div>
+
+<h3 id="capturing-and-range-patterns"><a class="header" href="#capturing-and-range-patterns">Capturing and range patterns</a></h3>
+<div class="rule" id="r-type.closure.capture.precision.range-patterns.reads"><a class="rule-link" href="#r-type.closure.capture.precision.range-patterns.reads" title="type.closure.capture.precision.range-patterns.reads"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.range-patterns<wbr>.reads]</span></a>
+</div>
+
+<p>Matching against a <a href="../patterns.html#r-patterns.range">range pattern</a> reads the place being matched, even if the range includes all possible values of the type, and captures the place by <code>ImmBorrow</code>.</p>
+<pre class="playground"><code class="language-rust compile_fail E0502 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut x = 0u8;
+let c = || {
+    let 0..=u8::MAX = x; // Captures `x` by `ImmBorrow`.
+};
+let _ = &amp;mut x; // ERROR: Cannot borrow `x` as mutable.
+c();
+<span class="boring">}</span></code></pre>
+<div class="rule" id="r-type.closure.capture.precision.slice-patterns"><a class="rule-link" href="#r-type.closure.capture.precision.slice-patterns" title="type.closure.capture.precision.slice-patterns"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.slice-patterns]</span></a>
+</div>
+
+<h3 id="capturing-and-slice-patterns"><a class="header" href="#capturing-and-slice-patterns">Capturing and slice patterns</a></h3>
+<div class="rule" id="r-type.closure.capture.precision.slice-patterns.slices"><a class="rule-link" href="#r-type.closure.capture.precision.slice-patterns.slices" title="type.closure.capture.precision.slice-patterns.slices"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.slice-patterns<wbr>.slices]</span></a>
+</div>
+
+<p>Matching a slice against a <a href="../patterns.html#r-patterns.slice">slice pattern</a> other than one with only a single <a href="../patterns.html#r-patterns.rest">rest pattern</a> (i.e. <code>[..]</code>) is treated as a read of the length from the slice and captures the slice by <code>ImmBorrow</code>.</p>
+<pre class="playground"><code class="language-rust compile_fail E0502 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let x: &amp;mut [u8] = &amp;mut [];
+let c = || match x { // Captures `*x` by `ImmBorrow`.
+    &amp;mut [] =&gt; (),
+//       ^^
+// This matches a slice of exactly zero elements. To know whether the
+// scrutinee matches, the length must be read, causing the slice to
+// be captured.
+    _ =&gt; (),
+};
+let _ = &amp;mut *x; // ERROR: Cannot borrow `*x` as mutable.
+c();
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let x: &amp;mut [u8] = &amp;mut [];
+let c = || match x { // Does not capture `*x`.
+    [..] =&gt; (),
+//   ^^ Rest pattern.
+};
+let _ = &amp;mut *x; // OK: `*x` can be borrow here.
+c();
+<span class="boring">}</span></code></pre>
+<div class="alert alert-note">
+<blockquote>
+<p class="alert-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+
+<p>Perhaps surprisingly, even though the length is contained in the (wide) <em>pointer</em> to the slice, it is the place of the <em>pointee</em> (the slice) that is treated as read and is captured.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn f&lt;'l: 's, 's&gt;(x: &amp;'s mut &amp;'l [u8]) -&gt; impl Fn() + 'l {
+    // The closure outlives `'l` because it captures `**x`. If
+    // instead it captured `*x`, it would not live long enough
+    // to satisfy the `impl Fn() + 'l` bound.
+    || match *x { // Captures `**x` by `ImmBorrow`.
+        &amp;[] =&gt; (),
+        _ =&gt; (),
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>In this way, the behavior is consistent with dereferencing to the slice in the scrutinee.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn f&lt;'l: 's, 's&gt;(x: &amp;'s mut &amp;'l [u8]) -&gt; impl Fn() + 'l {
+    || match **x { // Captures `**x` by `ImmBorrow`.
+        [] =&gt; (),
+        _ =&gt; (),
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>For details, see <a href="https://github.com/rust-lang/rust/pull/138961">Rust PR #138961</a>.</p>
+</blockquote>
+</div>
+
+<div class="rule" id="r-type.closure.capture.precision.slice-patterns.arrays"><a class="rule-link" href="#r-type.closure.capture.precision.slice-patterns.arrays" title="type.closure.capture.precision.slice-patterns.arrays"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.slice-patterns<wbr>.arrays]</span></a>
+</div>
+
+<p>As the length of an array is fixed by its type, matching an array against a slice pattern does not by itself capture the place.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let x: [u8; 1] = [0];
+let c = || match x { // Does not capture `x`.
+    [_] =&gt; (), // Length is fixed.
+};
+x; // OK: `x` can be moved here.
+c();
 <span class="boring">}</span></code></pre>
 <div class="rule" id="r-type.closure.capture.precision.move-dereference"><a class="rule-link" href="#r-type.closure.capture.precision.move-dereference" title="type.closure.capture.precision.move-dereference"><span>[type<wbr>.closure<wbr>.capture<wbr>.precision<wbr>.move-dereference]</span></a>
 </div>
