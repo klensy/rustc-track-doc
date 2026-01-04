@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/../../stdarch/crates/core_arch/src/x86/vpclmulqdq.rs`."><title>vpclmulqdq.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-2eb46af5.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.94.0" data-rustdoc-version="1.94.0-nightly (85c8ff69c 2026-01-02)" data-channel="nightly" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../../src-files1.94.0.js"></script><script defer src="../../../../../../../static.files/main-7bab91a1.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-ffcac47a.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/stdarch/crates/core_arch/src/x86/</div>vpclmulqdq.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Vectorized Carry-less Multiplication (VCLMUL)
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/../../stdarch/crates/core_arch/src/x86/vpclmulqdq.rs`."><title>vpclmulqdq.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-2eb46af5.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.94.0" data-rustdoc-version="1.94.0-nightly (7ecabfaaf 2026-01-03)" data-channel="nightly" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-c38705f0.js" ><script src="../../../../../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../../src-files1.94.0.js"></script><script defer src="../../../../../../../static.files/main-7bab91a1.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-ffcac47a.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">core/stdarch/crates/core_arch/src/x86/</div>vpclmulqdq.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Vectorized Carry-less Multiplication (VCLMUL)
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! The reference is [Intel 64 and IA-32 Architectures Software Developer's
 <a href=#4 id=4 data-nosnippet>4</a>//! Manual Volume 2: Instruction Set Reference, A-Z][intel64_ref] (p. 4-241).
@@ -124,9 +124,9 @@
 <a href=#124 id=124 data-nosnippet>124</a>    <span class="comment">// this function tests one of the possible 4 instances
 <a href=#125 id=125 data-nosnippet>125</a>    // with different inputs across lanes
 <a href=#126 id=126 data-nosnippet>126</a>    </span><span class="attr">#[target_feature(enable = <span class="string">"vpclmulqdq,avx512f"</span>)]
-<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">unsafe fn </span>verify_512_helper(
-<a href=#128 id=128 data-nosnippet>128</a>        linear: <span class="kw">unsafe fn</span>(__m128i, __m128i) -&gt; __m128i,
-<a href=#129 id=129 data-nosnippet>129</a>        vectorized: <span class="kw">unsafe fn</span>(__m512i, __m512i) -&gt; __m512i,
+<a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">fn </span>verify_512_helper(
+<a href=#128 id=128 data-nosnippet>128</a>        linear: <span class="kw">fn</span>(__m128i, __m128i) -&gt; __m128i,
+<a href=#129 id=129 data-nosnippet>129</a>        vectorized: <span class="kw">fn</span>(__m512i, __m512i) -&gt; __m512i,
 <a href=#130 id=130 data-nosnippet>130</a>    ) {
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span>a = _mm512_set_epi64(
 <a href=#132 id=132 data-nosnippet>132</a>            <span class="number">0xDCB4DB3657BF0B7D</span>,
@@ -165,9 +165,9 @@
 <a href=#165 id=165 data-nosnippet>165</a>    <span class="comment">// this function tests one of the possible 4 instances
 <a href=#166 id=166 data-nosnippet>166</a>    // with different inputs across lanes for the VL version
 <a href=#167 id=167 data-nosnippet>167</a>    </span><span class="attr">#[target_feature(enable = <span class="string">"vpclmulqdq,avx512vl"</span>)]
-<a href=#168 id=168 data-nosnippet>168</a>    </span><span class="kw">unsafe fn </span>verify_256_helper(
-<a href=#169 id=169 data-nosnippet>169</a>        linear: <span class="kw">unsafe fn</span>(__m128i, __m128i) -&gt; __m128i,
-<a href=#170 id=170 data-nosnippet>170</a>        vectorized: <span class="kw">unsafe fn</span>(__m256i, __m256i) -&gt; __m256i,
+<a href=#168 id=168 data-nosnippet>168</a>    </span><span class="kw">fn </span>verify_256_helper(
+<a href=#169 id=169 data-nosnippet>169</a>        linear: <span class="kw">fn</span>(__m128i, __m128i) -&gt; __m128i,
+<a href=#170 id=170 data-nosnippet>170</a>        vectorized: <span class="kw">fn</span>(__m256i, __m256i) -&gt; __m256i,
 <a href=#171 id=171 data-nosnippet>171</a>    ) {
 <a href=#172 id=172 data-nosnippet>172</a>        <span class="kw">let </span>a = _mm512_set_epi64(
 <a href=#173 id=173 data-nosnippet>173</a>            <span class="number">0xDCB4DB3657BF0B7D</span>,
@@ -207,7 +207,7 @@
 <a href=#207 id=207 data-nosnippet>207</a>    }
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a>    <span class="attr">#[simd_test(enable = <span class="string">"vpclmulqdq,avx512f"</span>)]
-<a href=#210 id=210 data-nosnippet>210</a>    </span><span class="kw">unsafe fn </span>test_mm512_clmulepi64_epi128() {
+<a href=#210 id=210 data-nosnippet>210</a>    </span><span class="kw">fn </span>test_mm512_clmulepi64_epi128() {
 <a href=#211 id=211 data-nosnippet>211</a>        <span class="macro">verify_kat_pclmul!</span>(
 <a href=#212 id=212 data-nosnippet>212</a>            _mm512_broadcast_i32x4,
 <a href=#213 id=213 data-nosnippet>213</a>            _mm512_clmulepi64_epi128,
@@ -233,7 +233,7 @@
 <a href=#233 id=233 data-nosnippet>233</a>    }
 <a href=#234 id=234 data-nosnippet>234</a>
 <a href=#235 id=235 data-nosnippet>235</a>    <span class="attr">#[simd_test(enable = <span class="string">"vpclmulqdq,avx512vl"</span>)]
-<a href=#236 id=236 data-nosnippet>236</a>    </span><span class="kw">unsafe fn </span>test_mm256_clmulepi64_epi128() {
+<a href=#236 id=236 data-nosnippet>236</a>    </span><span class="kw">fn </span>test_mm256_clmulepi64_epi128() {
 <a href=#237 id=237 data-nosnippet>237</a>        <span class="macro">verify_kat_pclmul!</span>(
 <a href=#238 id=238 data-nosnippet>238</a>            _mm256_broadcastsi128_si256,
 <a href=#239 id=239 data-nosnippet>239</a>            _mm256_clmulepi64_epi128,
