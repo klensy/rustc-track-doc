@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8dba5563.js";
+            window.path_to_searchindex_js = "../searchindex-903418eb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-6cb524af.js"></script>
@@ -214,6 +214,31 @@ While the compiler accepts <code>#[target_feature(enable = "ptx80", enable = "sm
 <pre><code class="language-console">$ rustup component add rust-src --toolchain nightly
 $ rustup component add llvm-tools --toolchain nightly
 $ rustup component add llvm-bitcode-linker --toolchain nightly
+</code></pre>
+<h2 id="target-specific-restrictions"><a class="header" href="#target-specific-restrictions">Target specific restrictions</a></h2>
+<p>The PTX instruction set architecture has special requirements regarding what is
+and isn’t allowed. In order to avoid producing invalid PTX or generating undefined
+behavior by LLVM, some Rust language features are disallowed when compiling for this target.</p>
+<h3 id="static-initializers-must-be-acyclic"><a class="header" href="#static-initializers-must-be-acyclic">Static initializers must be acyclic</a></h3>
+<p>A static’s initializer must not form a cycle with itself or another static’s
+initializer. Therefore, the compiler will reject not only the self-referencing static <code>A</code>,
+but all of the following statics.</p>
+<pre><code class="language-Rust">struct Foo(&amp;'static Foo);
+
+static A: Foo = Foo(&amp;A); //~ ERROR static initializer forms a cycle involving `A`
+
+static B0: Foo = Foo(&amp;B1); //~ ERROR static initializer forms a cycle involving `B0`
+static B1: Foo = Foo(&amp;B0);
+
+static C0: Foo = Foo(&amp;C1); //~ ERROR static initializer forms a cycle involving `C0`
+static C1: Foo = Foo(&amp;C2);
+static C2: Foo = Foo(&amp;C0);
+</code></pre>
+<p>Initializers that are acyclic are allowed:</p>
+<pre><code class="language-Rust">struct Bar(&amp;'static u32);
+
+static BAR: Bar = Bar(&amp;INT); // is allowed
+static INT: u32 = 42u32; // also allowed
 </code></pre>
 <!-- FIXME: fill this out
 
