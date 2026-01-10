@@ -40,7 +40,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-13bbede4.js";
+            window.path_to_searchindex_js = "../searchindex-e5fa9a23.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-965bbb07.js"></script>
@@ -243,6 +243,7 @@ build-std = ["core", "alloc"]
 <ul>
 <li><a href="#metabuild">Metabuild</a> — Provides declarative build scripts.</li>
 <li><a href="#multiple-build-scripts">Multiple Build Scripts</a> — Allows use of multiple build scripts.</li>
+<li><a href="#any-build-script-metadata">Any Build Script Metadata</a> — Allow any build script to specify env vars via <code>cargo::metadata=key=value</code></li>
 </ul>
 </li>
 <li>Resolver and features
@@ -496,6 +497,14 @@ build = ["foo.rs", "bar.rs"]
 <p><strong>Accessing Output Directories</strong>:  Output directory of each build script can be accessed by using <code>&lt;script-name&gt;_OUT_DIR</code>
 where the <code>&lt;script-name&gt;</code> is the file-stem of the build script, exactly as-is.
 For example, <code>bar_OUT_DIR</code> for script at <code>foo/bar.rs</code>. (Only set during compilation, can be accessed via <code>env!</code> macro)</p>
+<h2 id="any-build-script-metadata"><a class="header" href="#any-build-script-metadata">Any Build Script Metadata</a></h2>
+<ul>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/3544">#14903</a></li>
+</ul>
+<p>Allow any build script to specify env vars via <code>cargo::metadata=key=value</code></p>
+<p>Depedant build scripts can access these key/value pair by reading the <code>CARGO_DEP_&lt;dep&gt;_&lt;key&gt;</code> env variable at runtime.
+For build scripts of crates with a <code>links</code>, both <code>DEP_&lt;links&gt;_&lt;key&gt;</code> and <code>CARGO_DEP_&lt;dep&gt;_&lt;key&gt;</code> will be set.</p>
+<p>Note that <code>dep</code> and <code>key</code> in <code>CARGO_DEP_&lt;dep&gt;_&lt;key&gt;</code> are uppercased and hyphens (<code>-</code>) replaced with underscores (<code>_</code>).</p>
 <h2 id="public-dependency"><a class="header" href="#public-dependency">public-dependency</a></h2>
 <ul>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/rust/issues/44663">#44663</a></li>
@@ -1876,14 +1885,35 @@ HTML/JSON output.</p>
 <li>Original Issue: <a href="https://github.com/rust-lang/rust-project-goals/pull/332">rust-lang/rust-project-goals#332</a></li>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/15844">#15844</a></li>
 </ul>
-<p>The <code>-Zbuild-analysis</code> feature records and persists detailed build metrics
-(timings, rebuild reasons, etc.) across runs, with new commands to query past builds.</p>
+<p>The <code>-Zbuild-analysis</code> feature records and persists detailed build metrics on disk,
+with new commands to query past builds.</p>
+<p>When enabled,
+Cargo writes build logs in JSONL format to the <code>$CARGO_HOME/log/</code> directory
+Each cargo invocation produces a log file named with a unique session ID.
+These logs contain timing information, rebuild reasons, and other build metadata
+that can be analyzed with the <code>cargo report</code> subcommands.</p>
+<p>To enable build analysis, add the following <a href="config.html">Cargo configuration</a>:</p>
 <pre><code class="language-toml"># Example config.toml file.
+
+[unstable]
+build-analysis = true
 
 # Enable the build metric collection
 [build.analysis]
 enabled = true
 </code></pre>
+<p>Setting it on a stable toolchain only emits an unknown config warning,
+so it’s safe to keep enabled in your Cargo configuration.</p>
+<h3 id="cargo-report-commands"><a class="header" href="#cargo-report-commands"><code>cargo report</code> commands</a></h3>
+<p>The following commands are available under <code>-Zbuild-analysis</code>:</p>
+<ul>
+<li><code>cargo report sessions</code> — Lists previous build sessions.
+Use this to find session IDs for other report commands.</li>
+<li><code>cargo report timings</code> — Generates an HTML timing report from a previous session,
+similar to <code>cargo build --timings</code> but without rebuilding.</li>
+<li><code>cargo report rebuilds</code> — Reports why crates were rebuilt,
+helping diagnose unexpected recompilations.</li>
+</ul>
 <h2 id="build-dir-new-layout"><a class="header" href="#build-dir-new-layout">build-dir-new-layout</a></h2>
 <ul>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/15010">#15010</a></li>
@@ -2020,8 +2050,9 @@ See the <a href="features.html#optional-dependencies">Features chapter</a> for m
 See the <a href="features.html#dependency-features">Features chapter</a> for more information.</p>
 <h2 id="timings"><a class="header" href="#timings">timings</a></h2>
 <p>The <code>-Ztimings</code> option has been stabilized as <code>--timings</code> in the 1.60 release.
-(<code>--timings=html</code> and the machine-readable <code>--timings=json</code> output remain
-unstable and require <code>-Zunstable-options</code>.)</p>
+The timings output format option
+(e.g., the <code>--timings=html</code> and the machine-readable <code>--timings=json</code> output)
+has been removed in 1.94.0-nightly.</p>
 <h2 id="config-cli"><a class="header" href="#config-cli">config-cli</a></h2>
 <p>The <code>--config</code> CLI option has been stabilized in the 1.63 release. See
 the <a href="config.html#command-line-overrides">config documentation</a> for more
