@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["TypeKind"],"struct":["Field","Tuple","Type"]};
+window.SIDEBAR_ITEMS = {"enum":["TypeKind"],"struct":["Array","Field","Tuple","Type"]};
