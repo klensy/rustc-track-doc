@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/join_handle.rs`."><title>join_handle.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0bd2dfd4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (de6d33c03 2026-01-28)" data-channel="nightly" data-search-js="search-86d08462.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-f9617a14.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.95.0.js"></script><script defer src="../../../static.files/main-12f88f4f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-ffcac47a.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>join_handle.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::Result;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/join_handle.rs`."><title>join_handle.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (842bd5be2 2026-01-29)" data-channel="nightly" data-search-js="search-fb33671b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-f9617a14.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.95.0.js"></script><script defer src="../../../static.files/main-12f88f4f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>join_handle.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::Result;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">super</span>::lifecycle::JoinInner;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">super</span>::thread::Thread;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
@@ -101,85 +101,87 @@
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Waits for the associated thread to finish.
 <a href=#102 id=102 data-nosnippet>102</a>    ///
 <a href=#103 id=103 data-nosnippet>103</a>    /// This function will return immediately if the associated thread has already finished.
-<a href=#104 id=104 data-nosnippet>104</a>    ///
-<a href=#105 id=105 data-nosnippet>105</a>    /// In terms of [atomic memory orderings],  the completion of the associated
-<a href=#106 id=106 data-nosnippet>106</a>    /// thread synchronizes with this function returning. In other words, all
-<a href=#107 id=107 data-nosnippet>107</a>    /// operations performed by that thread [happen
-<a href=#108 id=108 data-nosnippet>108</a>    /// before](https://doc.rust-lang.org/nomicon/atomics.html#data-accesses) all
-<a href=#109 id=109 data-nosnippet>109</a>    /// operations that happen after `join` returns.
-<a href=#110 id=110 data-nosnippet>110</a>    ///
-<a href=#111 id=111 data-nosnippet>111</a>    /// If the associated thread panics, [`Err`] is returned with the parameter given
-<a href=#112 id=112 data-nosnippet>112</a>    /// to [`panic!`] (though see the Notes below).
-<a href=#113 id=113 data-nosnippet>113</a>    ///
-<a href=#114 id=114 data-nosnippet>114</a>    /// [`Err`]: crate::result::Result::Err
-<a href=#115 id=115 data-nosnippet>115</a>    /// [atomic memory orderings]: crate::sync::atomic
-<a href=#116 id=116 data-nosnippet>116</a>    ///
-<a href=#117 id=117 data-nosnippet>117</a>    /// # Panics
+<a href=#104 id=104 data-nosnippet>104</a>    /// Otherwise, it fully waits for the thread to finish, including all destructors
+<a href=#105 id=105 data-nosnippet>105</a>    /// for thread-local variables that might be running after the main function of the thread.
+<a href=#106 id=106 data-nosnippet>106</a>    ///
+<a href=#107 id=107 data-nosnippet>107</a>    /// In terms of [atomic memory orderings],  the completion of the associated
+<a href=#108 id=108 data-nosnippet>108</a>    /// thread synchronizes with this function returning. In other words, all
+<a href=#109 id=109 data-nosnippet>109</a>    /// operations performed by that thread [happen
+<a href=#110 id=110 data-nosnippet>110</a>    /// before](https://doc.rust-lang.org/nomicon/atomics.html#data-accesses) all
+<a href=#111 id=111 data-nosnippet>111</a>    /// operations that happen after `join` returns.
+<a href=#112 id=112 data-nosnippet>112</a>    ///
+<a href=#113 id=113 data-nosnippet>113</a>    /// If the associated thread panics, [`Err`] is returned with the parameter given
+<a href=#114 id=114 data-nosnippet>114</a>    /// to [`panic!`] (though see the Notes below).
+<a href=#115 id=115 data-nosnippet>115</a>    ///
+<a href=#116 id=116 data-nosnippet>116</a>    /// [`Err`]: crate::result::Result::Err
+<a href=#117 id=117 data-nosnippet>117</a>    /// [atomic memory orderings]: crate::sync::atomic
 <a href=#118 id=118 data-nosnippet>118</a>    ///
-<a href=#119 id=119 data-nosnippet>119</a>    /// This function may panic on some platforms if a thread attempts to join
-<a href=#120 id=120 data-nosnippet>120</a>    /// itself or otherwise may create a deadlock with joining threads.
-<a href=#121 id=121 data-nosnippet>121</a>    ///
-<a href=#122 id=122 data-nosnippet>122</a>    /// # Examples
+<a href=#119 id=119 data-nosnippet>119</a>    /// # Panics
+<a href=#120 id=120 data-nosnippet>120</a>    ///
+<a href=#121 id=121 data-nosnippet>121</a>    /// This function may panic on some platforms if a thread attempts to join
+<a href=#122 id=122 data-nosnippet>122</a>    /// itself or otherwise may create a deadlock with joining threads.
 <a href=#123 id=123 data-nosnippet>123</a>    ///
-<a href=#124 id=124 data-nosnippet>124</a>    /// ```
-<a href=#125 id=125 data-nosnippet>125</a>    /// use std::thread;
-<a href=#126 id=126 data-nosnippet>126</a>    ///
-<a href=#127 id=127 data-nosnippet>127</a>    /// let builder = thread::Builder::new();
+<a href=#124 id=124 data-nosnippet>124</a>    /// # Examples
+<a href=#125 id=125 data-nosnippet>125</a>    ///
+<a href=#126 id=126 data-nosnippet>126</a>    /// ```
+<a href=#127 id=127 data-nosnippet>127</a>    /// use std::thread;
 <a href=#128 id=128 data-nosnippet>128</a>    ///
-<a href=#129 id=129 data-nosnippet>129</a>    /// let join_handle: thread::JoinHandle&lt;_&gt; = builder.spawn(|| {
-<a href=#130 id=130 data-nosnippet>130</a>    ///     // some work here
-<a href=#131 id=131 data-nosnippet>131</a>    /// }).unwrap();
-<a href=#132 id=132 data-nosnippet>132</a>    /// join_handle.join().expect("Couldn't join on the associated thread");
-<a href=#133 id=133 data-nosnippet>133</a>    /// ```
-<a href=#134 id=134 data-nosnippet>134</a>    ///
-<a href=#135 id=135 data-nosnippet>135</a>    /// # Notes
+<a href=#129 id=129 data-nosnippet>129</a>    /// let builder = thread::Builder::new();
+<a href=#130 id=130 data-nosnippet>130</a>    ///
+<a href=#131 id=131 data-nosnippet>131</a>    /// let join_handle: thread::JoinHandle&lt;_&gt; = builder.spawn(|| {
+<a href=#132 id=132 data-nosnippet>132</a>    ///     // some work here
+<a href=#133 id=133 data-nosnippet>133</a>    /// }).unwrap();
+<a href=#134 id=134 data-nosnippet>134</a>    /// join_handle.join().expect("Couldn't join on the associated thread");
+<a href=#135 id=135 data-nosnippet>135</a>    /// ```
 <a href=#136 id=136 data-nosnippet>136</a>    ///
-<a href=#137 id=137 data-nosnippet>137</a>    /// If a "foreign" unwinding operation (e.g. an exception thrown from C++
-<a href=#138 id=138 data-nosnippet>138</a>    /// code, or a `panic!` in Rust code compiled or linked with a different
-<a href=#139 id=139 data-nosnippet>139</a>    /// runtime) unwinds all the way to the thread root, the process may be
-<a href=#140 id=140 data-nosnippet>140</a>    /// aborted; see the Notes on [`thread::spawn`]. If the process is not
-<a href=#141 id=141 data-nosnippet>141</a>    /// aborted, this function will return a `Result::Err` containing an opaque
-<a href=#142 id=142 data-nosnippet>142</a>    /// type.
-<a href=#143 id=143 data-nosnippet>143</a>    ///
-<a href=#144 id=144 data-nosnippet>144</a>    /// [`catch_unwind`]: ../../std/panic/fn.catch_unwind.html
-<a href=#145 id=145 data-nosnippet>145</a>    /// [`thread::spawn`]: super::spawn
-<a href=#146 id=146 data-nosnippet>146</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">pub fn </span>join(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="self">self</span>.<span class="number">0</span>.join()
-<a href=#149 id=149 data-nosnippet>149</a>    }
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Checks if the associated thread has finished running its main function.
-<a href=#152 id=152 data-nosnippet>152</a>    ///
-<a href=#153 id=153 data-nosnippet>153</a>    /// `is_finished` supports implementing a non-blocking join operation, by checking
-<a href=#154 id=154 data-nosnippet>154</a>    /// `is_finished`, and calling `join` if it returns `true`. This function does not block. To
-<a href=#155 id=155 data-nosnippet>155</a>    /// block while waiting on the thread to finish, use [`join`][Self::join].
-<a href=#156 id=156 data-nosnippet>156</a>    ///
-<a href=#157 id=157 data-nosnippet>157</a>    /// This might return `true` for a brief moment after the thread's main
-<a href=#158 id=158 data-nosnippet>158</a>    /// function has returned, but before the thread itself has stopped running.
-<a href=#159 id=159 data-nosnippet>159</a>    /// However, once this returns `true`, [`join`][Self::join] can be expected
-<a href=#160 id=160 data-nosnippet>160</a>    /// to return quickly, without blocking for any significant amount of time.
-<a href=#161 id=161 data-nosnippet>161</a>    </span><span class="attr">#[stable(feature = <span class="string">"thread_is_running"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">pub fn </span>is_finished(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="self">self</span>.<span class="number">0</span>.is_finished()
-<a href=#164 id=164 data-nosnippet>164</a>    }
-<a href=#165 id=165 data-nosnippet>165</a>}
-<a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a><span class="kw">impl</span>&lt;T&gt; AsInner&lt;imp::Thread&gt; <span class="kw">for </span>JoinHandle&lt;T&gt; {
-<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>imp::Thread {
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="self">self</span>.<span class="number">0</span>.as_inner()
-<a href=#170 id=170 data-nosnippet>170</a>    }
-<a href=#171 id=171 data-nosnippet>171</a>}
-<a href=#172 id=172 data-nosnippet>172</a>
-<a href=#173 id=173 data-nosnippet>173</a><span class="kw">impl</span>&lt;T&gt; IntoInner&lt;imp::Thread&gt; <span class="kw">for </span>JoinHandle&lt;T&gt; {
-<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; imp::Thread {
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="self">self</span>.<span class="number">0</span>.into_inner()
-<a href=#176 id=176 data-nosnippet>176</a>    }
-<a href=#177 id=177 data-nosnippet>177</a>}
-<a href=#178 id=178 data-nosnippet>178</a>
-<a href=#179 id=179 data-nosnippet>179</a><span class="attr">#[stable(feature = <span class="string">"std_debug"</span>, since = <span class="string">"1.16.0"</span>)]
-<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>JoinHandle&lt;T&gt; {
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#182 id=182 data-nosnippet>182</a>        f.debug_struct(<span class="string">"JoinHandle"</span>).finish_non_exhaustive()
-<a href=#183 id=183 data-nosnippet>183</a>    }
-<a href=#184 id=184 data-nosnippet>184</a>}
+<a href=#137 id=137 data-nosnippet>137</a>    /// # Notes
+<a href=#138 id=138 data-nosnippet>138</a>    ///
+<a href=#139 id=139 data-nosnippet>139</a>    /// If a "foreign" unwinding operation (e.g. an exception thrown from C++
+<a href=#140 id=140 data-nosnippet>140</a>    /// code, or a `panic!` in Rust code compiled or linked with a different
+<a href=#141 id=141 data-nosnippet>141</a>    /// runtime) unwinds all the way to the thread root, the process may be
+<a href=#142 id=142 data-nosnippet>142</a>    /// aborted; see the Notes on [`thread::spawn`]. If the process is not
+<a href=#143 id=143 data-nosnippet>143</a>    /// aborted, this function will return a `Result::Err` containing an opaque
+<a href=#144 id=144 data-nosnippet>144</a>    /// type.
+<a href=#145 id=145 data-nosnippet>145</a>    ///
+<a href=#146 id=146 data-nosnippet>146</a>    /// [`catch_unwind`]: ../../std/panic/fn.catch_unwind.html
+<a href=#147 id=147 data-nosnippet>147</a>    /// [`thread::spawn`]: super::spawn
+<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">pub fn </span>join(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
+<a href=#150 id=150 data-nosnippet>150</a>        <span class="self">self</span>.<span class="number">0</span>.join()
+<a href=#151 id=151 data-nosnippet>151</a>    }
+<a href=#152 id=152 data-nosnippet>152</a>
+<a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// Checks if the associated thread has finished running its main function.
+<a href=#154 id=154 data-nosnippet>154</a>    ///
+<a href=#155 id=155 data-nosnippet>155</a>    /// `is_finished` supports implementing a non-blocking join operation, by checking
+<a href=#156 id=156 data-nosnippet>156</a>    /// `is_finished`, and calling `join` if it returns `true`. This function does not block. To
+<a href=#157 id=157 data-nosnippet>157</a>    /// block while waiting on the thread to finish, use [`join`][Self::join].
+<a href=#158 id=158 data-nosnippet>158</a>    ///
+<a href=#159 id=159 data-nosnippet>159</a>    /// This might return `true` for a brief moment after the thread's main
+<a href=#160 id=160 data-nosnippet>160</a>    /// function has returned, but before the thread itself has stopped running.
+<a href=#161 id=161 data-nosnippet>161</a>    /// However, once this returns `true`, [`join`][Self::join] can be expected
+<a href=#162 id=162 data-nosnippet>162</a>    /// to return quickly, without blocking for any significant amount of time.
+<a href=#163 id=163 data-nosnippet>163</a>    </span><span class="attr">#[stable(feature = <span class="string">"thread_is_running"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#164 id=164 data-nosnippet>164</a>    </span><span class="kw">pub fn </span>is_finished(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="self">self</span>.<span class="number">0</span>.is_finished()
+<a href=#166 id=166 data-nosnippet>166</a>    }
+<a href=#167 id=167 data-nosnippet>167</a>}
+<a href=#168 id=168 data-nosnippet>168</a>
+<a href=#169 id=169 data-nosnippet>169</a><span class="kw">impl</span>&lt;T&gt; AsInner&lt;imp::Thread&gt; <span class="kw">for </span>JoinHandle&lt;T&gt; {
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>imp::Thread {
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="self">self</span>.<span class="number">0</span>.as_inner()
+<a href=#172 id=172 data-nosnippet>172</a>    }
+<a href=#173 id=173 data-nosnippet>173</a>}
+<a href=#174 id=174 data-nosnippet>174</a>
+<a href=#175 id=175 data-nosnippet>175</a><span class="kw">impl</span>&lt;T&gt; IntoInner&lt;imp::Thread&gt; <span class="kw">for </span>JoinHandle&lt;T&gt; {
+<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; imp::Thread {
+<a href=#177 id=177 data-nosnippet>177</a>        <span class="self">self</span>.<span class="number">0</span>.into_inner()
+<a href=#178 id=178 data-nosnippet>178</a>    }
+<a href=#179 id=179 data-nosnippet>179</a>}
+<a href=#180 id=180 data-nosnippet>180</a>
+<a href=#181 id=181 data-nosnippet>181</a><span class="attr">#[stable(feature = <span class="string">"std_debug"</span>, since = <span class="string">"1.16.0"</span>)]
+<a href=#182 id=182 data-nosnippet>182</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>JoinHandle&lt;T&gt; {
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#184 id=184 data-nosnippet>184</a>        f.debug_struct(<span class="string">"JoinHandle"</span>).finish_non_exhaustive()
+<a href=#185 id=185 data-nosnippet>185</a>    }
+<a href=#186 id=186 data-nosnippet>186</a>}
 </code></pre></div></section></main></body></html>
