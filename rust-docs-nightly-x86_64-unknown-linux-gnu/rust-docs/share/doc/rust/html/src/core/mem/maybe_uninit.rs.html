@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/maybe_uninit.rs`."><title>maybe_uninit.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (6efa357bf 2026-02-08)" data-channel="nightly" data-search-js="search-fb33671b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-f9617a14.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.95.0.js"></script><script defer src="../../../static.files/main-12f88f4f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>maybe_uninit.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::any::type_name;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/maybe_uninit.rs`."><title>maybe_uninit.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (18d13b533 2026-02-09)" data-channel="nightly" data-search-js="search-fb33671b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-f9617a14.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.95.0.js"></script><script defer src="../../../static.files/main-12f88f4f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>maybe_uninit.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::any::type_name;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::clone::TrivialClone;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::marker::Destruct;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::ManuallyDrop;
@@ -1532,68 +1532,118 @@
 <a href=#1532 id=1532 data-nosnippet>1532</a>    }
 <a href=#1533 id=1533 data-nosnippet>1533</a>}
 <a href=#1534 id=1534 data-nosnippet>1534</a>
-<a href=#1535 id=1535 data-nosnippet>1535</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; [MaybeUninit&lt;T&gt;; N] {
-<a href=#1536 id=1536 data-nosnippet>1536</a>    <span class="doccomment">/// Transposes a `[MaybeUninit&lt;T&gt;; N]` into a `MaybeUninit&lt;[T; N]&gt;`.
-<a href=#1537 id=1537 data-nosnippet>1537</a>    ///
-<a href=#1538 id=1538 data-nosnippet>1538</a>    /// # Examples
-<a href=#1539 id=1539 data-nosnippet>1539</a>    ///
-<a href=#1540 id=1540 data-nosnippet>1540</a>    /// ```
-<a href=#1541 id=1541 data-nosnippet>1541</a>    /// #![feature(maybe_uninit_uninit_array_transpose)]
-<a href=#1542 id=1542 data-nosnippet>1542</a>    /// # use std::mem::MaybeUninit;
-<a href=#1543 id=1543 data-nosnippet>1543</a>    ///
-<a href=#1544 id=1544 data-nosnippet>1544</a>    /// let data = [MaybeUninit::&lt;u8&gt;::uninit(); 1000];
-<a href=#1545 id=1545 data-nosnippet>1545</a>    /// let data: MaybeUninit&lt;[u8; 1000]&gt; = data.transpose();
-<a href=#1546 id=1546 data-nosnippet>1546</a>    /// ```
-<a href=#1547 id=1547 data-nosnippet>1547</a>    </span><span class="attr">#[unstable(feature = <span class="string">"maybe_uninit_uninit_array_transpose"</span>, issue = <span class="string">"96097"</span>)]
-<a href=#1548 id=1548 data-nosnippet>1548</a>    #[inline]
-<a href=#1549 id=1549 data-nosnippet>1549</a>    </span><span class="kw">pub const fn </span>transpose(<span class="self">self</span>) -&gt; MaybeUninit&lt;[T; N]&gt; {
-<a href=#1550 id=1550 data-nosnippet>1550</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
-<a href=#1551 id=1551 data-nosnippet>1551</a>        </span><span class="kw">unsafe </span>{ intrinsics::transmute_unchecked(<span class="self">self</span>) }
-<a href=#1552 id=1552 data-nosnippet>1552</a>    }
-<a href=#1553 id=1553 data-nosnippet>1553</a>}
-<a href=#1554 id=1554 data-nosnippet>1554</a>
-<a href=#1555 id=1555 data-nosnippet>1555</a><span class="kw">struct </span>Guard&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#1556 id=1556 data-nosnippet>1556</a>    slice: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;],
-<a href=#1557 id=1557 data-nosnippet>1557</a>    initialized: usize,
+<a href=#1535 id=1535 data-nosnippet>1535</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1536 id=1536 data-nosnippet>1536</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; From&lt;[MaybeUninit&lt;T&gt;; N]&gt; <span class="kw">for </span>MaybeUninit&lt;[T; N]&gt; {
+<a href=#1537 id=1537 data-nosnippet>1537</a>    <span class="attr">#[inline]
+<a href=#1538 id=1538 data-nosnippet>1538</a>    </span><span class="kw">fn </span>from(arr: [MaybeUninit&lt;T&gt;; N]) -&gt; <span class="self">Self </span>{
+<a href=#1539 id=1539 data-nosnippet>1539</a>        arr.transpose()
+<a href=#1540 id=1540 data-nosnippet>1540</a>    }
+<a href=#1541 id=1541 data-nosnippet>1541</a>}
+<a href=#1542 id=1542 data-nosnippet>1542</a>
+<a href=#1543 id=1543 data-nosnippet>1543</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1544 id=1544 data-nosnippet>1544</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; AsRef&lt;[MaybeUninit&lt;T&gt;; N]&gt; <span class="kw">for </span>MaybeUninit&lt;[T; N]&gt; {
+<a href=#1545 id=1545 data-nosnippet>1545</a>    <span class="attr">#[inline]
+<a href=#1546 id=1546 data-nosnippet>1546</a>    </span><span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[MaybeUninit&lt;T&gt;; N] {
+<a href=#1547 id=1547 data-nosnippet>1547</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
+<a href=#1548 id=1548 data-nosnippet>1548</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr::from_ref(<span class="self">self</span>).cast() }
+<a href=#1549 id=1549 data-nosnippet>1549</a>    }
+<a href=#1550 id=1550 data-nosnippet>1550</a>}
+<a href=#1551 id=1551 data-nosnippet>1551</a>
+<a href=#1552 id=1552 data-nosnippet>1552</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1553 id=1553 data-nosnippet>1553</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; AsRef&lt;[MaybeUninit&lt;T&gt;]&gt; <span class="kw">for </span>MaybeUninit&lt;[T; N]&gt; {
+<a href=#1554 id=1554 data-nosnippet>1554</a>    <span class="attr">#[inline]
+<a href=#1555 id=1555 data-nosnippet>1555</a>    </span><span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[MaybeUninit&lt;T&gt;] {
+<a href=#1556 id=1556 data-nosnippet>1556</a>        <span class="kw-2">&amp;*</span>AsRef::&lt;[MaybeUninit&lt;T&gt;; N]&gt;::as_ref(<span class="self">self</span>)
+<a href=#1557 id=1557 data-nosnippet>1557</a>    }
 <a href=#1558 id=1558 data-nosnippet>1558</a>}
 <a href=#1559 id=1559 data-nosnippet>1559</a>
-<a href=#1560 id=1560 data-nosnippet>1560</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Drop <span class="kw">for </span>Guard&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#1561 id=1561 data-nosnippet>1561</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#1562 id=1562 data-nosnippet>1562</a>        <span class="kw">let </span>initialized_part = <span class="kw-2">&amp;mut </span><span class="self">self</span>.slice[..<span class="self">self</span>.initialized];
-<a href=#1563 id=1563 data-nosnippet>1563</a>        <span class="comment">// SAFETY: this raw sub-slice will contain only initialized objects.
-<a href=#1564 id=1564 data-nosnippet>1564</a>        </span><span class="kw">unsafe </span>{
-<a href=#1565 id=1565 data-nosnippet>1565</a>            initialized_part.assume_init_drop();
-<a href=#1566 id=1566 data-nosnippet>1566</a>        }
-<a href=#1567 id=1567 data-nosnippet>1567</a>    }
-<a href=#1568 id=1568 data-nosnippet>1568</a>}
-<a href=#1569 id=1569 data-nosnippet>1569</a>
-<a href=#1570 id=1570 data-nosnippet>1570</a><span class="kw">trait </span>SpecFill&lt;T&gt; {
-<a href=#1571 id=1571 data-nosnippet>1571</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T);
-<a href=#1572 id=1572 data-nosnippet>1572</a>}
-<a href=#1573 id=1573 data-nosnippet>1573</a>
-<a href=#1574 id=1574 data-nosnippet>1574</a><span class="kw">impl</span>&lt;T: Clone&gt; SpecFill&lt;T&gt; <span class="kw">for </span>[MaybeUninit&lt;T&gt;] {
-<a href=#1575 id=1575 data-nosnippet>1575</a>    default <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
-<a href=#1576 id=1576 data-nosnippet>1576</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = Guard { slice: <span class="self">self</span>, initialized: <span class="number">0 </span>};
-<a href=#1577 id=1577 data-nosnippet>1577</a>
-<a href=#1578 id=1578 data-nosnippet>1578</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((last, elems)) = guard.slice.split_last_mut() {
-<a href=#1579 id=1579 data-nosnippet>1579</a>            <span class="kw">for </span>el <span class="kw">in </span>elems {
-<a href=#1580 id=1580 data-nosnippet>1580</a>                el.write(value.clone());
-<a href=#1581 id=1581 data-nosnippet>1581</a>                guard.initialized += <span class="number">1</span>;
-<a href=#1582 id=1582 data-nosnippet>1582</a>            }
-<a href=#1583 id=1583 data-nosnippet>1583</a>
-<a href=#1584 id=1584 data-nosnippet>1584</a>            last.write(value);
-<a href=#1585 id=1585 data-nosnippet>1585</a>        }
-<a href=#1586 id=1586 data-nosnippet>1586</a>        <span class="kw">super</span>::forget(guard);
-<a href=#1587 id=1587 data-nosnippet>1587</a>    }
-<a href=#1588 id=1588 data-nosnippet>1588</a>}
-<a href=#1589 id=1589 data-nosnippet>1589</a>
-<a href=#1590 id=1590 data-nosnippet>1590</a><span class="kw">impl</span>&lt;T: TrivialClone&gt; SpecFill&lt;T&gt; <span class="kw">for </span>[MaybeUninit&lt;T&gt;] {
-<a href=#1591 id=1591 data-nosnippet>1591</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
-<a href=#1592 id=1592 data-nosnippet>1592</a>        <span class="comment">// SAFETY: because `T` is `TrivialClone`, this is equivalent to calling
-<a href=#1593 id=1593 data-nosnippet>1593</a>        // `T::clone` for every element. Notably, `TrivialClone` also implies
-<a href=#1594 id=1594 data-nosnippet>1594</a>        // that the `clone` implementation will not panic, so we can avoid
-<a href=#1595 id=1595 data-nosnippet>1595</a>        // initialization guards and such.
-<a href=#1596 id=1596 data-nosnippet>1596</a>        </span><span class="self">self</span>.fill_with(|| MaybeUninit::new(<span class="kw">unsafe </span>{ ptr::read(<span class="kw-2">&amp;</span>value) }));
-<a href=#1597 id=1597 data-nosnippet>1597</a>    }
-<a href=#1598 id=1598 data-nosnippet>1598</a>}
+<a href=#1560 id=1560 data-nosnippet>1560</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1561 id=1561 data-nosnippet>1561</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; AsMut&lt;[MaybeUninit&lt;T&gt;; N]&gt; <span class="kw">for </span>MaybeUninit&lt;[T; N]&gt; {
+<a href=#1562 id=1562 data-nosnippet>1562</a>    <span class="attr">#[inline]
+<a href=#1563 id=1563 data-nosnippet>1563</a>    </span><span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;; N] {
+<a href=#1564 id=1564 data-nosnippet>1564</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
+<a href=#1565 id=1565 data-nosnippet>1565</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>ptr::from_mut(<span class="self">self</span>).cast() }
+<a href=#1566 id=1566 data-nosnippet>1566</a>    }
+<a href=#1567 id=1567 data-nosnippet>1567</a>}
+<a href=#1568 id=1568 data-nosnippet>1568</a>
+<a href=#1569 id=1569 data-nosnippet>1569</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1570 id=1570 data-nosnippet>1570</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; AsMut&lt;[MaybeUninit&lt;T&gt;]&gt; <span class="kw">for </span>MaybeUninit&lt;[T; N]&gt; {
+<a href=#1571 id=1571 data-nosnippet>1571</a>    <span class="attr">#[inline]
+<a href=#1572 id=1572 data-nosnippet>1572</a>    </span><span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;] {
+<a href=#1573 id=1573 data-nosnippet>1573</a>        <span class="kw-2">&amp;mut *</span>AsMut::&lt;[MaybeUninit&lt;T&gt;; N]&gt;::as_mut(<span class="self">self</span>)
+<a href=#1574 id=1574 data-nosnippet>1574</a>    }
+<a href=#1575 id=1575 data-nosnippet>1575</a>}
+<a href=#1576 id=1576 data-nosnippet>1576</a>
+<a href=#1577 id=1577 data-nosnippet>1577</a><span class="attr">#[stable(feature = <span class="string">"more_conversion_trait_impls"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1578 id=1578 data-nosnippet>1578</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; From&lt;MaybeUninit&lt;[T; N]&gt;&gt; <span class="kw">for </span>[MaybeUninit&lt;T&gt;; N] {
+<a href=#1579 id=1579 data-nosnippet>1579</a>    <span class="attr">#[inline]
+<a href=#1580 id=1580 data-nosnippet>1580</a>    </span><span class="kw">fn </span>from(arr: MaybeUninit&lt;[T; N]&gt;) -&gt; <span class="self">Self </span>{
+<a href=#1581 id=1581 data-nosnippet>1581</a>        arr.transpose()
+<a href=#1582 id=1582 data-nosnippet>1582</a>    }
+<a href=#1583 id=1583 data-nosnippet>1583</a>}
+<a href=#1584 id=1584 data-nosnippet>1584</a>
+<a href=#1585 id=1585 data-nosnippet>1585</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; [MaybeUninit&lt;T&gt;; N] {
+<a href=#1586 id=1586 data-nosnippet>1586</a>    <span class="doccomment">/// Transposes a `[MaybeUninit&lt;T&gt;; N]` into a `MaybeUninit&lt;[T; N]&gt;`.
+<a href=#1587 id=1587 data-nosnippet>1587</a>    ///
+<a href=#1588 id=1588 data-nosnippet>1588</a>    /// # Examples
+<a href=#1589 id=1589 data-nosnippet>1589</a>    ///
+<a href=#1590 id=1590 data-nosnippet>1590</a>    /// ```
+<a href=#1591 id=1591 data-nosnippet>1591</a>    /// #![feature(maybe_uninit_uninit_array_transpose)]
+<a href=#1592 id=1592 data-nosnippet>1592</a>    /// # use std::mem::MaybeUninit;
+<a href=#1593 id=1593 data-nosnippet>1593</a>    ///
+<a href=#1594 id=1594 data-nosnippet>1594</a>    /// let data = [MaybeUninit::&lt;u8&gt;::uninit(); 1000];
+<a href=#1595 id=1595 data-nosnippet>1595</a>    /// let data: MaybeUninit&lt;[u8; 1000]&gt; = data.transpose();
+<a href=#1596 id=1596 data-nosnippet>1596</a>    /// ```
+<a href=#1597 id=1597 data-nosnippet>1597</a>    </span><span class="attr">#[unstable(feature = <span class="string">"maybe_uninit_uninit_array_transpose"</span>, issue = <span class="string">"96097"</span>)]
+<a href=#1598 id=1598 data-nosnippet>1598</a>    #[inline]
+<a href=#1599 id=1599 data-nosnippet>1599</a>    </span><span class="kw">pub const fn </span>transpose(<span class="self">self</span>) -&gt; MaybeUninit&lt;[T; N]&gt; {
+<a href=#1600 id=1600 data-nosnippet>1600</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
+<a href=#1601 id=1601 data-nosnippet>1601</a>        </span><span class="kw">unsafe </span>{ intrinsics::transmute_unchecked(<span class="self">self</span>) }
+<a href=#1602 id=1602 data-nosnippet>1602</a>    }
+<a href=#1603 id=1603 data-nosnippet>1603</a>}
+<a href=#1604 id=1604 data-nosnippet>1604</a>
+<a href=#1605 id=1605 data-nosnippet>1605</a><span class="kw">struct </span>Guard&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#1606 id=1606 data-nosnippet>1606</a>    slice: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;],
+<a href=#1607 id=1607 data-nosnippet>1607</a>    initialized: usize,
+<a href=#1608 id=1608 data-nosnippet>1608</a>}
+<a href=#1609 id=1609 data-nosnippet>1609</a>
+<a href=#1610 id=1610 data-nosnippet>1610</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Drop <span class="kw">for </span>Guard&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#1611 id=1611 data-nosnippet>1611</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#1612 id=1612 data-nosnippet>1612</a>        <span class="kw">let </span>initialized_part = <span class="kw-2">&amp;mut </span><span class="self">self</span>.slice[..<span class="self">self</span>.initialized];
+<a href=#1613 id=1613 data-nosnippet>1613</a>        <span class="comment">// SAFETY: this raw sub-slice will contain only initialized objects.
+<a href=#1614 id=1614 data-nosnippet>1614</a>        </span><span class="kw">unsafe </span>{
+<a href=#1615 id=1615 data-nosnippet>1615</a>            initialized_part.assume_init_drop();
+<a href=#1616 id=1616 data-nosnippet>1616</a>        }
+<a href=#1617 id=1617 data-nosnippet>1617</a>    }
+<a href=#1618 id=1618 data-nosnippet>1618</a>}
+<a href=#1619 id=1619 data-nosnippet>1619</a>
+<a href=#1620 id=1620 data-nosnippet>1620</a><span class="kw">trait </span>SpecFill&lt;T&gt; {
+<a href=#1621 id=1621 data-nosnippet>1621</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T);
+<a href=#1622 id=1622 data-nosnippet>1622</a>}
+<a href=#1623 id=1623 data-nosnippet>1623</a>
+<a href=#1624 id=1624 data-nosnippet>1624</a><span class="kw">impl</span>&lt;T: Clone&gt; SpecFill&lt;T&gt; <span class="kw">for </span>[MaybeUninit&lt;T&gt;] {
+<a href=#1625 id=1625 data-nosnippet>1625</a>    default <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
+<a href=#1626 id=1626 data-nosnippet>1626</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = Guard { slice: <span class="self">self</span>, initialized: <span class="number">0 </span>};
+<a href=#1627 id=1627 data-nosnippet>1627</a>
+<a href=#1628 id=1628 data-nosnippet>1628</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((last, elems)) = guard.slice.split_last_mut() {
+<a href=#1629 id=1629 data-nosnippet>1629</a>            <span class="kw">for </span>el <span class="kw">in </span>elems {
+<a href=#1630 id=1630 data-nosnippet>1630</a>                el.write(value.clone());
+<a href=#1631 id=1631 data-nosnippet>1631</a>                guard.initialized += <span class="number">1</span>;
+<a href=#1632 id=1632 data-nosnippet>1632</a>            }
+<a href=#1633 id=1633 data-nosnippet>1633</a>
+<a href=#1634 id=1634 data-nosnippet>1634</a>            last.write(value);
+<a href=#1635 id=1635 data-nosnippet>1635</a>        }
+<a href=#1636 id=1636 data-nosnippet>1636</a>        <span class="kw">super</span>::forget(guard);
+<a href=#1637 id=1637 data-nosnippet>1637</a>    }
+<a href=#1638 id=1638 data-nosnippet>1638</a>}
+<a href=#1639 id=1639 data-nosnippet>1639</a>
+<a href=#1640 id=1640 data-nosnippet>1640</a><span class="kw">impl</span>&lt;T: TrivialClone&gt; SpecFill&lt;T&gt; <span class="kw">for </span>[MaybeUninit&lt;T&gt;] {
+<a href=#1641 id=1641 data-nosnippet>1641</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
+<a href=#1642 id=1642 data-nosnippet>1642</a>        <span class="comment">// SAFETY: because `T` is `TrivialClone`, this is equivalent to calling
+<a href=#1643 id=1643 data-nosnippet>1643</a>        // `T::clone` for every element. Notably, `TrivialClone` also implies
+<a href=#1644 id=1644 data-nosnippet>1644</a>        // that the `clone` implementation will not panic, so we can avoid
+<a href=#1645 id=1645 data-nosnippet>1645</a>        // initialization guards and such.
+<a href=#1646 id=1646 data-nosnippet>1646</a>        </span><span class="self">self</span>.fill_with(|| MaybeUninit::new(<span class="kw">unsafe </span>{ ptr::read(<span class="kw-2">&amp;</span>value) }));
+<a href=#1647 id=1647 data-nosnippet>1647</a>    }
+<a href=#1648 id=1648 data-nosnippet>1648</a>}
 </code></pre></div></section></main></body></html>
