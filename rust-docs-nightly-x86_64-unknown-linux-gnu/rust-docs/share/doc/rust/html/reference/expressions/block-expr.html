@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-45a698e8.js";
+            window.path_to_searchindex_js = "../searchindex-82aefa8a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-edc1c836.js"></script>
+        <script src="../toc-7d3893f2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -331,8 +331,7 @@ ExpressionWithoutBlock</text>
 <div class="rule" id="r-expr.block.namespace"><a class="rule-link" href="#r-expr.block.namespace" title="expr.block.namespace"><span>[expr<wbr>.block<wbr>.namespace]</span></a>
 </div>
 
-<p>As an anonymous namespace scope, item declarations are only in scope inside the block itself and variables declared by <code>let</code> statements are in scope from the next statement until the end of the block.
-See the <a href="../names/scopes.html">scopes</a> chapter for more details.</p>
+<p>As an anonymous namespace scope, item declarations are only in scope inside the block itself and variables declared by <code>let</code> statements are in scope from the next statement until the end of the block. See the <a href="../names/scopes.html">scopes</a> chapter for more details.</p>
 <div class="rule" id="r-expr.block.inner-attributes"><a class="rule-link" href="#r-expr.block.inner-attributes" title="expr.block.inner-attributes"><span>[expr<wbr>.block<wbr>.inner-attributes]</span></a>
 </div>
 
@@ -360,7 +359,7 @@ See the <a href="../names/scopes.html">scopes</a> chapter for more details.</p>
 <div class="rule" id="r-expr.block.type"><a class="rule-link" href="#r-expr.block.type" title="expr.block.type"><span>[expr<wbr>.block<wbr>.type]</span></a>
 </div>
 
-<p>The type of a block is the type of the final operand, or <code>()</code> if the final operand is omitted.</p>
+<p>The type of a block is the type of its final operand; if that operand is omitted, the type is the <a href="../types/tuple.html#r-type.tuple.unit">unit type</a>, unless the block <a href="block-expr.html#r-expr.block.diverging">diverges</a>, in which case it is the <a href="../types/never.html#r-type.never">never type</a>.</p>
 <pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">fn fn_call() {}
@@ -383,6 +382,65 @@ assert_eq!(5, five);
 </blockquote>
 </div>
 
+<div class="rule" id="r-expr.block.diverging"><a class="rule-link" href="#r-expr.block.diverging" title="expr.block.diverging"><span>[expr<wbr>.block<wbr>.diverging]</span></a>
+</div>
+
+<p>A block is considered to be <a href="../divergence.html#r-divergence">diverging</a> if all reachable control flow paths contain a diverging expression, unless that expression is a <a href="../expressions.html#r-expr.place-value.place-memory-location">place expression</a> that is not read from.</p>
+<pre class="playground"><code class="language-rust no_run edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![ feature(never_type) ]
+</span>fn no_control_flow() -&gt; ! {
+    // There are no conditional statements, so this entire function body is diverging.
+    loop {}
+}
+
+fn control_flow_diverging() -&gt; ! {
+    // All paths are diverging, so this entire function body is diverging.
+    if true {
+        loop {}
+    } else {
+        loop {}
+    }
+}
+
+fn control_flow_not_diverging() -&gt; () {
+    // Some paths are not diverging, so this entire block is not diverging.
+    if true {
+        ()
+    } else {
+        loop {}
+    }
+}
+
+// Note: This makes use of the unstable never type which is only available on
+// Rust's nightly channel. This is done for illustration purposes. It is
+// possible to encounter this scenario in stable Rust, but requires a more
+// convoluted example.
+struct Foo {
+    x: !,
+}
+
+fn make&lt;T&gt;() -&gt; T { loop {} }
+
+fn diverging_place_read() -&gt; ! {
+    let foo = Foo { x: make() };
+    // A read of a place expression produces a diverging block.
+    let _x = foo.x;
+}
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust compile_fail E0308 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#![ feature(never_type) ]
+</span><span class="boring">fn make&lt;T&gt;() -&gt; T { loop {} }
+</span><span class="boring">struct Foo {
+</span><span class="boring">    x: !,
+</span><span class="boring">}
+</span>fn diverging_place_not_read() -&gt; ! {
+    let foo = Foo { x: make() };
+    // Assignment to `_` means the place is not read.
+    let _ = foo.x;
+} // ERROR: Mismatched types.
+<span class="boring">}</span></code></pre>
 <div class="rule" id="r-expr.block.value"><a class="rule-link" href="#r-expr.block.value" title="expr.block.value"><span>[expr<wbr>.block<wbr>.value]</span></a>
 </div>
 
@@ -483,8 +541,7 @@ BlockExpression</text>
 <div class="rule" id="r-expr.block.async.anonymous-type"><a class="rule-link" href="#r-expr.block.async.anonymous-type" title="expr.block.async.anonymous-type"><span>[expr<wbr>.block<wbr>.async<wbr>.anonymous-type]</span></a>
 </div>
 
-<p>Executing an async block is similar to executing a closure expression:
-its immediate effect is to produce and return an anonymous type.</p>
+<p>Executing an async block is similar to executing a closure expression: its immediate effect is to produce and return an anonymous type.</p>
 <div class="rule" id="r-expr.block.async.future"><a class="rule-link" href="#r-expr.block.async.future" title="expr.block.async.future"><span>[expr<wbr>.block<wbr>.async<wbr>.future]</span></a>
 </div>
 
@@ -516,15 +573,12 @@ its immediate effect is to produce and return an anonymous type.</p>
 </div>
 
 <h3 id="capture-modes"><a class="header" href="#capture-modes">Capture modes</a></h3>
-<p>Async blocks capture variables from their environment using the same <a href="../types/closure.html#capture-modes">capture modes</a> as closures.
-Like closures, when written <code>async { .. }</code> the capture mode for each variable will be inferred from the content of the block.
-<code>async move { .. }</code> blocks however will move all referenced variables into the resulting future.</p>
+<p>Async blocks capture variables from their environment using the same <a href="../types/closure.html#capture-modes">capture modes</a> as closures. Like closures, when written <code>async { .. }</code> the capture mode for each variable will be inferred from the content of the block. <code>async move { .. }</code> blocks however will move all referenced variables into the resulting future.</p>
 <div class="rule" id="r-expr.block.async.context"><a class="rule-link" href="#r-expr.block.async.context" title="expr.block.async.context"><span>[expr<wbr>.block<wbr>.async<wbr>.context]</span></a>
 </div>
 
 <h3 id="async-context"><a class="header" href="#async-context">Async context</a></h3>
-<p>Because async blocks construct a future, they define an <strong>async context</strong> which can in turn contain <a href="await-expr.html"><code>await</code> expressions</a>.
-Async contexts are established by async blocks as well as the bodies of async functions, whose semantics are defined in terms of async blocks.</p>
+<p>Because async blocks construct a future, they define an <strong>async context</strong> which can in turn contain <a href="await-expr.html"><code>await</code> expressions</a>. Async contexts are established by async blocks as well as the bodies of async functions, whose semantics are defined in terms of async blocks.</p>
 <div class="rule" id="r-expr.block.async.function"><a class="rule-link" href="#r-expr.block.async.function" title="expr.block.async.function"><span>[expr<wbr>.block<wbr>.async<wbr>.function]</span></a>
 </div>
 
@@ -536,14 +590,11 @@ Async contexts are established by async blocks as well as the bodies of async fu
 <div class="rule" id="r-expr.block.async.function.return-try"><a class="rule-link" href="#r-expr.block.async.function.return-try" title="expr.block.async.function.return-try"><span>[expr<wbr>.block<wbr>.async<wbr>.function<wbr>.return-try]</span></a>
 </div>
 
-<p>Therefore, the <code>?</code> operator and <code>return</code> expressions both affect the output of the future, not the enclosing function or other context.
-That is, <code>return &lt;expr&gt;</code> from within an async block will return the result of <code>&lt;expr&gt;</code> as the output of the future.
-Similarly, if <code>&lt;expr&gt;?</code> propagates an error, that error is propagated as the result of the future.</p>
+<p>Therefore, the <code>?</code> operator and <code>return</code> expressions both affect the output of the future, not the enclosing function or other context. That is, <code>return &lt;expr&gt;</code> from within an async block will return the result of <code>&lt;expr&gt;</code> as the output of the future. Similarly, if <code>&lt;expr&gt;?</code> propagates an error, that error is propagated as the result of the future.</p>
 <div class="rule" id="r-expr.block.async.function.control-flow"><a class="rule-link" href="#r-expr.block.async.function.control-flow" title="expr.block.async.function.control-flow"><span>[expr<wbr>.block<wbr>.async<wbr>.function<wbr>.control-flow]</span></a>
 </div>
 
-<p>Finally, the <code>break</code> and <code>continue</code> keywords cannot be used to branch out from an async block.
-Therefore the following is illegal:</p>
+<p>Finally, the <code>break</code> and <code>continue</code> keywords cannot be used to branch out from an async block. Therefore the following is illegal:</p>
 <pre class="playground"><code class="language-rust compile_fail edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>loop {
@@ -608,14 +659,11 @@ BlockExpression</text>
 <div class="rule" id="r-expr.block.const.context"><a class="rule-link" href="#r-expr.block.const.context" title="expr.block.const.context"><span>[expr<wbr>.block<wbr>.const<wbr>.context]</span></a>
 </div>
 
-<p>Const blocks allows you to define a constant value without having to define new <a href="../items/constant-items.html">constant items</a>, and thus they are also sometimes referred as <em>inline consts</em>.
-It also supports type inference so there is no need to specify the type, unlike <a href="../items/constant-items.html">constant items</a>.</p>
+<p>Const blocks allows you to define a constant value without having to define new <a href="../items/constant-items.html">constant items</a>, and thus they are also sometimes referred as <em>inline consts</em>. It also supports type inference so there is no need to specify the type, unlike <a href="../items/constant-items.html">constant items</a>.</p>
 <div class="rule" id="r-expr.block.const.generic-params"><a class="rule-link" href="#r-expr.block.const.generic-params" title="expr.block.const.generic-params"><span>[expr<wbr>.block<wbr>.const<wbr>.generic-params]</span></a>
 </div>
 
-<p>Const blocks have the ability to reference generic parameters in scope, unlike <a href="../glossary.html#free-item">free</a> constant items.
-They are desugared to constant items with generic parameters in scope (similar to associated constants, but without a trait or type they are associated with).
-For example, this code:</p>
+<p>Const blocks have the ability to reference generic parameters in scope, unlike <a href="../glossary.html#free-item">free</a> constant items. They are desugared to constant items with generic parameters in scope (similar to associated constants, but without a trait or type they are associated with). For example, this code:</p>
 <pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn foo&lt;T&gt;() -&gt; usize {
@@ -714,8 +762,7 @@ BlockExpression</text>
 </div>
 
 <p><em>See <a href="../unsafe-keyword.html#unsafe-blocks-unsafe-"><code>unsafe</code> blocks</a> for more information on when to use <code>unsafe</code></em>.</p>
-<p>A block of code can be prefixed with the <code>unsafe</code> keyword to permit <a href="../unsafety.html">unsafe operations</a>.
-Examples:</p>
+<p>A block of code can be prefixed with the <code>unsafe</code> keyword to permit <a href="../unsafety.html">unsafe operations</a>. Examples:</p>
 <pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>unsafe {
@@ -745,8 +792,7 @@ Examples:</p>
 <li><a href="../items/functions.html">Function</a> and <a href="../items/associated-items.html#methods">method</a> bodies.</li>
 <li>Loop bodies (<a href="loop-expr.html#infinite-loops"><code>loop</code></a>, <a href="loop-expr.html#predicate-loops"><code>while</code></a>, and <a href="loop-expr.html#iterator-loops"><code>for</code></a>).</li>
 <li>Block expressions used as a <a href="../statements.html">statement</a>.</li>
-<li>Block expressions as elements of <a href="array-expr.html">array expressions</a>, <a href="tuple-expr.html">tuple expressions</a>,
-<a href="call-expr.html">call expressions</a>, and tuple-style <a href="struct-expr.html">struct</a> expressions.</li>
+<li>Block expressions as elements of <a href="array-expr.html">array expressions</a>, <a href="tuple-expr.html">tuple expressions</a>, <a href="call-expr.html">call expressions</a>, and tuple-style <a href="struct-expr.html">struct</a> expressions.</li>
 <li>A block expression as the tail expression of another block expression.</li>
 </ul>
 <!-- Keep list in sync with expressions.md -->
