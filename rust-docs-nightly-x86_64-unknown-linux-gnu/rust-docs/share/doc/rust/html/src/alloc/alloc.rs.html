@@ -1,11 +1,11 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (a33907a7a 2026-02-14)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.95.0.js"></script><script defer src="../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (873b4beb0 2026-02-15)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.95.0.js"></script><script defer src="../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="attr">#![stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a>#[stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#6 id=6 data-nosnippet>6</a>#[doc(inline)]
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub use </span>core::alloc::<span class="kw-2">*</span>;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core::ptr::{<span class="self">self</span>, NonNull};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core::ptr::{<span class="self">self</span>, Alignment, NonNull};
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core::{cmp, hint};
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">unsafe extern </span><span class="string">"Rust" </span>{
@@ -18,19 +18,19 @@
 <a href=#18 id=18 data-nosnippet>18</a>    #[rustc_nounwind]
 <a href=#19 id=19 data-nosnippet>19</a>    #[rustc_std_internal_symbol]
 <a href=#20 id=20 data-nosnippet>20</a>    #[rustc_allocator_zeroed_variant = <span class="string">"__rust_alloc_zeroed"</span>]
-<a href=#21 id=21 data-nosnippet>21</a>    </span><span class="kw">fn </span>__rust_alloc(size: usize, align: usize) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#21 id=21 data-nosnippet>21</a>    </span><span class="kw">fn </span>__rust_alloc(size: usize, align: Alignment) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#22 id=22 data-nosnippet>22</a>    <span class="attr">#[rustc_deallocator]
 <a href=#23 id=23 data-nosnippet>23</a>    #[rustc_nounwind]
 <a href=#24 id=24 data-nosnippet>24</a>    #[rustc_std_internal_symbol]
-<a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">fn </span>__rust_dealloc(ptr: <span class="kw-2">*mut </span>u8, size: usize, align: usize);
+<a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">fn </span>__rust_dealloc(ptr: <span class="kw-2">*mut </span>u8, size: usize, align: Alignment);
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="attr">#[rustc_reallocator]
 <a href=#27 id=27 data-nosnippet>27</a>    #[rustc_nounwind]
 <a href=#28 id=28 data-nosnippet>28</a>    #[rustc_std_internal_symbol]
-<a href=#29 id=29 data-nosnippet>29</a>    </span><span class="kw">fn </span>__rust_realloc(ptr: <span class="kw-2">*mut </span>u8, old_size: usize, align: usize, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#29 id=29 data-nosnippet>29</a>    </span><span class="kw">fn </span>__rust_realloc(ptr: <span class="kw-2">*mut </span>u8, old_size: usize, align: Alignment, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#30 id=30 data-nosnippet>30</a>    <span class="attr">#[rustc_allocator_zeroed]
 <a href=#31 id=31 data-nosnippet>31</a>    #[rustc_nounwind]
 <a href=#32 id=32 data-nosnippet>32</a>    #[rustc_std_internal_symbol]
-<a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">fn </span>__rust_alloc_zeroed(size: usize, align: usize) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">fn </span>__rust_alloc_zeroed(size: usize, align: Alignment) -&gt; <span class="kw-2">*mut </span>u8;
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="attr">#[rustc_nounwind]
 <a href=#36 id=36 data-nosnippet>36</a>    #[rustc_std_internal_symbol]
@@ -92,7 +92,7 @@
 <a href=#92 id=92 data-nosnippet>92</a>        // stable code until it is actually stabilized.
 <a href=#93 id=93 data-nosnippet>93</a>        </span>__rust_no_alloc_shim_is_unstable_v2();
 <a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>        __rust_alloc(layout.size(), layout.align())
+<a href=#95 id=95 data-nosnippet>95</a>        __rust_alloc(layout.size(), layout.alignment())
 <a href=#96 id=96 data-nosnippet>96</a>    }
 <a href=#97 id=97 data-nosnippet>97</a>}
 <a href=#98 id=98 data-nosnippet>98</a>
@@ -112,7 +112,7 @@
 <a href=#112 id=112 data-nosnippet>112</a>#[inline]
 <a href=#113 id=113 data-nosnippet>113</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">pub unsafe fn </span>dealloc(ptr: <span class="kw-2">*mut </span>u8, layout: Layout) {
-<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">unsafe </span>{ __rust_dealloc(ptr, layout.size(), layout.align()) }
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">unsafe </span>{ __rust_dealloc(ptr, layout.size(), layout.alignment()) }
 <a href=#116 id=116 data-nosnippet>116</a>}
 <a href=#117 id=117 data-nosnippet>117</a>
 <a href=#118 id=118 data-nosnippet>118</a><span class="doccomment">/// Reallocates memory with the global allocator.
@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>#[inline]
 <a href=#133 id=133 data-nosnippet>133</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#134 id=134 data-nosnippet>134</a></span><span class="kw">pub unsafe fn </span>realloc(ptr: <span class="kw-2">*mut </span>u8, layout: Layout, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8 {
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">unsafe </span>{ __rust_realloc(ptr, layout.size(), layout.align(), new_size) }
+<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">unsafe </span>{ __rust_realloc(ptr, layout.size(), layout.alignment(), new_size) }
 <a href=#136 id=136 data-nosnippet>136</a>}
 <a href=#137 id=137 data-nosnippet>137</a>
 <a href=#138 id=138 data-nosnippet>138</a><span class="doccomment">/// Allocates zero-initialized memory with the global allocator.
@@ -175,7 +175,7 @@
 <a href=#175 id=175 data-nosnippet>175</a>        // stable code until it is actually stabilized.
 <a href=#176 id=176 data-nosnippet>176</a>        </span>__rust_no_alloc_shim_is_unstable_v2();
 <a href=#177 id=177 data-nosnippet>177</a>
-<a href=#178 id=178 data-nosnippet>178</a>        __rust_alloc_zeroed(layout.size(), layout.align())
+<a href=#178 id=178 data-nosnippet>178</a>        __rust_alloc_zeroed(layout.size(), layout.alignment())
 <a href=#179 id=179 data-nosnippet>179</a>    }
 <a href=#180 id=180 data-nosnippet>180</a>}
 <a href=#181 id=181 data-nosnippet>181</a>
