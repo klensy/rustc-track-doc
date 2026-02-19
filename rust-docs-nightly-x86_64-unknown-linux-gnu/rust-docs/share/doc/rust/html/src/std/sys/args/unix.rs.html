@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/args/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (838709580 2026-02-17)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.95.0.js"></script><script defer src="../../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/args/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Global initialization and retrieval of command line arguments.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/args/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.95.0" data-rustdoc-version="1.95.0-nightly (c04308580 2026-02-18)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.95.0.js"></script><script defer src="../../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/args/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Global initialization and retrieval of command line arguments.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! On some platforms these are stored during runtime startup,
 <a href=#4 id=4 data-nosnippet>4</a>//! and on some they are retrieved from the system on demand.
@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>// of this used `[[NSProcessInfo processInfo] arguments]`.
 <a href=#165 id=165 data-nosnippet>165</a></span><span class="attr">#[cfg(target_vendor = <span class="string">"apple"</span>)]
 <a href=#166 id=166 data-nosnippet>166</a></span><span class="kw">mod </span>imp {
-<a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">use </span><span class="kw">crate</span>::ffi::{c_char, c_int};
+<a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">use </span><span class="kw">crate</span>::ffi::c_char;
 <a href=#168 id=168 data-nosnippet>168</a>
 <a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">pub unsafe fn </span>init(_argc: isize, _argv: <span class="kw-2">*const *const </span>u8) {
 <a href=#170 id=170 data-nosnippet>170</a>        <span class="comment">// No need to initialize anything in here, `libdyld.dylib` has already
@@ -172,27 +172,21 @@
 <a href=#172 id=172 data-nosnippet>172</a>    </span>}
 <a href=#173 id=173 data-nosnippet>173</a>
 <a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">pub fn </span>argc_argv() -&gt; (isize, <span class="kw-2">*const *const </span>c_char) {
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">unsafe extern </span><span class="string">"C" </span>{
-<a href=#176 id=176 data-nosnippet>176</a>            <span class="comment">// These functions are in crt_externs.h.
-<a href=#177 id=177 data-nosnippet>177</a>            </span><span class="kw">fn </span>_NSGetArgc() -&gt; <span class="kw-2">*mut </span>c_int;
-<a href=#178 id=178 data-nosnippet>178</a>            <span class="kw">fn </span>_NSGetArgv() -&gt; <span class="kw-2">*mut *mut *mut </span>c_char;
-<a href=#179 id=179 data-nosnippet>179</a>        }
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a>        <span class="comment">// SAFETY: The returned pointer points to a static initialized early
-<a href=#182 id=182 data-nosnippet>182</a>        // in the program lifetime by `libdyld.dylib`, and as such is always
-<a href=#183 id=183 data-nosnippet>183</a>        // valid.
-<a href=#184 id=184 data-nosnippet>184</a>        //
-<a href=#185 id=185 data-nosnippet>185</a>        // NOTE: Similar to `_NSGetEnviron`, there technically isn't anything
-<a href=#186 id=186 data-nosnippet>186</a>        // protecting us against concurrent modifications to this, and there
-<a href=#187 id=187 data-nosnippet>187</a>        // doesn't exist a lock that we can take. Instead, it is generally
-<a href=#188 id=188 data-nosnippet>188</a>        // expected that it's only modified in `main` / before other code
-<a href=#189 id=189 data-nosnippet>189</a>        // runs, so reading this here should be fine.
-<a href=#190 id=190 data-nosnippet>190</a>        </span><span class="kw">let </span>argc = <span class="kw">unsafe </span>{ _NSGetArgc().read() };
-<a href=#191 id=191 data-nosnippet>191</a>        <span class="comment">// SAFETY: Same as above.
-<a href=#192 id=192 data-nosnippet>192</a>        </span><span class="kw">let </span>argv = <span class="kw">unsafe </span>{ _NSGetArgv().read() };
-<a href=#193 id=193 data-nosnippet>193</a>
-<a href=#194 id=194 data-nosnippet>194</a>        <span class="comment">// Cast from `*mut *mut c_char` to `*const *const c_char`
-<a href=#195 id=195 data-nosnippet>195</a>        </span>(argc <span class="kw">as </span>isize, argv.cast())
-<a href=#196 id=196 data-nosnippet>196</a>    }
-<a href=#197 id=197 data-nosnippet>197</a>}
+<a href=#175 id=175 data-nosnippet>175</a>        <span class="comment">// SAFETY: The returned pointer points to a static initialized early
+<a href=#176 id=176 data-nosnippet>176</a>        // in the program lifetime by `libdyld.dylib`, and as such is always
+<a href=#177 id=177 data-nosnippet>177</a>        // valid.
+<a href=#178 id=178 data-nosnippet>178</a>        //
+<a href=#179 id=179 data-nosnippet>179</a>        // NOTE: Similar to `_NSGetEnviron`, there technically isn't anything
+<a href=#180 id=180 data-nosnippet>180</a>        // protecting us against concurrent modifications to this, and there
+<a href=#181 id=181 data-nosnippet>181</a>        // doesn't exist a lock that we can take. Instead, it is generally
+<a href=#182 id=182 data-nosnippet>182</a>        // expected that it's only modified in `main` / before other code
+<a href=#183 id=183 data-nosnippet>183</a>        // runs, so reading this here should be fine.
+<a href=#184 id=184 data-nosnippet>184</a>        </span><span class="kw">let </span>argc = <span class="kw">unsafe </span>{ libc::_NSGetArgc().read() };
+<a href=#185 id=185 data-nosnippet>185</a>        <span class="comment">// SAFETY: Same as above.
+<a href=#186 id=186 data-nosnippet>186</a>        </span><span class="kw">let </span>argv = <span class="kw">unsafe </span>{ libc::_NSGetArgv().read() };
+<a href=#187 id=187 data-nosnippet>187</a>
+<a href=#188 id=188 data-nosnippet>188</a>        <span class="comment">// Cast from `*mut *mut c_char` to `*const *const c_char`
+<a href=#189 id=189 data-nosnippet>189</a>        </span>(argc <span class="kw">as </span>isize, argv.cast())
+<a href=#190 id=190 data-nosnippet>190</a>    }
+<a href=#191 id=191 data-nosnippet>191</a>}
 </code></pre></div></section></main></body></html>
