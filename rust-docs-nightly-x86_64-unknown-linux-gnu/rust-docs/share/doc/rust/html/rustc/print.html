@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ebf6b780.js";
+            window.path_to_searchindex_js = "searchindex-dac6e089.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-5ef7b3c1.js"></script>
@@ -8135,7 +8135,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-02-20; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-02-21; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -8433,7 +8433,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-02-20; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-02-21; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #65860 &lt;https://github.com/rust-lang/rust/issues/65860&gt;
 
@@ -10401,7 +10401,7 @@ future. See <a href="https://github.com/rust-lang/rust/issues/64266">issue #6426
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-02-20; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-02-21; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
@@ -22486,6 +22486,18 @@ default. This is not for certain, however, and will likely be accompanied with
 either an MCP or an RFC about changing all wasm targets in the same manner. In
 the meantime using <code>-Cpanic=unwind</code> will require using <a href="../cargo/reference/unstable.html#build-std"><code>-Zbuild-std</code></a> and
 passing the appropriate flags to rustc.</p>
+<h3 id="the-exception-tag-for-panics"><a class="header" href="#the-exception-tag-for-panics">The exception tag for panics</a></h3>
+<p>Rust panics are currently implemented as a specific class of C++ exceptions.
+This is because llvm only supports throwing and catching the C++ exception tag
+from <code>wasm_throw</code> intrinsic and the lowering for the catchpads emitted by the
+Rust try intrinsic.</p>
+<p>In particular, llvm throw and catch blocks expect a <code>WebAssembly.Tag</code> symbol
+called <code>__cpp_exception</code>. If it is not defined somewhere, llvm will generate an
+Emscripten style import from <code>env.__cpp_exception</code>. We don’t want this, so we
+define the symbol in <code>libunwind</code> but only for wasm32-unknown-unknown. WASI
+doesn’t currently support unwinding at all, and the Emscripten linker provides
+the tag in an appropriate manner depending on what sort of binary is being
+linked.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="wasm32v1-none"><a class="header" href="#wasm32v1-none"><code>wasm32v1-none</code></a></h1>
 <p><strong>Tier: 2</strong></p>
