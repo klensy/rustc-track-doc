@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/vec/splice.rs`."><title>splice.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.96.0" data-rustdoc-version="1.96.0-nightly (ac7f9ec7d 2026-03-20)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.96.0.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/vec/</div>splice.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::{ptr, slice};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/vec/splice.rs`."><title>splice.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.96.0" data-rustdoc-version="1.96.0-nightly (20f19f461 2026-03-21)" data-channel="nightly" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.96.0.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/vec/</div>splice.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::ptr;
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>super::{Drain, Vec};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::alloc::{Allocator, Global};
@@ -107,33 +107,31 @@
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span>vec = <span class="kw">unsafe </span>{ <span class="self">self</span>.vec.as_mut() };
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>range_start = vec.len;
 <a href=#109 id=109 data-nosnippet>109</a>        <span class="kw">let </span>range_end = <span class="self">self</span>.tail_start;
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">let </span>range_slice = <span class="kw">unsafe </span>{
-<a href=#111 id=111 data-nosnippet>111</a>            slice::from_raw_parts_mut(vec.as_mut_ptr().add(range_start), range_end - range_start)
-<a href=#112 id=112 data-nosnippet>112</a>        };
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">for </span>place <span class="kw">in </span>range_slice {
-<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw">let </span><span class="prelude-val">Some</span>(new_item) = replace_with.next() <span class="kw">else </span>{
-<a href=#116 id=116 data-nosnippet>116</a>                <span class="kw">return </span><span class="bool-val">false</span>;
-<a href=#117 id=117 data-nosnippet>117</a>            };
-<a href=#118 id=118 data-nosnippet>118</a>            <span class="kw">unsafe </span>{ ptr::write(place, new_item) };
-<a href=#119 id=119 data-nosnippet>119</a>            vec.len += <span class="number">1</span>;
-<a href=#120 id=120 data-nosnippet>120</a>        }
-<a href=#121 id=121 data-nosnippet>121</a>        <span class="bool-val">true
-<a href=#122 id=122 data-nosnippet>122</a>    </span>}
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="doccomment">/// Makes room for inserting more elements before the tail.
-<a href=#125 id=125 data-nosnippet>125</a>    </span><span class="kw">unsafe fn </span>move_tail(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
-<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">let </span>vec = <span class="kw">unsafe </span>{ <span class="self">self</span>.vec.as_mut() };
-<a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">let </span>len = <span class="self">self</span>.tail_start + <span class="self">self</span>.tail_len;
-<a href=#128 id=128 data-nosnippet>128</a>        vec.buf.reserve(len, additional);
-<a href=#129 id=129 data-nosnippet>129</a>
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>new_tail_start = <span class="self">self</span>.tail_start + additional;
-<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">unsafe </span>{
-<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">let </span>src = vec.as_ptr().add(<span class="self">self</span>.tail_start);
-<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">let </span>dst = vec.as_mut_ptr().add(new_tail_start);
-<a href=#134 id=134 data-nosnippet>134</a>            ptr::copy(src, dst, <span class="self">self</span>.tail_len);
-<a href=#135 id=135 data-nosnippet>135</a>        }
-<a href=#136 id=136 data-nosnippet>136</a>        <span class="self">self</span>.tail_start = new_tail_start;
-<a href=#137 id=137 data-nosnippet>137</a>    }
-<a href=#138 id=138 data-nosnippet>138</a>}
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="comment">// The elements in this range are not initialized so we avoid creating a slice.
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw">for </span>idx <span class="kw">in </span>range_start..range_end {
+<a href=#113 id=113 data-nosnippet>113</a>            <span class="kw">let </span><span class="prelude-val">Some</span>(new_item) = replace_with.next() <span class="kw">else </span>{
+<a href=#114 id=114 data-nosnippet>114</a>                <span class="kw">return </span><span class="bool-val">false</span>;
+<a href=#115 id=115 data-nosnippet>115</a>            };
+<a href=#116 id=116 data-nosnippet>116</a>            <span class="kw">unsafe </span>{ vec.as_mut_ptr().add(idx).write(new_item) };
+<a href=#117 id=117 data-nosnippet>117</a>            vec.len += <span class="number">1</span>;
+<a href=#118 id=118 data-nosnippet>118</a>        }
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="bool-val">true
+<a href=#120 id=120 data-nosnippet>120</a>    </span>}
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="doccomment">/// Makes room for inserting more elements before the tail.
+<a href=#123 id=123 data-nosnippet>123</a>    </span><span class="kw">unsafe fn </span>move_tail(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>vec = <span class="kw">unsafe </span>{ <span class="self">self</span>.vec.as_mut() };
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">let </span>len = <span class="self">self</span>.tail_start + <span class="self">self</span>.tail_len;
+<a href=#126 id=126 data-nosnippet>126</a>        vec.buf.reserve(len, additional);
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">let </span>new_tail_start = <span class="self">self</span>.tail_start + additional;
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">unsafe </span>{
+<a href=#130 id=130 data-nosnippet>130</a>            <span class="kw">let </span>src = vec.as_ptr().add(<span class="self">self</span>.tail_start);
+<a href=#131 id=131 data-nosnippet>131</a>            <span class="kw">let </span>dst = vec.as_mut_ptr().add(new_tail_start);
+<a href=#132 id=132 data-nosnippet>132</a>            ptr::copy(src, dst, <span class="self">self</span>.tail_len);
+<a href=#133 id=133 data-nosnippet>133</a>        }
+<a href=#134 id=134 data-nosnippet>134</a>        <span class="self">self</span>.tail_start = new_tail_start;
+<a href=#135 id=135 data-nosnippet>135</a>    }
+<a href=#136 id=136 data-nosnippet>136</a>}
 </code></pre></div></section></main></body></html>
