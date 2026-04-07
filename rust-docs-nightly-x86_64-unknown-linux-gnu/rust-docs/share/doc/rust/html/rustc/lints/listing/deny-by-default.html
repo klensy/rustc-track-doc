@@ -35,7 +35,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-965bc631.js";
+            window.path_to_searchindex_js = "../../searchindex-ada7ca84.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-f12d3f0b.js"></script>
@@ -228,6 +228,7 @@
 <li><a href="#text-direction-codepoint-in-literal"><code>text_direction_codepoint_in_literal</code></a></li>
 <li><a href="#unconditional-panic"><code>unconditional_panic</code></a></li>
 <li><a href="#undropped-manually-drops"><code>undropped_manually_drops</code></a></li>
+<li><a href="#uninhabited-static"><code>uninhabited_static</code></a></li>
 <li><a href="#unknown-crate-types"><code>unknown_crate_types</code></a></li>
 <li><a href="#useless-deprecated"><code>useless_deprecated</code></a></li>
 </ul>
@@ -1597,7 +1598,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-04-05; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-04-06; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
@@ -1726,10 +1727,35 @@ help: use `std::mem::ManuallyDrop::into_inner` to get the inner value
 <h3 id="explanation-43"><a class="header" href="#explanation-43">Explanation</a></h3>
 <p><code>ManuallyDrop</code> does not drop it’s inner value so calling <code>std::mem::drop</code> will
 not drop the inner value of the <code>ManuallyDrop</code> either.</p>
+<h2 id="uninhabited-static"><a class="header" href="#uninhabited-static">uninhabited-static</a></h2>
+<p>The <code>uninhabited_static</code> lint detects uninhabited statics.</p>
+<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
+<pre><code class="language-rust compile_fail">enum Void {}
+unsafe extern {
+    static EXTERN: Void;
+}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: static of uninhabited type
+ --&gt; lint_example.rs:4:5
+  |
+4 |     static EXTERN: Void;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: uninhabited statics cannot be initialized, and any access would be an immediate error
+  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+  = note: for more information, see issue #74840 &lt;https://github.com/rust-lang/rust/issues/74840&gt;
+  = note: `#[deny(uninhabited_static)]` (part of `#[deny(future_incompatible)]`) on by default
+
+</code></pre>
+<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
+<p>Statics with an uninhabited type can never be initialized, so they are impossible to define.
+However, this can be side-stepped with an <code>extern static</code>, leading to problems later in the
+compiler which assumes that there are no initialized uninhabited places (such as locals or
+statics). This was accidentally allowed, but is being phased out.</p>
 <h2 id="unknown-crate-types"><a class="header" href="#unknown-crate-types">unknown-crate-types</a></h2>
 <p>The <code>unknown_crate_types</code> lint detects an unknown crate type found in
 a <a href="https://doc.rust-lang.org/reference/linkage.html"><code>crate_type</code> attribute</a>.</p>
-<h3 id="example-44"><a class="header" href="#example-44">Example</a></h3>
+<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
 <pre><code class="language-rust compile_fail">#![crate_type="lol"]
 fn main() {}</code></pre>
 <p>This will produce:</p>
@@ -1742,12 +1768,12 @@ fn main() {}</code></pre>
   = note: `#[deny(unknown_crate_types)]` on by default
 
 </code></pre>
-<h3 id="explanation-44"><a class="header" href="#explanation-44">Explanation</a></h3>
+<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
 <p>An unknown value give to the <code>crate_type</code> attribute is almost
 certainly a mistake.</p>
 <h2 id="useless-deprecated"><a class="header" href="#useless-deprecated">useless-deprecated</a></h2>
 <p>The <code>useless_deprecated</code> lint detects deprecation attributes with no effect.</p>
-<h3 id="example-45"><a class="header" href="#example-45">Example</a></h3>
+<h3 id="example-46"><a class="header" href="#example-46">Example</a></h3>
 <pre><code class="language-rust compile_fail">struct X;
 
 #[deprecated = "message"]
@@ -1768,7 +1794,7 @@ impl Default for X {
   = note: `#[deny(useless_deprecated)]` on by default
 
 </code></pre>
-<h3 id="explanation-45"><a class="header" href="#explanation-45">Explanation</a></h3>
+<h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
 <p>Deprecation attributes have no effect on trait implementations.</p>
 <script>
 document.addEventListener("DOMContentLoaded", (event) => {
