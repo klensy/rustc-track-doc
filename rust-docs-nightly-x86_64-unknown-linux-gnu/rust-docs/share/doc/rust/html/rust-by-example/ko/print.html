@@ -111,7 +111,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-83a891fc.js";
+            window.path_to_searchindex_js = "searchindex-a2cf54f4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-eb357a13.js"></script>
@@ -487,7 +487,7 @@ fn main() {
 </ul>
 <p>여기서는 표준 라이브러리가 이러한 타입들에 대한 구현을 제공하기 때문에 <code>fmt::Display</code>를 사용했습니다. 커스텀 타입에 대해 텍스트를 출력하려면 더 많은 단계가 필요합니다.</p>
 <p><code>fmt::Display</code> 트레이트를 구현하면 타입을 <a href="#문자열"><code>String</code></a>으로 <a href="#string-변환">변환</a>할 수 있게 해주는 <a href="https://doc.rust-lang.org/std/string/trait.ToString.html"><code>ToString</code></a> 트레이트가 자동으로 구현됩니다.</p>
-<p>_43행_의 <code>#[allow(dead_code)]</code>는 그 뒤에 오는 모듈에만 적용되는 <a href="#속성">속성</a>입니다.</p>
+<p>In <em>line 43</em>, <code>#[allow(dead_code)]</code> is an <a href="#속성">attribute</a> which only applies to the item after it.</p>
 <h3 id="실습-1"><a class="header" href="#실습-1">실습</a></h3>
 <ul>
 <li>위 코드의 문제(FIXME 참고)를 수정하여 에러 없이 실행되도록 하세요.</li>
@@ -635,9 +635,10 @@ fn main() {
     println!("디스플레이: {}", point);
     println!("디버그: {:?}", point);
 
-    // 에러. `Debug`와 `Display`는 모두 구현되었지만, `{:b}`는
-    // `fmt::Binary` 구현을 요구합니다. 이것은 작동하지 않을 것입니다.
-    // println!("Point2D의 2진수 형태는 무엇일까요: {:b}?", point);
+    // The following line would not compile: both `Debug` and `Display`
+    // were implemented, but `{:b}` requires `fmt::Binary` to be
+    // implemented, which it hasn't been for `Point2D`.
+    // println!("What does Point2D look like in binary: {:b}?", point);
 }</code></pre>
 <p>따라서, <code>fmt::Display</code>는 구현되었지만 <code>fmt::Binary</code>는 구현되지 않았으므로 사용할 수 없습니다. <code>std::fmt</code>에는 이와 같은 많은 <a href="https://doc.rust-lang.org/std/fmt/#formatting-traits"><code>트레이트</code></a>가 있으며 각각은 자체적인 구현을 요구합니다. 이에 대한 자세한 내용은 <a href="https://doc.rust-lang.org/std/fmt/"><code>std::fmt</code></a>에 나와 있습니다.</p>
 <h3 id="실습-2"><a class="header" href="#실습-2">실습</a></h3>
@@ -671,8 +672,7 @@ struct List(Vec&lt;i32&gt;);
 
 impl fmt::Display for List {
     fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
-        // 튜플 인덱싱을 사용하여 값을 추출하고,
-        // `vec`에 대한 참조를 생성합니다.
+        // Create a reference to the Vec&lt;i32&gt; stored in the List struct.
         let vec = &amp;self.0;
 
         write!(f, "[")?;
@@ -2029,7 +2029,7 @@ fn main() {
 <ul>
 <li><code>into_iter</code> - 컬렉션을 소비(consume)하여 각 반복마다 실제 데이터를 제공합니다. 컬렉션이 소비되면 루프 내에서 ’이동(moved)’된 것이므로 더 이상 재사용할 수 없습니다.</li>
 </ul>
-<pre class="playground"><code class="language-rust editable ignore mdbook-runnable edition2021">fn main() {
+<pre class="playground"><code class="language-rust editable edition2021">fn main() {
     let names = vec!["밥", "프랭크", "페리스"];
 
     for name in names.into_iter() {
@@ -2039,8 +2039,9 @@ fn main() {
         }
     }
 
-    println!("이름들: {:?}", names);
-    // FIXME ^ 이 줄을 주석 처리하세요
+    // `names` has been 'moved' and can no longer be used.
+    // Try uncommenting the line below to see the compiler error:
+    // println!("names: {:?}", names);
 }</code></pre>
 <ul>
 <li><code>iter_mut</code> - 컬렉션의 각 요소를 가변적으로 빌려와서, 컬렉션을 제자리에서 수정할 수 있게 합니다.</li>
@@ -3119,9 +3120,12 @@ fn main() {
     let array1 = [1, 2, 3];
     let array2 = [4, 5, 6];
 
-    // `array1.iter()`는 `&amp;i32`를 생성합니다
+    // `array1.iter()` yields `&amp;i32`, and `find` passes `&amp;Item` to the
+    // predicate. Since `Item = &amp;i32`, the closure argument has type `&amp;&amp;i32`.
     println!("array1에서 2 찾기: {:?}", array1.iter().find(|&amp;&amp;x| x == 2));
-    // `array2.into_iter()`는 `i32`를 생성합니다
+    // `array2.into_iter()` yields `i32` (since Rust 2021 edition), and
+    // `find` passes `&amp;Item` to the predicate. Since `Item = i32`, the
+    // closure argument has type `&amp;i32`.
     println!("array2에서 2 찾기: {:?}", array2.into_iter().find(|&amp;x| x == 2));
 }</code></pre>
 <p><code>Iterator::find</code>는 아이템에 대한 참조를 제공합니다. 하지만 아이템의 인덱스를 원한다면 <code>Iterator::position</code>을 사용하세요.</p>
@@ -3447,6 +3451,22 @@ fn main() {
     }
 
     function();
+}</code></pre>
+<p>You can also use <code>pub use</code> to re-export an item from a module, so it can be accessed through the module’s public interface:</p>
+<pre class="playground"><code class="language-rust editable edition2021">mod deeply {
+    pub mod nested {
+        pub fn function() {
+            println!("`deeply::nested::function()` 호출됨");
+        }
+    }
+}
+
+mod cool {
+    pub use crate::deeply::nested::function;
+}
+
+fn main() {
+    cool::function();
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="super와-self"><a class="header" href="#super와-self"><code>super</code>와 <code>self</code></a></h1>
@@ -4300,43 +4320,42 @@ fn main() {
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="new-type-관용구"><a class="header" href="#new-type-관용구">New Type 관용구</a></h1>
 <p><code>newtype</code> 관용구는 프로그램에 올바른 타입의 값이 제공됨을 컴파일 타임에 보장해 줍니다.</p>
-<p>예를 들어, 나이를 연 단위로 확인하는 나이 검증 함수는 반드시 <code>Years</code> 타입의 값을 받아야 합니다.</p>
-<pre class="playground"><code class="language-rust editable edition2021">struct Years(i64);
+<p>For example, a function that measures distance in miles, <em>must</em> be given a value of type <code>Miles</code>.</p>
+<pre class="playground"><code class="language-rust editable edition2021">struct Miles(f64);
 
-struct Days(i64);
+struct Kilometers(f64);
 
-impl Years {
-    pub fn to_days(&amp;self) -&gt; Days {
-        Days(self.0 * 365)
+impl Miles {
+    pub fn to_kilometers(&amp;self) -&gt; Kilometers {
+        Kilometers(self.0 * 1.609344)
     }
 }
 
-impl Days {
-    /// 부분적인 연도는 버립니다
-    pub fn to_years(&amp;self) -&gt; Years {
-        Years(self.0 / 365)
+impl Kilometers {
+    pub fn to_miles(&amp;self) -&gt; Miles {
+        Miles(self.0 / 1.609344)
     }
 }
 
-fn is_adult(age: &amp;Years) -&gt; bool {
-    age.0 &gt;= 18
+fn is_a_marathon(distance: &amp;Miles) -&gt; bool {
+    distance.0 &gt;= 26.2
 }
 
 fn main() {
-    let age = Years(25);
-    let age_days = age.to_days();
-    println!("성인입니까? {}", is_adult(&amp;age));
-    println!("성인입니까? {}", is_adult(&amp;age_days.to_years()));
-    // println!("성인입니까? {}", is_adult(&amp;age_days));
+    let distance = Miles(30.0);
+    let distance_km = distance.to_kilometers();
+    println!("Is a marathon? {}", is_a_marathon(&amp;distance));
+    println!("Is a marathon? {}", is_a_marathon(&amp;distance_km.to_miles()));
+    // println!("Is a marathon? {}", is_a_marathon(&amp;distance_km));
 }</code></pre>
-<p>마지막 출력문의 주석을 해제하여 제공되는 타입이 반드시 <code>Years</code>여야 함을 관찰해 보세요.</p>
+<p>Uncomment the last print statement to observe that the type supplied must be <code>Miles</code>.</p>
 <p><code>newtype</code>의 값을 기본 타입으로 얻으려면, 다음과 같이 튜플 또는 구조 분해 문법을 사용할 수 있습니다:</p>
-<pre class="playground"><code class="language-rust editable edition2021">struct Years(i64);
+<pre class="playground"><code class="language-rust editable edition2021">struct Miles(f64);
 
 fn main() {
-    let years = Years(42);
-    let years_as_primitive_1: i64 = years.0; // 튜플
-    let Years(years_as_primitive_2) = years; // 구조 분해
+    let distance = Miles(42.0);
+    let distance_as_primitive_1: f64 = distance.0; // 튜플
+    let Miles(distance_as_primitive_2) = distance; // 구조 분해
 }</code></pre>
 <h3 id="참고-43"><a class="header" href="#참고-43">참고:</a></h3>
 <p><a href="#구조체"><code>structs</code></a></p>
@@ -5643,16 +5662,20 @@ impl TempFile {
     }
 }
 
-// `TempFile`이 drop될 때:
-// 1. 먼저, 우리가 작성한 drop 구현이 파일 시스템에서 파일 이름을 제거합니다.
-// 2. 그런 다음, `File`의 drop이 파일을 닫고 디스크에서 기본 콘텐츠를 제거합니다.
+// When TempFile is dropped:
+// 1. First, our custom drop implementation runs. The file is still open at this point,
+//    but we can remove it from the filesystem by path.
+// 2. Then, after our drop returns, Rust automatically drops each field,
+//    so File's drop runs and closes the file handle.
 impl Drop for TempFile {
     fn drop(&amp;mut self) {
+        // Note: the File is still open here — field destructors run after this method.
         if let Err(e) = std::fs::remove_file(&amp;self.path) {
             eprintln!("임시 파일을 제거하는 데 실패했습니다: {}", e);
         }
         println!("&gt; 임시 파일을 해제했습니다: {:?}", self.path);
-        // `File`의 drop은 이 구조체의 필드이므로 여기서 암시적으로 호출됩니다.
+        // After this method returns, Rust will drop each field (including `file`),
+        // which closes the underlying file handle.
     }
 }
 

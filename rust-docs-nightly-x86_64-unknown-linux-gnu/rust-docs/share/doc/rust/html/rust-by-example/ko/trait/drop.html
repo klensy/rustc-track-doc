@@ -110,7 +110,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-83a891fc.js";
+            window.path_to_searchindex_js = "../searchindex-a2cf54f4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-eb357a13.js"></script>
@@ -316,16 +316,20 @@ impl TempFile {
     }
 }
 
-// `TempFile`이 drop될 때:
-// 1. 먼저, 우리가 작성한 drop 구현이 파일 시스템에서 파일 이름을 제거합니다.
-// 2. 그런 다음, `File`의 drop이 파일을 닫고 디스크에서 기본 콘텐츠를 제거합니다.
+// When TempFile is dropped:
+// 1. First, our custom drop implementation runs. The file is still open at this point,
+//    but we can remove it from the filesystem by path.
+// 2. Then, after our drop returns, Rust automatically drops each field,
+//    so File's drop runs and closes the file handle.
 impl Drop for TempFile {
     fn drop(&amp;mut self) {
+        // Note: the File is still open here — field destructors run after this method.
         if let Err(e) = std::fs::remove_file(&amp;self.path) {
             eprintln!("임시 파일을 제거하는 데 실패했습니다: {}", e);
         }
         println!("&gt; 임시 파일을 해제했습니다: {:?}", self.path);
-        // `File`의 drop은 이 구조체의 필드이므로 여기서 암시적으로 호출됩니다.
+        // After this method returns, Rust will drop each field (including `file`),
+        // which closes the underlying file handle.
     }
 }
 

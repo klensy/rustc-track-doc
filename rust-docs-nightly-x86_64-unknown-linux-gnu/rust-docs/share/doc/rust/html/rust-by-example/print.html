@@ -111,7 +111,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8530566b.js";
+            window.path_to_searchindex_js = "searchindex-a707cb91.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-61902a00.js"></script>
@@ -506,7 +506,7 @@ friendly fashion.</li>
 for these types. To print text for custom types, more steps are required.</p>
 <p>Implementing the <code>fmt::Display</code> trait automatically implements the
 <a href="https://doc.rust-lang.org/std/string/trait.ToString.html"><code>ToString</code></a> trait which allows us to <a href="#to-and-from-strings">convert</a> the type to <a href="#strings"><code>String</code></a>.</p>
-<p>In <em>line 43</em>, <code>#[allow(dead_code)]</code> is an <a href="#attributes">attribute</a> which only applies to the module after it.</p>
+<p>In <em>line 43</em>, <code>#[allow(dead_code)]</code> is an <a href="#attributes">attribute</a> which only applies to the item after it.</p>
 <h3 id="activities"><a class="header" href="#activities">Activities</a></h3>
 <ul>
 <li>Fix the issue in the above code (see FIXME) so that it runs without
@@ -678,8 +678,9 @@ fn main() {
     println!("Display: {}", point);
     println!("Debug: {:?}", point);
 
-    // Error. Both `Debug` and `Display` were implemented, but `{:b}`
-    // requires `fmt::Binary` to be implemented. This will not work.
+    // The following line would not compile: both `Debug` and `Display`
+    // were implemented, but `{:b}` requires `fmt::Binary` to be
+    // implemented, which it hasn't been for `Point2D`.
     // println!("What does Point2D look like in binary: {:b}?", point);
 }</code></pre>
 <p>So, <code>fmt::Display</code> has been implemented but <code>fmt::Binary</code> has not, and therefore
@@ -723,8 +724,7 @@ struct List(Vec&lt;i32&gt;);
 
 impl fmt::Display for List {
     fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
-        // Extract the value using tuple indexing,
-        // and create a reference to `vec`.
+        // Create a reference to the Vec&lt;i32&gt; stored in the List struct.
         let vec = &amp;self.0;
 
         write!(f, "[")?;
@@ -2221,7 +2221,7 @@ Thus leaving the collection untouched and available for reuse after the loop.</l
 data is provided. Once the collection has been consumed it is no longer
 available for reuse as it has been ‘moved’ within the loop.</li>
 </ul>
-<pre class="playground"><code class="language-rust editable ignore mdbook-runnable edition2021">fn main() {
+<pre class="playground"><code class="language-rust editable edition2021">fn main() {
     let names = vec!["Bob", "Frank", "Ferris"];
 
     for name in names.into_iter() {
@@ -2231,8 +2231,9 @@ available for reuse as it has been ‘moved’ within the loop.</li>
         }
     }
 
-    println!("names: {:?}", names);
-    // FIXME ^ Comment out this line
+    // `names` has been 'moved' and can no longer be used.
+    // Try uncommenting the line below to see the compiler error:
+    // println!("names: {:?}", names);
 }</code></pre>
 <ul>
 <li><code>iter_mut</code> - This mutably borrows each element of the collection, allowing for
@@ -3404,9 +3405,12 @@ condition, it returns <code>None</code>. Its signature:</p>
     let array1 = [1, 2, 3];
     let array2 = [4, 5, 6];
 
-    // `array1.iter()` yields `&amp;i32`
+    // `array1.iter()` yields `&amp;i32`, and `find` passes `&amp;Item` to the
+    // predicate. Since `Item = &amp;i32`, the closure argument has type `&amp;&amp;i32`.
     println!("Find 2 in array1: {:?}", array1.iter().find(|&amp;&amp;x| x == 2));
-    // `array2.into_iter()` yields `i32`
+    // `array2.into_iter()` yields `i32` (since Rust 2021 edition), and
+    // `find` passes `&amp;Item` to the predicate. Since `Item = i32`, the
+    // closure argument has type `&amp;i32`.
     println!("Find 2 in array2: {:?}", array2.into_iter().find(|&amp;x| x == 2));
 }</code></pre>
 <p><code>Iterator::find</code> gives you a reference to the item. But if you want the <em>index</em> of the
@@ -3755,6 +3759,23 @@ fn main() {
     }
 
     function();
+}</code></pre>
+<p>You can also use <code>pub use</code> to re-export an item from a module, so it can be
+accessed through the module’s public interface:</p>
+<pre class="playground"><code class="language-rust editable edition2021">mod deeply {
+    pub mod nested {
+        pub fn function() {
+            println!("called `deeply::nested::function()`");
+        }
+    }
+}
+
+mod cool {
+    pub use crate::deeply::nested::function;
+}
+
+fn main() {
+    cool::function();
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="super-and-self"><a class="header" href="#super-and-self"><code>super</code> and <code>self</code></a></h1>
@@ -4716,44 +4737,43 @@ fn main() {
 <h1 id="new-type-idiom"><a class="header" href="#new-type-idiom">New Type Idiom</a></h1>
 <p>The <code>newtype</code> idiom gives compile time guarantees that the right type of value is supplied
 to a program.</p>
-<p>For example, an age verification function that checks age in years, <em>must</em> be given
-a value of type <code>Years</code>.</p>
-<pre class="playground"><code class="language-rust editable edition2021">struct Years(i64);
+<p>For example, a function that measures distance in miles, <em>must</em> be given
+a value of type <code>Miles</code>.</p>
+<pre class="playground"><code class="language-rust editable edition2021">struct Miles(f64);
 
-struct Days(i64);
+struct Kilometers(f64);
 
-impl Years {
-    pub fn to_days(&amp;self) -&gt; Days {
-        Days(self.0 * 365)
+impl Miles {
+    pub fn to_kilometers(&amp;self) -&gt; Kilometers {
+        Kilometers(self.0 * 1.609344)
     }
 }
 
-impl Days {
-    /// truncates partial years
-    pub fn to_years(&amp;self) -&gt; Years {
-        Years(self.0 / 365)
+impl Kilometers {
+    pub fn to_miles(&amp;self) -&gt; Miles {
+        Miles(self.0 / 1.609344)
     }
 }
 
-fn is_adult(age: &amp;Years) -&gt; bool {
-    age.0 &gt;= 18
+fn is_a_marathon(distance: &amp;Miles) -&gt; bool {
+    distance.0 &gt;= 26.2
 }
 
 fn main() {
-    let age = Years(25);
-    let age_days = age.to_days();
-    println!("Is an adult? {}", is_adult(&amp;age));
-    println!("Is an adult? {}", is_adult(&amp;age_days.to_years()));
-    // println!("Is an adult? {}", is_adult(&amp;age_days));
+    let distance = Miles(30.0);
+    let distance_km = distance.to_kilometers();
+    println!("Is a marathon? {}", is_a_marathon(&amp;distance));
+    println!("Is a marathon? {}", is_a_marathon(&amp;distance_km.to_miles()));
+    // println!("Is a marathon? {}", is_a_marathon(&amp;distance_km));
 }</code></pre>
-<p>Uncomment the last print statement to observe that the type supplied must be <code>Years</code>.</p>
+<p>Uncomment the last print statement to observe that the type supplied must be <code>Miles</code>.</p>
 <p>To obtain the <code>newtype</code>’s value as the base type, you may use the tuple or destructuring syntax like so:</p>
-<pre class="playground"><code class="language-rust editable edition2021">struct Years(i64);
+<pre class="playground"><code class="language-rust editable edition2021">struct Miles(f64);
 
 fn main() {
-    let years = Years(42);
-    let years_as_primitive_1: i64 = years.0; // Tuple
-    let Years(years_as_primitive_2) = years; // Destructuring
+    let distance = Miles(42.0);
+    let distance_as_primitive_1: f64 = distance.0; // Tuple
+    let Miles(distance_as_primitive_2) = distance; // Destructuring
 }</code></pre>
 <h3 id="see-also-43"><a class="header" href="#see-also-43">See also:</a></h3>
 <p><a href="#structures"><code>structs</code></a></p>
@@ -6198,15 +6218,19 @@ impl TempFile {
 }
 
 // When TempFile is dropped:
-// 1. First, our drop implementation will remove the file's name from the filesystem.
-// 2. Then, File's drop will close the file, removing its underlying content from the disk.
+// 1. First, our custom drop implementation runs. The file is still open at this point,
+//    but we can remove it from the filesystem by path.
+// 2. Then, after our drop returns, Rust automatically drops each field,
+//    so File's drop runs and closes the file handle.
 impl Drop for TempFile {
     fn drop(&amp;mut self) {
+        // Note: the File is still open here — field destructors run after this method.
         if let Err(e) = std::fs::remove_file(&amp;self.path) {
             eprintln!("Failed to remove temporary file: {}", e);
         }
         println!("&gt; Dropped temporary file: {:?}", self.path);
-        // File's drop is implicitly called here because it is a field of this struct.
+        // After this method returns, Rust will drop each field (including `file`),
+        // which closes the underlying file handle.
     }
 }
 
