@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e4b8a352.js";
+            window.path_to_searchindex_js = "searchindex-84ec41dd.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d76ccbaf.js"></script>
+        <script src="toc-da876ab3.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2117,8 +2117,6 @@ less memory.</p>
 <li><code>aarch64-linux-android</code></li>
 <li><code>aarch64-unknown-linux-gnu</code></li>
 </ul>
-<p>HWAddressSanitizer requires <code>tagged-globals</code> target feature to instrument
-globals. To enable this target feature compile with <code>-C target-feature=+tagged-globals</code></p>
 <p>See the <a href="https://clang.llvm.org/docs/HardwareAssistedAddressSanitizerDesign.html">Clang HWAddressSanitizer documentation</a> for more details.</p>
 <h2 id="example-5"><a class="header" href="#example-5">Example</a></h2>
 <p>Heap buffer overflow:</p>
@@ -2126,9 +2124,8 @@ globals. To enable this target feature compile with <code>-C target-feature=+tag
     let xs = vec![0, 1, 2, 3];
     let _y = unsafe { *xs.as_ptr().offset(4) };
 }</code></pre>
-<pre><code class="language-shell">$ rustc main.rs -Zsanitizer=hwaddress -C target-feature=+tagged-globals -C
-linker=aarch64-linux-gnu-gcc -C link-arg=-fuse-ld=lld --target
-aarch64-unknown-linux-gnu
+<pre><code class="language-shell">$ rustc main.rs -Zsanitizer=hwaddress -Clinker=aarch64-linux-gnu-gcc
+-Clink-arg=-fuse-ld=lld --target aarch64-unknown-linux-gnu
 </code></pre>
 <pre><code class="language-shell">$ ./main
 ==241==ERROR: HWAddressSanitizer: tag-mismatch on address 0xefdeffff0050 at pc 0xaaaae0ae4a98
@@ -4441,6 +4438,10 @@ match *(b"test" as &amp;[u8]) {
 <p>Allows giving on-move borrowck custom diagnostic messages for a type</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154181">#154181</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
+<h1 id="diagnostic_on_unknown"><a class="header" href="#diagnostic_on_unknown"><code>diagnostic_on_unknown</code></a></h1>
+<p>Allows giving unresolved imports a custom diagnostic message</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/152900">#152900</a></p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="doc_cfg"><a class="header" href="#doc_cfg"><code>doc_cfg</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/43781">#43781</a></p>
 <hr>
@@ -5650,24 +5651,25 @@ the compiler, not being intended for general use.</p>
 only discuss a few of them.</p>
 <hr>
 <p>The <code>rustc_attrs</code> feature allows debugging rustc type layouts by using
-<code>#[rustc_layout(...)]</code> to debug layout at compile time (it even works
+<code>#[rustc_dump_layout(...)]</code> to debug layout at compile time (it even works
 with <code>cargo check</code>) as an alternative to <code>rustc -Z print-type-sizes</code>
 that is way more verbose.</p>
-<p>Options provided by <code>#[rustc_layout(...)]</code> are <code>debug</code>, <code>size</code>, <code>align</code>,
-<code>abi</code>. Note that it only works on sized types without generics.</p>
+<p>Options provided by <code>#[rustc_dump_layout(...)]</code> are <code>backend_repr</code>, <code>align</code>,
+<code>debug</code>, <code>homogeneous_aggregate</code> and <code>size</code>.
+Note that it only works on sized types without generics.</p>
 <h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
 <pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![feature(rustc_attrs)]
 
 <span class="boring">fn main() {
-</span>#[rustc_layout(abi, size)]
+</span>#[rustc_dump_layout(backend_repr, size)]
 pub enum X {
     Y(u8, u8, u8),
     Z(isize),
 }
 <span class="boring">}</span></code></pre>
 <p>When that is compiled, the compiler will error with something like</p>
-<pre><code class="language-text">error: abi: Aggregate { sized: true }
+<pre><code class="language-text">error: backend_repr: Aggregate { sized: true }
  --&gt; src/lib.rs:4:1
   |
 4 | / pub enum T {
