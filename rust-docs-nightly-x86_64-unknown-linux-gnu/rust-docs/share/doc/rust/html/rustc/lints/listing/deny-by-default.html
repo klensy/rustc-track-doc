@@ -35,7 +35,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-8d9eda99.js";
+            window.path_to_searchindex_js = "../../searchindex-79229f5b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-f12d3f0b.js"></script>
@@ -231,6 +231,7 @@
 <li><a href="#uninhabited-static"><code>uninhabited_static</code></a></li>
 <li><a href="#unknown-crate-types"><code>unknown_crate_types</code></a></li>
 <li><a href="#useless-deprecated"><code>useless_deprecated</code></a></li>
+<li><a href="#varargs-without-pattern"><code>varargs_without_pattern</code></a></li>
 </ul>
 <h2 id="ambiguous-associated-items"><a class="header" href="#ambiguous-associated-items">ambiguous-associated-items</a></h2>
 <p>The <code>ambiguous_associated_items</code> lint detects ambiguity between
@@ -1598,7 +1599,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-04-15; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-04-16; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
@@ -1796,6 +1797,47 @@ impl Default for X {
 </code></pre>
 <h3 id="explanation-46"><a class="header" href="#explanation-46">Explanation</a></h3>
 <p>Deprecation attributes have no effect on trait implementations.</p>
+<h2 id="varargs-without-pattern"><a class="header" href="#varargs-without-pattern">varargs-without-pattern</a></h2>
+<p>The <code>varargs_without_pattern</code> lint detects when <code>...</code> is used as an argument to a
+non-foreign function without any pattern being specified.</p>
+<h3 id="example-47"><a class="header" href="#example-47">Example</a></h3>
+<pre><code class="language-rust compile_fail">// Using `...` in non-foreign function definitions is unstable, however stability is
+// currently only checked after attributes are expanded, so using `#[cfg(false)]` here will
+// allow this to compile on stable Rust.
+#[cfg(false)]
+fn foo(...) {
+
+}</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: missing pattern for `...` argument
+ --&gt; lint_example.rs:6:8
+  |
+6 | fn foo(...) {
+  |        ^^^
+  |
+  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+  = note: for more information, see issue #145544 &lt;https://github.com/rust-lang/rust/issues/145544&gt;
+  = note: `#[deny(varargs_without_pattern)]` (part of `#[deny(future_incompatible)]`) on by default
+help: name the argument, or use `_` to continue ignoring it
+  |
+6 | fn foo(_: ...) {
+  |        ++
+
+</code></pre>
+<h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
+<p>Patterns are currently required for all non-<code>...</code> arguments in function definitions (with
+some exceptions in the 2015 edition). Requiring <code>...</code> arguments to have patterns in
+non-foreign function definitions makes the language more consistent, and removes a source of
+confusion for the unstable C variadic feature. <code>...</code> arguments without a pattern are already
+stable and widely used in foreign function definitions; this lint only affects non-foreign
+function definitions.</p>
+<p>Using <code>...</code> (C varargs) in a non-foreign function definition is currently unstable. However,
+stability checking for the <code>...</code> syntax in non-foreign function definitions is currently
+implemented after attributes have been expanded, meaning that if the attribute removes the
+use of the unstable syntax (e.g. <code>#[cfg(false)]</code>, or a procedural macro), the code will
+compile on stable Rust; this is the only situation where this lint affects code that
+compiles on stable Rust.</p>
+<p>This is a <a href="../index.html#future-incompatible-lints">future-incompatible</a> lint to transition this to a hard error in the future.</p>
 <script>
 document.addEventListener("DOMContentLoaded", (event) => {
     var fragments = {
