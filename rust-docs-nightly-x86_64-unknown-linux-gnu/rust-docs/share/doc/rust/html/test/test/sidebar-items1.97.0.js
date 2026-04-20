@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["RunIgnored","RunStrategy","ShouldPanic","TestName","TestResult","TestType"],"fn":["parse_opts"],"struct":["Metric","MetricMap","Options","TestDesc","TestDescAndFn","TestExecTime","TestId","TestOpts","TestTimeOptions"]};
+window.SIDEBAR_ITEMS = {"enum":["RunIgnored","RunStrategy","ShouldPanic","TestListOrder","TestName","TestResult","TestType"],"fn":["parse_opts"],"struct":["Metric","MetricMap","Options","TestDesc","TestDescAndFn","TestExecTime","TestId","TestList","TestOpts","TestTimeOptions"]};
