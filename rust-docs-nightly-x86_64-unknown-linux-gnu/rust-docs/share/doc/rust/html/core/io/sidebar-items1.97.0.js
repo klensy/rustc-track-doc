@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["BorrowedBuf","BorrowedCursor"]};
+window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"struct":["BorrowedBuf","BorrowedCursor"]};
