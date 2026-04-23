@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6e72f324.js";
+            window.path_to_searchindex_js = "searchindex-a9a62458.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e50b1ec4.js"></script>
+        <script src="toc-42123ad4.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -4480,6 +4480,51 @@ match *(b"test" as &amp;[u8]) {
 <p>Allows giving unresolved imports a custom diagnostic message</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/152900">#152900</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
+<h1 id="diagnostic_on_unmatch_args"><a class="header" href="#diagnostic_on_unmatch_args"><code>diagnostic_on_unmatch_args</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/155642">#155642</a></p>
+<hr>
+<p>The <code>diagnostic_on_unmatch_args</code> feature adds the
+<code>#[diagnostic::on_unmatch_args(...)]</code> attribute for declarative macros.
+It lets a macro definition customize diagnostics for matcher failures after all arms have been
+tried, such as incomplete invocations or trailing extra arguments.</p>
+<p>This attribute currently applies to declarative macros such as <code>macro_rules!</code> and <code>pub macro</code>.
+It is currently used for errors emitted by declarative macro matching itself; fragment parser
+errors still use their existing diagnostics.</p>
+<pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_unmatch_args)]
+
+<span class="boring">fn main() {
+</span>#[diagnostic::on_unmatch_args(
+    message = "invalid arguments to {This} macro invocation",
+    label = "expected a type and value here",
+    note = "this macro expects a type and a value, like `pair!(u8, 0)`",
+    note = "see &lt;link/to/docs&gt;",
+)]
+macro_rules! pair {
+    ($ty:ty, $value:expr) =&gt; {};
+}
+
+pair!(u8);
+<span class="boring">}</span></code></pre>
+<p>This emits output like:</p>
+<pre><code class="language-text">error: invalid arguments to pair macro invocation
+  --&gt; example.rs:13:9
+   |
+9  | macro_rules! pair {
+   | ----------------- when calling this macro
+...
+13 | pair!(u8);
+   |         ^ expected a type and value here
+   |
+note: while trying to match `,`
+  --&gt; example.rs:10:12
+   |
+10 |     ($ty:ty, $value:expr) =&gt; {};
+   |            ^
+   = note: this macro expects a type and a value, like `pair!(u8, 0)`
+   = note: see &lt;link/to/docs&gt;
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="doc_cfg"><a class="header" href="#doc_cfg"><code>doc_cfg</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/43781">#43781</a></p>
 <hr>
@@ -5929,7 +5974,7 @@ pub fn main() {
     foo(&amp;1);
 
     // Use trait alias for trait objects.
-    let a: &amp;Bar = &amp;123;
+    let a: &amp;dyn Bar = &amp;123;
     println!("{:?}", a);
     let b = Box::new(456) as Box&lt;dyn Foo&gt;;
     println!("{:?}", b);
