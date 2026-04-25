@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1e41c6c9.js";
+            window.path_to_searchindex_js = "searchindex-0d6e87a3.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-42123ad4.js"></script>
@@ -4473,9 +4473,87 @@ match *(b"test" as &amp;[u8]) {
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/143874">#143874</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="diagnostic_on_move"><a class="header" href="#diagnostic_on_move"><code>diagnostic_on_move</code></a></h1>
-<p>Allows giving on-move borrowck custom diagnostic messages for a type</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154181">#154181</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154181" title="Tracking Issue for #[diagnostic::on_move]">#154181</a></p>
+<hr>
+<p>The <code>diagnostic_on_move</code> feature allows use of the <code>#[diagnostic::on_move]</code> attribute. It should be
+placed on struct, enum and union declarations, though it is not an error to be located in other
+positions. This attribute is a hint to the compiler to supplement the error message when the
+annotated type is involved in a borrowcheck error.</p>
+<p>For example, <a href="https://doc.rust-lang.org/nightly/std/fs/struct.File.html" title="File in std::fs"><code>File</code></a> is annotated as such:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_move)]
+
+<span class="boring">fn main() {
+</span>#[diagnostic::on_move(note = "you can use `File::try_clone` \
+                             to duplicate a `File` instance")]
+pub struct File {
+    // ...
+}
+<span class="boring">}</span></code></pre>
+<p>When you try to use a <code>File</code> after it’s already been moved, it will helpfully tell you about <code>try_clone</code>.</p>
+<p>The message and label can also be customized:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_move)]
+
+<span class="boring">fn main() {
+</span>use std::marker::PhantomData;
+
+#[diagnostic::on_move(
+    message = "`{Self}` cannot be used multiple times",
+    label = "this token may only be used once",
+    note = "you can create a new `Token` with `Token::conjure()`"
+)]
+pub struct Token&lt;'brand&gt; {
+    spooky: PhantomData&lt;&amp;'brand ()&gt;,
+}
+
+impl Token&lt;'_&gt; {
+    pub fn conjure&lt;'u&gt;() -&gt; Token&lt;'u&gt; {
+        Token {
+            spooky: PhantomData,
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>The user may try to use it like this:</p>
+<pre class="playground"><code class="language-rust compile_fail E0382"><span class="boring">#![feature(diagnostic_on_move)]
+</span><span class="boring">
+</span><span class="boring">use std::marker::PhantomData;
+</span><span class="boring">
+</span><span class="boring">#[diagnostic::on_move(
+</span><span class="boring">    message = "`{Self}` cannot be used multiple times",
+</span><span class="boring">    label = "this token may only be used once",
+</span><span class="boring">    note = "you can create a new `Token` with `Token::conjure()`"
+</span><span class="boring">)]
+</span><span class="boring">pub struct Token&lt;'brand&gt; {
+</span><span class="boring">    spooky: PhantomData&lt;&amp;'brand ()&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Token&lt;'_&gt; {
+</span><span class="boring">    pub fn conjure&lt;'u&gt;() -&gt; Token&lt;'u&gt; {
+</span><span class="boring">        Token {
+</span><span class="boring">            spooky: PhantomData,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">fn main() {
+</span>let token = Token::conjure();
+let _ = (token, token);
+<span class="boring">}</span></code></pre>
+<p>This will result in the following error:</p>
+<pre><code class="language-text">error[E0382]: `Token` cannot be used multiple times
+  --&gt; src/main.rs:24:21
+   |
+ 1 |     let token = Token::conjure();
+   |         ----- this token may only be used once
+ 2 |     let _ = (token, token);
+   |              -----  ^^^^^ value used here after move
+   |              |
+   |              value moved here
+   |
+   = note: you can create a new `Token` with `Token::conjure()`
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="diagnostic_on_unknown"><a class="header" href="#diagnostic_on_unknown"><code>diagnostic_on_unknown</code></a></h1>
 <p>Allows giving unresolved imports a custom diagnostic message</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/152900">#152900</a></p>
