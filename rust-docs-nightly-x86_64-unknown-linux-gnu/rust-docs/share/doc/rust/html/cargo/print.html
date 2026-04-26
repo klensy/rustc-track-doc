@@ -41,7 +41,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a35d2adb.js";
+            window.path_to_searchindex_js = "searchindex-d049d2a1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d4808052.js"></script>
@@ -858,6 +858,28 @@ it is important to verify the correctness of that field.</p>
 <li>A single platform is used as most projects are platform-agnostic, trusting platform-specific dependencies to verify their behavior.</li>
 <li><code>cargo check</code> is used as most issues contributors will run into are API availability and not behavior.</li>
 <li>Unpublished packages are skipped as this assumes only consumers of the verified project, through a registry, will care about <code>rust-version</code>.</li>
+</ul>
+<h2 id="checking-for-warnings"><a class="header" href="#checking-for-warnings">Checking for warnings</a></h2>
+<p>Customarily, projects want to be “warnings clean” on official branches while being lax for local development.
+<a href="#buildwarnings"><code>build.warnings = "deny"</code></a> can be used to fail a CI job if warnings are present.</p>
+<p>An example CI job to check for warnings using GitHub Actions:</p>
+<pre><code class="language-yaml">jobs:
+  warnings:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_WARNINGS: deny
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable &amp;&amp; rustup default stable
+      - run: rustup component add clippy
+      - run: cargo clippy --all-targets --all-features --keep-going
+</code></pre>
+<p>Considerations:</p>
+<ul>
+<li>CI can fail due to new toolchain versions because there are limited compatibility guarantees around warnings.
+Consider pinning the toolchain version with an automated job that creates a PR to upgrade the toolchain on new releases.</li>
+<li>Balance between exhaustiveness and turnaround time in selecting the combinations of platforms, features, and package/build-target combinations to check</li>
+<li>Some CI systems have direct integration for reporting lints, e.g. using <a href="https://crates.io/crates/clippy-sarif"><code>clippy-sarif</code></a> with GitHub</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="publishing-on-cratesio"><a class="header" href="#publishing-on-cratesio">Publishing on crates.io</a></h1>
@@ -4990,6 +5012,7 @@ recursive_example = "rr --example recursions"
 space_example = ["run", "--release", "--", "\"command list\""]
 
 [build]
+warnings = "warn"             # adjust the effective lint level for warnings
 jobs = 1                      # number of parallel jobs, defaults to # of CPUs
 rustc = "rustc"               # the rust compiler tool
 rustc-wrapper = "…"           # run this wrapper instead of `rustc`
@@ -5345,6 +5368,25 @@ recursive_example = "rr --example recursions"
 </code></pre>
 <h3 id="build"><a class="header" href="#build"><code>[build]</code></a></h3>
 <p>The <code>[build]</code> table controls build-time operations and compiler settings.</p>
+<h3 id="buildwarnings"><a class="header" href="#buildwarnings"><code>build.warnings</code></a></h3>
+<ul>
+<li>Type: string</li>
+<li>Default: <code>"warn"</code></li>
+<li>Environment: <code>CARGO_BUILD_WARNINGS</code></li>
+</ul>
+<p>Adjust the effective level of lint warnings for local packages.
+Allowed levels are:</p>
+<ul>
+<li><code>"warn"</code>: continue to emit the lints as warnings (default).</li>
+<li><code>"allow"</code>: hide the lints.</li>
+<li><code>"deny"</code>: emit an error for a crate that has lint warnings.
+Use <code>--keep-going</code> to see the lint warnings for all dependent crates.</li>
+</ul>
+<p>Only warnings that are lints (i.e. level is adjustable) are affected,
+e.g. leaving as-is non-lint warnings or warnings from dependencies visible through <code>--verbose --verbose</code>.</p>
+<blockquote>
+<p><strong>MSRV:</strong> Respected as of 1.97.</p>
+</blockquote>
 <h4 id="buildjobs"><a class="header" href="#buildjobs"><code>build.jobs</code></a></h4>
 <ul>
 <li>Type: integer or string</li>
@@ -11434,10 +11476,6 @@ unused = "1"
 <pre><code class="language-toml">[package]
 name = "foo"
 </code></pre>
-<h3 id="configuration-3"><a class="header" href="#configuration-3">Configuration</a></h3>
-<ul>
-<li><code>ignore</code>: a list of dependency names to allow the lint on</li>
-</ul>
 <h2 id="unused_workspace_dependencies"><a class="header" href="#unused_workspace_dependencies"><code>unused_workspace_dependencies</code></a></h2>
 <p>Group: <code>suspicious</code></p>
 <p>Level: <code>warn</code></p>
@@ -11617,7 +11655,6 @@ build-std = ["core", "alloc"]
 <li><a href="#gitoxide">gitoxide</a> — Use <code>gitoxide</code> instead of <code>git2</code> for a set of operations.</li>
 <li><a href="#script">script</a> — Enable support for single-file <code>.rs</code> packages.</li>
 <li><a href="#native-completions">native-completions</a> — Move cargo shell completions to native completions.</li>
-<li><a href="#warnings">warnings</a> — controls warning behavior; options for allowing or denying warnings.</li>
 <li><a href="#package-message-format">Package message format</a> — Message format for <code>cargo package</code>.</li>
 <li><a href="#fix-edition"><code>fix-edition</code></a> — A permanently unstable edition migration helper.</li>
 <li><a href="https://github.com/crate-ci/cargo-plumbing">Plumbing subcommands</a> — Low, level commands that act as APIs for Cargo, like <code>cargo metadata</code></li>
@@ -13040,28 +13077,6 @@ Add <code>eval (E:CARGO_COMPLETE=elvish cargo +nightly | slurp)</code> to <code>
 Add <code>CARGO_COMPLETE=powershell cargo +nightly | Invoke-Expression</code> to <code>$PROFILE</code>.</p>
 </li>
 </ul>
-<h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
-<ul>
-<li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/8424">#8424</a></li>
-<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/14802">#14802</a></li>
-</ul>
-<p>The <code>-Z warnings</code> feature enables the <code>build.warnings</code> configuration option to control how
-Cargo handles warnings. If the <code>-Z warnings</code> unstable flag is not enabled, then
-the <code>build.warnings</code> config will be ignored.</p>
-<p>This setting currently only applies to rustc warnings. It may apply to additional warnings (such as Cargo lints or Cargo warnings)
-in the future.</p>
-<h3 id="buildwarnings"><a class="header" href="#buildwarnings"><code>build.warnings</code></a></h3>
-<ul>
-<li>Type: string</li>
-<li>Default: <code>warn</code></li>
-<li>Environment: <code>CARGO_BUILD_WARNINGS</code></li>
-</ul>
-<p>Controls how Cargo handles warnings. Allowed values are:</p>
-<ul>
-<li><code>warn</code>: warnings are emitted as warnings (default).</li>
-<li><code>allow</code>: warnings are hidden.</li>
-<li><code>deny</code>: if warnings are emitted, an error will be raised at the end of the current crate and the process. Use <code>--keep-going</code> to see all warnings.</li>
-</ul>
 <h2 id="feature-unification-1"><a class="header" href="#feature-unification-1">feature unification</a></h2>
 <ul>
 <li>RFC: <a href="https://github.com/rust-lang/rfcs/blob/master/text/3692-feature-unification.md">#3692</a></li>
@@ -13409,6 +13424,8 @@ See the <a href="#include"><code>include</code> config documentation</a> for mor
 <p>The <code>pubtime</code> index field  has been stabilized in Rust 1.94.0.</p>
 <h2 id="lockfile-path"><a class="header" href="#lockfile-path">lockfile-path</a></h2>
 <p>Support for <code>resolver.lockfile-path</code> config field has been stabilized in Rust 1.97.0.</p>
+<h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
+<p>The <code>build.warnings</code> config field has been stabilized in Rust 1.97.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="cargo-commands"><a class="header" href="#cargo-commands">Cargo Commands</a></h1>
 <ul>
