@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-4790b195.js";
+            window.path_to_searchindex_js = "../searchindex-5c7fde1a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-30e426df.js"></script>
@@ -180,10 +180,68 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs"><code>generic_const_exprs</code></a></h1>
-<p>Allows non-trivial generic constants which have to have wfness manually propagated to callers</p>
+                        <h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs">generic_const_exprs</a></h1>
+<p>Allows non-trivial generic constants which have to be shown to successfully evaluate
+to a value by being part of an item signature.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/76560">#76560</a></p>
 <hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>See also: <a href="min-generic-const-args.html">min_generic_const_args</a>, <a href="generic-const-args.html">generic_const_args</a></p>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+<span class="boring">fn main() {
+</span>// Use parameters that depend on a generic argument.
+struct Foo&lt;const N: usize&gt;
+where
+    [(); N + 1]:,
+{
+    array: [usize; N + 1],
+}
+
+// Use generic parameters in const operations.
+trait Bar {
+    const X: usize;
+    const Y: usize;
+}
+
+// Note `B::X * B::Y`.
+const fn baz&lt;B: Bar&gt;(x: [usize; B::X], y: [usize; B::Y]) -&gt; [usize; B::X * B::Y] {
+    let mut out = [0; B::X * B::Y];
+    let mut i = 0;
+    while i &lt; B::Y {
+        let mut j = 0;
+        while j &lt; B::X {
+            out[i * B::X + j] = y[i].saturating_mul(x[j]);
+            j += 1;
+        }
+        i += 1;
+    }
+    out
+}
+
+
+// Create a new type based on a generic argument.
+pub struct Grow&lt;const N: usize&gt; {
+    arr: [usize; N],
+}
+
+impl&lt;const N: usize&gt; Grow&lt;N&gt; {
+    pub const fn grow(self, val: usize) -&gt; Grow&lt;{ N + 1 }&gt; {
+        let mut new_arr = [0; { N + 1 }];
+        let mut idx = 0;
+        while idx &lt; N {
+            new_arr[idx] = self.arr[idx];
+            idx += 1;
+        }
+        new_arr[N] = val;
+        Grow { arr: new_arr }
+    }
+}
+<span class="boring">}</span></code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

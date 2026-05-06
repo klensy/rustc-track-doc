@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4790b195.js";
+            window.path_to_searchindex_js = "searchindex-5c7fde1a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-30e426df.js"></script>
@@ -4927,18 +4927,133 @@ fn main() {
 <p>Outputs useful <code>assert!</code> messages</p>
 <p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generic_const_args"><a class="header" href="#generic_const_args"><code>generic_const_args</code></a></h1>
+<h1 id="generic_const_args"><a class="header" href="#generic_const_args">generic_const_args</a></h1>
 <p>Allows using generics in more complex const expressions, based on definitional equality.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/151972">#151972</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs"><code>generic_const_exprs</code></a></h1>
-<p>Allows non-trivial generic constants which have to have wfness manually propagated to callers</p>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>This feature enables many of the same use cases supported by <a href="#generic_const_exprs">generic_const_exprs</a>,
+but based on the machinery developed for <a href="#min_generic_const_args">min_generic_const_args</a>. In a way, it is
+meant to be an interim successor for GCE (though it might not currently support all
+the valid cases that supported by GCE).</p>
+<p>See also: <a href="#generic_const_items">generic_const_items</a></p>
+<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(generic_const_items)]
+#![feature(min_generic_const_args)]
+#![feature(generic_const_args)]
+#![expect(incomplete_features)]
+
+<span class="boring">fn main() {
+</span>type const ADD1&lt;const N: usize&gt;: usize = const { N + 1 };
+
+type const INC&lt;const N: usize&gt;: usize = ADD1::&lt;N&gt;;
+
+const ARR: [(); ADD1::&lt;0&gt;] = [(); INC::&lt;0&gt;];
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs">generic_const_exprs</a></h1>
+<p>Allows non-trivial generic constants which have to be shown to successfully evaluate
+to a value by being part of an item signature.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/76560">#76560</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generic_const_items"><a class="header" href="#generic_const_items"><code>generic_const_items</code></a></h1>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>See also: <a href="#min_generic_const_args">min_generic_const_args</a>, <a href="#generic_const_args">generic_const_args</a></p>
+<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+<span class="boring">fn main() {
+</span>// Use parameters that depend on a generic argument.
+struct Foo&lt;const N: usize&gt;
+where
+    [(); N + 1]:,
+{
+    array: [usize; N + 1],
+}
+
+// Use generic parameters in const operations.
+trait Bar {
+    const X: usize;
+    const Y: usize;
+}
+
+// Note `B::X * B::Y`.
+const fn baz&lt;B: Bar&gt;(x: [usize; B::X], y: [usize; B::Y]) -&gt; [usize; B::X * B::Y] {
+    let mut out = [0; B::X * B::Y];
+    let mut i = 0;
+    while i &lt; B::Y {
+        let mut j = 0;
+        while j &lt; B::X {
+            out[i * B::X + j] = y[i].saturating_mul(x[j]);
+            j += 1;
+        }
+        i += 1;
+    }
+    out
+}
+
+
+// Create a new type based on a generic argument.
+pub struct Grow&lt;const N: usize&gt; {
+    arr: [usize; N],
+}
+
+impl&lt;const N: usize&gt; Grow&lt;N&gt; {
+    pub const fn grow(self, val: usize) -&gt; Grow&lt;{ N + 1 }&gt; {
+        let mut new_arr = [0; { N + 1 }];
+        let mut idx = 0;
+        while idx &lt; N {
+            new_arr[idx] = self.arr[idx];
+            idx += 1;
+        }
+        new_arr[N] = val;
+        Grow { arr: new_arr }
+    }
+}
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generic_const_items"><a class="header" href="#generic_const_items">generic_const_items</a></h1>
 <p>Allows generic parameters and where-clauses on free &amp; associated const items.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/113521">#113521</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
+<hr>
+<p>Warning: This feature is an <a href="https://lang-team.rust-lang.org/how_to/experiment.html">experiment</a> and lacks an RFC.
+There are no guarantees that it will ever be stabilized.</p>
+<p>See also: <a href="#generic_const_exprs">generic_const_exprs</a>, <a href="#min_generic_const_args">min_generic_const_args</a>.</p>
+<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
+<h3 id="generic-constant-values"><a class="header" href="#generic-constant-values">Generic constant values</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_items)]
+
+<span class="boring">fn main() {
+</span>const GENERIC_VAL&lt;const ARG: usize&gt;: usize = ARG + 1;
+
+#[test]
+fn generic_const_arg() {
+    assert_eq!(GENERIC_VAL::&lt;1&gt;, 2);
+    assert_eq!(GENERIC_VAL::&lt;2&gt;, 3);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="conditional-constants"><a class="header" href="#conditional-constants">Conditional constants</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_items)]
+
+<span class="boring">fn main() {
+</span>// `GENERIC_VAL::&lt;0&gt;` will fail to compile
+const GENERIC_VAL&lt;const ARG: usize&gt;: usize = if ARG &gt; 0 { ARG + 1 } else { panic!("0 value") };
+
+// Will fail to compile if the `Copy` derive is removed.
+const COPY_MARKER&lt;C: Copy&gt;: () = ();
+
+#[derive(Clone, Copy)]
+struct Foo;
+
+const FOO_IS_COPY: () = COPY_MARKER::&lt;Foo&gt;;
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="generic_const_parameter_types"><a class="header" href="#generic_const_parameter_types"><code>generic_const_parameter_types</code></a></h1>
 <p>Allows the type of const generics to depend on generic parameters</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/137626">#137626</a></p>
@@ -5330,7 +5445,7 @@ pub struct ThirdThing;
 <h3 id="syntax-2"><a class="header" href="#syntax-2">Syntax</a></h3>
 <p>This feature builds upon the metavariable expression syntax <code>${ .. }</code> as specified in <a href="https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html">RFC 3086</a> (<a href="#macro_metavar_expr"><code>macro_metavar_expr</code></a>).
 <code>concat</code> is available like <code>${ concat(items) }</code>, where <code>items</code> is a comma separated sequence of idents and/or literals.</p>
-<h3 id="examples-12"><a class="header" href="#examples-12">Examples</a></h3>
+<h3 id="examples-15"><a class="header" href="#examples-15">Examples</a></h3>
 <h4 id="create-a-function-or-method-with-a-concatenated-name"><a class="header" href="#create-a-function-or-method-with-a-concatenated-name">Create a function or method with a concatenated name</a></h4>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(macro_metavar_expr_concat)]
@@ -5442,10 +5557,97 @@ feature, which applied to all empty traits (without needing an opt-in).</p>
 <p>Allows additional const parameter types, such as [u8; 10] or user defined types. User defined types must not have fields more private than the type itself.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154042">#154042</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args"><code>min_generic_const_args</code></a></h1>
-<p>Enables the generic const args MVP (only bare paths, not arbitrary computation).</p>
+<h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args">min_generic_const_args</a></h1>
+<p>Enables the generic const args MVP (paths to type const items and constructors for ADTs and primitives).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>This feature acts as a minimal alternative to <a href="#generic_const_exprs">generic_const_exprs</a> that allows a smaller subset of functionality,
+and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
+cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
+for more details.</p>
+<p>Related features: <a href="#generic_const_args">generic_const_args</a>, <a href="#generic_const_items">generic_const_items</a>.</p>
+<h2 id="type-const-syntax"><a class="header" href="#type-const-syntax"><code>type const</code> syntax</a></h2>
+<p>This feature introduces new syntax: <code>type const</code>.
+Constants marked as <code>type const</code> are allowed to be used in type contexts, e.g.:</p>
+<pre><code class="language-compile_fail">#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+type const X: usize = 1;
+const Y: usize = 1;
+
+struct Foo {
+    good_arr: [(); X], // Allowed
+    bad_arr: [(); Y], // Will not compile, `Y` must be `type const`.
+}
+</code></pre>
+<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    type const VAL: usize;
+    type const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    type const VAL: usize = 2;
+    type const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<p>Note that with <a href="#generic_const_exprs">generic_const_exprs</a> the same example would look as follows:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    const VAL: usize;
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    const VAL: usize = 2;
+    const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt;
+where
+    [(); B::VAL]:,
+    [(); B::VAL2]:,
+{
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<p>Use of const functions is allowed:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>const VAL: usize = 1;
+
+const fn inc(val: usize) -&gt; usize {
+    val + 1
+}
+
+type const INC: usize = const { inc(VAL) };
+
+const ARR: [usize; INC] = [0; INC];
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="min_specialization"><a class="header" href="#min_specialization"><code>min_specialization</code></a></h1>
 <p>A minimal, sound subset of specialization intended to be used by the standard library until the soundness issues with specialization are fixed.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/31844">#31844</a></p>
@@ -5789,7 +5991,7 @@ Attributes using the registered tool are checked for valid syntax, and lint attr
 When compiling with <code>-Z unstable-features</code>, <code>rustc::*</code> lints can also be used. Like <code>rustdoc</code>, the <code>rustc</code> namespace can only be used with lints, not attributes.</p>
 <p>The compiler will emit an error if it encounters a lint/attribute whose namespace isn’t a registered tool.</p>
 <p>Tool namespaces cannot be nested; <code>register_tool(main_tool::subtool)</code> is an error.</p>
-<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
 <p>Tool attributes:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(register_tool)]
@@ -5852,7 +6054,7 @@ that is way more verbose.</p>
 <p>Options provided by <code>#[rustc_dump_layout(...)]</code> are <code>backend_repr</code>, <code>align</code>,
 <code>debug</code>, <code>homogeneous_aggregate</code> and <code>size</code>.
 Note that it only works on sized types without generics.</p>
-<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
+<h2 id="examples-18"><a class="header" href="#examples-18">Examples</a></h2>
 <pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![feature(rustc_attrs)]
 
@@ -5940,7 +6142,7 @@ longer instrument non-atomic store / load operations, but it will instrument
 atomic operations to avoid reporting false positives and provide meaning full
 stack traces.</p>
 <p>This attribute was previously named <code>no_sanitize</code>.</p>
-<h2 id="examples-15"><a class="header" href="#examples-15">Examples</a></h2>
+<h2 id="examples-19"><a class="header" href="#examples-19">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(sanitize)]
 
@@ -7922,7 +8124,7 @@ even when using either of the above.</p>
 <p>The tracking issue for this feature is <a href="https://github.com/rust-lang/rust/issues/29598">#29598</a>.</p>
 <hr>
 <p>With <code>trace_macros</code> you can trace the expansion of macros in your code.</p>
-<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
+<h2 id="examples-20"><a class="header" href="#examples-20">Examples</a></h2>
 <pre class="playground"><code class="language-rust">#![feature(trace_macros)]
 
 fn main() {

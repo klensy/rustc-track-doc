@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-4790b195.js";
+            window.path_to_searchindex_js = "../searchindex-5c7fde1a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-30e426df.js"></script>
@@ -180,10 +180,97 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args"><code>min_generic_const_args</code></a></h1>
-<p>Enables the generic const args MVP (only bare paths, not arbitrary computation).</p>
+                        <h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args">min_generic_const_args</a></h1>
+<p>Enables the generic const args MVP (paths to type const items and constructors for ADTs and primitives).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
 <hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>This feature acts as a minimal alternative to <a href="generic-const-exprs.html">generic_const_exprs</a> that allows a smaller subset of functionality,
+and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
+cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
+for more details.</p>
+<p>Related features: <a href="generic-const-args.html">generic_const_args</a>, <a href="generic-const-items.html">generic_const_items</a>.</p>
+<h2 id="type-const-syntax"><a class="header" href="#type-const-syntax"><code>type const</code> syntax</a></h2>
+<p>This feature introduces new syntax: <code>type const</code>.
+Constants marked as <code>type const</code> are allowed to be used in type contexts, e.g.:</p>
+<pre><code class="language-compile_fail">#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+type const X: usize = 1;
+const Y: usize = 1;
+
+struct Foo {
+    good_arr: [(); X], // Allowed
+    bad_arr: [(); Y], // Will not compile, `Y` must be `type const`.
+}
+</code></pre>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    type const VAL: usize;
+    type const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    type const VAL: usize = 2;
+    type const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<p>Note that with <a href="generic-const-exprs.html">generic_const_exprs</a> the same example would look as follows:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    const VAL: usize;
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    const VAL: usize = 2;
+    const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt;
+where
+    [(); B::VAL]:,
+    [(); B::VAL2]:,
+{
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<p>Use of const functions is allowed:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>const VAL: usize = 1;
+
+const fn inc(val: usize) -&gt; usize {
+    val + 1
+}
+
+type const INC: usize = const { inc(VAL) };
+
+const ARR: [usize; INC] = [0; INC];
+<span class="boring">}</span></code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
