@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["v128","v64"]};
+window.SIDEBAR_ITEMS = {"mod":["scalar","v128","v64"]};
