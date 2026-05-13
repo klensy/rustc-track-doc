@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"struct":["BorrowedBuf","BorrowedCursor"],"type":["RawOsError"]};
+window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"fn":["empty","repeat","sink"],"struct":["BorrowedBuf","BorrowedCursor","Chain","Cursor","Empty","Repeat","Sink","Take"],"type":["RawOsError"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"fn":["amdgpu_dispatch_ptr","gpu_launch_sized_workgroup_mem"]};
