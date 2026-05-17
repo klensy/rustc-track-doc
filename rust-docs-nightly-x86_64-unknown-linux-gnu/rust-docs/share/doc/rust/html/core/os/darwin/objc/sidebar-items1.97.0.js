@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["objc_class","objc_selector"],"macro":["class","selector"],"type":["Class","SEL"]};
+window.SIDEBAR_ITEMS = {"enum":["objc_class","objc_selector"],"macro":[["class",1],["selector",1]],"type":["Class","SEL"]};

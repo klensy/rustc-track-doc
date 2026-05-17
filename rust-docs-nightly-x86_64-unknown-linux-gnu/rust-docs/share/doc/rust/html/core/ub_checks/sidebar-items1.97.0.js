@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["assert_unsafe_precondition"]};
+window.SIDEBAR_ITEMS = {"macro":[["assert_unsafe_precondition",1]]};
