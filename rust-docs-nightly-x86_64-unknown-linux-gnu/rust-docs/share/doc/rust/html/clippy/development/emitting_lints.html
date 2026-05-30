@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-85b700cc.js";
+            window.path_to_searchindex_js = "../searchindex-0549954d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-bb1f6936.js"></script>
@@ -260,6 +260,7 @@ The output looks something like this (from the example earlier):</p>
 LL |     for _ in 1..1 + 1 {}
    |              ^^^^^^^^ help: use: `1..=1`
 </code></pre>
+<h3 id="applicability"><a class="header" href="#applicability">Applicability</a></h3>
 <p><strong>Not all suggestions are always right</strong>, some of them require human
 supervision, that’s why we have <a href="https://doc.rust-lang.org/beta/nightly-rustc/rustc_errors/enum.Applicability.html">Applicability</a>.</p>
 <p>Applicability indicates confidence in the correctness of the suggestion, some
@@ -274,22 +275,25 @@ may be incorrect.</p>
     fn check_expr(&amp;mut self, cx: &amp;LateContext&lt;'tcx&gt;, expr: &amp;'tcx Expr&lt;'_&gt;)  {
         // Imagine that `some_lint_expr_logic` checks for requirements for emitting the lint
         if some_lint_expr_logic(expr) {
-            span_lint_and_sugg( // &lt; Note this change
+            span_lint_and_then( // &lt; Note this change
                 cx,
                 LINT_NAME,
-                span,
+                expr.span,
                 "message on why the lint is emitted",
-                "use",
-                format!("foo + {} * bar", snippet(cx, expr.span, "&lt;default&gt;")), // &lt; Suggestion
-                Applicability::MachineApplicable,
+                |diag| {
+                    // v Build and emit the suggestion
+                    let mut app = Applicability::MachineApplicable;
+                    let expr_snippet = snippet_with_applicability(cx, expr.span, "_", &amp;mut app);
+                    let sugg = format!("foo + {expr_snippet} * bar");
+                    diag.span_suggestion(expr.span, "use", sugg, app);
+                }
             );
         }
     }
 }
 <span class="boring">}</span></code></pre>
 <p>Suggestions generally use the <a href="https://doc.rust-lang.org/std/macro.format.html"><code>format!</code></a> macro to interpolate the
-old values with the new ones. To get code snippets, use one of the <code>snippet*</code>
-functions from <code>clippy_utils::source</code>.</p>
+old values with the new ones. For information on getting code snippets, see <a href="emitting_lints.html#snippets">Snippets</a>.</p>
 <h2 id="how-to-choose-between-notes-help-messages-and-suggestions"><a class="header" href="#how-to-choose-between-notes-help-messages-and-suggestions">How to choose between notes, help messages and suggestions</a></h2>
 <p>Notes are presented separately from the main lint message, they provide useful
 information that the user needs to understand why the lint was activated. They
@@ -334,11 +338,43 @@ automatically fix your code.</p>
     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `.any(|x| x &gt; 2)`
     |
 </code></pre>
-<h3 id="snippets"><a class="header" href="#snippets">Snippets</a></h3>
+<h2 id="snippets"><a class="header" href="#snippets">Snippets</a></h2>
 <p>Snippets are pieces of the source code (as a string), they are extracted
-generally using the <a href="https://doc.rust-lang.org/beta/nightly-rustc/clippy_utils/source/fn.snippet.html"><code>snippet</code></a> function.</p>
+generally using the various <code>snippet_*</code> functions from <a href="https://doc.rust-lang.org/nightly/nightly-rustc/clippy_utils/source/index.html"><code>clippy_utils::source</code></a>.</p>
+<p>If you’re using the snippets <em>not</em> to build a suggestion, it’s usually
+enough to use <a href="https://doc.rust-lang.org/beta/nightly-rustc/clippy_utils/source/fn.snippet.html"><code>snippet</code></a> – it accepts the span of the item, and
+also a fallback string (see <a href="emitting_lints.html#fallback-string">Fallback string</a>).</p>
 <p>For example, if you want to know how an item looks (and you know the item’s
-span), you could use <code>snippet(cx, span, "..")</code>.</p>
+span), you could use <code>snippet(cx, span, "_")</code>.</p>
+<p>If you do use the snippet for a suggestion, it’s recommended to use
+<a href="https://doc.rust-lang.org/beta/nightly-rustc/clippy_utils/source/fn.snippet_with_applicability.html"><code>snippet_with_applicability</code></a> instead. This is so that Clippy can reduce the
+<a href="emitting_lints.html#applicability">applicability</a> of the suggestion in case it couldn’t extract
+the snippet “cleanly” – see the function’s documentation for more information.</p>
+<p>It’s often necessary to create multiple snippets to build a suggestion, in which
+case you’ll have the following pattern:</p>
+<pre class="playground"><code class="language-rust edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// inside `span_lint_and_then`
+
+// 1. Create initial applicability.
+let mut app = Applicability::MachineApplicable;
+
+// 2. Use it to create all the snippets
+let foo_snippet = snippet_with_applicability(cx, foo.span, "_", &amp;mut app);
+let bar_snippet = snippet_with_applicability(cx, bar.span, "_", &amp;mut app);
+let sugg = format!("{foo_snippet} + {bar_snippet}"); // or whatever
+
+// 3. Use it to emit the final suggestion
+diag.span_suggestion(span, msg, sugg, app);
+<span class="boring">}</span></code></pre>
+<h3 id="fallback-string"><a class="header" href="#fallback-string">Fallback string</a></h3>
+<p>This is the string that is used for the snippet when the source code that the
+span points to is unavailable. That mostly only happens when proc-macros
+mishandle spans – see <a href="macro_expansions.html#the-is_from_proc_macro-function">the section on proc-macros</a>.</p>
+<p>Most of the time, the snippets in a suggestion come from a (span of a) single
+expression, and so <code>"_"</code> is an appropriate fallback string. If you instead
+find yourself suggesting to insert multiple statements, or a block–basically
+anything “big”–then consider using <code>".."</code> instead.</p>
 <h2 id="final-run-ui-tests-to-emit-the-lint"><a class="header" href="#final-run-ui-tests-to-emit-the-lint">Final: Run UI Tests to Emit the Lint</a></h2>
 <p>Now, if we run our <a href="writing_tests.html">UI test</a>, we should see that Clippy now
 produces output that contains the lint message we designed.</p>
