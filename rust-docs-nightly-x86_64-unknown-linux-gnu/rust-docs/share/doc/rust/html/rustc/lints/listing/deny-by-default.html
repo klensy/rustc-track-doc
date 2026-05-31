@@ -35,7 +35,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-ac460e79.js";
+            window.path_to_searchindex_js = "../../searchindex-cf6f540d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-a474f435.js"></script>
@@ -289,51 +289,17 @@ error in the future. See <a href="https://github.com/rust-lang/rust/issues/57644
 <p>The <code>ambiguous_glob_imports</code> lint detects glob imports that should report ambiguity
 errors, but previously didn’t do that due to rustc bugs.</p>
 <h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
-<pre><code class="language-rust compile_fail">#![deny(ambiguous_glob_imports)]
-pub fn foo() -&gt; u32 {
-    use sub::*;
-    C
-}
+<pre><code class="language-rust ignore (needs extern crate)">// library crate `my_library`
+mod mod1 { pub const C: u32 = 1; }
+mod mod2 { pub const C: u32 = 2; }
+pub use mod1::*;
+pub use mod2::*;
 
-mod sub {
-    mod mod1 { pub const C: u32 = 1; }
-    mod mod2 { pub const C: u32 = 2; }
-
-    pub use mod1::*;
-    pub use mod2::*;
-}</code></pre>
-<p>This will produce:</p>
-<pre><code class="language-text">error: `C` is ambiguous
-  --&gt; lint_example.rs:5:5
-   |
- 5 |     C
-   |     ^ ambiguous name
-   |
-   = note: ambiguous because of multiple glob imports of a name in the same module
-note: `C` could refer to the constant imported here
-  --&gt; lint_example.rs:12:13
-   |
-12 |     pub use mod1::*;
-   |             ^^^^^^^
-   = help: consider adding an explicit import of `C` to disambiguate
-note: `C` could also refer to the constant imported here
-  --&gt; lint_example.rs:13:13
-   |
-13 |     pub use mod2::*;
-   |             ^^^^^^^
-   = help: consider adding an explicit import of `C` to disambiguate
-   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-   = note: for more information, see issue #114095 &lt;https://github.com/rust-lang/rust/issues/114095&gt;
-note: the lint level is defined here
-  --&gt; lint_example.rs:1:9
-   |
- 1 | #![deny(ambiguous_glob_imports)]
-   |         ^^^^^^^^^^^^^^^^^^^^^^
-
-</code></pre>
+// another crate using `my_library`
+let c = my_library::C; // `C` is ambiguous</code></pre>
 <h3 id="explanation-1"><a class="header" href="#explanation-1">Explanation</a></h3>
-<p>Previous versions of Rust compile it successfully because it
-had lost the ambiguity error when resolve <code>use sub::mod2::*</code>.</p>
+<p>Previous versions of Rust compile it successfully because
+ambiguous glob imports weren’t preserved correctly over crate boundaries.</p>
 <p>This is a <a href="../index.html#future-incompatible-lints">future-incompatible</a> lint to transition this to a
 hard error in the future.</p>
 <h2 id="arithmetic-overflow"><a class="header" href="#arithmetic-overflow">arithmetic-overflow</a></h2>
@@ -1599,7 +1565,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-05-29; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-05-30; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
