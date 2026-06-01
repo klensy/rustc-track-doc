@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (f8a08b688 2026-05-30)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (14210df0e 2026-05-31)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="attr">#![stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -204,12 +204,12 @@
 <a href=#204 id=204 data-nosnippet>204</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">fn </span>alloc_impl_runtime(layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">match </span>layout.size() {
-<a href=#207 id=207 data-nosnippet>207</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(layout.dangling_ptr(), <span class="number">0</span>)),
+<a href=#207 id=207 data-nosnippet>207</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(layout.dangling_ptr().cast_slice(<span class="number">0</span>)),
 <a href=#208 id=208 data-nosnippet>208</a>            <span class="comment">// SAFETY: `layout` is non-zero in size,
 <a href=#209 id=209 data-nosnippet>209</a>            </span>size =&gt; <span class="kw">unsafe </span>{
 <a href=#210 id=210 data-nosnippet>210</a>                <span class="kw">let </span>raw_ptr = <span class="kw">if </span>zeroed { alloc_zeroed(layout) } <span class="kw">else </span>{ alloc(layout) };
 <a href=#211 id=211 data-nosnippet>211</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#212 id=212 data-nosnippet>212</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, size))
+<a href=#212 id=212 data-nosnippet>212</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(size))
 <a href=#213 id=213 data-nosnippet>213</a>            },
 <a href=#214 id=214 data-nosnippet>214</a>        }
 <a href=#215 id=215 data-nosnippet>215</a>    }
@@ -261,7 +261,7 @@
 <a href=#261 id=261 data-nosnippet>261</a>                <span class="kw">if </span>zeroed {
 <a href=#262 id=262 data-nosnippet>262</a>                    raw_ptr.add(old_size).write_bytes(<span class="number">0</span>, new_size - old_size);
 <a href=#263 id=263 data-nosnippet>263</a>                }
-<a href=#264 id=264 data-nosnippet>264</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, new_size))
+<a href=#264 id=264 data-nosnippet>264</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
 <a href=#265 id=265 data-nosnippet>265</a>            },
 <a href=#266 id=266 data-nosnippet>266</a>
 <a href=#267 id=267 data-nosnippet>267</a>            <span class="comment">// SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,
@@ -297,7 +297,7 @@
 <a href=#297 id=297 data-nosnippet>297</a>            <span class="comment">// SAFETY: conditions must be upheld by the caller
 <a href=#298 id=298 data-nosnippet>298</a>            </span><span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{
 <a href=#299 id=299 data-nosnippet>299</a>                <span class="self">self</span>.deallocate(ptr, old_layout);
-<a href=#300 id=300 data-nosnippet>300</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(new_layout.dangling_ptr(), <span class="number">0</span>))
+<a href=#300 id=300 data-nosnippet>300</a>                <span class="prelude-val">Ok</span>(new_layout.dangling_ptr().cast_slice(<span class="number">0</span>))
 <a href=#301 id=301 data-nosnippet>301</a>            },
 <a href=#302 id=302 data-nosnippet>302</a>
 <a href=#303 id=303 data-nosnippet>303</a>            <span class="comment">// SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
@@ -307,7 +307,7 @@
 <a href=#307 id=307 data-nosnippet>307</a>
 <a href=#308 id=308 data-nosnippet>308</a>                <span class="kw">let </span>raw_ptr = realloc_nonnull(ptr, old_layout, new_size);
 <a href=#309 id=309 data-nosnippet>309</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#310 id=310 data-nosnippet>310</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, new_size))
+<a href=#310 id=310 data-nosnippet>310</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
 <a href=#311 id=311 data-nosnippet>311</a>            },
 <a href=#312 id=312 data-nosnippet>312</a>
 <a href=#313 id=313 data-nosnippet>313</a>            <span class="comment">// SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,
@@ -388,7 +388,7 @@
 <a href=#388 id=388 data-nosnippet>388</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
 <a href=#389 id=389 data-nosnippet>389</a>    </span><span class="kw">const fn </span>alloc_impl_const(layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
 <a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">match </span>layout.size() {
-<a href=#391 id=391 data-nosnippet>391</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(layout.dangling_ptr(), <span class="number">0</span>)),
+<a href=#391 id=391 data-nosnippet>391</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(layout.dangling_ptr().cast_slice(<span class="number">0</span>)),
 <a href=#392 id=392 data-nosnippet>392</a>            <span class="comment">// SAFETY: `layout` is non-zero in size,
 <a href=#393 id=393 data-nosnippet>393</a>            </span>size =&gt; <span class="kw">unsafe </span>{
 <a href=#394 id=394 data-nosnippet>394</a>                <span class="kw">let </span>raw_ptr = core::intrinsics::const_allocate(layout.size(), layout.align());
@@ -397,7 +397,7 @@
 <a href=#397 id=397 data-nosnippet>397</a>                    <span class="comment">// SAFETY: the pointer returned by `const_allocate` is valid to write to.
 <a href=#398 id=398 data-nosnippet>398</a>                    </span>ptr.write_bytes(<span class="number">0</span>, size);
 <a href=#399 id=399 data-nosnippet>399</a>                }
-<a href=#400 id=400 data-nosnippet>400</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, size))
+<a href=#400 id=400 data-nosnippet>400</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(size))
 <a href=#401 id=401 data-nosnippet>401</a>            },
 <a href=#402 id=402 data-nosnippet>402</a>        }
 <a href=#403 id=403 data-nosnippet>403</a>    }
@@ -442,7 +442,7 @@
 <a href=#442 id=442 data-nosnippet>442</a>
 <a href=#443 id=443 data-nosnippet>443</a><span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
 <a href=#444 id=444 data-nosnippet>444</a>#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#445 id=445 data-nosnippet>445</a></span><span class="kw">unsafe impl const </span>Allocator <span class="kw">for </span>Global {
+<a href=#445 id=445 data-nosnippet>445</a></span><span class="kw">const unsafe impl </span>Allocator <span class="kw">for </span>Global {
 <a href=#446 id=446 data-nosnippet>446</a>    <span class="attr">#[inline]
 <a href=#447 id=447 data-nosnippet>447</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#448 id=448 data-nosnippet>448</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (f8a08b688 2026-05-30)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (14210df0e 2026-05-31)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! In a given program, the standard library has one “global” memory allocator
 <a href=#4 id=4 data-nosnippet>4</a>//! that is used for example by `Box&lt;T&gt;` and `Vec&lt;T&gt;`.
@@ -142,7 +142,7 @@
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="attr">#[inline]
 <a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">fn </span>alloc_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
 <a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">match </span>layout.size() {
-<a href=#145 id=145 data-nosnippet>145</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(layout.dangling_ptr(), <span class="number">0</span>)),
+<a href=#145 id=145 data-nosnippet>145</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(layout.dangling_ptr().cast_slice(<span class="number">0</span>)),
 <a href=#146 id=146 data-nosnippet>146</a>            <span class="comment">// SAFETY: `layout` is non-zero in size,
 <a href=#147 id=147 data-nosnippet>147</a>            </span>size =&gt; <span class="kw">unsafe </span>{
 <a href=#148 id=148 data-nosnippet>148</a>                <span class="kw">let </span>raw_ptr = <span class="kw">if </span>zeroed {
@@ -151,7 +151,7 @@
 <a href=#151 id=151 data-nosnippet>151</a>                    GlobalAlloc::alloc(<span class="self">self</span>, layout)
 <a href=#152 id=152 data-nosnippet>152</a>                };
 <a href=#153 id=153 data-nosnippet>153</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#154 id=154 data-nosnippet>154</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, size))
+<a href=#154 id=154 data-nosnippet>154</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(size))
 <a href=#155 id=155 data-nosnippet>155</a>            },
 <a href=#156 id=156 data-nosnippet>156</a>        }
 <a href=#157 id=157 data-nosnippet>157</a>    }
@@ -187,7 +187,7 @@
 <a href=#187 id=187 data-nosnippet>187</a>                <span class="kw">if </span>zeroed {
 <a href=#188 id=188 data-nosnippet>188</a>                    raw_ptr.add(old_size).write_bytes(<span class="number">0</span>, new_size - old_size);
 <a href=#189 id=189 data-nosnippet>189</a>                }
-<a href=#190 id=190 data-nosnippet>190</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, new_size))
+<a href=#190 id=190 data-nosnippet>190</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
 <a href=#191 id=191 data-nosnippet>191</a>            },
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>            <span class="comment">// SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,
@@ -266,7 +266,7 @@
 <a href=#266 id=266 data-nosnippet>266</a>            <span class="comment">// SAFETY: conditions must be upheld by the caller
 <a href=#267 id=267 data-nosnippet>267</a>            </span><span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{
 <a href=#268 id=268 data-nosnippet>268</a>                Allocator::deallocate(<span class="self">self</span>, ptr, old_layout);
-<a href=#269 id=269 data-nosnippet>269</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(new_layout.dangling_ptr(), <span class="number">0</span>))
+<a href=#269 id=269 data-nosnippet>269</a>                <span class="prelude-val">Ok</span>(new_layout.dangling_ptr().cast_slice(<span class="number">0</span>))
 <a href=#270 id=270 data-nosnippet>270</a>            },
 <a href=#271 id=271 data-nosnippet>271</a>
 <a href=#272 id=272 data-nosnippet>272</a>            <span class="comment">// SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
@@ -276,7 +276,7 @@
 <a href=#276 id=276 data-nosnippet>276</a>
 <a href=#277 id=277 data-nosnippet>277</a>                <span class="kw">let </span>raw_ptr = GlobalAlloc::realloc(<span class="self">self</span>, ptr.as_ptr(), old_layout, new_size);
 <a href=#278 id=278 data-nosnippet>278</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#279 id=279 data-nosnippet>279</a>                <span class="prelude-val">Ok</span>(NonNull::slice_from_raw_parts(ptr, new_size))
+<a href=#279 id=279 data-nosnippet>279</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
 <a href=#280 id=280 data-nosnippet>280</a>            },
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a>            <span class="comment">// SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,
