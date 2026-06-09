@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-bbc2aab7.js";
+            window.path_to_searchindex_js = "searchindex-59ebb906.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-f62f0bc4.js"></script>
+        <script src="toc-17c2fdea.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2663,6 +2663,30 @@ compiler and have to put your <code>.dwo</code> files in a separate directory.</
 <p>Supported hash algorithms are: <code>md5</code>, <code>sha1</code>, and <code>sha256</code>. Note that not all hash algorithms are supported by all debug info formats.</p>
 <p>By default, the compiler chooses the hash algorithm based on the target specification.</p>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="staticlib-hide-internal-symbols"><a class="header" href="#staticlib-hide-internal-symbols"><code>staticlib-hide-internal-symbols</code></a></h1>
+<p>When building a <code>staticlib</code>, this option hides all non-exported Rust-internal
+symbols. On ELF targets, this sets <code>STV_HIDDEN</code> visibility. On Apple (Mach-O)
+targets, this sets the <code>N_PEXT</code> (private external) bit.</p>
+<p>This is a lightweight, zero-overhead operation: only the visibility/type byte of
+each internal symbol is modified in-place.</p>
+<p>Only symbols explicitly exported via <code>#[no_mangle]</code> or <code>#[export_name]</code> are left
+unchanged. All other <code>GLOBAL</code>/<code>WEAK</code> symbols (including <code>pub(crate)</code> and <code>pub</code>
+items without <code>#[no_mangle]</code>) are hidden.</p>
+<p>This option can only be used with <code>--crate-type staticlib</code>. Using it with
+other crate types will result in a compilation warning.</p>
+<p>Supported on ELF targets (Linux, BSD, etc.) and Apple targets (macOS, iOS, etc.).
+On unsupported targets (Windows), a warning is emitted and the flag has no effect.</p>
+<p>This option can be combined with <code>-Zstaticlib-rename-internal-symbols</code>.
+When both are enabled, symbols are both renamed and hidden.</p>
+<h2 id="comparison-with--zdefault-visibilityhidden"><a class="header" href="#comparison-with--zdefault-visibilityhidden">Comparison with <code>-Zdefault-visibility=hidden</code></a></h2>
+<p><code>-Zdefault-visibility=hidden</code> sets visibility at LLVM IR codegen time. It targets
+shared objects (<code>cdylib</code>/<code>dylib</code>) and only affects the current crate’s codegen.</p>
+<p><code>-Zstaticlib-hide-internal-symbols</code> patches visibility bytes post-compilation in
+the final <code>.a</code> archive, which includes object files from all upstream static
+dependencies. This means internal symbols from the entire dependency tree are
+hidden, not just those from the current crate. Hidden symbols are also excluded
+from the linker’s global symbol table, which can slightly reduce final binary size.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="temps-dir"><a class="header" href="#temps-dir"><code>temps-dir</code></a></h1>
 <hr>
 <p>The <code>-Ztemps-dir</code> compiler flag specifies the directory to write the
@@ -3290,6 +3314,7 @@ fn main() {
 <li>M68k</li>
 <li>CSKY</li>
 <li>SPARC</li>
+<li>Xtensa</li>
 </ul>
 <h2 id="register-classes"><a class="header" href="#register-classes">Register classes</a></h2>
 <div class="table-wrapper">
@@ -3321,6 +3346,10 @@ fn main() {
 <tr><td>CSKY</td><td><code>freg</code></td><td><code>f[0-31]</code></td><td><code>f</code></td></tr>
 <tr><td>SPARC</td><td><code>reg</code></td><td><code>r[2-29]</code></td><td><code>r</code></td></tr>
 <tr><td>SPARC</td><td><code>yreg</code></td><td><code>y</code></td><td>Only clobbers</td></tr>
+<tr><td>Xtensa</td><td><code>reg</code></td><td><code>a[2-15]</code></td><td><code>r</code></td></tr>
+<tr><td>Xtensa</td><td><code>freg</code></td><td><code>f[0-15]</code></td><td><code>f</code></td></tr>
+<tr><td>Xtensa</td><td><code>sreg</code></td><td><code>sar</code>, <code>scompare1</code>, <code>lbeg</code>, <code>lend</code>, <code>lcount</code>, <code>acclo</code>, <code>acchi</code>, <code>m[0-3]</code></td><td>Only clobbers</td></tr>
+<tr><td>Xtensa</td><td><code>breg</code></td><td><code>b[0-15]</code></td><td>Only clobbers</td></tr>
 </tbody>
 </table>
 </div>
@@ -3363,6 +3392,10 @@ fn main() {
 <tr><td>CSKY</td><td><code>freg</code></td><td>None</td><td><code>f32</code>,</td></tr>
 <tr><td>SPARC</td><td><code>reg</code></td><td>None</td><td><code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code> (SPARC64 only)</td></tr>
 <tr><td>SPARC</td><td><code>yreg</code></td><td>N/A</td><td>Only clobbers</td></tr>
+<tr><td>Xtensa</td><td><code>reg</code></td><td>None</td><td><code>i8</code>, <code>i16</code>, <code>i32</code></td></tr>
+<tr><td>Xtensa</td><td><code>freg</code></td><td><code>fp</code></td><td><code>f32</code></td></tr>
+<tr><td>Xtensa</td><td><code>sreg</code></td><td>N/A</td><td>Only clobbers</td></tr>
+<tr><td>Xtensa</td><td><code>breg</code></td><td><code>bool</code></td><td>Only clobbers</td></tr>
 </tbody>
 </table>
 </div>
@@ -3404,6 +3437,7 @@ fn main() {
 <tr><td>SPARC</td><td><code>r[8-15]</code></td><td><code>o[0-7]</code></td></tr>
 <tr><td>SPARC</td><td><code>r[16-23]</code></td><td><code>l[0-7]</code></td></tr>
 <tr><td>SPARC</td><td><code>r[24-31]</code></td><td><code>i[0-7]</code></td></tr>
+<tr><td>Xtensa</td><td><code>a1</code></td><td><code>sp</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -3444,6 +3478,9 @@ to use one; LLVM uses <code>r4</code>.</li>
 <tr><td>SPARC</td><td><code>r5</code>/<code>g5</code></td><td>Reserved for system. (SPARC32 only)</td></tr>
 <tr><td>SPARC</td><td><code>r6</code>/<code>g6</code>, <code>r7</code>/<code>g7</code></td><td>Reserved for system.</td></tr>
 <tr><td>SPARC</td><td><code>r31</code>/<code>i7</code></td><td>Return address cannot be used as inputs or outputs.</td></tr>
+<tr><td>Xtensa</td><td><code>a0</code></td><td>This is the return address register and is used internally by LLVM.</td></tr>
+<tr><td>Xtensa</td><td><code>a1</code>/<code>sp</code></td><td>This is the stack pointer and is used internally by LLVM.</td></tr>
+<tr><td>Xtensa</td><td><code>a7</code> (windowed ABI) / <code>a15</code> (call0 ABI)</td><td>The frame pointer cannot be used as an input or output.</td></tr>
 </tbody>
 </table>
 </div>
@@ -3463,6 +3500,8 @@ to use one; LLVM uses <code>r4</code>.</li>
 <tr><td>SPARC</td><td><code>reg</code></td><td>None</td><td><code>%o0</code></td><td>None</td></tr>
 <tr><td>CSKY</td><td><code>reg</code></td><td>None</td><td><code>r0</code></td><td>None</td></tr>
 <tr><td>CSKY</td><td><code>freg</code></td><td>None</td><td><code>f0</code></td><td>None</td></tr>
+<tr><td>Xtensa</td><td><code>reg</code></td><td>None</td><td><code>a2</code></td><td>None</td></tr>
+<tr><td>Xtensa</td><td><code>freg</code></td><td>None</td><td><code>f0</code></td><td>None</td></tr>
 </tbody>
 </table>
 </div>
@@ -6627,6 +6666,10 @@ fn main() {}</code></pre>
 <p>Allows use of the <code>xop</code> target-feature</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/127208">#127208</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
+<h1 id="xtensa_target_feature"><a class="header" href="#xtensa_target_feature"><code>xtensa_target_feature</code></a></h1>
+<p>Allows use of the Xtensa target-features</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/157063">#157063</a></p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="yeet_expr"><a class="header" href="#yeet_expr"><code>yeet_expr</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/96373">#96373</a></p>
 <hr>
@@ -7324,6 +7367,9 @@ fn main() {
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="integer_cast_extras"><a class="header" href="#integer_cast_extras"><code>integer_cast_extras</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154650">#154650</a></p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
+<h1 id="integer_casts"><a class="header" href="#integer_casts"><code>integer_casts</code></a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/157388">#157388</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="integer_widen_truncate"><a class="header" href="#integer_widen_truncate"><code>integer_widen_truncate</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154330">#154330</a></p>
