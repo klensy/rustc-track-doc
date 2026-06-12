@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/collections/hash/map.rs`."><title>map.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (485ec3fbc 2026-06-10)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.98.0.js"></script><script defer src="../../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/collections/hash/</div>map.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(test)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/collections/hash/map.rs`."><title>map.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (b30f3df3b 2026-06-11)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.98.0.js"></script><script defer src="../../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/collections/hash/</div>map.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(test)]
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">mod </span>tests;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>hashbrown::hash_map::{<span class="self">self </span><span class="kw">as </span>base, RustcOccupiedError};
@@ -2538,527 +2538,593 @@
 <a href=#2538 id=2538 data-nosnippet>2538</a>    </span><span class="attr">#[inline]
 <a href=#2539 id=2539 data-nosnippet>2539</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#2540 id=2540 data-nosnippet>2540</a>    </span><span class="kw">pub fn </span>or_insert_with&lt;F: FnOnce() -&gt; V&gt;(<span class="self">self</span>, default: F) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
-<a href=#2541 id=2541 data-nosnippet>2541</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2542 id=2542 data-nosnippet>2542</a>            Occupied(entry) =&gt; entry.into_mut(),
-<a href=#2543 id=2543 data-nosnippet>2543</a>            Vacant(entry) =&gt; entry.insert(default()),
-<a href=#2544 id=2544 data-nosnippet>2544</a>        }
-<a href=#2545 id=2545 data-nosnippet>2545</a>    }
-<a href=#2546 id=2546 data-nosnippet>2546</a>
-<a href=#2547 id=2547 data-nosnippet>2547</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting, if empty, the result of the default function.
-<a href=#2548 id=2548 data-nosnippet>2548</a>    /// This method allows for generating key-derived values for insertion by providing the default
-<a href=#2549 id=2549 data-nosnippet>2549</a>    /// function a reference to the key that was moved during the `.entry(key)` method call.
-<a href=#2550 id=2550 data-nosnippet>2550</a>    ///
-<a href=#2551 id=2551 data-nosnippet>2551</a>    /// The reference to the moved key is provided so that cloning or copying the key is
-<a href=#2552 id=2552 data-nosnippet>2552</a>    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+<a href=#2541 id=2541 data-nosnippet>2541</a>        <span class="self">self</span>.or_try_insert_with(|| <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, !&gt;::Ok(default())).unwrap()
+<a href=#2542 id=2542 data-nosnippet>2542</a>    }
+<a href=#2543 id=2543 data-nosnippet>2543</a>
+<a href=#2544 id=2544 data-nosnippet>2544</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting the result of a fallible default function
+<a href=#2545 id=2545 data-nosnippet>2545</a>    /// if empty, and returns a mutable reference to the value in the entry.
+<a href=#2546 id=2546 data-nosnippet>2546</a>    ///
+<a href=#2547 id=2547 data-nosnippet>2547</a>    /// This method works identically to [`or_insert_with`] except that the default function
+<a href=#2548 id=2548 data-nosnippet>2548</a>    /// should return a `Result` and, in the case of an error, the error is propagated.
+<a href=#2549 id=2549 data-nosnippet>2549</a>    ///
+<a href=#2550 id=2550 data-nosnippet>2550</a>    /// [`or_insert_with`]: Self::or_insert_with
+<a href=#2551 id=2551 data-nosnippet>2551</a>    ///
+<a href=#2552 id=2552 data-nosnippet>2552</a>    /// # Examples
 <a href=#2553 id=2553 data-nosnippet>2553</a>    ///
-<a href=#2554 id=2554 data-nosnippet>2554</a>    /// # Examples
-<a href=#2555 id=2555 data-nosnippet>2555</a>    ///
-<a href=#2556 id=2556 data-nosnippet>2556</a>    /// ```
+<a href=#2554 id=2554 data-nosnippet>2554</a>    /// ```
+<a href=#2555 id=2555 data-nosnippet>2555</a>    /// #![feature(try_entry)]
+<a href=#2556 id=2556 data-nosnippet>2556</a>    /// # fn main() -&gt; Result&lt;(), std::num::ParseIntError&gt; {
 <a href=#2557 id=2557 data-nosnippet>2557</a>    /// use std::collections::HashMap;
 <a href=#2558 id=2558 data-nosnippet>2558</a>    ///
 <a href=#2559 id=2559 data-nosnippet>2559</a>    /// let mut map: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
-<a href=#2560 id=2560 data-nosnippet>2560</a>    ///
-<a href=#2561 id=2561 data-nosnippet>2561</a>    /// map.entry("poneyland").or_insert_with_key(|key| key.chars().count());
-<a href=#2562 id=2562 data-nosnippet>2562</a>    ///
-<a href=#2563 id=2563 data-nosnippet>2563</a>    /// assert_eq!(map["poneyland"], 9);
-<a href=#2564 id=2564 data-nosnippet>2564</a>    /// ```
-<a href=#2565 id=2565 data-nosnippet>2565</a>    </span><span class="attr">#[inline]
-<a href=#2566 id=2566 data-nosnippet>2566</a>    #[stable(feature = <span class="string">"or_insert_with_key"</span>, since = <span class="string">"1.50.0"</span>)]
-<a href=#2567 id=2567 data-nosnippet>2567</a>    </span><span class="kw">pub fn </span>or_insert_with_key&lt;F: FnOnce(<span class="kw-2">&amp;</span>K) -&gt; V&gt;(<span class="self">self</span>, default: F) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
-<a href=#2568 id=2568 data-nosnippet>2568</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2569 id=2569 data-nosnippet>2569</a>            Occupied(entry) =&gt; entry.into_mut(),
-<a href=#2570 id=2570 data-nosnippet>2570</a>            Vacant(entry) =&gt; {
-<a href=#2571 id=2571 data-nosnippet>2571</a>                <span class="kw">let </span>value = default(entry.key());
-<a href=#2572 id=2572 data-nosnippet>2572</a>                entry.insert(value)
-<a href=#2573 id=2573 data-nosnippet>2573</a>            }
-<a href=#2574 id=2574 data-nosnippet>2574</a>        }
-<a href=#2575 id=2575 data-nosnippet>2575</a>    }
-<a href=#2576 id=2576 data-nosnippet>2576</a>
-<a href=#2577 id=2577 data-nosnippet>2577</a>    <span class="doccomment">/// Returns a reference to this entry's key.
-<a href=#2578 id=2578 data-nosnippet>2578</a>    ///
-<a href=#2579 id=2579 data-nosnippet>2579</a>    /// # Examples
-<a href=#2580 id=2580 data-nosnippet>2580</a>    ///
-<a href=#2581 id=2581 data-nosnippet>2581</a>    /// ```
-<a href=#2582 id=2582 data-nosnippet>2582</a>    /// use std::collections::HashMap;
+<a href=#2560 id=2560 data-nosnippet>2560</a>    /// let value = "42";
+<a href=#2561 id=2561 data-nosnippet>2561</a>    ///
+<a href=#2562 id=2562 data-nosnippet>2562</a>    /// map.entry("poneyland").or_try_insert_with(|| value.parse())?;
+<a href=#2563 id=2563 data-nosnippet>2563</a>    ///
+<a href=#2564 id=2564 data-nosnippet>2564</a>    /// assert_eq!(map["poneyland"], 42);
+<a href=#2565 id=2565 data-nosnippet>2565</a>    /// # Ok(())
+<a href=#2566 id=2566 data-nosnippet>2566</a>    /// # }
+<a href=#2567 id=2567 data-nosnippet>2567</a>    /// ```
+<a href=#2568 id=2568 data-nosnippet>2568</a>    </span><span class="attr">#[inline]
+<a href=#2569 id=2569 data-nosnippet>2569</a>    #[unstable(feature = <span class="string">"try_entry"</span>, issue = <span class="string">"157354"</span>)]
+<a href=#2570 id=2570 data-nosnippet>2570</a>    </span><span class="kw">pub fn </span>or_try_insert_with&lt;F: FnOnce() -&gt; <span class="prelude-ty">Result</span>&lt;V, E&gt;, E&gt;(
+<a href=#2571 id=2571 data-nosnippet>2571</a>        <span class="self">self</span>,
+<a href=#2572 id=2572 data-nosnippet>2572</a>        default: F,
+<a href=#2573 id=2573 data-nosnippet>2573</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V, E&gt; {
+<a href=#2574 id=2574 data-nosnippet>2574</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2575 id=2575 data-nosnippet>2575</a>            Occupied(entry) =&gt; <span class="prelude-val">Ok</span>(entry.into_mut()),
+<a href=#2576 id=2576 data-nosnippet>2576</a>            Vacant(entry) =&gt; <span class="prelude-val">Ok</span>(entry.insert(default()<span class="question-mark">?</span>)),
+<a href=#2577 id=2577 data-nosnippet>2577</a>        }
+<a href=#2578 id=2578 data-nosnippet>2578</a>    }
+<a href=#2579 id=2579 data-nosnippet>2579</a>
+<a href=#2580 id=2580 data-nosnippet>2580</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+<a href=#2581 id=2581 data-nosnippet>2581</a>    /// This method allows for generating key-derived values for insertion by providing the default
+<a href=#2582 id=2582 data-nosnippet>2582</a>    /// function a reference to the key that was moved during the `.entry(key)` method call.
 <a href=#2583 id=2583 data-nosnippet>2583</a>    ///
-<a href=#2584 id=2584 data-nosnippet>2584</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2585 id=2585 data-nosnippet>2585</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
-<a href=#2586 id=2586 data-nosnippet>2586</a>    /// ```
-<a href=#2587 id=2587 data-nosnippet>2587</a>    </span><span class="attr">#[inline]
-<a href=#2588 id=2588 data-nosnippet>2588</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
-<a href=#2589 id=2589 data-nosnippet>2589</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
-<a href=#2590 id=2590 data-nosnippet>2590</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#2591 id=2591 data-nosnippet>2591</a>            Occupied(<span class="kw-2">ref </span>entry) =&gt; entry.key(),
-<a href=#2592 id=2592 data-nosnippet>2592</a>            Vacant(<span class="kw-2">ref </span>entry) =&gt; entry.key(),
-<a href=#2593 id=2593 data-nosnippet>2593</a>        }
-<a href=#2594 id=2594 data-nosnippet>2594</a>    }
-<a href=#2595 id=2595 data-nosnippet>2595</a>
-<a href=#2596 id=2596 data-nosnippet>2596</a>    <span class="doccomment">/// Provides in-place mutable access to an occupied entry before any
-<a href=#2597 id=2597 data-nosnippet>2597</a>    /// potential inserts into the map.
-<a href=#2598 id=2598 data-nosnippet>2598</a>    ///
-<a href=#2599 id=2599 data-nosnippet>2599</a>    /// # Examples
-<a href=#2600 id=2600 data-nosnippet>2600</a>    ///
-<a href=#2601 id=2601 data-nosnippet>2601</a>    /// ```
-<a href=#2602 id=2602 data-nosnippet>2602</a>    /// use std::collections::HashMap;
-<a href=#2603 id=2603 data-nosnippet>2603</a>    ///
-<a href=#2604 id=2604 data-nosnippet>2604</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2605 id=2605 data-nosnippet>2605</a>    ///
-<a href=#2606 id=2606 data-nosnippet>2606</a>    /// map.entry("poneyland")
-<a href=#2607 id=2607 data-nosnippet>2607</a>    ///    .and_modify(|e| { *e += 1 })
-<a href=#2608 id=2608 data-nosnippet>2608</a>    ///    .or_insert(42);
-<a href=#2609 id=2609 data-nosnippet>2609</a>    /// assert_eq!(map["poneyland"], 42);
+<a href=#2584 id=2584 data-nosnippet>2584</a>    /// The reference to the moved key is provided so that cloning or copying the key is
+<a href=#2585 id=2585 data-nosnippet>2585</a>    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+<a href=#2586 id=2586 data-nosnippet>2586</a>    ///
+<a href=#2587 id=2587 data-nosnippet>2587</a>    /// # Examples
+<a href=#2588 id=2588 data-nosnippet>2588</a>    ///
+<a href=#2589 id=2589 data-nosnippet>2589</a>    /// ```
+<a href=#2590 id=2590 data-nosnippet>2590</a>    /// use std::collections::HashMap;
+<a href=#2591 id=2591 data-nosnippet>2591</a>    ///
+<a href=#2592 id=2592 data-nosnippet>2592</a>    /// let mut map: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+<a href=#2593 id=2593 data-nosnippet>2593</a>    ///
+<a href=#2594 id=2594 data-nosnippet>2594</a>    /// map.entry("poneyland").or_insert_with_key(|key| key.chars().count());
+<a href=#2595 id=2595 data-nosnippet>2595</a>    ///
+<a href=#2596 id=2596 data-nosnippet>2596</a>    /// assert_eq!(map["poneyland"], 9);
+<a href=#2597 id=2597 data-nosnippet>2597</a>    /// ```
+<a href=#2598 id=2598 data-nosnippet>2598</a>    </span><span class="attr">#[inline]
+<a href=#2599 id=2599 data-nosnippet>2599</a>    #[stable(feature = <span class="string">"or_insert_with_key"</span>, since = <span class="string">"1.50.0"</span>)]
+<a href=#2600 id=2600 data-nosnippet>2600</a>    </span><span class="kw">pub fn </span>or_insert_with_key&lt;F: FnOnce(<span class="kw-2">&amp;</span>K) -&gt; V&gt;(<span class="self">self</span>, default: F) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
+<a href=#2601 id=2601 data-nosnippet>2601</a>        <span class="self">self</span>.or_try_insert_with_key(|k| <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, !&gt;::Ok(default(k))).into_ok()
+<a href=#2602 id=2602 data-nosnippet>2602</a>    }
+<a href=#2603 id=2603 data-nosnippet>2603</a>
+<a href=#2604 id=2604 data-nosnippet>2604</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+<a href=#2605 id=2605 data-nosnippet>2605</a>    /// This method allows for generating key-derived values for insertion by providing the default
+<a href=#2606 id=2606 data-nosnippet>2606</a>    /// function a reference to the key that was moved during the `entry(key)` method call.
+<a href=#2607 id=2607 data-nosnippet>2607</a>    ///
+<a href=#2608 id=2608 data-nosnippet>2608</a>    /// This method works identically to [`or_insert_with_key`] except that the default function
+<a href=#2609 id=2609 data-nosnippet>2609</a>    /// should return a `Result` and, in the case of an error, the error is propagated.
 <a href=#2610 id=2610 data-nosnippet>2610</a>    ///
-<a href=#2611 id=2611 data-nosnippet>2611</a>    /// map.entry("poneyland")
-<a href=#2612 id=2612 data-nosnippet>2612</a>    ///    .and_modify(|e| { *e += 1 })
-<a href=#2613 id=2613 data-nosnippet>2613</a>    ///    .or_insert(42);
-<a href=#2614 id=2614 data-nosnippet>2614</a>    /// assert_eq!(map["poneyland"], 43);
+<a href=#2611 id=2611 data-nosnippet>2611</a>    /// [`or_insert_with_key`]: Self::or_insert_with_key
+<a href=#2612 id=2612 data-nosnippet>2612</a>    ///
+<a href=#2613 id=2613 data-nosnippet>2613</a>    /// # Examples
+<a href=#2614 id=2614 data-nosnippet>2614</a>    ///
 <a href=#2615 id=2615 data-nosnippet>2615</a>    /// ```
-<a href=#2616 id=2616 data-nosnippet>2616</a>    </span><span class="attr">#[inline]
-<a href=#2617 id=2617 data-nosnippet>2617</a>    #[stable(feature = <span class="string">"entry_and_modify"</span>, since = <span class="string">"1.26.0"</span>)]
-<a href=#2618 id=2618 data-nosnippet>2618</a>    </span><span class="kw">pub fn </span>and_modify&lt;F&gt;(<span class="self">self</span>, f: F) -&gt; <span class="self">Self
-<a href=#2619 id=2619 data-nosnippet>2619</a>    </span><span class="kw">where
-<a href=#2620 id=2620 data-nosnippet>2620</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>V),
-<a href=#2621 id=2621 data-nosnippet>2621</a>    {
-<a href=#2622 id=2622 data-nosnippet>2622</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2623 id=2623 data-nosnippet>2623</a>            Occupied(<span class="kw-2">mut </span>entry) =&gt; {
-<a href=#2624 id=2624 data-nosnippet>2624</a>                f(entry.get_mut());
-<a href=#2625 id=2625 data-nosnippet>2625</a>                Occupied(entry)
-<a href=#2626 id=2626 data-nosnippet>2626</a>            }
-<a href=#2627 id=2627 data-nosnippet>2627</a>            Vacant(entry) =&gt; Vacant(entry),
-<a href=#2628 id=2628 data-nosnippet>2628</a>        }
-<a href=#2629 id=2629 data-nosnippet>2629</a>    }
-<a href=#2630 id=2630 data-nosnippet>2630</a>
-<a href=#2631 id=2631 data-nosnippet>2631</a>    <span class="doccomment">/// Sets the value of the entry, and returns an `OccupiedEntry`.
-<a href=#2632 id=2632 data-nosnippet>2632</a>    ///
-<a href=#2633 id=2633 data-nosnippet>2633</a>    /// # Examples
-<a href=#2634 id=2634 data-nosnippet>2634</a>    ///
-<a href=#2635 id=2635 data-nosnippet>2635</a>    /// ```
-<a href=#2636 id=2636 data-nosnippet>2636</a>    /// use std::collections::HashMap;
-<a href=#2637 id=2637 data-nosnippet>2637</a>    ///
-<a href=#2638 id=2638 data-nosnippet>2638</a>    /// let mut map: HashMap&lt;&amp;str, String&gt; = HashMap::new();
-<a href=#2639 id=2639 data-nosnippet>2639</a>    /// let entry = map.entry("poneyland").insert_entry("hoho".to_string());
-<a href=#2640 id=2640 data-nosnippet>2640</a>    ///
-<a href=#2641 id=2641 data-nosnippet>2641</a>    /// assert_eq!(entry.key(), &amp;"poneyland");
-<a href=#2642 id=2642 data-nosnippet>2642</a>    /// ```
-<a href=#2643 id=2643 data-nosnippet>2643</a>    </span><span class="attr">#[inline]
-<a href=#2644 id=2644 data-nosnippet>2644</a>    #[stable(feature = <span class="string">"entry_insert"</span>, since = <span class="string">"1.83.0"</span>)]
-<a href=#2645 id=2645 data-nosnippet>2645</a>    </span><span class="kw">pub fn </span>insert_entry(<span class="self">self</span>, value: V) -&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
-<a href=#2646 id=2646 data-nosnippet>2646</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2647 id=2647 data-nosnippet>2647</a>            Occupied(<span class="kw-2">mut </span>entry) =&gt; {
-<a href=#2648 id=2648 data-nosnippet>2648</a>                entry.insert(value);
-<a href=#2649 id=2649 data-nosnippet>2649</a>                entry
-<a href=#2650 id=2650 data-nosnippet>2650</a>            }
-<a href=#2651 id=2651 data-nosnippet>2651</a>            Vacant(entry) =&gt; entry.insert_entry(value),
-<a href=#2652 id=2652 data-nosnippet>2652</a>        }
-<a href=#2653 id=2653 data-nosnippet>2653</a>    }
-<a href=#2654 id=2654 data-nosnippet>2654</a>}
-<a href=#2655 id=2655 data-nosnippet>2655</a>
-<a href=#2656 id=2656 data-nosnippet>2656</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V: Default&gt; Entry&lt;<span class="lifetime">'a</span>, K, V&gt; {
-<a href=#2657 id=2657 data-nosnippet>2657</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting the default value if empty,
-<a href=#2658 id=2658 data-nosnippet>2658</a>    /// and returns a mutable reference to the value in the entry.
-<a href=#2659 id=2659 data-nosnippet>2659</a>    ///
-<a href=#2660 id=2660 data-nosnippet>2660</a>    /// # Examples
-<a href=#2661 id=2661 data-nosnippet>2661</a>    ///
-<a href=#2662 id=2662 data-nosnippet>2662</a>    /// ```
-<a href=#2663 id=2663 data-nosnippet>2663</a>    /// # fn main() {
-<a href=#2664 id=2664 data-nosnippet>2664</a>    /// use std::collections::HashMap;
-<a href=#2665 id=2665 data-nosnippet>2665</a>    ///
-<a href=#2666 id=2666 data-nosnippet>2666</a>    /// let mut map: HashMap&lt;&amp;str, Option&lt;u32&gt;&gt; = HashMap::new();
-<a href=#2667 id=2667 data-nosnippet>2667</a>    /// map.entry("poneyland").or_default();
-<a href=#2668 id=2668 data-nosnippet>2668</a>    ///
-<a href=#2669 id=2669 data-nosnippet>2669</a>    /// assert_eq!(map["poneyland"], None);
-<a href=#2670 id=2670 data-nosnippet>2670</a>    /// # }
-<a href=#2671 id=2671 data-nosnippet>2671</a>    /// ```
-<a href=#2672 id=2672 data-nosnippet>2672</a>    </span><span class="attr">#[inline]
-<a href=#2673 id=2673 data-nosnippet>2673</a>    #[stable(feature = <span class="string">"entry_or_default"</span>, since = <span class="string">"1.28.0"</span>)]
-<a href=#2674 id=2674 data-nosnippet>2674</a>    </span><span class="kw">pub fn </span>or_default(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
-<a href=#2675 id=2675 data-nosnippet>2675</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2676 id=2676 data-nosnippet>2676</a>            Occupied(entry) =&gt; entry.into_mut(),
-<a href=#2677 id=2677 data-nosnippet>2677</a>            Vacant(entry) =&gt; entry.insert(Default::default()),
-<a href=#2678 id=2678 data-nosnippet>2678</a>        }
-<a href=#2679 id=2679 data-nosnippet>2679</a>    }
-<a href=#2680 id=2680 data-nosnippet>2680</a>}
-<a href=#2681 id=2681 data-nosnippet>2681</a>
-<a href=#2682 id=2682 data-nosnippet>2682</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V, A: Allocator&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
-<a href=#2683 id=2683 data-nosnippet>2683</a>    <span class="doccomment">/// Gets a reference to the key in the entry.
-<a href=#2684 id=2684 data-nosnippet>2684</a>    ///
-<a href=#2685 id=2685 data-nosnippet>2685</a>    /// # Examples
-<a href=#2686 id=2686 data-nosnippet>2686</a>    ///
-<a href=#2687 id=2687 data-nosnippet>2687</a>    /// ```
-<a href=#2688 id=2688 data-nosnippet>2688</a>    /// use std::collections::HashMap;
-<a href=#2689 id=2689 data-nosnippet>2689</a>    ///
-<a href=#2690 id=2690 data-nosnippet>2690</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2691 id=2691 data-nosnippet>2691</a>    /// map.entry("poneyland").or_insert(12);
-<a href=#2692 id=2692 data-nosnippet>2692</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
-<a href=#2693 id=2693 data-nosnippet>2693</a>    /// ```
-<a href=#2694 id=2694 data-nosnippet>2694</a>    </span><span class="attr">#[inline]
-<a href=#2695 id=2695 data-nosnippet>2695</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
-<a href=#2696 id=2696 data-nosnippet>2696</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
-<a href=#2697 id=2697 data-nosnippet>2697</a>        <span class="self">self</span>.base.key()
-<a href=#2698 id=2698 data-nosnippet>2698</a>    }
-<a href=#2699 id=2699 data-nosnippet>2699</a>
-<a href=#2700 id=2700 data-nosnippet>2700</a>    <span class="doccomment">/// Take the ownership of the key and value from the map.
-<a href=#2701 id=2701 data-nosnippet>2701</a>    ///
-<a href=#2702 id=2702 data-nosnippet>2702</a>    /// # Examples
+<a href=#2616 id=2616 data-nosnippet>2616</a>    /// #![feature(try_entry)]
+<a href=#2617 id=2617 data-nosnippet>2617</a>    /// # fn main() -&gt; Result&lt;(), std::num::ParseIntError&gt; {
+<a href=#2618 id=2618 data-nosnippet>2618</a>    /// use std::collections::HashMap;
+<a href=#2619 id=2619 data-nosnippet>2619</a>    ///
+<a href=#2620 id=2620 data-nosnippet>2620</a>    /// let mut map: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+<a href=#2621 id=2621 data-nosnippet>2621</a>    ///
+<a href=#2622 id=2622 data-nosnippet>2622</a>    /// map.entry("42").or_try_insert_with_key(|key| key.parse())?;
+<a href=#2623 id=2623 data-nosnippet>2623</a>    ///
+<a href=#2624 id=2624 data-nosnippet>2624</a>    /// assert_eq!(map["42"], 42);
+<a href=#2625 id=2625 data-nosnippet>2625</a>    /// # Ok(())
+<a href=#2626 id=2626 data-nosnippet>2626</a>    /// # }
+<a href=#2627 id=2627 data-nosnippet>2627</a>    /// ```
+<a href=#2628 id=2628 data-nosnippet>2628</a>    </span><span class="attr">#[inline]
+<a href=#2629 id=2629 data-nosnippet>2629</a>    #[unstable(feature = <span class="string">"try_entry"</span>, issue = <span class="string">"157354"</span>)]
+<a href=#2630 id=2630 data-nosnippet>2630</a>    </span><span class="kw">pub fn </span>or_try_insert_with_key&lt;F: FnOnce(<span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Result</span>&lt;V, E&gt;, E&gt;(
+<a href=#2631 id=2631 data-nosnippet>2631</a>        <span class="self">self</span>,
+<a href=#2632 id=2632 data-nosnippet>2632</a>        default: F,
+<a href=#2633 id=2633 data-nosnippet>2633</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V, E&gt; {
+<a href=#2634 id=2634 data-nosnippet>2634</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2635 id=2635 data-nosnippet>2635</a>            Occupied(entry) =&gt; <span class="prelude-val">Ok</span>(entry.into_mut()),
+<a href=#2636 id=2636 data-nosnippet>2636</a>            Vacant(entry) =&gt; {
+<a href=#2637 id=2637 data-nosnippet>2637</a>                <span class="kw">let </span>value = default(entry.key())<span class="question-mark">?</span>;
+<a href=#2638 id=2638 data-nosnippet>2638</a>                <span class="prelude-val">Ok</span>(entry.insert(value))
+<a href=#2639 id=2639 data-nosnippet>2639</a>            }
+<a href=#2640 id=2640 data-nosnippet>2640</a>        }
+<a href=#2641 id=2641 data-nosnippet>2641</a>    }
+<a href=#2642 id=2642 data-nosnippet>2642</a>
+<a href=#2643 id=2643 data-nosnippet>2643</a>    <span class="doccomment">/// Returns a reference to this entry's key.
+<a href=#2644 id=2644 data-nosnippet>2644</a>    ///
+<a href=#2645 id=2645 data-nosnippet>2645</a>    /// # Examples
+<a href=#2646 id=2646 data-nosnippet>2646</a>    ///
+<a href=#2647 id=2647 data-nosnippet>2647</a>    /// ```
+<a href=#2648 id=2648 data-nosnippet>2648</a>    /// use std::collections::HashMap;
+<a href=#2649 id=2649 data-nosnippet>2649</a>    ///
+<a href=#2650 id=2650 data-nosnippet>2650</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2651 id=2651 data-nosnippet>2651</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
+<a href=#2652 id=2652 data-nosnippet>2652</a>    /// ```
+<a href=#2653 id=2653 data-nosnippet>2653</a>    </span><span class="attr">#[inline]
+<a href=#2654 id=2654 data-nosnippet>2654</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
+<a href=#2655 id=2655 data-nosnippet>2655</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
+<a href=#2656 id=2656 data-nosnippet>2656</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+<a href=#2657 id=2657 data-nosnippet>2657</a>            Occupied(<span class="kw-2">ref </span>entry) =&gt; entry.key(),
+<a href=#2658 id=2658 data-nosnippet>2658</a>            Vacant(<span class="kw-2">ref </span>entry) =&gt; entry.key(),
+<a href=#2659 id=2659 data-nosnippet>2659</a>        }
+<a href=#2660 id=2660 data-nosnippet>2660</a>    }
+<a href=#2661 id=2661 data-nosnippet>2661</a>
+<a href=#2662 id=2662 data-nosnippet>2662</a>    <span class="doccomment">/// Provides in-place mutable access to an occupied entry before any
+<a href=#2663 id=2663 data-nosnippet>2663</a>    /// potential inserts into the map.
+<a href=#2664 id=2664 data-nosnippet>2664</a>    ///
+<a href=#2665 id=2665 data-nosnippet>2665</a>    /// # Examples
+<a href=#2666 id=2666 data-nosnippet>2666</a>    ///
+<a href=#2667 id=2667 data-nosnippet>2667</a>    /// ```
+<a href=#2668 id=2668 data-nosnippet>2668</a>    /// use std::collections::HashMap;
+<a href=#2669 id=2669 data-nosnippet>2669</a>    ///
+<a href=#2670 id=2670 data-nosnippet>2670</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2671 id=2671 data-nosnippet>2671</a>    ///
+<a href=#2672 id=2672 data-nosnippet>2672</a>    /// map.entry("poneyland")
+<a href=#2673 id=2673 data-nosnippet>2673</a>    ///    .and_modify(|e| { *e += 1 })
+<a href=#2674 id=2674 data-nosnippet>2674</a>    ///    .or_insert(42);
+<a href=#2675 id=2675 data-nosnippet>2675</a>    /// assert_eq!(map["poneyland"], 42);
+<a href=#2676 id=2676 data-nosnippet>2676</a>    ///
+<a href=#2677 id=2677 data-nosnippet>2677</a>    /// map.entry("poneyland")
+<a href=#2678 id=2678 data-nosnippet>2678</a>    ///    .and_modify(|e| { *e += 1 })
+<a href=#2679 id=2679 data-nosnippet>2679</a>    ///    .or_insert(42);
+<a href=#2680 id=2680 data-nosnippet>2680</a>    /// assert_eq!(map["poneyland"], 43);
+<a href=#2681 id=2681 data-nosnippet>2681</a>    /// ```
+<a href=#2682 id=2682 data-nosnippet>2682</a>    </span><span class="attr">#[inline]
+<a href=#2683 id=2683 data-nosnippet>2683</a>    #[stable(feature = <span class="string">"entry_and_modify"</span>, since = <span class="string">"1.26.0"</span>)]
+<a href=#2684 id=2684 data-nosnippet>2684</a>    </span><span class="kw">pub fn </span>and_modify&lt;F&gt;(<span class="self">self</span>, f: F) -&gt; <span class="self">Self
+<a href=#2685 id=2685 data-nosnippet>2685</a>    </span><span class="kw">where
+<a href=#2686 id=2686 data-nosnippet>2686</a>        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>V),
+<a href=#2687 id=2687 data-nosnippet>2687</a>    {
+<a href=#2688 id=2688 data-nosnippet>2688</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2689 id=2689 data-nosnippet>2689</a>            Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+<a href=#2690 id=2690 data-nosnippet>2690</a>                f(entry.get_mut());
+<a href=#2691 id=2691 data-nosnippet>2691</a>                Occupied(entry)
+<a href=#2692 id=2692 data-nosnippet>2692</a>            }
+<a href=#2693 id=2693 data-nosnippet>2693</a>            Vacant(entry) =&gt; Vacant(entry),
+<a href=#2694 id=2694 data-nosnippet>2694</a>        }
+<a href=#2695 id=2695 data-nosnippet>2695</a>    }
+<a href=#2696 id=2696 data-nosnippet>2696</a>
+<a href=#2697 id=2697 data-nosnippet>2697</a>    <span class="doccomment">/// Sets the value of the entry, and returns an `OccupiedEntry`.
+<a href=#2698 id=2698 data-nosnippet>2698</a>    ///
+<a href=#2699 id=2699 data-nosnippet>2699</a>    /// # Examples
+<a href=#2700 id=2700 data-nosnippet>2700</a>    ///
+<a href=#2701 id=2701 data-nosnippet>2701</a>    /// ```
+<a href=#2702 id=2702 data-nosnippet>2702</a>    /// use std::collections::HashMap;
 <a href=#2703 id=2703 data-nosnippet>2703</a>    ///
-<a href=#2704 id=2704 data-nosnippet>2704</a>    /// ```
-<a href=#2705 id=2705 data-nosnippet>2705</a>    /// use std::collections::HashMap;
-<a href=#2706 id=2706 data-nosnippet>2706</a>    /// use std::collections::hash_map::Entry;
-<a href=#2707 id=2707 data-nosnippet>2707</a>    ///
-<a href=#2708 id=2708 data-nosnippet>2708</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2709 id=2709 data-nosnippet>2709</a>    /// map.entry("poneyland").or_insert(12);
-<a href=#2710 id=2710 data-nosnippet>2710</a>    ///
-<a href=#2711 id=2711 data-nosnippet>2711</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
-<a href=#2712 id=2712 data-nosnippet>2712</a>    ///     // We delete the entry from the map.
-<a href=#2713 id=2713 data-nosnippet>2713</a>    ///     o.remove_entry();
-<a href=#2714 id=2714 data-nosnippet>2714</a>    /// }
-<a href=#2715 id=2715 data-nosnippet>2715</a>    ///
-<a href=#2716 id=2716 data-nosnippet>2716</a>    /// assert_eq!(map.contains_key("poneyland"), false);
-<a href=#2717 id=2717 data-nosnippet>2717</a>    /// ```
-<a href=#2718 id=2718 data-nosnippet>2718</a>    </span><span class="attr">#[inline]
-<a href=#2719 id=2719 data-nosnippet>2719</a>    #[stable(feature = <span class="string">"map_entry_recover_keys2"</span>, since = <span class="string">"1.12.0"</span>)]
-<a href=#2720 id=2720 data-nosnippet>2720</a>    </span><span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (K, V) {
-<a href=#2721 id=2721 data-nosnippet>2721</a>        <span class="self">self</span>.base.remove_entry()
-<a href=#2722 id=2722 data-nosnippet>2722</a>    }
-<a href=#2723 id=2723 data-nosnippet>2723</a>
-<a href=#2724 id=2724 data-nosnippet>2724</a>    <span class="doccomment">/// Gets a reference to the value in the entry.
+<a href=#2704 id=2704 data-nosnippet>2704</a>    /// let mut map: HashMap&lt;&amp;str, String&gt; = HashMap::new();
+<a href=#2705 id=2705 data-nosnippet>2705</a>    /// let entry = map.entry("poneyland").insert_entry("hoho".to_string());
+<a href=#2706 id=2706 data-nosnippet>2706</a>    ///
+<a href=#2707 id=2707 data-nosnippet>2707</a>    /// assert_eq!(entry.key(), &amp;"poneyland");
+<a href=#2708 id=2708 data-nosnippet>2708</a>    /// ```
+<a href=#2709 id=2709 data-nosnippet>2709</a>    </span><span class="attr">#[inline]
+<a href=#2710 id=2710 data-nosnippet>2710</a>    #[stable(feature = <span class="string">"entry_insert"</span>, since = <span class="string">"1.83.0"</span>)]
+<a href=#2711 id=2711 data-nosnippet>2711</a>    </span><span class="kw">pub fn </span>insert_entry(<span class="self">self</span>, value: V) -&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
+<a href=#2712 id=2712 data-nosnippet>2712</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2713 id=2713 data-nosnippet>2713</a>            Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+<a href=#2714 id=2714 data-nosnippet>2714</a>                entry.insert(value);
+<a href=#2715 id=2715 data-nosnippet>2715</a>                entry
+<a href=#2716 id=2716 data-nosnippet>2716</a>            }
+<a href=#2717 id=2717 data-nosnippet>2717</a>            Vacant(entry) =&gt; entry.insert_entry(value),
+<a href=#2718 id=2718 data-nosnippet>2718</a>        }
+<a href=#2719 id=2719 data-nosnippet>2719</a>    }
+<a href=#2720 id=2720 data-nosnippet>2720</a>}
+<a href=#2721 id=2721 data-nosnippet>2721</a>
+<a href=#2722 id=2722 data-nosnippet>2722</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V: Default&gt; Entry&lt;<span class="lifetime">'a</span>, K, V&gt; {
+<a href=#2723 id=2723 data-nosnippet>2723</a>    <span class="doccomment">/// Ensures a value is in the entry by inserting the default value if empty,
+<a href=#2724 id=2724 data-nosnippet>2724</a>    /// and returns a mutable reference to the value in the entry.
 <a href=#2725 id=2725 data-nosnippet>2725</a>    ///
 <a href=#2726 id=2726 data-nosnippet>2726</a>    /// # Examples
 <a href=#2727 id=2727 data-nosnippet>2727</a>    ///
 <a href=#2728 id=2728 data-nosnippet>2728</a>    /// ```
-<a href=#2729 id=2729 data-nosnippet>2729</a>    /// use std::collections::HashMap;
-<a href=#2730 id=2730 data-nosnippet>2730</a>    /// use std::collections::hash_map::Entry;
+<a href=#2729 id=2729 data-nosnippet>2729</a>    /// # fn main() {
+<a href=#2730 id=2730 data-nosnippet>2730</a>    /// use std::collections::HashMap;
 <a href=#2731 id=2731 data-nosnippet>2731</a>    ///
-<a href=#2732 id=2732 data-nosnippet>2732</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2733 id=2733 data-nosnippet>2733</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2732 id=2732 data-nosnippet>2732</a>    /// let mut map: HashMap&lt;&amp;str, Option&lt;u32&gt;&gt; = HashMap::new();
+<a href=#2733 id=2733 data-nosnippet>2733</a>    /// map.entry("poneyland").or_default();
 <a href=#2734 id=2734 data-nosnippet>2734</a>    ///
-<a href=#2735 id=2735 data-nosnippet>2735</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
-<a href=#2736 id=2736 data-nosnippet>2736</a>    ///     assert_eq!(o.get(), &amp;12);
-<a href=#2737 id=2737 data-nosnippet>2737</a>    /// }
-<a href=#2738 id=2738 data-nosnippet>2738</a>    /// ```
-<a href=#2739 id=2739 data-nosnippet>2739</a>    </span><span class="attr">#[inline]
-<a href=#2740 id=2740 data-nosnippet>2740</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2741 id=2741 data-nosnippet>2741</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>V {
-<a href=#2742 id=2742 data-nosnippet>2742</a>        <span class="self">self</span>.base.get()
-<a href=#2743 id=2743 data-nosnippet>2743</a>    }
-<a href=#2744 id=2744 data-nosnippet>2744</a>
-<a href=#2745 id=2745 data-nosnippet>2745</a>    <span class="doccomment">/// Gets a mutable reference to the value in the entry.
-<a href=#2746 id=2746 data-nosnippet>2746</a>    ///
-<a href=#2747 id=2747 data-nosnippet>2747</a>    /// If you need a reference to the `OccupiedEntry` which may outlive the
-<a href=#2748 id=2748 data-nosnippet>2748</a>    /// destruction of the `Entry` value, see [`into_mut`].
-<a href=#2749 id=2749 data-nosnippet>2749</a>    ///
-<a href=#2750 id=2750 data-nosnippet>2750</a>    /// [`into_mut`]: Self::into_mut
-<a href=#2751 id=2751 data-nosnippet>2751</a>    ///
-<a href=#2752 id=2752 data-nosnippet>2752</a>    /// # Examples
-<a href=#2753 id=2753 data-nosnippet>2753</a>    ///
-<a href=#2754 id=2754 data-nosnippet>2754</a>    /// ```
-<a href=#2755 id=2755 data-nosnippet>2755</a>    /// use std::collections::HashMap;
-<a href=#2756 id=2756 data-nosnippet>2756</a>    /// use std::collections::hash_map::Entry;
-<a href=#2757 id=2757 data-nosnippet>2757</a>    ///
-<a href=#2758 id=2758 data-nosnippet>2758</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2759 id=2759 data-nosnippet>2759</a>    /// map.entry("poneyland").or_insert(12);
-<a href=#2760 id=2760 data-nosnippet>2760</a>    ///
-<a href=#2761 id=2761 data-nosnippet>2761</a>    /// assert_eq!(map["poneyland"], 12);
-<a href=#2762 id=2762 data-nosnippet>2762</a>    /// if let Entry::Occupied(mut o) = map.entry("poneyland") {
-<a href=#2763 id=2763 data-nosnippet>2763</a>    ///     *o.get_mut() += 10;
-<a href=#2764 id=2764 data-nosnippet>2764</a>    ///     assert_eq!(*o.get(), 22);
-<a href=#2765 id=2765 data-nosnippet>2765</a>    ///
-<a href=#2766 id=2766 data-nosnippet>2766</a>    ///     // We can use the same Entry multiple times.
-<a href=#2767 id=2767 data-nosnippet>2767</a>    ///     *o.get_mut() += 2;
-<a href=#2768 id=2768 data-nosnippet>2768</a>    /// }
+<a href=#2735 id=2735 data-nosnippet>2735</a>    /// assert_eq!(map["poneyland"], None);
+<a href=#2736 id=2736 data-nosnippet>2736</a>    /// # }
+<a href=#2737 id=2737 data-nosnippet>2737</a>    /// ```
+<a href=#2738 id=2738 data-nosnippet>2738</a>    </span><span class="attr">#[inline]
+<a href=#2739 id=2739 data-nosnippet>2739</a>    #[stable(feature = <span class="string">"entry_or_default"</span>, since = <span class="string">"1.28.0"</span>)]
+<a href=#2740 id=2740 data-nosnippet>2740</a>    </span><span class="kw">pub fn </span>or_default(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
+<a href=#2741 id=2741 data-nosnippet>2741</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2742 id=2742 data-nosnippet>2742</a>            Occupied(entry) =&gt; entry.into_mut(),
+<a href=#2743 id=2743 data-nosnippet>2743</a>            Vacant(entry) =&gt; entry.insert(Default::default()),
+<a href=#2744 id=2744 data-nosnippet>2744</a>        }
+<a href=#2745 id=2745 data-nosnippet>2745</a>    }
+<a href=#2746 id=2746 data-nosnippet>2746</a>}
+<a href=#2747 id=2747 data-nosnippet>2747</a>
+<a href=#2748 id=2748 data-nosnippet>2748</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V, A: Allocator&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
+<a href=#2749 id=2749 data-nosnippet>2749</a>    <span class="doccomment">/// Gets a reference to the key in the entry.
+<a href=#2750 id=2750 data-nosnippet>2750</a>    ///
+<a href=#2751 id=2751 data-nosnippet>2751</a>    /// # Examples
+<a href=#2752 id=2752 data-nosnippet>2752</a>    ///
+<a href=#2753 id=2753 data-nosnippet>2753</a>    /// ```
+<a href=#2754 id=2754 data-nosnippet>2754</a>    /// use std::collections::HashMap;
+<a href=#2755 id=2755 data-nosnippet>2755</a>    ///
+<a href=#2756 id=2756 data-nosnippet>2756</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2757 id=2757 data-nosnippet>2757</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2758 id=2758 data-nosnippet>2758</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
+<a href=#2759 id=2759 data-nosnippet>2759</a>    /// ```
+<a href=#2760 id=2760 data-nosnippet>2760</a>    </span><span class="attr">#[inline]
+<a href=#2761 id=2761 data-nosnippet>2761</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
+<a href=#2762 id=2762 data-nosnippet>2762</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
+<a href=#2763 id=2763 data-nosnippet>2763</a>        <span class="self">self</span>.base.key()
+<a href=#2764 id=2764 data-nosnippet>2764</a>    }
+<a href=#2765 id=2765 data-nosnippet>2765</a>
+<a href=#2766 id=2766 data-nosnippet>2766</a>    <span class="doccomment">/// Take the ownership of the key and value from the map.
+<a href=#2767 id=2767 data-nosnippet>2767</a>    ///
+<a href=#2768 id=2768 data-nosnippet>2768</a>    /// # Examples
 <a href=#2769 id=2769 data-nosnippet>2769</a>    ///
-<a href=#2770 id=2770 data-nosnippet>2770</a>    /// assert_eq!(map["poneyland"], 24);
-<a href=#2771 id=2771 data-nosnippet>2771</a>    /// ```
-<a href=#2772 id=2772 data-nosnippet>2772</a>    </span><span class="attr">#[inline]
-<a href=#2773 id=2773 data-nosnippet>2773</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2774 id=2774 data-nosnippet>2774</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>V {
-<a href=#2775 id=2775 data-nosnippet>2775</a>        <span class="self">self</span>.base.get_mut()
-<a href=#2776 id=2776 data-nosnippet>2776</a>    }
-<a href=#2777 id=2777 data-nosnippet>2777</a>
-<a href=#2778 id=2778 data-nosnippet>2778</a>    <span class="doccomment">/// Converts the `OccupiedEntry` into a mutable reference to the value in the entry
-<a href=#2779 id=2779 data-nosnippet>2779</a>    /// with a lifetime bound to the map itself.
-<a href=#2780 id=2780 data-nosnippet>2780</a>    ///
-<a href=#2781 id=2781 data-nosnippet>2781</a>    /// If you need multiple references to the `OccupiedEntry`, see [`get_mut`].
-<a href=#2782 id=2782 data-nosnippet>2782</a>    ///
-<a href=#2783 id=2783 data-nosnippet>2783</a>    /// [`get_mut`]: Self::get_mut
-<a href=#2784 id=2784 data-nosnippet>2784</a>    ///
-<a href=#2785 id=2785 data-nosnippet>2785</a>    /// # Examples
-<a href=#2786 id=2786 data-nosnippet>2786</a>    ///
-<a href=#2787 id=2787 data-nosnippet>2787</a>    /// ```
-<a href=#2788 id=2788 data-nosnippet>2788</a>    /// use std::collections::HashMap;
-<a href=#2789 id=2789 data-nosnippet>2789</a>    /// use std::collections::hash_map::Entry;
-<a href=#2790 id=2790 data-nosnippet>2790</a>    ///
-<a href=#2791 id=2791 data-nosnippet>2791</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2792 id=2792 data-nosnippet>2792</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2770 id=2770 data-nosnippet>2770</a>    /// ```
+<a href=#2771 id=2771 data-nosnippet>2771</a>    /// use std::collections::HashMap;
+<a href=#2772 id=2772 data-nosnippet>2772</a>    /// use std::collections::hash_map::Entry;
+<a href=#2773 id=2773 data-nosnippet>2773</a>    ///
+<a href=#2774 id=2774 data-nosnippet>2774</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2775 id=2775 data-nosnippet>2775</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2776 id=2776 data-nosnippet>2776</a>    ///
+<a href=#2777 id=2777 data-nosnippet>2777</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
+<a href=#2778 id=2778 data-nosnippet>2778</a>    ///     // We delete the entry from the map.
+<a href=#2779 id=2779 data-nosnippet>2779</a>    ///     o.remove_entry();
+<a href=#2780 id=2780 data-nosnippet>2780</a>    /// }
+<a href=#2781 id=2781 data-nosnippet>2781</a>    ///
+<a href=#2782 id=2782 data-nosnippet>2782</a>    /// assert_eq!(map.contains_key("poneyland"), false);
+<a href=#2783 id=2783 data-nosnippet>2783</a>    /// ```
+<a href=#2784 id=2784 data-nosnippet>2784</a>    </span><span class="attr">#[inline]
+<a href=#2785 id=2785 data-nosnippet>2785</a>    #[stable(feature = <span class="string">"map_entry_recover_keys2"</span>, since = <span class="string">"1.12.0"</span>)]
+<a href=#2786 id=2786 data-nosnippet>2786</a>    </span><span class="kw">pub fn </span>remove_entry(<span class="self">self</span>) -&gt; (K, V) {
+<a href=#2787 id=2787 data-nosnippet>2787</a>        <span class="self">self</span>.base.remove_entry()
+<a href=#2788 id=2788 data-nosnippet>2788</a>    }
+<a href=#2789 id=2789 data-nosnippet>2789</a>
+<a href=#2790 id=2790 data-nosnippet>2790</a>    <span class="doccomment">/// Gets a reference to the value in the entry.
+<a href=#2791 id=2791 data-nosnippet>2791</a>    ///
+<a href=#2792 id=2792 data-nosnippet>2792</a>    /// # Examples
 <a href=#2793 id=2793 data-nosnippet>2793</a>    ///
-<a href=#2794 id=2794 data-nosnippet>2794</a>    /// assert_eq!(map["poneyland"], 12);
-<a href=#2795 id=2795 data-nosnippet>2795</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
-<a href=#2796 id=2796 data-nosnippet>2796</a>    ///     *o.into_mut() += 10;
-<a href=#2797 id=2797 data-nosnippet>2797</a>    /// }
-<a href=#2798 id=2798 data-nosnippet>2798</a>    ///
-<a href=#2799 id=2799 data-nosnippet>2799</a>    /// assert_eq!(map["poneyland"], 22);
-<a href=#2800 id=2800 data-nosnippet>2800</a>    /// ```
-<a href=#2801 id=2801 data-nosnippet>2801</a>    </span><span class="attr">#[inline]
-<a href=#2802 id=2802 data-nosnippet>2802</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2803 id=2803 data-nosnippet>2803</a>    </span><span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
-<a href=#2804 id=2804 data-nosnippet>2804</a>        <span class="self">self</span>.base.into_mut()
-<a href=#2805 id=2805 data-nosnippet>2805</a>    }
-<a href=#2806 id=2806 data-nosnippet>2806</a>
-<a href=#2807 id=2807 data-nosnippet>2807</a>    <span class="doccomment">/// Sets the value of the entry, and returns the entry's old value.
-<a href=#2808 id=2808 data-nosnippet>2808</a>    ///
-<a href=#2809 id=2809 data-nosnippet>2809</a>    /// # Examples
-<a href=#2810 id=2810 data-nosnippet>2810</a>    ///
-<a href=#2811 id=2811 data-nosnippet>2811</a>    /// ```
-<a href=#2812 id=2812 data-nosnippet>2812</a>    /// use std::collections::HashMap;
-<a href=#2813 id=2813 data-nosnippet>2813</a>    /// use std::collections::hash_map::Entry;
-<a href=#2814 id=2814 data-nosnippet>2814</a>    ///
-<a href=#2815 id=2815 data-nosnippet>2815</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2816 id=2816 data-nosnippet>2816</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2794 id=2794 data-nosnippet>2794</a>    /// ```
+<a href=#2795 id=2795 data-nosnippet>2795</a>    /// use std::collections::HashMap;
+<a href=#2796 id=2796 data-nosnippet>2796</a>    /// use std::collections::hash_map::Entry;
+<a href=#2797 id=2797 data-nosnippet>2797</a>    ///
+<a href=#2798 id=2798 data-nosnippet>2798</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2799 id=2799 data-nosnippet>2799</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2800 id=2800 data-nosnippet>2800</a>    ///
+<a href=#2801 id=2801 data-nosnippet>2801</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
+<a href=#2802 id=2802 data-nosnippet>2802</a>    ///     assert_eq!(o.get(), &amp;12);
+<a href=#2803 id=2803 data-nosnippet>2803</a>    /// }
+<a href=#2804 id=2804 data-nosnippet>2804</a>    /// ```
+<a href=#2805 id=2805 data-nosnippet>2805</a>    </span><span class="attr">#[inline]
+<a href=#2806 id=2806 data-nosnippet>2806</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2807 id=2807 data-nosnippet>2807</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>V {
+<a href=#2808 id=2808 data-nosnippet>2808</a>        <span class="self">self</span>.base.get()
+<a href=#2809 id=2809 data-nosnippet>2809</a>    }
+<a href=#2810 id=2810 data-nosnippet>2810</a>
+<a href=#2811 id=2811 data-nosnippet>2811</a>    <span class="doccomment">/// Gets a mutable reference to the value in the entry.
+<a href=#2812 id=2812 data-nosnippet>2812</a>    ///
+<a href=#2813 id=2813 data-nosnippet>2813</a>    /// If you need a reference to the `OccupiedEntry` which may outlive the
+<a href=#2814 id=2814 data-nosnippet>2814</a>    /// destruction of the `Entry` value, see [`into_mut`].
+<a href=#2815 id=2815 data-nosnippet>2815</a>    ///
+<a href=#2816 id=2816 data-nosnippet>2816</a>    /// [`into_mut`]: Self::into_mut
 <a href=#2817 id=2817 data-nosnippet>2817</a>    ///
-<a href=#2818 id=2818 data-nosnippet>2818</a>    /// if let Entry::Occupied(mut o) = map.entry("poneyland") {
-<a href=#2819 id=2819 data-nosnippet>2819</a>    ///     assert_eq!(o.insert(15), 12);
-<a href=#2820 id=2820 data-nosnippet>2820</a>    /// }
-<a href=#2821 id=2821 data-nosnippet>2821</a>    ///
-<a href=#2822 id=2822 data-nosnippet>2822</a>    /// assert_eq!(map["poneyland"], 15);
-<a href=#2823 id=2823 data-nosnippet>2823</a>    /// ```
-<a href=#2824 id=2824 data-nosnippet>2824</a>    </span><span class="attr">#[inline]
-<a href=#2825 id=2825 data-nosnippet>2825</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2826 id=2826 data-nosnippet>2826</a>    </span><span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: V) -&gt; V {
-<a href=#2827 id=2827 data-nosnippet>2827</a>        <span class="self">self</span>.base.insert(value)
-<a href=#2828 id=2828 data-nosnippet>2828</a>    }
-<a href=#2829 id=2829 data-nosnippet>2829</a>
-<a href=#2830 id=2830 data-nosnippet>2830</a>    <span class="doccomment">/// Takes the value out of the entry, and returns it.
+<a href=#2818 id=2818 data-nosnippet>2818</a>    /// # Examples
+<a href=#2819 id=2819 data-nosnippet>2819</a>    ///
+<a href=#2820 id=2820 data-nosnippet>2820</a>    /// ```
+<a href=#2821 id=2821 data-nosnippet>2821</a>    /// use std::collections::HashMap;
+<a href=#2822 id=2822 data-nosnippet>2822</a>    /// use std::collections::hash_map::Entry;
+<a href=#2823 id=2823 data-nosnippet>2823</a>    ///
+<a href=#2824 id=2824 data-nosnippet>2824</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2825 id=2825 data-nosnippet>2825</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2826 id=2826 data-nosnippet>2826</a>    ///
+<a href=#2827 id=2827 data-nosnippet>2827</a>    /// assert_eq!(map["poneyland"], 12);
+<a href=#2828 id=2828 data-nosnippet>2828</a>    /// if let Entry::Occupied(mut o) = map.entry("poneyland") {
+<a href=#2829 id=2829 data-nosnippet>2829</a>    ///     *o.get_mut() += 10;
+<a href=#2830 id=2830 data-nosnippet>2830</a>    ///     assert_eq!(*o.get(), 22);
 <a href=#2831 id=2831 data-nosnippet>2831</a>    ///
-<a href=#2832 id=2832 data-nosnippet>2832</a>    /// # Examples
-<a href=#2833 id=2833 data-nosnippet>2833</a>    ///
-<a href=#2834 id=2834 data-nosnippet>2834</a>    /// ```
-<a href=#2835 id=2835 data-nosnippet>2835</a>    /// use std::collections::HashMap;
-<a href=#2836 id=2836 data-nosnippet>2836</a>    /// use std::collections::hash_map::Entry;
-<a href=#2837 id=2837 data-nosnippet>2837</a>    ///
-<a href=#2838 id=2838 data-nosnippet>2838</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2839 id=2839 data-nosnippet>2839</a>    /// map.entry("poneyland").or_insert(12);
-<a href=#2840 id=2840 data-nosnippet>2840</a>    ///
-<a href=#2841 id=2841 data-nosnippet>2841</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
-<a href=#2842 id=2842 data-nosnippet>2842</a>    ///     assert_eq!(o.remove(), 12);
-<a href=#2843 id=2843 data-nosnippet>2843</a>    /// }
-<a href=#2844 id=2844 data-nosnippet>2844</a>    ///
-<a href=#2845 id=2845 data-nosnippet>2845</a>    /// assert_eq!(map.contains_key("poneyland"), false);
-<a href=#2846 id=2846 data-nosnippet>2846</a>    /// ```
-<a href=#2847 id=2847 data-nosnippet>2847</a>    </span><span class="attr">#[inline]
-<a href=#2848 id=2848 data-nosnippet>2848</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2849 id=2849 data-nosnippet>2849</a>    </span><span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; V {
-<a href=#2850 id=2850 data-nosnippet>2850</a>        <span class="self">self</span>.base.remove()
-<a href=#2851 id=2851 data-nosnippet>2851</a>    }
-<a href=#2852 id=2852 data-nosnippet>2852</a>}
-<a href=#2853 id=2853 data-nosnippet>2853</a>
-<a href=#2854 id=2854 data-nosnippet>2854</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: <span class="lifetime">'a</span>, V: <span class="lifetime">'a</span>, A: Allocator&gt; VacantEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
-<a href=#2855 id=2855 data-nosnippet>2855</a>    <span class="doccomment">/// Gets a reference to the key that would be used when inserting a value
-<a href=#2856 id=2856 data-nosnippet>2856</a>    /// through the `VacantEntry`.
-<a href=#2857 id=2857 data-nosnippet>2857</a>    ///
-<a href=#2858 id=2858 data-nosnippet>2858</a>    /// # Examples
+<a href=#2832 id=2832 data-nosnippet>2832</a>    ///     // We can use the same Entry multiple times.
+<a href=#2833 id=2833 data-nosnippet>2833</a>    ///     *o.get_mut() += 2;
+<a href=#2834 id=2834 data-nosnippet>2834</a>    /// }
+<a href=#2835 id=2835 data-nosnippet>2835</a>    ///
+<a href=#2836 id=2836 data-nosnippet>2836</a>    /// assert_eq!(map["poneyland"], 24);
+<a href=#2837 id=2837 data-nosnippet>2837</a>    /// ```
+<a href=#2838 id=2838 data-nosnippet>2838</a>    </span><span class="attr">#[inline]
+<a href=#2839 id=2839 data-nosnippet>2839</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2840 id=2840 data-nosnippet>2840</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>V {
+<a href=#2841 id=2841 data-nosnippet>2841</a>        <span class="self">self</span>.base.get_mut()
+<a href=#2842 id=2842 data-nosnippet>2842</a>    }
+<a href=#2843 id=2843 data-nosnippet>2843</a>
+<a href=#2844 id=2844 data-nosnippet>2844</a>    <span class="doccomment">/// Converts the `OccupiedEntry` into a mutable reference to the value in the entry
+<a href=#2845 id=2845 data-nosnippet>2845</a>    /// with a lifetime bound to the map itself.
+<a href=#2846 id=2846 data-nosnippet>2846</a>    ///
+<a href=#2847 id=2847 data-nosnippet>2847</a>    /// If you need multiple references to the `OccupiedEntry`, see [`get_mut`].
+<a href=#2848 id=2848 data-nosnippet>2848</a>    ///
+<a href=#2849 id=2849 data-nosnippet>2849</a>    /// [`get_mut`]: Self::get_mut
+<a href=#2850 id=2850 data-nosnippet>2850</a>    ///
+<a href=#2851 id=2851 data-nosnippet>2851</a>    /// # Examples
+<a href=#2852 id=2852 data-nosnippet>2852</a>    ///
+<a href=#2853 id=2853 data-nosnippet>2853</a>    /// ```
+<a href=#2854 id=2854 data-nosnippet>2854</a>    /// use std::collections::HashMap;
+<a href=#2855 id=2855 data-nosnippet>2855</a>    /// use std::collections::hash_map::Entry;
+<a href=#2856 id=2856 data-nosnippet>2856</a>    ///
+<a href=#2857 id=2857 data-nosnippet>2857</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2858 id=2858 data-nosnippet>2858</a>    /// map.entry("poneyland").or_insert(12);
 <a href=#2859 id=2859 data-nosnippet>2859</a>    ///
-<a href=#2860 id=2860 data-nosnippet>2860</a>    /// ```
-<a href=#2861 id=2861 data-nosnippet>2861</a>    /// use std::collections::HashMap;
-<a href=#2862 id=2862 data-nosnippet>2862</a>    ///
-<a href=#2863 id=2863 data-nosnippet>2863</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2864 id=2864 data-nosnippet>2864</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
-<a href=#2865 id=2865 data-nosnippet>2865</a>    /// ```
-<a href=#2866 id=2866 data-nosnippet>2866</a>    </span><span class="attr">#[inline]
-<a href=#2867 id=2867 data-nosnippet>2867</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
-<a href=#2868 id=2868 data-nosnippet>2868</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
-<a href=#2869 id=2869 data-nosnippet>2869</a>        <span class="self">self</span>.base.key()
-<a href=#2870 id=2870 data-nosnippet>2870</a>    }
-<a href=#2871 id=2871 data-nosnippet>2871</a>
-<a href=#2872 id=2872 data-nosnippet>2872</a>    <span class="doccomment">/// Take ownership of the key.
-<a href=#2873 id=2873 data-nosnippet>2873</a>    ///
-<a href=#2874 id=2874 data-nosnippet>2874</a>    /// # Examples
-<a href=#2875 id=2875 data-nosnippet>2875</a>    ///
-<a href=#2876 id=2876 data-nosnippet>2876</a>    /// ```
-<a href=#2877 id=2877 data-nosnippet>2877</a>    /// use std::collections::HashMap;
-<a href=#2878 id=2878 data-nosnippet>2878</a>    /// use std::collections::hash_map::Entry;
-<a href=#2879 id=2879 data-nosnippet>2879</a>    ///
-<a href=#2880 id=2880 data-nosnippet>2880</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2881 id=2881 data-nosnippet>2881</a>    ///
-<a href=#2882 id=2882 data-nosnippet>2882</a>    /// if let Entry::Vacant(v) = map.entry("poneyland") {
-<a href=#2883 id=2883 data-nosnippet>2883</a>    ///     v.into_key();
-<a href=#2884 id=2884 data-nosnippet>2884</a>    /// }
-<a href=#2885 id=2885 data-nosnippet>2885</a>    /// ```
-<a href=#2886 id=2886 data-nosnippet>2886</a>    </span><span class="attr">#[inline]
-<a href=#2887 id=2887 data-nosnippet>2887</a>    #[stable(feature = <span class="string">"map_entry_recover_keys2"</span>, since = <span class="string">"1.12.0"</span>)]
-<a href=#2888 id=2888 data-nosnippet>2888</a>    </span><span class="kw">pub fn </span>into_key(<span class="self">self</span>) -&gt; K {
-<a href=#2889 id=2889 data-nosnippet>2889</a>        <span class="self">self</span>.base.into_key()
-<a href=#2890 id=2890 data-nosnippet>2890</a>    }
-<a href=#2891 id=2891 data-nosnippet>2891</a>
-<a href=#2892 id=2892 data-nosnippet>2892</a>    <span class="doccomment">/// Sets the value of the entry with the `VacantEntry`'s key,
-<a href=#2893 id=2893 data-nosnippet>2893</a>    /// and returns a mutable reference to it.
-<a href=#2894 id=2894 data-nosnippet>2894</a>    ///
-<a href=#2895 id=2895 data-nosnippet>2895</a>    /// # Examples
-<a href=#2896 id=2896 data-nosnippet>2896</a>    ///
-<a href=#2897 id=2897 data-nosnippet>2897</a>    /// ```
-<a href=#2898 id=2898 data-nosnippet>2898</a>    /// use std::collections::HashMap;
-<a href=#2899 id=2899 data-nosnippet>2899</a>    /// use std::collections::hash_map::Entry;
-<a href=#2900 id=2900 data-nosnippet>2900</a>    ///
-<a href=#2901 id=2901 data-nosnippet>2901</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2902 id=2902 data-nosnippet>2902</a>    ///
-<a href=#2903 id=2903 data-nosnippet>2903</a>    /// if let Entry::Vacant(o) = map.entry("poneyland") {
-<a href=#2904 id=2904 data-nosnippet>2904</a>    ///     o.insert(37);
-<a href=#2905 id=2905 data-nosnippet>2905</a>    /// }
-<a href=#2906 id=2906 data-nosnippet>2906</a>    /// assert_eq!(map["poneyland"], 37);
-<a href=#2907 id=2907 data-nosnippet>2907</a>    /// ```
-<a href=#2908 id=2908 data-nosnippet>2908</a>    </span><span class="attr">#[inline]
-<a href=#2909 id=2909 data-nosnippet>2909</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2910 id=2910 data-nosnippet>2910</a>    </span><span class="kw">pub fn </span>insert(<span class="self">self</span>, value: V) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
-<a href=#2911 id=2911 data-nosnippet>2911</a>        <span class="self">self</span>.base.insert(value)
-<a href=#2912 id=2912 data-nosnippet>2912</a>    }
-<a href=#2913 id=2913 data-nosnippet>2913</a>
-<a href=#2914 id=2914 data-nosnippet>2914</a>    <span class="doccomment">/// Sets the value of the entry with the `VacantEntry`'s key,
-<a href=#2915 id=2915 data-nosnippet>2915</a>    /// and returns an `OccupiedEntry`.
-<a href=#2916 id=2916 data-nosnippet>2916</a>    ///
-<a href=#2917 id=2917 data-nosnippet>2917</a>    /// # Examples
-<a href=#2918 id=2918 data-nosnippet>2918</a>    ///
-<a href=#2919 id=2919 data-nosnippet>2919</a>    /// ```
-<a href=#2920 id=2920 data-nosnippet>2920</a>    /// use std::collections::HashMap;
-<a href=#2921 id=2921 data-nosnippet>2921</a>    /// use std::collections::hash_map::Entry;
-<a href=#2922 id=2922 data-nosnippet>2922</a>    ///
-<a href=#2923 id=2923 data-nosnippet>2923</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
-<a href=#2924 id=2924 data-nosnippet>2924</a>    ///
-<a href=#2925 id=2925 data-nosnippet>2925</a>    /// if let Entry::Vacant(o) = map.entry("poneyland") {
-<a href=#2926 id=2926 data-nosnippet>2926</a>    ///     o.insert_entry(37);
-<a href=#2927 id=2927 data-nosnippet>2927</a>    /// }
-<a href=#2928 id=2928 data-nosnippet>2928</a>    /// assert_eq!(map["poneyland"], 37);
-<a href=#2929 id=2929 data-nosnippet>2929</a>    /// ```
-<a href=#2930 id=2930 data-nosnippet>2930</a>    </span><span class="attr">#[inline]
-<a href=#2931 id=2931 data-nosnippet>2931</a>    #[stable(feature = <span class="string">"entry_insert"</span>, since = <span class="string">"1.83.0"</span>)]
-<a href=#2932 id=2932 data-nosnippet>2932</a>    </span><span class="kw">pub fn </span>insert_entry(<span class="self">self</span>, value: V) -&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
-<a href=#2933 id=2933 data-nosnippet>2933</a>        <span class="kw">let </span>base = <span class="self">self</span>.base.insert_entry(value);
-<a href=#2934 id=2934 data-nosnippet>2934</a>        OccupiedEntry { base }
-<a href=#2935 id=2935 data-nosnippet>2935</a>    }
-<a href=#2936 id=2936 data-nosnippet>2936</a>}
+<a href=#2860 id=2860 data-nosnippet>2860</a>    /// assert_eq!(map["poneyland"], 12);
+<a href=#2861 id=2861 data-nosnippet>2861</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
+<a href=#2862 id=2862 data-nosnippet>2862</a>    ///     *o.into_mut() += 10;
+<a href=#2863 id=2863 data-nosnippet>2863</a>    /// }
+<a href=#2864 id=2864 data-nosnippet>2864</a>    ///
+<a href=#2865 id=2865 data-nosnippet>2865</a>    /// assert_eq!(map["poneyland"], 22);
+<a href=#2866 id=2866 data-nosnippet>2866</a>    /// ```
+<a href=#2867 id=2867 data-nosnippet>2867</a>    </span><span class="attr">#[inline]
+<a href=#2868 id=2868 data-nosnippet>2868</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2869 id=2869 data-nosnippet>2869</a>    </span><span class="kw">pub fn </span>into_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
+<a href=#2870 id=2870 data-nosnippet>2870</a>        <span class="self">self</span>.base.into_mut()
+<a href=#2871 id=2871 data-nosnippet>2871</a>    }
+<a href=#2872 id=2872 data-nosnippet>2872</a>
+<a href=#2873 id=2873 data-nosnippet>2873</a>    <span class="doccomment">/// Sets the value of the entry, and returns the entry's old value.
+<a href=#2874 id=2874 data-nosnippet>2874</a>    ///
+<a href=#2875 id=2875 data-nosnippet>2875</a>    /// # Examples
+<a href=#2876 id=2876 data-nosnippet>2876</a>    ///
+<a href=#2877 id=2877 data-nosnippet>2877</a>    /// ```
+<a href=#2878 id=2878 data-nosnippet>2878</a>    /// use std::collections::HashMap;
+<a href=#2879 id=2879 data-nosnippet>2879</a>    /// use std::collections::hash_map::Entry;
+<a href=#2880 id=2880 data-nosnippet>2880</a>    ///
+<a href=#2881 id=2881 data-nosnippet>2881</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2882 id=2882 data-nosnippet>2882</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2883 id=2883 data-nosnippet>2883</a>    ///
+<a href=#2884 id=2884 data-nosnippet>2884</a>    /// if let Entry::Occupied(mut o) = map.entry("poneyland") {
+<a href=#2885 id=2885 data-nosnippet>2885</a>    ///     assert_eq!(o.insert(15), 12);
+<a href=#2886 id=2886 data-nosnippet>2886</a>    /// }
+<a href=#2887 id=2887 data-nosnippet>2887</a>    ///
+<a href=#2888 id=2888 data-nosnippet>2888</a>    /// assert_eq!(map["poneyland"], 15);
+<a href=#2889 id=2889 data-nosnippet>2889</a>    /// ```
+<a href=#2890 id=2890 data-nosnippet>2890</a>    </span><span class="attr">#[inline]
+<a href=#2891 id=2891 data-nosnippet>2891</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2892 id=2892 data-nosnippet>2892</a>    </span><span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: V) -&gt; V {
+<a href=#2893 id=2893 data-nosnippet>2893</a>        <span class="self">self</span>.base.insert(value)
+<a href=#2894 id=2894 data-nosnippet>2894</a>    }
+<a href=#2895 id=2895 data-nosnippet>2895</a>
+<a href=#2896 id=2896 data-nosnippet>2896</a>    <span class="doccomment">/// Takes the value out of the entry, and returns it.
+<a href=#2897 id=2897 data-nosnippet>2897</a>    ///
+<a href=#2898 id=2898 data-nosnippet>2898</a>    /// # Examples
+<a href=#2899 id=2899 data-nosnippet>2899</a>    ///
+<a href=#2900 id=2900 data-nosnippet>2900</a>    /// ```
+<a href=#2901 id=2901 data-nosnippet>2901</a>    /// use std::collections::HashMap;
+<a href=#2902 id=2902 data-nosnippet>2902</a>    /// use std::collections::hash_map::Entry;
+<a href=#2903 id=2903 data-nosnippet>2903</a>    ///
+<a href=#2904 id=2904 data-nosnippet>2904</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2905 id=2905 data-nosnippet>2905</a>    /// map.entry("poneyland").or_insert(12);
+<a href=#2906 id=2906 data-nosnippet>2906</a>    ///
+<a href=#2907 id=2907 data-nosnippet>2907</a>    /// if let Entry::Occupied(o) = map.entry("poneyland") {
+<a href=#2908 id=2908 data-nosnippet>2908</a>    ///     assert_eq!(o.remove(), 12);
+<a href=#2909 id=2909 data-nosnippet>2909</a>    /// }
+<a href=#2910 id=2910 data-nosnippet>2910</a>    ///
+<a href=#2911 id=2911 data-nosnippet>2911</a>    /// assert_eq!(map.contains_key("poneyland"), false);
+<a href=#2912 id=2912 data-nosnippet>2912</a>    /// ```
+<a href=#2913 id=2913 data-nosnippet>2913</a>    </span><span class="attr">#[inline]
+<a href=#2914 id=2914 data-nosnippet>2914</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2915 id=2915 data-nosnippet>2915</a>    </span><span class="kw">pub fn </span>remove(<span class="self">self</span>) -&gt; V {
+<a href=#2916 id=2916 data-nosnippet>2916</a>        <span class="self">self</span>.base.remove()
+<a href=#2917 id=2917 data-nosnippet>2917</a>    }
+<a href=#2918 id=2918 data-nosnippet>2918</a>}
+<a href=#2919 id=2919 data-nosnippet>2919</a>
+<a href=#2920 id=2920 data-nosnippet>2920</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: <span class="lifetime">'a</span>, V: <span class="lifetime">'a</span>, A: Allocator&gt; VacantEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
+<a href=#2921 id=2921 data-nosnippet>2921</a>    <span class="doccomment">/// Gets a reference to the key that would be used when inserting a value
+<a href=#2922 id=2922 data-nosnippet>2922</a>    /// through the `VacantEntry`.
+<a href=#2923 id=2923 data-nosnippet>2923</a>    ///
+<a href=#2924 id=2924 data-nosnippet>2924</a>    /// # Examples
+<a href=#2925 id=2925 data-nosnippet>2925</a>    ///
+<a href=#2926 id=2926 data-nosnippet>2926</a>    /// ```
+<a href=#2927 id=2927 data-nosnippet>2927</a>    /// use std::collections::HashMap;
+<a href=#2928 id=2928 data-nosnippet>2928</a>    ///
+<a href=#2929 id=2929 data-nosnippet>2929</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2930 id=2930 data-nosnippet>2930</a>    /// assert_eq!(map.entry("poneyland").key(), &amp;"poneyland");
+<a href=#2931 id=2931 data-nosnippet>2931</a>    /// ```
+<a href=#2932 id=2932 data-nosnippet>2932</a>    </span><span class="attr">#[inline]
+<a href=#2933 id=2933 data-nosnippet>2933</a>    #[stable(feature = <span class="string">"map_entry_keys"</span>, since = <span class="string">"1.10.0"</span>)]
+<a href=#2934 id=2934 data-nosnippet>2934</a>    </span><span class="kw">pub fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>K {
+<a href=#2935 id=2935 data-nosnippet>2935</a>        <span class="self">self</span>.base.key()
+<a href=#2936 id=2936 data-nosnippet>2936</a>    }
 <a href=#2937 id=2937 data-nosnippet>2937</a>
-<a href=#2938 id=2938 data-nosnippet>2938</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2939 id=2939 data-nosnippet>2939</a></span><span class="kw">impl</span>&lt;K, V, S&gt; FromIterator&lt;(K, V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S&gt;
-<a href=#2940 id=2940 data-nosnippet>2940</a><span class="kw">where
-<a href=#2941 id=2941 data-nosnippet>2941</a>    </span>K: Eq + Hash,
-<a href=#2942 id=2942 data-nosnippet>2942</a>    S: BuildHasher + Default,
-<a href=#2943 id=2943 data-nosnippet>2943</a>{
-<a href=#2944 id=2944 data-nosnippet>2944</a>    <span class="doccomment">/// Constructs a `HashMap&lt;K, V&gt;` from an iterator of key-value pairs.
+<a href=#2938 id=2938 data-nosnippet>2938</a>    <span class="doccomment">/// Take ownership of the key.
+<a href=#2939 id=2939 data-nosnippet>2939</a>    ///
+<a href=#2940 id=2940 data-nosnippet>2940</a>    /// # Examples
+<a href=#2941 id=2941 data-nosnippet>2941</a>    ///
+<a href=#2942 id=2942 data-nosnippet>2942</a>    /// ```
+<a href=#2943 id=2943 data-nosnippet>2943</a>    /// use std::collections::HashMap;
+<a href=#2944 id=2944 data-nosnippet>2944</a>    /// use std::collections::hash_map::Entry;
 <a href=#2945 id=2945 data-nosnippet>2945</a>    ///
-<a href=#2946 id=2946 data-nosnippet>2946</a>    /// If the iterator produces any pairs with equal keys,
-<a href=#2947 id=2947 data-nosnippet>2947</a>    /// all but one of the corresponding values will be dropped.
-<a href=#2948 id=2948 data-nosnippet>2948</a>    </span><span class="kw">fn </span>from_iter&lt;T: IntoIterator&lt;Item = (K, V)&gt;&gt;(iter: T) -&gt; HashMap&lt;K, V, S&gt; {
-<a href=#2949 id=2949 data-nosnippet>2949</a>        <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::with_hasher(Default::default());
-<a href=#2950 id=2950 data-nosnippet>2950</a>        map.extend(iter);
-<a href=#2951 id=2951 data-nosnippet>2951</a>        map
-<a href=#2952 id=2952 data-nosnippet>2952</a>    }
-<a href=#2953 id=2953 data-nosnippet>2953</a>}
-<a href=#2954 id=2954 data-nosnippet>2954</a>
-<a href=#2955 id=2955 data-nosnippet>2955</a><span class="doccomment">/// Inserts all new key-values from the iterator and replaces values with existing
-<a href=#2956 id=2956 data-nosnippet>2956</a>/// keys with new values returned from the iterator.
-<a href=#2957 id=2957 data-nosnippet>2957</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2958 id=2958 data-nosnippet>2958</a></span><span class="kw">impl</span>&lt;K, V, S, A&gt; Extend&lt;(K, V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S, A&gt;
-<a href=#2959 id=2959 data-nosnippet>2959</a><span class="kw">where
-<a href=#2960 id=2960 data-nosnippet>2960</a>    </span>K: Eq + Hash,
-<a href=#2961 id=2961 data-nosnippet>2961</a>    S: BuildHasher,
-<a href=#2962 id=2962 data-nosnippet>2962</a>    A: Allocator,
-<a href=#2963 id=2963 data-nosnippet>2963</a>{
-<a href=#2964 id=2964 data-nosnippet>2964</a>    <span class="attr">#[inline]
-<a href=#2965 id=2965 data-nosnippet>2965</a>    </span><span class="kw">fn </span>extend&lt;T: IntoIterator&lt;Item = (K, V)&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: T) {
-<a href=#2966 id=2966 data-nosnippet>2966</a>        <span class="self">self</span>.base.extend(iter)
-<a href=#2967 id=2967 data-nosnippet>2967</a>    }
-<a href=#2968 id=2968 data-nosnippet>2968</a>
-<a href=#2969 id=2969 data-nosnippet>2969</a>    <span class="attr">#[inline]
-<a href=#2970 id=2970 data-nosnippet>2970</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, (k, v): (K, V)) {
-<a href=#2971 id=2971 data-nosnippet>2971</a>        <span class="self">self</span>.base.insert(k, v);
-<a href=#2972 id=2972 data-nosnippet>2972</a>    }
-<a href=#2973 id=2973 data-nosnippet>2973</a>
-<a href=#2974 id=2974 data-nosnippet>2974</a>    <span class="attr">#[inline]
-<a href=#2975 id=2975 data-nosnippet>2975</a>    </span><span class="kw">fn </span>extend_reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
-<a href=#2976 id=2976 data-nosnippet>2976</a>        <span class="self">self</span>.base.extend_reserve(additional);
-<a href=#2977 id=2977 data-nosnippet>2977</a>    }
-<a href=#2978 id=2978 data-nosnippet>2978</a>}
+<a href=#2946 id=2946 data-nosnippet>2946</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2947 id=2947 data-nosnippet>2947</a>    ///
+<a href=#2948 id=2948 data-nosnippet>2948</a>    /// if let Entry::Vacant(v) = map.entry("poneyland") {
+<a href=#2949 id=2949 data-nosnippet>2949</a>    ///     v.into_key();
+<a href=#2950 id=2950 data-nosnippet>2950</a>    /// }
+<a href=#2951 id=2951 data-nosnippet>2951</a>    /// ```
+<a href=#2952 id=2952 data-nosnippet>2952</a>    </span><span class="attr">#[inline]
+<a href=#2953 id=2953 data-nosnippet>2953</a>    #[stable(feature = <span class="string">"map_entry_recover_keys2"</span>, since = <span class="string">"1.12.0"</span>)]
+<a href=#2954 id=2954 data-nosnippet>2954</a>    </span><span class="kw">pub fn </span>into_key(<span class="self">self</span>) -&gt; K {
+<a href=#2955 id=2955 data-nosnippet>2955</a>        <span class="self">self</span>.base.into_key()
+<a href=#2956 id=2956 data-nosnippet>2956</a>    }
+<a href=#2957 id=2957 data-nosnippet>2957</a>
+<a href=#2958 id=2958 data-nosnippet>2958</a>    <span class="doccomment">/// Sets the value of the entry with the `VacantEntry`'s key,
+<a href=#2959 id=2959 data-nosnippet>2959</a>    /// and returns a mutable reference to it.
+<a href=#2960 id=2960 data-nosnippet>2960</a>    ///
+<a href=#2961 id=2961 data-nosnippet>2961</a>    /// # Examples
+<a href=#2962 id=2962 data-nosnippet>2962</a>    ///
+<a href=#2963 id=2963 data-nosnippet>2963</a>    /// ```
+<a href=#2964 id=2964 data-nosnippet>2964</a>    /// use std::collections::HashMap;
+<a href=#2965 id=2965 data-nosnippet>2965</a>    /// use std::collections::hash_map::Entry;
+<a href=#2966 id=2966 data-nosnippet>2966</a>    ///
+<a href=#2967 id=2967 data-nosnippet>2967</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2968 id=2968 data-nosnippet>2968</a>    ///
+<a href=#2969 id=2969 data-nosnippet>2969</a>    /// if let Entry::Vacant(o) = map.entry("poneyland") {
+<a href=#2970 id=2970 data-nosnippet>2970</a>    ///     o.insert(37);
+<a href=#2971 id=2971 data-nosnippet>2971</a>    /// }
+<a href=#2972 id=2972 data-nosnippet>2972</a>    /// assert_eq!(map["poneyland"], 37);
+<a href=#2973 id=2973 data-nosnippet>2973</a>    /// ```
+<a href=#2974 id=2974 data-nosnippet>2974</a>    </span><span class="attr">#[inline]
+<a href=#2975 id=2975 data-nosnippet>2975</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2976 id=2976 data-nosnippet>2976</a>    </span><span class="kw">pub fn </span>insert(<span class="self">self</span>, value: V) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V {
+<a href=#2977 id=2977 data-nosnippet>2977</a>        <span class="self">self</span>.base.insert(value)
+<a href=#2978 id=2978 data-nosnippet>2978</a>    }
 <a href=#2979 id=2979 data-nosnippet>2979</a>
-<a href=#2980 id=2980 data-nosnippet>2980</a><span class="attr">#[stable(feature = <span class="string">"hash_extend_copy"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#2981 id=2981 data-nosnippet>2981</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V, S, A&gt; Extend&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S, A&gt;
-<a href=#2982 id=2982 data-nosnippet>2982</a><span class="kw">where
-<a href=#2983 id=2983 data-nosnippet>2983</a>    </span>K: Eq + Hash + Copy,
-<a href=#2984 id=2984 data-nosnippet>2984</a>    V: Copy,
-<a href=#2985 id=2985 data-nosnippet>2985</a>    S: BuildHasher,
-<a href=#2986 id=2986 data-nosnippet>2986</a>    A: Allocator,
-<a href=#2987 id=2987 data-nosnippet>2987</a>{
-<a href=#2988 id=2988 data-nosnippet>2988</a>    <span class="attr">#[inline]
-<a href=#2989 id=2989 data-nosnippet>2989</a>    </span><span class="kw">fn </span>extend&lt;T: IntoIterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: T) {
-<a href=#2990 id=2990 data-nosnippet>2990</a>        <span class="self">self</span>.base.extend(iter)
-<a href=#2991 id=2991 data-nosnippet>2991</a>    }
-<a href=#2992 id=2992 data-nosnippet>2992</a>
-<a href=#2993 id=2993 data-nosnippet>2993</a>    <span class="attr">#[inline]
-<a href=#2994 id=2994 data-nosnippet>2994</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, (<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v): (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)) {
-<a href=#2995 id=2995 data-nosnippet>2995</a>        <span class="self">self</span>.base.insert(k, v);
-<a href=#2996 id=2996 data-nosnippet>2996</a>    }
-<a href=#2997 id=2997 data-nosnippet>2997</a>
-<a href=#2998 id=2998 data-nosnippet>2998</a>    <span class="attr">#[inline]
-<a href=#2999 id=2999 data-nosnippet>2999</a>    </span><span class="kw">fn </span>extend_reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
-<a href=#3000 id=3000 data-nosnippet>3000</a>        Extend::&lt;(K, V)&gt;::extend_reserve(<span class="self">self</span>, additional)
+<a href=#2980 id=2980 data-nosnippet>2980</a>    <span class="doccomment">/// Sets the value of the entry with the `VacantEntry`'s key,
+<a href=#2981 id=2981 data-nosnippet>2981</a>    /// and returns an `OccupiedEntry`.
+<a href=#2982 id=2982 data-nosnippet>2982</a>    ///
+<a href=#2983 id=2983 data-nosnippet>2983</a>    /// # Examples
+<a href=#2984 id=2984 data-nosnippet>2984</a>    ///
+<a href=#2985 id=2985 data-nosnippet>2985</a>    /// ```
+<a href=#2986 id=2986 data-nosnippet>2986</a>    /// use std::collections::HashMap;
+<a href=#2987 id=2987 data-nosnippet>2987</a>    /// use std::collections::hash_map::Entry;
+<a href=#2988 id=2988 data-nosnippet>2988</a>    ///
+<a href=#2989 id=2989 data-nosnippet>2989</a>    /// let mut map: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+<a href=#2990 id=2990 data-nosnippet>2990</a>    ///
+<a href=#2991 id=2991 data-nosnippet>2991</a>    /// if let Entry::Vacant(o) = map.entry("poneyland") {
+<a href=#2992 id=2992 data-nosnippet>2992</a>    ///     o.insert_entry(37);
+<a href=#2993 id=2993 data-nosnippet>2993</a>    /// }
+<a href=#2994 id=2994 data-nosnippet>2994</a>    /// assert_eq!(map["poneyland"], 37);
+<a href=#2995 id=2995 data-nosnippet>2995</a>    /// ```
+<a href=#2996 id=2996 data-nosnippet>2996</a>    </span><span class="attr">#[inline]
+<a href=#2997 id=2997 data-nosnippet>2997</a>    #[stable(feature = <span class="string">"entry_insert"</span>, since = <span class="string">"1.83.0"</span>)]
+<a href=#2998 id=2998 data-nosnippet>2998</a>    </span><span class="kw">pub fn </span>insert_entry(<span class="self">self</span>, value: V) -&gt; OccupiedEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
+<a href=#2999 id=2999 data-nosnippet>2999</a>        <span class="kw">let </span>base = <span class="self">self</span>.base.insert_entry(value);
+<a href=#3000 id=3000 data-nosnippet>3000</a>        OccupiedEntry { base }
 <a href=#3001 id=3001 data-nosnippet>3001</a>    }
 <a href=#3002 id=3002 data-nosnippet>3002</a>}
 <a href=#3003 id=3003 data-nosnippet>3003</a>
-<a href=#3004 id=3004 data-nosnippet>3004</a><span class="attr">#[inline]
-<a href=#3005 id=3005 data-nosnippet>3005</a></span><span class="kw">fn </span>map_entry&lt;<span class="lifetime">'a</span>, K: <span class="lifetime">'a</span>, V: <span class="lifetime">'a</span>, A: Allocator&gt;(
-<a href=#3006 id=3006 data-nosnippet>3006</a>    raw: base::RustcEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt;,
-<a href=#3007 id=3007 data-nosnippet>3007</a>) -&gt; Entry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
-<a href=#3008 id=3008 data-nosnippet>3008</a>    <span class="kw">match </span>raw {
-<a href=#3009 id=3009 data-nosnippet>3009</a>        base::RustcEntry::Occupied(base) =&gt; Entry::Occupied(OccupiedEntry { base }),
-<a href=#3010 id=3010 data-nosnippet>3010</a>        base::RustcEntry::Vacant(base) =&gt; Entry::Vacant(VacantEntry { base }),
-<a href=#3011 id=3011 data-nosnippet>3011</a>    }
-<a href=#3012 id=3012 data-nosnippet>3012</a>}
-<a href=#3013 id=3013 data-nosnippet>3013</a>
-<a href=#3014 id=3014 data-nosnippet>3014</a><span class="attr">#[inline]
-<a href=#3015 id=3015 data-nosnippet>3015</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>map_try_reserve_error(err: hashbrown::TryReserveError) -&gt; TryReserveError {
-<a href=#3016 id=3016 data-nosnippet>3016</a>    <span class="kw">match </span>err {
-<a href=#3017 id=3017 data-nosnippet>3017</a>        hashbrown::TryReserveError::CapacityOverflow =&gt; {
-<a href=#3018 id=3018 data-nosnippet>3018</a>            TryReserveErrorKind::CapacityOverflow.into()
-<a href=#3019 id=3019 data-nosnippet>3019</a>        }
-<a href=#3020 id=3020 data-nosnippet>3020</a>        hashbrown::TryReserveError::AllocError { layout } =&gt; {
-<a href=#3021 id=3021 data-nosnippet>3021</a>            TryReserveErrorKind::AllocError { layout, non_exhaustive: () }.into()
-<a href=#3022 id=3022 data-nosnippet>3022</a>        }
-<a href=#3023 id=3023 data-nosnippet>3023</a>    }
-<a href=#3024 id=3024 data-nosnippet>3024</a>}
-<a href=#3025 id=3025 data-nosnippet>3025</a>
-<a href=#3026 id=3026 data-nosnippet>3026</a><span class="attr">#[allow(dead_code)]
-<a href=#3027 id=3027 data-nosnippet>3027</a></span><span class="kw">fn </span>assert_covariance() {
-<a href=#3028 id=3028 data-nosnippet>3028</a>    <span class="kw">fn </span>map_key&lt;<span class="lifetime">'new</span>&gt;(v: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
-<a href=#3029 id=3029 data-nosnippet>3029</a>        v
-<a href=#3030 id=3030 data-nosnippet>3030</a>    }
-<a href=#3031 id=3031 data-nosnippet>3031</a>    <span class="kw">fn </span>map_val&lt;<span class="lifetime">'new</span>&gt;(v: HashMap&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; HashMap&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3032 id=3032 data-nosnippet>3032</a>        v
+<a href=#3004 id=3004 data-nosnippet>3004</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#3005 id=3005 data-nosnippet>3005</a></span><span class="kw">impl</span>&lt;K, V, S&gt; FromIterator&lt;(K, V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S&gt;
+<a href=#3006 id=3006 data-nosnippet>3006</a><span class="kw">where
+<a href=#3007 id=3007 data-nosnippet>3007</a>    </span>K: Eq + Hash,
+<a href=#3008 id=3008 data-nosnippet>3008</a>    S: BuildHasher + Default,
+<a href=#3009 id=3009 data-nosnippet>3009</a>{
+<a href=#3010 id=3010 data-nosnippet>3010</a>    <span class="doccomment">/// Constructs a `HashMap&lt;K, V&gt;` from an iterator of key-value pairs.
+<a href=#3011 id=3011 data-nosnippet>3011</a>    ///
+<a href=#3012 id=3012 data-nosnippet>3012</a>    /// If the iterator produces any pairs with equal keys,
+<a href=#3013 id=3013 data-nosnippet>3013</a>    /// all but one of the corresponding values will be dropped.
+<a href=#3014 id=3014 data-nosnippet>3014</a>    </span><span class="kw">fn </span>from_iter&lt;T: IntoIterator&lt;Item = (K, V)&gt;&gt;(iter: T) -&gt; HashMap&lt;K, V, S&gt; {
+<a href=#3015 id=3015 data-nosnippet>3015</a>        <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::with_hasher(Default::default());
+<a href=#3016 id=3016 data-nosnippet>3016</a>        map.extend(iter);
+<a href=#3017 id=3017 data-nosnippet>3017</a>        map
+<a href=#3018 id=3018 data-nosnippet>3018</a>    }
+<a href=#3019 id=3019 data-nosnippet>3019</a>}
+<a href=#3020 id=3020 data-nosnippet>3020</a>
+<a href=#3021 id=3021 data-nosnippet>3021</a><span class="doccomment">/// Inserts all new key-values from the iterator and replaces values with existing
+<a href=#3022 id=3022 data-nosnippet>3022</a>/// keys with new values returned from the iterator.
+<a href=#3023 id=3023 data-nosnippet>3023</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#3024 id=3024 data-nosnippet>3024</a></span><span class="kw">impl</span>&lt;K, V, S, A&gt; Extend&lt;(K, V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S, A&gt;
+<a href=#3025 id=3025 data-nosnippet>3025</a><span class="kw">where
+<a href=#3026 id=3026 data-nosnippet>3026</a>    </span>K: Eq + Hash,
+<a href=#3027 id=3027 data-nosnippet>3027</a>    S: BuildHasher,
+<a href=#3028 id=3028 data-nosnippet>3028</a>    A: Allocator,
+<a href=#3029 id=3029 data-nosnippet>3029</a>{
+<a href=#3030 id=3030 data-nosnippet>3030</a>    <span class="attr">#[inline]
+<a href=#3031 id=3031 data-nosnippet>3031</a>    </span><span class="kw">fn </span>extend&lt;T: IntoIterator&lt;Item = (K, V)&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: T) {
+<a href=#3032 id=3032 data-nosnippet>3032</a>        <span class="self">self</span>.base.extend(iter)
 <a href=#3033 id=3033 data-nosnippet>3033</a>    }
-<a href=#3034 id=3034 data-nosnippet>3034</a>    <span class="kw">fn </span>iter_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Iter&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Iter&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
-<a href=#3035 id=3035 data-nosnippet>3035</a>        v
-<a href=#3036 id=3036 data-nosnippet>3036</a>    }
-<a href=#3037 id=3037 data-nosnippet>3037</a>    <span class="kw">fn </span>iter_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Iter&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Iter&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3038 id=3038 data-nosnippet>3038</a>        v
-<a href=#3039 id=3039 data-nosnippet>3039</a>    }
-<a href=#3040 id=3040 data-nosnippet>3040</a>    <span class="kw">fn </span>into_iter_key&lt;<span class="lifetime">'new</span>&gt;(v: IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
-<a href=#3041 id=3041 data-nosnippet>3041</a>        v
-<a href=#3042 id=3042 data-nosnippet>3042</a>    }
-<a href=#3043 id=3043 data-nosnippet>3043</a>    <span class="kw">fn </span>into_iter_val&lt;<span class="lifetime">'new</span>&gt;(v: IntoIter&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; IntoIter&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3044 id=3044 data-nosnippet>3044</a>        v
-<a href=#3045 id=3045 data-nosnippet>3045</a>    }
-<a href=#3046 id=3046 data-nosnippet>3046</a>    <span class="kw">fn </span>keys_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Keys&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Keys&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
-<a href=#3047 id=3047 data-nosnippet>3047</a>        v
-<a href=#3048 id=3048 data-nosnippet>3048</a>    }
-<a href=#3049 id=3049 data-nosnippet>3049</a>    <span class="kw">fn </span>keys_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Keys&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Keys&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3050 id=3050 data-nosnippet>3050</a>        v
-<a href=#3051 id=3051 data-nosnippet>3051</a>    }
-<a href=#3052 id=3052 data-nosnippet>3052</a>    <span class="kw">fn </span>values_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Values&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Values&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
-<a href=#3053 id=3053 data-nosnippet>3053</a>        v
-<a href=#3054 id=3054 data-nosnippet>3054</a>    }
-<a href=#3055 id=3055 data-nosnippet>3055</a>    <span class="kw">fn </span>values_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Values&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Values&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3056 id=3056 data-nosnippet>3056</a>        v
+<a href=#3034 id=3034 data-nosnippet>3034</a>
+<a href=#3035 id=3035 data-nosnippet>3035</a>    <span class="attr">#[inline]
+<a href=#3036 id=3036 data-nosnippet>3036</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, (k, v): (K, V)) {
+<a href=#3037 id=3037 data-nosnippet>3037</a>        <span class="self">self</span>.base.insert(k, v);
+<a href=#3038 id=3038 data-nosnippet>3038</a>    }
+<a href=#3039 id=3039 data-nosnippet>3039</a>
+<a href=#3040 id=3040 data-nosnippet>3040</a>    <span class="attr">#[inline]
+<a href=#3041 id=3041 data-nosnippet>3041</a>    </span><span class="kw">fn </span>extend_reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
+<a href=#3042 id=3042 data-nosnippet>3042</a>        <span class="self">self</span>.base.extend_reserve(additional);
+<a href=#3043 id=3043 data-nosnippet>3043</a>    }
+<a href=#3044 id=3044 data-nosnippet>3044</a>}
+<a href=#3045 id=3045 data-nosnippet>3045</a>
+<a href=#3046 id=3046 data-nosnippet>3046</a><span class="attr">#[stable(feature = <span class="string">"hash_extend_copy"</span>, since = <span class="string">"1.4.0"</span>)]
+<a href=#3047 id=3047 data-nosnippet>3047</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V, S, A&gt; Extend&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt; <span class="kw">for </span>HashMap&lt;K, V, S, A&gt;
+<a href=#3048 id=3048 data-nosnippet>3048</a><span class="kw">where
+<a href=#3049 id=3049 data-nosnippet>3049</a>    </span>K: Eq + Hash + Copy,
+<a href=#3050 id=3050 data-nosnippet>3050</a>    V: Copy,
+<a href=#3051 id=3051 data-nosnippet>3051</a>    S: BuildHasher,
+<a href=#3052 id=3052 data-nosnippet>3052</a>    A: Allocator,
+<a href=#3053 id=3053 data-nosnippet>3053</a>{
+<a href=#3054 id=3054 data-nosnippet>3054</a>    <span class="attr">#[inline]
+<a href=#3055 id=3055 data-nosnippet>3055</a>    </span><span class="kw">fn </span>extend&lt;T: IntoIterator&lt;Item = (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: T) {
+<a href=#3056 id=3056 data-nosnippet>3056</a>        <span class="self">self</span>.base.extend(iter)
 <a href=#3057 id=3057 data-nosnippet>3057</a>    }
-<a href=#3058 id=3058 data-nosnippet>3058</a>    <span class="kw">fn </span>drain&lt;<span class="lifetime">'new</span>&gt;(
-<a href=#3059 id=3059 data-nosnippet>3059</a>        d: Drain&lt;<span class="lifetime">'static</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;,
-<a href=#3060 id=3060 data-nosnippet>3060</a>    ) -&gt; Drain&lt;<span class="lifetime">'new</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
-<a href=#3061 id=3061 data-nosnippet>3061</a>        d
+<a href=#3058 id=3058 data-nosnippet>3058</a>
+<a href=#3059 id=3059 data-nosnippet>3059</a>    <span class="attr">#[inline]
+<a href=#3060 id=3060 data-nosnippet>3060</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, (<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v): (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)) {
+<a href=#3061 id=3061 data-nosnippet>3061</a>        <span class="self">self</span>.base.insert(k, v);
 <a href=#3062 id=3062 data-nosnippet>3062</a>    }
-<a href=#3063 id=3063 data-nosnippet>3063</a>}
+<a href=#3063 id=3063 data-nosnippet>3063</a>
+<a href=#3064 id=3064 data-nosnippet>3064</a>    <span class="attr">#[inline]
+<a href=#3065 id=3065 data-nosnippet>3065</a>    </span><span class="kw">fn </span>extend_reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: usize) {
+<a href=#3066 id=3066 data-nosnippet>3066</a>        Extend::&lt;(K, V)&gt;::extend_reserve(<span class="self">self</span>, additional)
+<a href=#3067 id=3067 data-nosnippet>3067</a>    }
+<a href=#3068 id=3068 data-nosnippet>3068</a>}
+<a href=#3069 id=3069 data-nosnippet>3069</a>
+<a href=#3070 id=3070 data-nosnippet>3070</a><span class="attr">#[inline]
+<a href=#3071 id=3071 data-nosnippet>3071</a></span><span class="kw">fn </span>map_entry&lt;<span class="lifetime">'a</span>, K: <span class="lifetime">'a</span>, V: <span class="lifetime">'a</span>, A: Allocator&gt;(
+<a href=#3072 id=3072 data-nosnippet>3072</a>    raw: base::RustcEntry&lt;<span class="lifetime">'a</span>, K, V, A&gt;,
+<a href=#3073 id=3073 data-nosnippet>3073</a>) -&gt; Entry&lt;<span class="lifetime">'a</span>, K, V, A&gt; {
+<a href=#3074 id=3074 data-nosnippet>3074</a>    <span class="kw">match </span>raw {
+<a href=#3075 id=3075 data-nosnippet>3075</a>        base::RustcEntry::Occupied(base) =&gt; Entry::Occupied(OccupiedEntry { base }),
+<a href=#3076 id=3076 data-nosnippet>3076</a>        base::RustcEntry::Vacant(base) =&gt; Entry::Vacant(VacantEntry { base }),
+<a href=#3077 id=3077 data-nosnippet>3077</a>    }
+<a href=#3078 id=3078 data-nosnippet>3078</a>}
+<a href=#3079 id=3079 data-nosnippet>3079</a>
+<a href=#3080 id=3080 data-nosnippet>3080</a><span class="attr">#[inline]
+<a href=#3081 id=3081 data-nosnippet>3081</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>map_try_reserve_error(err: hashbrown::TryReserveError) -&gt; TryReserveError {
+<a href=#3082 id=3082 data-nosnippet>3082</a>    <span class="kw">match </span>err {
+<a href=#3083 id=3083 data-nosnippet>3083</a>        hashbrown::TryReserveError::CapacityOverflow =&gt; {
+<a href=#3084 id=3084 data-nosnippet>3084</a>            TryReserveErrorKind::CapacityOverflow.into()
+<a href=#3085 id=3085 data-nosnippet>3085</a>        }
+<a href=#3086 id=3086 data-nosnippet>3086</a>        hashbrown::TryReserveError::AllocError { layout } =&gt; {
+<a href=#3087 id=3087 data-nosnippet>3087</a>            TryReserveErrorKind::AllocError { layout, non_exhaustive: () }.into()
+<a href=#3088 id=3088 data-nosnippet>3088</a>        }
+<a href=#3089 id=3089 data-nosnippet>3089</a>    }
+<a href=#3090 id=3090 data-nosnippet>3090</a>}
+<a href=#3091 id=3091 data-nosnippet>3091</a>
+<a href=#3092 id=3092 data-nosnippet>3092</a><span class="attr">#[allow(dead_code)]
+<a href=#3093 id=3093 data-nosnippet>3093</a></span><span class="kw">fn </span>assert_covariance() {
+<a href=#3094 id=3094 data-nosnippet>3094</a>    <span class="kw">fn </span>map_key&lt;<span class="lifetime">'new</span>&gt;(v: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
+<a href=#3095 id=3095 data-nosnippet>3095</a>        v
+<a href=#3096 id=3096 data-nosnippet>3096</a>    }
+<a href=#3097 id=3097 data-nosnippet>3097</a>    <span class="kw">fn </span>map_val&lt;<span class="lifetime">'new</span>&gt;(v: HashMap&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; HashMap&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3098 id=3098 data-nosnippet>3098</a>        v
+<a href=#3099 id=3099 data-nosnippet>3099</a>    }
+<a href=#3100 id=3100 data-nosnippet>3100</a>    <span class="kw">fn </span>iter_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Iter&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Iter&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
+<a href=#3101 id=3101 data-nosnippet>3101</a>        v
+<a href=#3102 id=3102 data-nosnippet>3102</a>    }
+<a href=#3103 id=3103 data-nosnippet>3103</a>    <span class="kw">fn </span>iter_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Iter&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Iter&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3104 id=3104 data-nosnippet>3104</a>        v
+<a href=#3105 id=3105 data-nosnippet>3105</a>    }
+<a href=#3106 id=3106 data-nosnippet>3106</a>    <span class="kw">fn </span>into_iter_key&lt;<span class="lifetime">'new</span>&gt;(v: IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
+<a href=#3107 id=3107 data-nosnippet>3107</a>        v
+<a href=#3108 id=3108 data-nosnippet>3108</a>    }
+<a href=#3109 id=3109 data-nosnippet>3109</a>    <span class="kw">fn </span>into_iter_val&lt;<span class="lifetime">'new</span>&gt;(v: IntoIter&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; IntoIter&lt;u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3110 id=3110 data-nosnippet>3110</a>        v
+<a href=#3111 id=3111 data-nosnippet>3111</a>    }
+<a href=#3112 id=3112 data-nosnippet>3112</a>    <span class="kw">fn </span>keys_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Keys&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Keys&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
+<a href=#3113 id=3113 data-nosnippet>3113</a>        v
+<a href=#3114 id=3114 data-nosnippet>3114</a>    }
+<a href=#3115 id=3115 data-nosnippet>3115</a>    <span class="kw">fn </span>keys_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Keys&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Keys&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3116 id=3116 data-nosnippet>3116</a>        v
+<a href=#3117 id=3117 data-nosnippet>3117</a>    }
+<a href=#3118 id=3118 data-nosnippet>3118</a>    <span class="kw">fn </span>values_key&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Values&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, u8&gt;) -&gt; Values&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, u8&gt; {
+<a href=#3119 id=3119 data-nosnippet>3119</a>        v
+<a href=#3120 id=3120 data-nosnippet>3120</a>    }
+<a href=#3121 id=3121 data-nosnippet>3121</a>    <span class="kw">fn </span>values_val&lt;<span class="lifetime">'a</span>, <span class="lifetime">'new</span>&gt;(v: Values&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;) -&gt; Values&lt;<span class="lifetime">'a</span>, u8, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3122 id=3122 data-nosnippet>3122</a>        v
+<a href=#3123 id=3123 data-nosnippet>3123</a>    }
+<a href=#3124 id=3124 data-nosnippet>3124</a>    <span class="kw">fn </span>drain&lt;<span class="lifetime">'new</span>&gt;(
+<a href=#3125 id=3125 data-nosnippet>3125</a>        d: Drain&lt;<span class="lifetime">'static</span>, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;,
+<a href=#3126 id=3126 data-nosnippet>3126</a>    ) -&gt; Drain&lt;<span class="lifetime">'new</span>, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'new </span>str&gt; {
+<a href=#3127 id=3127 data-nosnippet>3127</a>        d
+<a href=#3128 id=3128 data-nosnippet>3128</a>    }
+<a href=#3129 id=3129 data-nosnippet>3129</a>}
 </code></pre></div></section></main></body></html>
