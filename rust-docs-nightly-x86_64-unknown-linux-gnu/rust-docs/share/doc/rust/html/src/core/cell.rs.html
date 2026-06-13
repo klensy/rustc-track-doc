@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (b30f3df3b 2026-06-11)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.98.0" data-rustdoc-version="1.98.0-nightly (654079540 2026-06-12)" data-channel="nightly" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.98.0.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Rust memory safety is based on this rule: Given an object `T`, it is only possible to
 <a href=#4 id=4 data-nosnippet>4</a>//! have one of the following:
@@ -2172,16 +2172,16 @@
 <a href=#2172 id=2172 data-nosnippet>2172</a>/// - If you create a safe reference with lifetime `'a` (either a `&amp;T` or `&amp;mut T` reference), then
 <a href=#2173 id=2173 data-nosnippet>2173</a>///   you must not access the data in any way that contradicts that reference for the remainder of
 <a href=#2174 id=2174 data-nosnippet>2174</a>///   `'a`. For example, this means that if you take the `*mut T` from an `UnsafeCell&lt;T&gt;` and cast it
-<a href=#2175 id=2175 data-nosnippet>2175</a>///   to an `&amp;T`, then the data in `T` must remain immutable (modulo any `UnsafeCell` data found
+<a href=#2175 id=2175 data-nosnippet>2175</a>///   to a `&amp;T`, then the data in `T` must remain immutable (modulo any `UnsafeCell` data found
 <a href=#2176 id=2176 data-nosnippet>2176</a>///   within `T`, of course) until that reference's lifetime expires. Similarly, if you create a
-<a href=#2177 id=2177 data-nosnippet>2177</a>///   `&amp;mut T` reference that is released to safe code, then you must not access the data within the
+<a href=#2177 id=2177 data-nosnippet>2177</a>///   `&amp;mut T` reference, then you must not access the data within the
 <a href=#2178 id=2178 data-nosnippet>2178</a>///   `UnsafeCell` until that reference expires.
 <a href=#2179 id=2179 data-nosnippet>2179</a>///
 <a href=#2180 id=2180 data-nosnippet>2180</a>/// - For both `&amp;T` without `UnsafeCell&lt;_&gt;` and `&amp;mut T`, you must also not deallocate the data
-<a href=#2181 id=2181 data-nosnippet>2181</a>///   until the reference expires. As a special exception, given an `&amp;T`, any part of it that is
+<a href=#2181 id=2181 data-nosnippet>2181</a>///   until the reference expires. As a special exception, given a `&amp;T`, any part of it that is
 <a href=#2182 id=2182 data-nosnippet>2182</a>///   inside an `UnsafeCell&lt;_&gt;` may be deallocated during the lifetime of the reference, after the
 <a href=#2183 id=2183 data-nosnippet>2183</a>///   last time the reference is used (dereferenced or reborrowed). Since you cannot deallocate a part
-<a href=#2184 id=2184 data-nosnippet>2184</a>///   of what a reference points to, this means the memory an `&amp;T` points to can be deallocated only if
+<a href=#2184 id=2184 data-nosnippet>2184</a>///   of what a reference points to, this means the memory a `&amp;T` points to can be deallocated only if
 <a href=#2185 id=2185 data-nosnippet>2185</a>///   *every part of it* (including padding) is inside an `UnsafeCell`.
 <a href=#2186 id=2186 data-nosnippet>2186</a>///
 <a href=#2187 id=2187 data-nosnippet>2187</a>/// However, whenever a `&amp;UnsafeCell&lt;T&gt;` is constructed or dereferenced, it must still point to
@@ -2197,7 +2197,7 @@
 <a href=#2197 id=2197 data-nosnippet>2197</a>/// 2. A `&amp;mut T` reference may be released to safe code provided neither other `&amp;mut T` nor `&amp;T`
 <a href=#2198 id=2198 data-nosnippet>2198</a>///    co-exist with it. A `&amp;mut T` must always be unique.
 <a href=#2199 id=2199 data-nosnippet>2199</a>///
-<a href=#2200 id=2200 data-nosnippet>2200</a>/// Note that whilst mutating the contents of an `&amp;UnsafeCell&lt;T&gt;` (even while other
+<a href=#2200 id=2200 data-nosnippet>2200</a>/// Note that whilst mutating the contents of a `&amp;UnsafeCell&lt;T&gt;` (even while other
 <a href=#2201 id=2201 data-nosnippet>2201</a>/// `&amp;UnsafeCell&lt;T&gt;` references alias the cell) is
 <a href=#2202 id=2202 data-nosnippet>2202</a>/// ok (provided you enforce the above invariants some other way), it is still undefined behavior
 <a href=#2203 id=2203 data-nosnippet>2203</a>/// to have multiple `&amp;mut UnsafeCell&lt;T&gt;` aliases. That is, `UnsafeCell` is a wrapper
@@ -2224,9 +2224,9 @@
 <a href=#2224 id=2224 data-nosnippet>2224</a>/// thus this can cause distortions in the type size in these cases.
 <a href=#2225 id=2225 data-nosnippet>2225</a>///
 <a href=#2226 id=2226 data-nosnippet>2226</a>/// Note that the only valid way to obtain a `*mut T` pointer to the contents of a
-<a href=#2227 id=2227 data-nosnippet>2227</a>/// _shared_ `UnsafeCell&lt;T&gt;` is through [`.get()`]  or [`.raw_get()`]. A `&amp;mut T` reference
-<a href=#2228 id=2228 data-nosnippet>2228</a>/// can be obtained by either dereferencing this pointer or by calling [`.get_mut()`]
-<a href=#2229 id=2229 data-nosnippet>2229</a>/// on an _exclusive_ `UnsafeCell&lt;T&gt;`. Even though `T` and `UnsafeCell&lt;T&gt;` have the
+<a href=#2227 id=2227 data-nosnippet>2227</a>/// _shared_ `UnsafeCell&lt;T&gt;` is through [`.get()`]  or [`.raw_get()`]. A `&amp;T` or `&amp;mut T` reference
+<a href=#2228 id=2228 data-nosnippet>2228</a>/// can then be obtained from that pointer, as long as the aliasing rules outlined above are obeyed.
+<a href=#2229 id=2229 data-nosnippet>2229</a>/// Even though `T` and `UnsafeCell&lt;T&gt;` have the
 <a href=#2230 id=2230 data-nosnippet>2230</a>/// same memory layout, the following is not allowed and undefined behavior:
 <a href=#2231 id=2231 data-nosnippet>2231</a>///
 <a href=#2232 id=2232 data-nosnippet>2232</a>/// ```rust,compile_fail
@@ -2421,9 +2421,9 @@
 <a href=#2421 id=2421 data-nosnippet>2421</a>
 <a href=#2422 id=2422 data-nosnippet>2422</a>    <span class="doccomment">/// Gets a mutable pointer to the wrapped value.
 <a href=#2423 id=2423 data-nosnippet>2423</a>    ///
-<a href=#2424 id=2424 data-nosnippet>2424</a>    /// This can be cast to a pointer of any kind. When creating references, you must uphold the
-<a href=#2425 id=2425 data-nosnippet>2425</a>    /// aliasing rules; see [the type-level docs][UnsafeCell#aliasing-rules] for more discussion and
-<a href=#2426 id=2426 data-nosnippet>2426</a>    /// caveats.
+<a href=#2424 id=2424 data-nosnippet>2424</a>    /// This can be cast to a pointer of any kind. When creating (shared or mutable) references, you
+<a href=#2425 id=2425 data-nosnippet>2425</a>    /// must uphold the aliasing rules; see [the type-level docs][UnsafeCell#aliasing-rules] for
+<a href=#2426 id=2426 data-nosnippet>2426</a>    /// more discussion and caveats.
 <a href=#2427 id=2427 data-nosnippet>2427</a>    ///
 <a href=#2428 id=2428 data-nosnippet>2428</a>    /// # Examples
 <a href=#2429 id=2429 data-nosnippet>2429</a>    ///
@@ -2473,9 +2473,9 @@
 <a href=#2473 id=2473 data-nosnippet>2473</a>    /// The difference from [`get`] is that this function accepts a raw pointer,
 <a href=#2474 id=2474 data-nosnippet>2474</a>    /// which is useful to avoid the creation of temporary references.
 <a href=#2475 id=2475 data-nosnippet>2475</a>    ///
-<a href=#2476 id=2476 data-nosnippet>2476</a>    /// This can be cast to a pointer of any kind. When creating references, you must uphold the
-<a href=#2477 id=2477 data-nosnippet>2477</a>    /// aliasing rules; see [the type-level docs][UnsafeCell#aliasing-rules] for more discussion and
-<a href=#2478 id=2478 data-nosnippet>2478</a>    /// caveats.
+<a href=#2476 id=2476 data-nosnippet>2476</a>    /// This can be cast to a pointer of any kind. When creating (shared or mutable) references, you
+<a href=#2477 id=2477 data-nosnippet>2477</a>    /// must uphold the aliasing rules; see [the type-level docs][UnsafeCell#aliasing-rules] for
+<a href=#2478 id=2478 data-nosnippet>2478</a>    /// more discussion and caveats.
 <a href=#2479 id=2479 data-nosnippet>2479</a>    ///
 <a href=#2480 id=2480 data-nosnippet>2480</a>    /// [`get`]: UnsafeCell::get()
 <a href=#2481 id=2481 data-nosnippet>2481</a>    ///
