@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-12f90963.js";
+            window.path_to_searchindex_js = "searchindex-e69c7bd9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-93f614aa.js"></script>
@@ -2299,19 +2299,37 @@ note: the lint level is defined here
 
 </code></pre>
 <h3 id="explanation-9"><a class="header" href="#explanation-9">Explanation</a></h3>
-<p>If a <code>struct</code> contains a reference, such as <code>&amp;'a T</code>, the compiler
-requires that <code>T</code> outlives the lifetime <code>'a</code>. This historically
-required writing an explicit lifetime bound to indicate this
-requirement. However, this can be overly explicit, causing clutter and
-unnecessary complexity. The language was changed to automatically
-infer the bound if it is not specified. Specifically, if the struct
-contains a reference, directly or indirectly, to <code>T</code> with lifetime
-<code>'x</code>, then it will infer that <code>T: 'x</code> is a requirement.</p>
-<p>This lint is “allow” by default because it can be noisy for existing
-code that already had these requirements. This is a stylistic choice,
-as it is still valid to explicitly state the bound. It also has some
-false positives that can cause confusion.</p>
+<p>If a struct, enum or union contains a reference, such as <code>&amp;'a T</code>,
+the compiler requires that <code>T</code> outlives the lifetime <code>'a</code>.
+This historically required writing an explicit lifetime bound to indicate this requirement.
+However, this can be overly explicit, causing clutter and unnecessary complexity.
+The language was changed to automatically infer some classes of lifetime bounds
+if they are not specified.
+Specifically, if a struct, enum or union contains a reference, directly or indirectly,
+to <code>T</code> with lifetime <code>'x</code> and <code>'x</code> refers to a lifetime parameter,
+then it will infer that <code>T: 'x</code> is a requirement.</p>
 <p>See <a href="https://github.com/rust-lang/rfcs/blob/master/text/2093-infer-outlives.md">RFC 2093</a> for more details.</p>
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>Implicit lifetime bounds are not semantically equivalent to explicit ones since the latter
+may affect the implicit lifetime bound of trait object types that are passed as arguments
+to the overarching struct, enum or union.
+Rephrased, they participate in <a href="https://doc.rust-lang.org/reference/lifetime-elision.html#default-trait-object-lifetimes">trait object lifetime defaulting</a>.</p>
+<p>Consider the following piece of code where removing bound <code>T: 'a</code> would lead to a lifetime
+error in function <code>scope</code>:</p>
+<pre><code class="language-rust no_run">struct Ref&lt;'a, T: ?Sized + 'a&gt;(&amp;'a T);
+
+fn scope() {
+    let buf = String::new();
+    let str = buf.as_str();
+    render(Ref(&amp;str));
+}
+
+fn render(_: Ref&lt;dyn std::fmt::Display&gt;) {}</code></pre>
+<p>Consequently, removing explicit outlives-bounds on type parameters of publicly reachable types
+constitutes a <strong>breaking change</strong> if the lifetime refers to a lifetime parameter and
+the type parameter is not bounded by <code>Sized</code> (thereby admitting trait object types).</p>
+</blockquote>
 <h2 id="ffi-unwind-calls"><a class="header" href="#ffi-unwind-calls">ffi-unwind-calls</a></h2>
 <p>The <code>ffi_unwind_calls</code> lint detects calls to foreign functions or function pointers with
 <code>C-unwind</code> or other FFI-unwind ABIs.</p>
@@ -8191,7 +8209,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-06-16; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-06-17; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -8463,7 +8481,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-06-16; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-06-17; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #154045 &lt;https://github.com/rust-lang/rust/issues/154045&gt;
 
@@ -10376,7 +10394,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-06-16; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-06-17; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
