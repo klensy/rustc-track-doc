@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a9c6834f.js";
+            window.path_to_searchindex_js = "../searchindex-c9ae6ada.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d449ba40.js"></script>
@@ -180,10 +180,145 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="instrument_mcount"><a class="header" href="#instrument_mcount"><code>instrument_mcount</code></a></h1>
-<p>insert function instrument code for mcount-based tracing (default: no)</p>
-<p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
-<hr>
+                        <h1 id="instrument-mcount"><a class="header" href="#instrument-mcount"><code>instrument-mcount</code></a></h1>
+<p>Insert calls to a counting function at the entry of each function. Traditionally, the name of this function was
+mcount, but the exact name may vary depending on target and option usage.</p>
+<p>The counting function is a special function which does not typically follow a target’s ABI. It generally takes
+two arguments, the address of the calling function and the address of the called function. It was intially used
+to profile applications, but has expanded to other usages (for example <a href="https://docs.kernel.org/trace/ftrace.html">ftrace on Linux</a>).</p>
+<p>Supported options:</p>
+<ul>
+<li><code>no</code>, <code>n</code>, <code>off</code>: Do no enable instrumentation. The default option. This requires, and enables frame pointer generation.</li>
+<li><code>yes</code>, <code>y</code>, <code>on</code>: Enable mcount based function instrumentation.</li>
+<li><code>fentry</code>: Enable fentry based function instrument, where supported. The calling conventions for this are different than mcount, with less overhead, and no frame pointer requirements. This counting function is always named <code>__fentry__</code>. This is only available on x86 and s390x targets.</li>
+</ul>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>target</th><th>mcount function</th><th>supports fentry</th><th>ABI notes</th></tr>
+</thead>
+<tbody>
+<tr><td>aarch64-apple-darwin</td><td><code>\u{1}mcount</code></td><td></td><td></td></tr>
+<tr><td>aarch64-pc-windows-msvc</td><td><code>mcount</code></td><td></td><td></td></tr>
+<tr><td>aarch64-unknown-linux-gnu</td><td><code>_mcount</code></td><td></td><td></td></tr>
+<tr><td>i686-pc-windows-msvc</td><td><code>mcount</code></td><td>x</td><td></td></tr>
+<tr><td>i686-unknown-linux-gnu</td><td><code>mcount</code></td><td>x</td><td></td></tr>
+<tr><td>x86_64-pc-windows-gnu</td><td><code>_mcount</code></td><td>x</td><td></td></tr>
+<tr><td>x86_64-pc-windows-msvc</td><td><code>mcount</code></td><td>x</td><td></td></tr>
+<tr><td>x86_64-unknown-linux-gnu</td><td><code>mcount</code></td><td>x</td><td>1</td></tr>
+</tbody>
+</table>
+</div>
+<p>On arm eabi targets, the mcount function is usually named <code>__gnu_mcount_nc</code>, though some targets may use different names. Implementers of counting function should consult the target specific documentation for quirks of each ABI function.</p>
+<ol>
+<li>On x86-64, mcount and fentry must preserve the argument registers <code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>rsi</code>, <code>rdi</code>, <code>r8</code>, <code>r9</code>. When using fentry, the stack pointer <code>rsp</code> may need aligned to meet ABI requirements.</li>
+</ol>
+<h2 id="implementing-custom-counting-functions"><a class="header" href="#implementing-custom-counting-functions">Implementing custom counting functions</a></h2>
+<p>In essence, this is implementing the function <code>fn mcount(caller: *const std::ffi::c_void, callee: *const std::ffi::c_void)</code>. The calling convention for mcount follows its own ABI, which isn’t usually the standard ABI for the target, but is enforced by preexisting convention.</p>
+<p>A trivial example on x86_64-unknown-linux-gnu looks something like the following. The <code>#[instrument_fn]</code> attribute can be used to disable profiling to simplify writing counting functions, but implementors must be very careful when calling other functions (or closures which fail to inline) as they may also call mcount.</p>
+<p>The following example can be compiled with <code>-Zinstrument-mcount=yes</code> or <code>-Zinstrument-mcount=fentry</code> on an x86_64-unknown-linux-gnu target. It is also acceptable to link objects with different usages of <code>-Zinstrument-mcount</code>, however doing so will require implementing both <code>__fentry__</code> and <code>mcount</code> on targets which support both.</p>
+<pre class="playground"><code class="language-rust">#![feature(instrument_fn)]
+#![feature(abi_custom)]
+
+fn main() {
+    // Ensure all the early startup occurs before attempting to call this trivial, single-threaded
+    // counting function.
+    unsafe {
+        PROFILING_ENABLED = true;
+    }
+    println!("main() called");
+    unsafe {
+        PROFILING_ENABLED = false;
+    }
+}
+
+// This example is not threadsafe.
+pub static mut IN_MCOUNT: isize = 0;
+pub static mut PROFILING_ENABLED: bool = false;
+
+#[unsafe(no_mangle)]
+#[instrument_fn = "off"]
+unsafe extern "C" fn __count_fn(caller: u64, callee: u64) {
+    unsafe {
+        if IN_MCOUNT == 0 &amp;&amp; PROFILING_ENABLED {
+            IN_MCOUNT += 1;
+            {
+                println!("mcount: call from 0x{caller:x} to 0x{callee:x}");
+            }
+            IN_MCOUNT -= 1;
+        }
+    }
+}
+
+// Define a custom mcount function. This may partially or fully override the glibc
+// implementation depending on linker options.
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+unsafe extern "custom" fn mcount() {
+    core::arch::naked_asm!(
+        // A simplified version based on the glibc x86-64 mcount wrapper.
+        // Save register arguments to the stack, and call the mcount above.
+        "push rax",
+        "push rcx",
+        "push rdx",
+        "push rsi",
+        "push rdi",
+        "push r8",
+        "push r9",
+        "mov rsi, 56[rsp]",
+        "mov rdi, 8[rbp]",
+        "call __count_fn",
+        "pop r9",
+        "pop r8",
+        "pop rdi",
+        "pop rsi",
+        "pop rdx",
+        "pop rcx",
+        "pop rax",
+        "ret",
+    )
+}
+
+// Supply a custom __fentry__ instead of glibc's. This has the same linker
+// restrictions as noted with mcount, but does not require a frame pointer.
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+unsafe extern "custom" fn __fentry__() {
+    core::arch::naked_asm!(
+        // __fentry__ is called before any other prologue actions, be careful
+        // with stack alignment. The stack slots look something like:
+        // [...]
+        // [caller return address]
+        // [callee return address] &lt;- top of stack
+        "sub rsp, 8",
+        "push rax",
+        "push rcx",
+        "push rdx",
+        "push rsi",
+        "push rdi",
+        "push r8",
+        "push r9",
+        "mov rsi, 64[rsp]",
+        "mov rdi, 72[rsp]",
+        "call __count_fn",
+        "pop r9",
+        "pop r8",
+        "pop rdi",
+        "pop rsi",
+        "pop rdx",
+        "pop rcx",
+        "pop rax",
+        "add rsp, 8",
+        "ret",
+    )
+}</code></pre>
+<p>When run, the above program should produce output similar to:</p>
+<pre><code class="language-txt">mcount: call from 0x5614c97d778a to 0x5614c97d76e5
+main() called
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
