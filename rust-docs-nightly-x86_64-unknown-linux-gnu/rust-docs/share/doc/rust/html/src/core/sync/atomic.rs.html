@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ddecd707.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (daf2e5e18 2026-07-13)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ddecd707.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (da80ed070 2026-07-14)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Atomic types provide primitive shared-memory communication between
 <a href=#4 id=4 data-nosnippet>4</a>//! threads, and are the building blocks of other concurrent
@@ -641,7 +641,7 @@
 <a href=#641 id=641 data-nosnippet>641</a>    /// ```
 <a href=#642 id=642 data-nosnippet>642</a>    </span><span class="attr">#[inline]
 <a href=#643 id=643 data-nosnippet>643</a>    #[cfg(target_has_atomic_primitive_alignment = <span class="string">"8"</span>)]
-<a href=#644 id=644 data-nosnippet>644</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#644 id=644 data-nosnippet>644</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">pub fn </span>from_mut(v: <span class="kw-2">&amp;mut </span>bool) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
 <a href=#646 id=646 data-nosnippet>646</a>        <span class="comment">// SAFETY: the mutable reference guarantees unique ownership, and
 <a href=#647 id=647 data-nosnippet>647</a>        // alignment of both `bool` and `Self` is 1.
@@ -675,7 +675,7 @@
 <a href=#675 id=675 data-nosnippet>675</a>    /// });
 <a href=#676 id=676 data-nosnippet>676</a>    /// ```
 <a href=#677 id=677 data-nosnippet>677</a>    </span><span class="attr">#[inline]
-<a href=#678 id=678 data-nosnippet>678</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#678 id=678 data-nosnippet>678</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#679 id=679 data-nosnippet>679</a>    </span><span class="kw">pub fn </span>get_mut_slice(this: <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>]) -&gt; <span class="kw-2">&amp;mut </span>[bool] {
 <a href=#680 id=680 data-nosnippet>680</a>        <span class="comment">// SAFETY: the mutable reference guarantees unique ownership.
 <a href=#681 id=681 data-nosnippet>681</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(this <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="self">Self</span>] <span class="kw">as </span><span class="kw-2">*mut </span>[bool]) }
@@ -699,7 +699,7 @@
 <a href=#699 id=699 data-nosnippet>699</a>    /// ```
 <a href=#700 id=700 data-nosnippet>700</a>    </span><span class="attr">#[inline]
 <a href=#701 id=701 data-nosnippet>701</a>    #[cfg(target_has_atomic_primitive_alignment = <span class="string">"8"</span>)]
-<a href=#702 id=702 data-nosnippet>702</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#702 id=702 data-nosnippet>702</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#703 id=703 data-nosnippet>703</a>    </span><span class="kw">pub fn </span>from_mut_slice(v: <span class="kw-2">&amp;mut </span>[bool]) -&gt; <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>] {
 <a href=#704 id=704 data-nosnippet>704</a>        <span class="comment">// SAFETY: the mutable reference guarantees unique ownership, and
 <a href=#705 id=705 data-nosnippet>705</a>        // alignment of both `bool` and `Self` is 1.
@@ -1609,7 +1609,7 @@
 <a href=#1609 id=1609 data-nosnippet>1609</a>    /// ```
 <a href=#1610 id=1610 data-nosnippet>1610</a>    </span><span class="attr">#[inline]
 <a href=#1611 id=1611 data-nosnippet>1611</a>    #[cfg(target_has_atomic_primitive_alignment = <span class="string">"ptr"</span>)]
-<a href=#1612 id=1612 data-nosnippet>1612</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1612 id=1612 data-nosnippet>1612</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#1613 id=1613 data-nosnippet>1613</a>    </span><span class="kw">pub fn </span>from_mut(v: <span class="kw-2">&amp;mut *mut </span>T) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
 <a href=#1614 id=1614 data-nosnippet>1614</a>        <span class="kw">let </span>[] = [(); align_of::&lt;AtomicPtr&lt;()&gt;&gt;() - align_of::&lt;<span class="kw-2">*mut </span>()&gt;()];
 <a href=#1615 id=1615 data-nosnippet>1615</a>        <span class="comment">// SAFETY:
@@ -1652,7 +1652,7 @@
 <a href=#1652 id=1652 data-nosnippet>1652</a>    /// });
 <a href=#1653 id=1653 data-nosnippet>1653</a>    /// ```
 <a href=#1654 id=1654 data-nosnippet>1654</a>    </span><span class="attr">#[inline]
-<a href=#1655 id=1655 data-nosnippet>1655</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1655 id=1655 data-nosnippet>1655</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#1656 id=1656 data-nosnippet>1656</a>    </span><span class="kw">pub fn </span>get_mut_slice(this: <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>]) -&gt; <span class="kw-2">&amp;mut </span>[<span class="kw-2">*mut </span>T] {
 <a href=#1657 id=1657 data-nosnippet>1657</a>        <span class="comment">// SAFETY: the mutable reference guarantees unique ownership.
 <a href=#1658 id=1658 data-nosnippet>1658</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(this <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="self">Self</span>] <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="kw-2">*mut </span>T]) }
@@ -1686,7 +1686,7 @@
 <a href=#1686 id=1686 data-nosnippet>1686</a>    /// ```
 <a href=#1687 id=1687 data-nosnippet>1687</a>    </span><span class="attr">#[inline]
 <a href=#1688 id=1688 data-nosnippet>1688</a>    #[cfg(target_has_atomic_primitive_alignment = <span class="string">"ptr"</span>)]
-<a href=#1689 id=1689 data-nosnippet>1689</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#1689 id=1689 data-nosnippet>1689</a>    #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#1690 id=1690 data-nosnippet>1690</a>    </span><span class="kw">pub fn </span>from_mut_slice(v: <span class="kw-2">&amp;mut </span>[<span class="kw-2">*mut </span>T]) -&gt; <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>] {
 <a href=#1691 id=1691 data-nosnippet>1691</a>        <span class="comment">// SAFETY:
 <a href=#1692 id=1692 data-nosnippet>1692</a>        //  - the mutable reference guarantees unique ownership.
@@ -2754,7 +2754,7 @@
 <a href=#2754 id=2754 data-nosnippet>2754</a>            ///
 <a href=#2755 id=2755 data-nosnippet>2755</a>            </span><span class="attr">#[inline]
 <a href=#2756 id=2756 data-nosnippet>2756</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_align</span>, doc))]
-<a href=#2757 id=2757 data-nosnippet>2757</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#2757 id=2757 data-nosnippet>2757</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#2758 id=2758 data-nosnippet>2758</a>            </span><span class="kw">pub fn </span>from_mut(v: <span class="kw-2">&amp;mut </span><span class="macro-nonterminal">$int_type</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
 <a href=#2759 id=2759 data-nosnippet>2759</a>                <span class="kw">let </span>[] = [(); align_of::&lt;<span class="self">Self</span>&gt;() - align_of::&lt;<span class="macro-nonterminal">$int_type</span>&gt;()];
 <a href=#2760 id=2760 data-nosnippet>2760</a>                <span class="comment">// SAFETY:
@@ -2794,7 +2794,7 @@
 <a href=#2794 id=2794 data-nosnippet>2794</a>            /// });
 <a href=#2795 id=2795 data-nosnippet>2795</a>            /// ```
 <a href=#2796 id=2796 data-nosnippet>2796</a>            </span><span class="attr">#[inline]
-<a href=#2797 id=2797 data-nosnippet>2797</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#2797 id=2797 data-nosnippet>2797</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#2798 id=2798 data-nosnippet>2798</a>            </span><span class="kw">pub fn </span>get_mut_slice(this: <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>]) -&gt; <span class="kw-2">&amp;mut </span>[<span class="macro-nonterminal">$int_type</span>] {
 <a href=#2799 id=2799 data-nosnippet>2799</a>                <span class="comment">// SAFETY: the mutable reference guarantees unique ownership.
 <a href=#2800 id=2800 data-nosnippet>2800</a>                </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(this <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="self">Self</span>] <span class="kw">as </span><span class="kw-2">*mut </span>[<span class="macro-nonterminal">$int_type</span>]) }
@@ -2829,7 +2829,7 @@
 <a href=#2829 id=2829 data-nosnippet>2829</a>            /// ```
 <a href=#2830 id=2830 data-nosnippet>2830</a>            </span><span class="attr">#[inline]
 <a href=#2831 id=2831 data-nosnippet>2831</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_align</span>, doc))]
-<a href=#2832 id=2832 data-nosnippet>2832</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#2832 id=2832 data-nosnippet>2832</a>            #[stable(feature = <span class="string">"atomic_from_mut"</span>, since = <span class="string">"1.98.0"</span>)]
 <a href=#2833 id=2833 data-nosnippet>2833</a>            </span><span class="kw">pub fn </span>from_mut_slice(v: <span class="kw-2">&amp;mut </span>[<span class="macro-nonterminal">$int_type</span>]) -&gt; <span class="kw-2">&amp;mut </span>[<span class="self">Self</span>] {
 <a href=#2834 id=2834 data-nosnippet>2834</a>                <span class="kw">let </span>[] = [(); align_of::&lt;<span class="self">Self</span>&gt;() - align_of::&lt;<span class="macro-nonterminal">$int_type</span>&gt;()];
 <a href=#2835 id=2835 data-nosnippet>2835</a>                <span class="comment">// SAFETY:
