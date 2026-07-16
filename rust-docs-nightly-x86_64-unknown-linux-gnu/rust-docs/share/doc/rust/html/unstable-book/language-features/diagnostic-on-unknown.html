@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-600885d0.js";
+            window.path_to_searchindex_js = "../searchindex-e3244c4b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-671b6863.js"></script>
+        <script src="../toc-bd2a4a57.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,9 +181,177 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="diagnostic_on_unknown"><a class="header" href="#diagnostic_on_unknown"><code>diagnostic_on_unknown</code></a></h1>
-<p>Allows giving unresolved imports a custom diagnostic message</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/152900">#152900</a></p>
 <hr>
+<p>The <code>diagnostic_on_unknown</code> feature allows use of the <code>#[diagnostic::on_unknown]</code> attribute. It should be
+placed on use and module declarations as well as the crate root, though it is not an error to be located in other
+positions. This attribute is a hint to the compiler to supplement the error message when the
+annotated declaration is involved in a name resolution error.</p>
+<p>Format parameters with the given named parameter will be replaced with the following text:</p>
+<ul>
+<li><code>{Unresolved}</code> — The <code>SimplePathSegment</code> of the import path that could not be resolved.</li>
+<li><code>{This}</code> — The name of the annotated item. On <code>use</code> statements this is identical to <code>{Unresolved}</code>.</li>
+</ul>
+<p>The original error message will not be suppressed but is emitted as a note instead.</p>
+<h3 id="on-use-declarations"><a class="header" href="#on-use-declarations">On use declarations</a></h3>
+<pre class="playground"><code class="language-rust edition2018 compile_fail E0432"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_unknown)]
+
+<span class="boring">fn main() {
+</span>#[diagnostic::on_unknown(
+    message = "`{Unresolved}` doesn't exist",
+    label = "you did something silly here"
+)]
+use doesnt_exist;
+<span class="boring">}</span></code></pre>
+<p>This will result in the following error:</p>
+<pre><code class="language-text">error[E0432]: `doesnt_exist` doesn't exist
+ --&gt; src/lib.rs:7:5
+  |
+7 | use doesnt_exist;
+  |     ^^^^^^^^^^^^ you did something silly here
+  |
+  = note: unresolved import `doesnt_exist`
+
+For more information about this error, try `rustc --explain E0432`.
+</code></pre>
+<h3 id="on-module-declarations"><a class="header" href="#on-module-declarations">On module declarations</a></h3>
+<pre class="playground"><code class="language-rust edition2018 compile_fail E0432"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_unknown)]
+
+<span class="boring">fn main() {
+</span>#[diagnostic::on_unknown(
+    message = "module `{This}` is empty, there is no `{Unresolved}` here",
+    label = "can't import something from an empty module"
+)]
+mod empty {}
+
+use empty::what;
+<span class="boring">}</span></code></pre>
+<p>This will result in the following error:</p>
+<pre><code class="language-text">error[E0432]: module `empty` is empty, there is no `what` here
+ --&gt; src/lib.rs:9:5
+  |
+9 | use empty::what;
+  |     ^^^^^^^----
+  |            |
+  |            can't import something from an empty module
+  |
+  = note: unresolved import `empty::what`
+</code></pre>
+<h3 id="on-the-crate-root"><a class="header" href="#on-the-crate-root">On the crate root</a></h3>
+<p>This additionally requires the <code>#![feature(custom_inner_attributes)]</code> feature:</p>
+<pre class="playground"><code class="language-rust edition2018 compile_fail E0432"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_unknown)]
+#![feature(custom_inner_attributes)]
+#![diagnostic::on_unknown(message = "Say `{Unresolved}` again!")]
+
+<span class="boring">fn main() {
+</span>use self::what;
+<span class="boring">}</span></code></pre>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<p>Consider the following pair of macros, one which creates a hidden module with a constant and another that reads it.</p>
+<pre class="playground"><code class="language-rust">#![feature(macro_metavar_expr, macro_attr)]
+
+macro_rules! instrument {
+    attr() { $vis:vis fn $fn_name:ident ($($arg_name:ident : $arg_ty:ty),*) $(-&gt; $ret:ty)? $body:block } =&gt; {
+        $vis fn $fn_name ($($arg_name:$arg_ty),*) $(-&gt; $ret)? $body
+        #[doc(hidden)]
+        $vis mod $fn_name {
+            pub const LEN: usize = ${ count($arg_name) };
+        }
+    }
+}
+
+macro_rules! count_args {
+    ($name:ident) =&gt; {{
+        $name::LEN
+    }}
+}
+
+#[instrument]
+fn add(a: u8, b: u8) -&gt; u8 {
+    a + b
+}
+
+fn main() {
+    let n = count_args!(add);
+    println!("`add` has {n} arguments");
+}</code></pre>
+<p>If the <code>#[instrument]</code> macro is omitted it will emit this confusing error:</p>
+<pre><code class="language-text">error[E0433]: cannot find module or crate `add` in this scope
+  --&gt; src/main.rs:25:25
+   |
+25 |     let n = count_args!(add);
+   |                         ^^^ function `add` is not a crate or module
+</code></pre>
+<p><code>#[diagnostic::on_unknown]</code> can be used to customize this error message:</p>
+<pre class="playground"><code class="language-rust edition2018 compile_fail E0432">#![feature(diagnostic_on_unknown)]
+<span class="boring">#![feature(macro_metavar_expr, macro_attr)]
+</span><span class="boring">
+</span><span class="boring">#[allow(unused_macros)]
+</span><span class="boring">macro_rules! instrument {
+</span><span class="boring">    attr() { $vis:vis fn $fn_name:ident ($($arg_name:ident : $arg_ty:ty),*) $(-&gt; $ret:ty)? $body:block } =&gt; {
+</span><span class="boring">        $vis fn $fn_name ($($arg_name:$arg_ty),*) $(-&gt; $ret)? $body
+</span><span class="boring">        #[doc(hidden)]
+</span><span class="boring">        $vis  mod $fn_name {
+</span><span class="boring">            pub const LEN: usize = ${ count($arg_name) };
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
+macro_rules! count_args {
+    ($name:ident) =&gt; {{
+        #[diagnostic::on_unknown(
+            message = "cannot count arguments of `{Unresolved}`",
+            label = "`{Unresolved}` is not a function decorated \
+                    with the `#[instrument]` macro"
+        )]
+        use $name::LEN as length;
+        length
+    }}
+}
+
+// #[instrument]
+fn add(a: u8, b: u8) -&gt; u8 {
+  a + b
+}
+
+fn main() {
+    let n = count_args!(add);
+    println!("`add` has {n} arguments");
+}</code></pre>
+<p>This produces:</p>
+<pre><code class="language-text">error[E0432]: cannot count arguments of `add`
+  --&gt; src/main.rs:33:25
+   |
+33 |     let n = count_args!(add);
+   |                         ^^^ `add` is not a function decorated with
+   |                              the `#[instrument]` macro
+   |
+   = note: unresolved import `add`
+</code></pre>
+<h3 id="edition-differences"><a class="header" href="#edition-differences">Edition differences</a></h3>
+<p>In the 2015 edition, use paths are relative to the crate root. For example, <code>use empty</code> will be resolved relative to the crate root and resolution will not encounter the <code>mod empty {}</code> declaration.</p>
+<pre class="playground"><code class="language-rust edition2015 compile_fail E0432"><span class="boring">#![allow(unused)]
+</span>#![feature(diagnostic_on_unknown)]
+
+<span class="boring">fn main() {
+</span>mod foo {
+   #[diagnostic::on_unknown(message = "oh oh")]
+   mod empty {}
+
+   use empty::what;
+}
+<span class="boring">}</span></code></pre>
+<pre><code class="language-text">error[E0432]: unresolved import `empty`
+ --&gt; src/main.rs:9:8
+  |
+9 |    use empty::what;
+  |        ^^^^^
+  |
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
