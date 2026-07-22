@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c5b0c2b6.js";
+            window.path_to_searchindex_js = "../searchindex-356b561a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-beb18df2.js"></script>
+        <script src="../toc-021a7646.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,7 +189,15 @@
 and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
 cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
 for more details.</p>
-<p>Related features: <a href="generic-const-args.html">generic_const_args</a>, <a href="generic-const-items.html">generic_const_items</a>.</p>
+<p>Related features: <a href="macroless-generic-const-args.html">macroless_generic_const_args</a>, <a href="generic-const-args.html">generic_const_args</a>, <a href="generic-const-items.html">generic_const_items</a>.</p>
+<h2 id="direct_const_arg-macro"><a class="header" href="#direct_const_arg-macro"><code>direct_const_arg!</code> macro</a></h2>
+<p>This feature introduces a new macro: <code>direct_const_arg!</code>.</p>
+<p>When an expression is used as a generic argument, it is typically lowered as an “anon const”, which is an expression
+that is opaque to the type system and cannot contain generics. Using <code>direct_const_arg!</code> instead represents the
+expression “directly”, i.e. without an anon const, in a way that is visible to the type system.</p>
+<p>(Note that plain paths to generic parameters are always represented directly, without <code>direct_const_arg!</code>, as this
+already works on stable)</p>
+<p>See <a href="macroless-generic-const-args.html">macroless_generic_const_args</a> as a feature to disable the requirement of writing <code>direct_const_arg!</code>.</p>
 <h2 id="type-const-syntax"><a class="header" href="#type-const-syntax"><code>type const</code> syntax</a></h2>
 <p>This feature introduces new syntax: <code>type const</code>.
 Constants marked as <code>type const</code> are allowed to be used in type contexts, e.g.:</p>
@@ -200,8 +208,8 @@ type const X: usize = 1;
 const Y: usize = 1;
 
 struct Foo {
-    good_arr: [(); X], // Allowed
-    bad_arr: [(); Y], // Will not compile, `Y` must be `type const`.
+    good_arr: [(); core::direct_const_arg!(X)], // Allowed
+    bad_arr: [(); core::direct_const_arg!(Y)], // Will not compile, `Y` must be `type const`.
 }
 </code></pre>
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
@@ -223,8 +231,8 @@ impl Bar for Baz {
 }
 
 struct Foo&lt;B: Bar&gt; {
-    arr1: [usize; B::VAL],
-    arr2: [usize; B::VAL2],
+    arr1: [usize; core::direct_const_arg!(B::VAL)],
+    arr2: [usize; core::direct_const_arg!(B::VAL2)],
 }
 <span class="boring">}</span></code></pre>
 <p>Note that with <a href="generic-const-exprs.html">generic_const_exprs</a> the same example would look as follows:</p>

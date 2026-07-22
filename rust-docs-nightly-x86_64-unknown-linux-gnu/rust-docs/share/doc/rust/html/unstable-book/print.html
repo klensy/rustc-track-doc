@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b0c2b6.js";
+            window.path_to_searchindex_js = "searchindex-356b561a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-beb18df2.js"></script>
+        <script src="toc-021a7646.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -6649,6 +6649,61 @@ test test_u64_subtraction ... ok
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="macroless_generic_const_args"><a class="header" href="#macroless_generic_const_args">macroless_generic_const_args</a></h1>
+<p>Enables using <code>#![feature(min_generic_const_args)]</code> without the <code>direct_const_arg!</code> macro.</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/159006">#159006</a></p>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>Related features: <a href="#min_generic_const_args">min_generic_const_args</a>. See that doc for what the <code>direct_const_arg!</code> is. This feature enables
+support for directly represented const arguments without the macro.</p>
+<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
+<p>Here is an example from <a href="#min_generic_const_args">min_generic_const_args</a>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    type const VAL: usize;
+    type const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    type const VAL: usize = 2;
+    type const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; core::direct_const_arg!(B::VAL)],
+    arr2: [usize; core::direct_const_arg!(B::VAL2)],
+}
+<span class="boring">}</span></code></pre>
+<p>Using <code>#![feature(macroless_generic_const_args)]</code> enables you to write the above without the macro:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(min_generic_const_args, macroless_generic_const_args)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    type const VAL: usize;
+    type const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    type const VAL: usize = 2;
+    type const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="marker_trait_attr"><a class="header" href="#marker_trait_attr"><code>marker_trait_attr</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29864">#29864</a></p>
 <hr>
@@ -6696,7 +6751,15 @@ feature, which applied to all empty traits (without needing an opt-in).</p>
 and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
 cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
 for more details.</p>
-<p>Related features: <a href="#generic_const_args">generic_const_args</a>, <a href="#generic_const_items">generic_const_items</a>.</p>
+<p>Related features: <a href="#macroless_generic_const_args">macroless_generic_const_args</a>, <a href="#generic_const_args">generic_const_args</a>, <a href="#generic_const_items">generic_const_items</a>.</p>
+<h2 id="direct_const_arg-macro"><a class="header" href="#direct_const_arg-macro"><code>direct_const_arg!</code> macro</a></h2>
+<p>This feature introduces a new macro: <code>direct_const_arg!</code>.</p>
+<p>When an expression is used as a generic argument, it is typically lowered as an “anon const”, which is an expression
+that is opaque to the type system and cannot contain generics. Using <code>direct_const_arg!</code> instead represents the
+expression “directly”, i.e. without an anon const, in a way that is visible to the type system.</p>
+<p>(Note that plain paths to generic parameters are always represented directly, without <code>direct_const_arg!</code>, as this
+already works on stable)</p>
+<p>See <a href="#macroless_generic_const_args">macroless_generic_const_args</a> as a feature to disable the requirement of writing <code>direct_const_arg!</code>.</p>
 <h2 id="type-const-syntax"><a class="header" href="#type-const-syntax"><code>type const</code> syntax</a></h2>
 <p>This feature introduces new syntax: <code>type const</code>.
 Constants marked as <code>type const</code> are allowed to be used in type contexts, e.g.:</p>
@@ -6707,11 +6770,11 @@ type const X: usize = 1;
 const Y: usize = 1;
 
 struct Foo {
-    good_arr: [(); X], // Allowed
-    bad_arr: [(); Y], // Will not compile, `Y` must be `type const`.
+    good_arr: [(); core::direct_const_arg!(X)], // Allowed
+    bad_arr: [(); core::direct_const_arg!(Y)], // Will not compile, `Y` must be `type const`.
 }
 </code></pre>
-<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
+<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
 #![feature(min_generic_const_args)]
@@ -6730,8 +6793,8 @@ impl Bar for Baz {
 }
 
 struct Foo&lt;B: Bar&gt; {
-    arr1: [usize; B::VAL],
-    arr2: [usize; B::VAL2],
+    arr1: [usize; core::direct_const_arg!(B::VAL)],
+    arr2: [usize; core::direct_const_arg!(B::VAL2)],
 }
 <span class="boring">}</span></code></pre>
 <p>Note that with <a href="#generic_const_exprs">generic_const_exprs</a> the same example would look as follows:</p>
@@ -7129,7 +7192,7 @@ Attributes using the registered tool are checked for valid syntax, and lint attr
 When compiling with <code>-Z unstable-features</code>, <code>rustc::*</code> lints can also be used. Like <code>rustdoc</code>, the <code>rustc</code> namespace can only be used with lints, not attributes.</p>
 <p>The compiler will emit an error if it encounters a lint/attribute whose namespace isn’t a registered tool.</p>
 <p>Tool namespaces cannot be nested; <code>register_tool(main_tool::subtool)</code> is an error.</p>
-<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
+<h2 id="examples-18"><a class="header" href="#examples-18">Examples</a></h2>
 <p>Tool attributes:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(register_tool)]
@@ -7196,7 +7259,7 @@ that is way more verbose.</p>
 <p>Options provided by <code>#[rustc_dump_layout(...)]</code> are <code>backend_repr</code>, <code>align</code>,
 <code>debug</code>, <code>homogeneous_aggregate</code> and <code>size</code>.
 Note that it only works on sized types without generics.</p>
-<h2 id="examples-18"><a class="header" href="#examples-18">Examples</a></h2>
+<h2 id="examples-19"><a class="header" href="#examples-19">Examples</a></h2>
 <pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![feature(rustc_attrs)]
 
@@ -7284,7 +7347,7 @@ longer instrument non-atomic store / load operations, but it will instrument
 atomic operations to avoid reporting false positives and provide meaning full
 stack traces.</p>
 <p>This attribute was previously named <code>no_sanitize</code>.</p>
-<h2 id="examples-19"><a class="header" href="#examples-19">Examples</a></h2>
+<h2 id="examples-20"><a class="header" href="#examples-20">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(sanitize)]
 
@@ -9287,7 +9350,7 @@ even when using either of the above.</p>
 <p>The tracking issue for this feature is <a href="https://github.com/rust-lang/rust/issues/29598">#29598</a>.</p>
 <hr>
 <p>With <code>trace_macros</code> you can trace the expansion of macros in your code.</p>
-<h2 id="examples-20"><a class="header" href="#examples-20">Examples</a></h2>
+<h2 id="examples-21"><a class="header" href="#examples-21">Examples</a></h2>
 <pre class="playground"><code class="language-rust">#![feature(trace_macros)]
 
 fn main() {
