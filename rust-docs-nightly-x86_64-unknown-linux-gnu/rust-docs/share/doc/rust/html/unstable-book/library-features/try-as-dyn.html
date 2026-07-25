@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-dfa59fbf.js";
+            window.path_to_searchindex_js = "../searchindex-67b89622.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e9e92401.js"></script>
@@ -183,6 +183,72 @@
                         <h1 id="try_as_dyn"><a class="header" href="#try_as_dyn"><code>try_as_dyn</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/144361">#144361</a></p>
 <hr>
+<p>The <code>try_as_dyn</code> feature allows going from a generic <code>T</code> with no bounds
+to a <code>dyn Trait</code>, if <code>T: Trait</code> and various conditions are upheld. It is
+very related to specialization, as it allows you to specialize within
+function bodies, but in a more general manner than <code>Any::downcast</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![feature(try_as_dyn)]
+
+<span class="boring">fn main() {
+</span>fn downcast_debug_format&lt;T: 'static&gt;(t: &amp;T) -&gt; String {
+    match std::any::try_as_dyn::&lt;_, dyn std::fmt::Debug&gt;(t) {
+        Some(d) =&gt; format!("{d:?}"),
+        None =&gt; "default".to_string()
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="rules-and-reasons-for-them"><a class="header" href="#rules-and-reasons-for-them">Rules and reasons for them</a></h2>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The main problem of <strong><code>try_as_dyn</code> and specialization is the compiler’s inability, while trait-checking, to distinguish/<em>discriminate</em> between any two given lifetimes</strong><sup class="footnote-reference" id="fr-1-1"><a href="#footnote-1">1</a></sup>.</p>
+</blockquote>
+<h3 id="static-is-not-mentioned-anywhere-in-the-impl-block-header"><a class="header" href="#static-is-not-mentioned-anywhere-in-the-impl-block-header"><code>'static</code> is not mentioned anywhere in the <code>impl</code> block header.</a></h3>
+<p>The most obvious one: if you have <code>impl IsStatic for &amp;'static str</code>, then determining whether <code>&amp;'? str : IsStatic</code> does hold amounts to discriminating <code>'? : 'static</code>.</p>
+<h3 id="each-outlives-where-bound-type-a-and-a-b-does-not-mention-lifetime-infected-parameters"><a class="header" href="#each-outlives-where-bound-type-a-and-a-b-does-not-mention-lifetime-infected-parameters">Each outlives <code>where</code> bound (<code>Type: 'a</code> and <code>'a: 'b</code>) does not mention lifetime-infected parameters.</a></h3>
+<p>Parameters are considered lifetime-infected if they are defined in an <code>impl</code> block’s generic parameter list.
+Const generics are excempt, as they can’t affect lifetimes.
+<code>for&lt;'a&gt;</code> lifetimes (and in the future types) are not lifetime-infected.</p>
+<p>We can create lifetime discrimination this way. For instance, given <code>impl&lt;'a, 'b&gt; Outlives&lt;'a&gt; for &amp;'b str where 'b : 'a {}</code>, <code>Outlives&lt;'static&gt;</code> amounts to <code>IsStatic</code> from previous bullet.</p>
+<h3 id="each-lifetime-infected-parameter-is-mentioned-at-most-once-in-the-self-type-and-the-implemented-traits-generic-parameters-combined"><a class="header" href="#each-lifetime-infected-parameter-is-mentioned-at-most-once-in-the-self-type-and-the-implemented-traits-generic-parameters-combined">Each lifetime-infected parameter is mentioned at most once in the <code>Self</code> type and the implemented trait’s generic parameters, combined.</a></h3>
+<p>Repetition of a parameter entails equality of those two use-sites; in lifetime-terms, this would be a double <code>'a : 'b</code> / <code>'b : 'a</code> clause, for instance.
+Follow-up from the previous example: <code>impl&lt;'a&gt; Uses&lt;'a&gt; for &amp;'a str {}</code>, and check whether <code>&amp;'? str : Uses&lt;'static&gt;</code>.</p>
+<h3 id="each-individual-trait-where-bound-type-trait-mentions-each-lifetime-infected-parameter-at-most-once"><a class="header" href="#each-individual-trait-where-bound-type-trait-mentions-each-lifetime-infected-parameter-at-most-once">Each individual trait where bound (<code>Type: Trait</code>) mentions each lifetime-infected parameter at most once.</a></h3>
+<p>Mentioning a lifetime-infected parameter in multiple <code>where</code> bounds is allowed.</p>
+<p>Looking at the previous rules, which focuses on <code>Self : …</code>, this is just observing that shifting the requirements to other parameters within <code>where</code> clauses [ought to] boil down to the same set of issues.</p>
+<p>This is <em>unnecessarily restrictive</em>: we should be able to loosen it up somehow. Repetition only in <code>where</code> clauses seems fine.</p>
+<h3 id="the-impl-block-is-a-handwritten-impl"><a class="header" href="#the-impl-block-is-a-handwritten-impl">The <code>impl</code> block is a handwritten impl</a></h3>
+<p>as opposed to a type implementing a trait automatically by the compiler (such as auto-traits, <code>dyn Bounds… : Bounds…</code>, and closures)</p>
+<p>The reason for this is that some such auto-generated impls <em>come with hidden bounds or whatnot</em>, which run afoul of the previous rules, whilst also being <em>extremely challenging for the current compiler logic to know of such bounds</em>.
+IIUC, this restriction could be lifted in the future should the compiler logic be better at spotting these hidden bounds, when present.</p>
+<p>One contrived such example being the case of <code>dyn 'u + for&lt;'a&gt; Outlives&lt;'a&gt;</code>, where the compiler-generated <code>impl</code> for it of <code>Outlives</code> is: <code>impl&lt;'b, 'u&gt; Outlives&lt;'b&gt; for dyn 'u + for&lt;'a&gt; Outlives&lt;'a&gt; where 'b : 'u {}</code> which violates the “<code>'a: 'b</code> not to mention lt-infected params” rule, whilst also being hard to detect in current compiler logic.</p>
+<h3 id="associated-type-projections-type-as-traitassoc-are-not-mentioned-anywhere-in-the-impl-block-header"><a class="header" href="#associated-type-projections-type-as-traitassoc-are-not-mentioned-anywhere-in-the-impl-block-header">Associated type projections (<code>&lt;Type as Trait&gt;::Assoc</code>) are not mentioned anywhere in the <code>impl</code> block header.</a></h3>
+<p>Associated-type equality bounds can very much amount to lifetime-infected parameter equality constraints,
+which are problematic as per the “at most one mention of each lifetime-infected parameter in header” rule.
+To illustrate, with the following definitions, <code>&amp;'? str: Trait&lt;'static&gt;</code> discriminates <code>'?</code> against <code>'static</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait Trait&lt;'x&gt; {}
+impl&lt;'a, 'b&gt; Trait&lt;'b&gt; for &amp;'a str
+where
+    //     &amp;'a str = &amp;'b str,
+    Option&lt;&amp;'a str&gt;: IntoIterator&lt;Item = &amp;'b str&gt;,
+{}
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait Trait&lt;'x&gt; {}
+impl&lt;'a&gt; Trait&lt;'a&gt; for &amp;'a str {}
+<span class="boring">}</span></code></pre>
+<h3 id="each-trait-where-bound-with-an-associated-type-equality-type-traitassoc--type2-does-not-mention-lifetime-infected-parameters"><a class="header" href="#each-trait-where-bound-with-an-associated-type-equality-type-traitassoc--type2-does-not-mention-lifetime-infected-parameters">Each trait <code>where</code> bound with an associated type equality (<code>Type: Trait&lt;Assoc = Type2&gt;</code>) does not mention lifetime-infected parameters.</a></h3>
+<p>Checking whether <code>Option&lt;&amp;'? str&gt;: IntoIterator&lt;Item = &amp;'static str&gt;</code> holds discriminates <code>'?</code> against <code>'static</code>.</p>
+<hr>
+<ol class="footnote-definition">
+<li id="footnote-1">
+<p>the compiler cannot <em>branch</em> on whether “<code>'a : 'b</code> holds”: for soundness, it can either choose not to know the answer, or <em>assume</em> that it holds and produce an obligation for the borrow-checker which shall “assert this” (making compilation fail in a fatal manner if not). Most usages of Rust lie in the latter category (typical <code>where</code> clauses anywhere), whilst specialization/<code>try_as_dyn()</code> wants to support fallibility of the operation (<em>i.e.</em>, being queried on a type not fulfilling the predicate without causing a compilation error). This rules out the latter, resulting in the need for the former, <em>i.e.</em>, for the <code>try_as_dyn()</code> attempt to unconditionally “fail” with <code>None</code>. <a href="#fr-1-1">↩</a></p>
+</li>
+</ol>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
