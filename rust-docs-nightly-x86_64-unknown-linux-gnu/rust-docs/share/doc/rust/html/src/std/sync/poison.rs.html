@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison.rs`."><title>poison.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ddecd707.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (008fa22ce 2026-07-25)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>poison.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Synchronization objects that employ poisoning.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison.rs`."><title>poison.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ddecd707.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (dc3f85158 2026-07-26)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>poison.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Synchronization objects that employ poisoning.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! # Poisoning
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -263,125 +263,127 @@
 <a href=#263 id=263 data-nosnippet>263</a>    /// or [`RwLock::read`](crate::sync::RwLock::read).
 <a href=#264 id=264 data-nosnippet>264</a>    ///
 <a href=#265 id=265 data-nosnippet>265</a>    /// This method may panic if std was built with `panic="abort"`.
-<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
-<a href=#267 id=267 data-nosnippet>267</a>    #[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
-<a href=#268 id=268 data-nosnippet>268</a>    </span><span class="kw">pub fn </span>new(data: T) -&gt; PoisonError&lt;T&gt; {
-<a href=#269 id=269 data-nosnippet>269</a>        PoisonError { data }
-<a href=#270 id=270 data-nosnippet>270</a>    }
-<a href=#271 id=271 data-nosnippet>271</a>
-<a href=#272 id=272 data-nosnippet>272</a>    <span class="doccomment">/// Creates a `PoisonError`.
-<a href=#273 id=273 data-nosnippet>273</a>    ///
-<a href=#274 id=274 data-nosnippet>274</a>    /// This is generally created by methods like [`Mutex::lock`](crate::sync::Mutex::lock)
-<a href=#275 id=275 data-nosnippet>275</a>    /// or [`RwLock::read`](crate::sync::RwLock::read).
-<a href=#276 id=276 data-nosnippet>276</a>    ///
-<a href=#277 id=277 data-nosnippet>277</a>    /// This method may panic if std was built with `panic="abort"`.
-<a href=#278 id=278 data-nosnippet>278</a>    </span><span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
-<a href=#279 id=279 data-nosnippet>279</a>    #[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
-<a href=#280 id=280 data-nosnippet>280</a>    #[track_caller]
-<a href=#281 id=281 data-nosnippet>281</a>    </span><span class="kw">pub fn </span>new(_data: T) -&gt; PoisonError&lt;T&gt; {
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="macro">panic!</span>(<span class="string">"PoisonError created in a libstd built with panic=\"abort\""</span>)
-<a href=#283 id=283 data-nosnippet>283</a>    }
-<a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>    <span class="doccomment">/// Consumes this error indicating that a lock is poisoned, returning the
-<a href=#286 id=286 data-nosnippet>286</a>    /// associated data.
-<a href=#287 id=287 data-nosnippet>287</a>    ///
-<a href=#288 id=288 data-nosnippet>288</a>    /// # Examples
+<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="attr">#[doc(auto_cfg = <span class="bool-val">false</span>)]
+<a href=#267 id=267 data-nosnippet>267</a>    #[cfg(panic = <span class="string">"unwind"</span>)]
+<a href=#268 id=268 data-nosnippet>268</a>    #[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
+<a href=#269 id=269 data-nosnippet>269</a>    </span><span class="kw">pub fn </span>new(data: T) -&gt; PoisonError&lt;T&gt; {
+<a href=#270 id=270 data-nosnippet>270</a>        PoisonError { data }
+<a href=#271 id=271 data-nosnippet>271</a>    }
+<a href=#272 id=272 data-nosnippet>272</a>
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="doccomment">/// Creates a `PoisonError`.
+<a href=#274 id=274 data-nosnippet>274</a>    ///
+<a href=#275 id=275 data-nosnippet>275</a>    /// This is generally created by methods like [`Mutex::lock`](crate::sync::Mutex::lock)
+<a href=#276 id=276 data-nosnippet>276</a>    /// or [`RwLock::read`](crate::sync::RwLock::read).
+<a href=#277 id=277 data-nosnippet>277</a>    ///
+<a href=#278 id=278 data-nosnippet>278</a>    /// This method may panic if std was built with `panic="abort"`.
+<a href=#279 id=279 data-nosnippet>279</a>    </span><span class="attr">#[doc(auto_cfg = <span class="bool-val">false</span>)]
+<a href=#280 id=280 data-nosnippet>280</a>    #[cfg(not(panic = <span class="string">"unwind"</span>))]
+<a href=#281 id=281 data-nosnippet>281</a>    #[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
+<a href=#282 id=282 data-nosnippet>282</a>    #[track_caller]
+<a href=#283 id=283 data-nosnippet>283</a>    </span><span class="kw">pub fn </span>new(_data: T) -&gt; PoisonError&lt;T&gt; {
+<a href=#284 id=284 data-nosnippet>284</a>        <span class="macro">panic!</span>(<span class="string">"PoisonError created in a libstd built with panic=\"abort\""</span>)
+<a href=#285 id=285 data-nosnippet>285</a>    }
+<a href=#286 id=286 data-nosnippet>286</a>
+<a href=#287 id=287 data-nosnippet>287</a>    <span class="doccomment">/// Consumes this error indicating that a lock is poisoned, returning the
+<a href=#288 id=288 data-nosnippet>288</a>    /// associated data.
 <a href=#289 id=289 data-nosnippet>289</a>    ///
-<a href=#290 id=290 data-nosnippet>290</a>    /// ```
-<a href=#291 id=291 data-nosnippet>291</a>    /// use std::collections::HashSet;
-<a href=#292 id=292 data-nosnippet>292</a>    /// use std::sync::{Arc, Mutex};
-<a href=#293 id=293 data-nosnippet>293</a>    /// use std::thread;
-<a href=#294 id=294 data-nosnippet>294</a>    ///
-<a href=#295 id=295 data-nosnippet>295</a>    /// let mutex = Arc::new(Mutex::new(HashSet::new()));
+<a href=#290 id=290 data-nosnippet>290</a>    /// # Examples
+<a href=#291 id=291 data-nosnippet>291</a>    ///
+<a href=#292 id=292 data-nosnippet>292</a>    /// ```
+<a href=#293 id=293 data-nosnippet>293</a>    /// use std::collections::HashSet;
+<a href=#294 id=294 data-nosnippet>294</a>    /// use std::sync::{Arc, Mutex};
+<a href=#295 id=295 data-nosnippet>295</a>    /// use std::thread;
 <a href=#296 id=296 data-nosnippet>296</a>    ///
-<a href=#297 id=297 data-nosnippet>297</a>    /// // poison the mutex
-<a href=#298 id=298 data-nosnippet>298</a>    /// let c_mutex = Arc::clone(&amp;mutex);
-<a href=#299 id=299 data-nosnippet>299</a>    /// let _ = thread::spawn(move || {
-<a href=#300 id=300 data-nosnippet>300</a>    ///     let mut data = c_mutex.lock().unwrap();
-<a href=#301 id=301 data-nosnippet>301</a>    ///     data.insert(10);
-<a href=#302 id=302 data-nosnippet>302</a>    ///     panic!();
-<a href=#303 id=303 data-nosnippet>303</a>    /// }).join();
-<a href=#304 id=304 data-nosnippet>304</a>    ///
-<a href=#305 id=305 data-nosnippet>305</a>    /// let p_err = mutex.lock().unwrap_err();
-<a href=#306 id=306 data-nosnippet>306</a>    /// let data = p_err.into_inner();
-<a href=#307 id=307 data-nosnippet>307</a>    /// println!("recovered {} items", data.len());
-<a href=#308 id=308 data-nosnippet>308</a>    /// ```
-<a href=#309 id=309 data-nosnippet>309</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
-<a href=#310 id=310 data-nosnippet>310</a>    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="self">self</span>.data
-<a href=#312 id=312 data-nosnippet>312</a>    }
-<a href=#313 id=313 data-nosnippet>313</a>
-<a href=#314 id=314 data-nosnippet>314</a>    <span class="doccomment">/// Reaches into this error indicating that a lock is poisoned, returning a
-<a href=#315 id=315 data-nosnippet>315</a>    /// reference to the associated data.
-<a href=#316 id=316 data-nosnippet>316</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
-<a href=#317 id=317 data-nosnippet>317</a>    </span><span class="kw">pub fn </span>get_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#318 id=318 data-nosnippet>318</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.data
-<a href=#319 id=319 data-nosnippet>319</a>    }
-<a href=#320 id=320 data-nosnippet>320</a>
-<a href=#321 id=321 data-nosnippet>321</a>    <span class="doccomment">/// Reaches into this error indicating that a lock is poisoned, returning a
-<a href=#322 id=322 data-nosnippet>322</a>    /// mutable reference to the associated data.
-<a href=#323 id=323 data-nosnippet>323</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
-<a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#325 id=325 data-nosnippet>325</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.data
-<a href=#326 id=326 data-nosnippet>326</a>    }
-<a href=#327 id=327 data-nosnippet>327</a>}
-<a href=#328 id=328 data-nosnippet>328</a>
-<a href=#329 id=329 data-nosnippet>329</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#330 id=330 data-nosnippet>330</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;PoisonError&lt;T&gt;&gt; <span class="kw">for </span>TryLockError&lt;T&gt; {
-<a href=#331 id=331 data-nosnippet>331</a>    <span class="kw">fn </span>from(err: PoisonError&lt;T&gt;) -&gt; TryLockError&lt;T&gt; {
-<a href=#332 id=332 data-nosnippet>332</a>        TryLockError::Poisoned(err)
-<a href=#333 id=333 data-nosnippet>333</a>    }
-<a href=#334 id=334 data-nosnippet>334</a>}
-<a href=#335 id=335 data-nosnippet>335</a>
-<a href=#336 id=336 data-nosnippet>336</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#337 id=337 data-nosnippet>337</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>TryLockError&lt;T&gt; {
-<a href=#338 id=338 data-nosnippet>338</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#340 id=340 data-nosnippet>340</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
-<a href=#341 id=341 data-nosnippet>341</a>            </span>TryLockError::Poisoned(..) =&gt; <span class="string">"Poisoned(..)"</span>.fmt(f),
-<a href=#342 id=342 data-nosnippet>342</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
-<a href=#343 id=343 data-nosnippet>343</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
-<a href=#344 id=344 data-nosnippet>344</a>            TryLockError::WouldBlock =&gt; <span class="string">"WouldBlock"</span>.fmt(f),
-<a href=#345 id=345 data-nosnippet>345</a>        }
-<a href=#346 id=346 data-nosnippet>346</a>    }
-<a href=#347 id=347 data-nosnippet>347</a>}
-<a href=#348 id=348 data-nosnippet>348</a>
-<a href=#349 id=349 data-nosnippet>349</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#350 id=350 data-nosnippet>350</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Display <span class="kw">for </span>TryLockError&lt;T&gt; {
-<a href=#351 id=351 data-nosnippet>351</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#352 id=352 data-nosnippet>352</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#353 id=353 data-nosnippet>353</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
-<a href=#354 id=354 data-nosnippet>354</a>            </span>TryLockError::Poisoned(..) =&gt; <span class="string">"poisoned lock: another task failed inside"</span>,
-<a href=#355 id=355 data-nosnippet>355</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
-<a href=#356 id=356 data-nosnippet>356</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
-<a href=#357 id=357 data-nosnippet>357</a>            TryLockError::WouldBlock =&gt; <span class="string">"try_lock failed because the operation would block"</span>,
-<a href=#358 id=358 data-nosnippet>358</a>        }
-<a href=#359 id=359 data-nosnippet>359</a>        .fmt(f)
-<a href=#360 id=360 data-nosnippet>360</a>    }
-<a href=#361 id=361 data-nosnippet>361</a>}
-<a href=#362 id=362 data-nosnippet>362</a>
-<a href=#363 id=363 data-nosnippet>363</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#364 id=364 data-nosnippet>364</a></span><span class="kw">impl</span>&lt;T&gt; Error <span class="kw">for </span>TryLockError&lt;T&gt; {
-<a href=#365 id=365 data-nosnippet>365</a>    <span class="attr">#[allow(deprecated)]
-<a href=#366 id=366 data-nosnippet>366</a>    </span><span class="kw">fn </span>cause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Error&gt; {
-<a href=#367 id=367 data-nosnippet>367</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#368 id=368 data-nosnippet>368</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
-<a href=#369 id=369 data-nosnippet>369</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="prelude-val">Some</span>(p),
-<a href=#370 id=370 data-nosnippet>370</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
-<a href=#371 id=371 data-nosnippet>371</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
-<a href=#372 id=372 data-nosnippet>372</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#373 id=373 data-nosnippet>373</a>        }
-<a href=#374 id=374 data-nosnippet>374</a>    }
-<a href=#375 id=375 data-nosnippet>375</a>}
-<a href=#376 id=376 data-nosnippet>376</a>
-<a href=#377 id=377 data-nosnippet>377</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>map_result&lt;T, U, F&gt;(result: LockResult&lt;T&gt;, f: F) -&gt; LockResult&lt;U&gt;
-<a href=#378 id=378 data-nosnippet>378</a><span class="kw">where
-<a href=#379 id=379 data-nosnippet>379</a>    </span>F: FnOnce(T) -&gt; U,
-<a href=#380 id=380 data-nosnippet>380</a>{
-<a href=#381 id=381 data-nosnippet>381</a>    <span class="kw">match </span>result {
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="prelude-val">Ok</span>(t) =&gt; <span class="prelude-val">Ok</span>(f(t)),
-<a href=#383 id=383 data-nosnippet>383</a>        <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
-<a href=#384 id=384 data-nosnippet>384</a>        </span><span class="prelude-val">Err</span>(PoisonError { data }) =&gt; <span class="prelude-val">Err</span>(PoisonError::new(f(data))),
-<a href=#385 id=385 data-nosnippet>385</a>    }
-<a href=#386 id=386 data-nosnippet>386</a>}
+<a href=#297 id=297 data-nosnippet>297</a>    /// let mutex = Arc::new(Mutex::new(HashSet::new()));
+<a href=#298 id=298 data-nosnippet>298</a>    ///
+<a href=#299 id=299 data-nosnippet>299</a>    /// // poison the mutex
+<a href=#300 id=300 data-nosnippet>300</a>    /// let c_mutex = Arc::clone(&amp;mutex);
+<a href=#301 id=301 data-nosnippet>301</a>    /// let _ = thread::spawn(move || {
+<a href=#302 id=302 data-nosnippet>302</a>    ///     let mut data = c_mutex.lock().unwrap();
+<a href=#303 id=303 data-nosnippet>303</a>    ///     data.insert(10);
+<a href=#304 id=304 data-nosnippet>304</a>    ///     panic!();
+<a href=#305 id=305 data-nosnippet>305</a>    /// }).join();
+<a href=#306 id=306 data-nosnippet>306</a>    ///
+<a href=#307 id=307 data-nosnippet>307</a>    /// let p_err = mutex.lock().unwrap_err();
+<a href=#308 id=308 data-nosnippet>308</a>    /// let data = p_err.into_inner();
+<a href=#309 id=309 data-nosnippet>309</a>    /// println!("recovered {} items", data.len());
+<a href=#310 id=310 data-nosnippet>310</a>    /// ```
+<a href=#311 id=311 data-nosnippet>311</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
+<a href=#312 id=312 data-nosnippet>312</a>    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
+<a href=#313 id=313 data-nosnippet>313</a>        <span class="self">self</span>.data
+<a href=#314 id=314 data-nosnippet>314</a>    }
+<a href=#315 id=315 data-nosnippet>315</a>
+<a href=#316 id=316 data-nosnippet>316</a>    <span class="doccomment">/// Reaches into this error indicating that a lock is poisoned, returning a
+<a href=#317 id=317 data-nosnippet>317</a>    /// reference to the associated data.
+<a href=#318 id=318 data-nosnippet>318</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
+<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">pub fn </span>get_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.data
+<a href=#321 id=321 data-nosnippet>321</a>    }
+<a href=#322 id=322 data-nosnippet>322</a>
+<a href=#323 id=323 data-nosnippet>323</a>    <span class="doccomment">/// Reaches into this error indicating that a lock is poisoned, returning a
+<a href=#324 id=324 data-nosnippet>324</a>    /// mutable reference to the associated data.
+<a href=#325 id=325 data-nosnippet>325</a>    </span><span class="attr">#[stable(feature = <span class="string">"sync_poison"</span>, since = <span class="string">"1.2.0"</span>)]
+<a href=#326 id=326 data-nosnippet>326</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#327 id=327 data-nosnippet>327</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.data
+<a href=#328 id=328 data-nosnippet>328</a>    }
+<a href=#329 id=329 data-nosnippet>329</a>}
+<a href=#330 id=330 data-nosnippet>330</a>
+<a href=#331 id=331 data-nosnippet>331</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#332 id=332 data-nosnippet>332</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;PoisonError&lt;T&gt;&gt; <span class="kw">for </span>TryLockError&lt;T&gt; {
+<a href=#333 id=333 data-nosnippet>333</a>    <span class="kw">fn </span>from(err: PoisonError&lt;T&gt;) -&gt; TryLockError&lt;T&gt; {
+<a href=#334 id=334 data-nosnippet>334</a>        TryLockError::Poisoned(err)
+<a href=#335 id=335 data-nosnippet>335</a>    }
+<a href=#336 id=336 data-nosnippet>336</a>}
+<a href=#337 id=337 data-nosnippet>337</a>
+<a href=#338 id=338 data-nosnippet>338</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#339 id=339 data-nosnippet>339</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>TryLockError&lt;T&gt; {
+<a href=#340 id=340 data-nosnippet>340</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#341 id=341 data-nosnippet>341</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+<a href=#342 id=342 data-nosnippet>342</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
+<a href=#343 id=343 data-nosnippet>343</a>            </span>TryLockError::Poisoned(..) =&gt; <span class="string">"Poisoned(..)"</span>.fmt(f),
+<a href=#344 id=344 data-nosnippet>344</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
+<a href=#345 id=345 data-nosnippet>345</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
+<a href=#346 id=346 data-nosnippet>346</a>            TryLockError::WouldBlock =&gt; <span class="string">"WouldBlock"</span>.fmt(f),
+<a href=#347 id=347 data-nosnippet>347</a>        }
+<a href=#348 id=348 data-nosnippet>348</a>    }
+<a href=#349 id=349 data-nosnippet>349</a>}
+<a href=#350 id=350 data-nosnippet>350</a>
+<a href=#351 id=351 data-nosnippet>351</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#352 id=352 data-nosnippet>352</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Display <span class="kw">for </span>TryLockError&lt;T&gt; {
+<a href=#353 id=353 data-nosnippet>353</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#354 id=354 data-nosnippet>354</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+<a href=#355 id=355 data-nosnippet>355</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
+<a href=#356 id=356 data-nosnippet>356</a>            </span>TryLockError::Poisoned(..) =&gt; <span class="string">"poisoned lock: another task failed inside"</span>,
+<a href=#357 id=357 data-nosnippet>357</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
+<a href=#358 id=358 data-nosnippet>358</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
+<a href=#359 id=359 data-nosnippet>359</a>            TryLockError::WouldBlock =&gt; <span class="string">"try_lock failed because the operation would block"</span>,
+<a href=#360 id=360 data-nosnippet>360</a>        }
+<a href=#361 id=361 data-nosnippet>361</a>        .fmt(f)
+<a href=#362 id=362 data-nosnippet>362</a>    }
+<a href=#363 id=363 data-nosnippet>363</a>}
+<a href=#364 id=364 data-nosnippet>364</a>
+<a href=#365 id=365 data-nosnippet>365</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#366 id=366 data-nosnippet>366</a></span><span class="kw">impl</span>&lt;T&gt; Error <span class="kw">for </span>TryLockError&lt;T&gt; {
+<a href=#367 id=367 data-nosnippet>367</a>    <span class="attr">#[allow(deprecated)]
+<a href=#368 id=368 data-nosnippet>368</a>    </span><span class="kw">fn </span>cause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Error&gt; {
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+<a href=#370 id=370 data-nosnippet>370</a>            <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
+<a href=#371 id=371 data-nosnippet>371</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="prelude-val">Some</span>(p),
+<a href=#372 id=372 data-nosnippet>372</a>            <span class="attr">#[cfg(not(panic = <span class="string">"unwind"</span>))]
+<a href=#373 id=373 data-nosnippet>373</a>            </span>TryLockError::Poisoned(<span class="kw-2">ref </span>p) =&gt; <span class="kw">match </span>p._never {},
+<a href=#374 id=374 data-nosnippet>374</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#375 id=375 data-nosnippet>375</a>        }
+<a href=#376 id=376 data-nosnippet>376</a>    }
+<a href=#377 id=377 data-nosnippet>377</a>}
+<a href=#378 id=378 data-nosnippet>378</a>
+<a href=#379 id=379 data-nosnippet>379</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>map_result&lt;T, U, F&gt;(result: LockResult&lt;T&gt;, f: F) -&gt; LockResult&lt;U&gt;
+<a href=#380 id=380 data-nosnippet>380</a><span class="kw">where
+<a href=#381 id=381 data-nosnippet>381</a>    </span>F: FnOnce(T) -&gt; U,
+<a href=#382 id=382 data-nosnippet>382</a>{
+<a href=#383 id=383 data-nosnippet>383</a>    <span class="kw">match </span>result {
+<a href=#384 id=384 data-nosnippet>384</a>        <span class="prelude-val">Ok</span>(t) =&gt; <span class="prelude-val">Ok</span>(f(t)),
+<a href=#385 id=385 data-nosnippet>385</a>        <span class="attr">#[cfg(panic = <span class="string">"unwind"</span>)]
+<a href=#386 id=386 data-nosnippet>386</a>        </span><span class="prelude-val">Err</span>(PoisonError { data }) =&gt; <span class="prelude-val">Err</span>(PoisonError::new(f(data))),
+<a href=#387 id=387 data-nosnippet>387</a>    }
+<a href=#388 id=388 data-nosnippet>388</a>}
 </code></pre></div></section></main></body></html>
