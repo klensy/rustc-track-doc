@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-09d8f9b3.js";
+            window.path_to_searchindex_js = "searchindex-c185e9fc.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-034a6119.js"></script>
@@ -2308,12 +2308,13 @@ Specifically, if a struct, enum or union contains a reference, directly or indir
 to <code>T</code> with lifetime <code>'x</code> and <code>'x</code> refers to a lifetime parameter,
 then it will infer that <code>T: 'x</code> is a requirement.</p>
 <p>See <a href="https://github.com/rust-lang/rfcs/blob/master/text/2093-infer-outlives.md">RFC 2093</a> for more details.</p>
-<blockquote class="blockquote-tag blockquote-tag-warning">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
-<p>Implicit lifetime bounds are not semantically equivalent to explicit ones since the latter
-may affect the implicit lifetime bound of trait object types that are passed as arguments
-to the overarching struct, enum or union.
-Rephrased, they participate in <a href="https://doc.rust-lang.org/reference/lifetime-elision.html#default-trait-object-lifetimes">trait object lifetime defaulting</a>.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>This lint intentionally doesn’t get emitted for explicit outlives-bounds on type
+parameters that aren’t bounded by <code>Sized</code> (unless they’re higher-ranked) since unlike
+implicit outlives-bounds these may affect the implicit lifetime bound of trait object
+types that are passed as arguments to the overarching struct, enum or union.</p>
+<p>Rephrased, they participate in <a href="https://doc.rust-lang.org/reference/lifetime-elision.html#default-trait-object-lifetimes">trait object lifetime defaulting</a>.</p>
 <p>Consider the following piece of code where removing bound <code>T: 'a</code> would lead to a lifetime
 error in function <code>scope</code>:</p>
 <pre><code class="language-rust no_run">struct Ref&lt;'a, T: ?Sized + 'a&gt;(&amp;'a T);
@@ -2325,9 +2326,10 @@ fn scope() {
 }
 
 fn render(_: Ref&lt;dyn std::fmt::Display&gt;) {}</code></pre>
-<p>Consequently, removing explicit outlives-bounds on type parameters of publicly reachable types
-constitutes a <strong>breaking change</strong> if the lifetime refers to a lifetime parameter and
-the type parameter is not bounded by <code>Sized</code> (thereby admitting trait object types).</p>
+<p>Due to the explicit outlives-bound the function <code>render</code> above is equivalent to:</p>
+<pre><code class="language-rust ignore (incomplete)">fn render&lt;'r&gt;(_: Ref&lt;'r, dyn std::fmt::Display + 'r&gt;) {}</code></pre>
+<p>If it wasn’t for that explicit bound then the function would mean the following instead:</p>
+<pre><code class="language-rust ignore (incomplete)">fn render&lt;'r&gt;(_: Ref&lt;'r, dyn std::fmt::Display + 'static&gt;) {}</code></pre>
 </blockquote>
 <h2 id="ffi-unwind-calls"><a class="header" href="#ffi-unwind-calls">ffi-unwind-calls</a></h2>
 <p>The <code>ffi_unwind_calls</code> lint detects calls to foreign functions or function pointers with
@@ -8346,7 +8348,7 @@ async fn foo() {}</code></pre>
   |
   = note: see issue #110011 &lt;https://github.com/rust-lang/rust/issues/110011&gt; for more information
   = help: add `#![feature(async_fn_track_caller)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-07-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-07-29; consider upgrading it if it is out of date
   = note: `#[warn(ungated_async_fn_track_caller)]` on by default
 
 </code></pre>
@@ -8618,7 +8620,7 @@ macro foo() {}</code></pre>
   |
   = note: see issue #39412 &lt;https://github.com/rust-lang/rust/issues/39412&gt; for more information
   = help: add `#![feature(decl_macro)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-07-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-07-29; consider upgrading it if it is out of date
   = warning: unstable syntax can change at any point in the future, causing a hard error!
   = note: for more information, see issue #154045 &lt;https://github.com/rust-lang/rust/issues/154045&gt;
 
@@ -10511,7 +10513,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-07-28; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-07-29; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
