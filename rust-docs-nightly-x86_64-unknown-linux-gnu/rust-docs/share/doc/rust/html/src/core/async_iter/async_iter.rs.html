@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/async_iter/async_iter.rs`."><title>async_iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-650bd49d.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (7608eb7b0 2026-08-05)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-d4bd101e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/async_iter/</div>async_iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::ops::DerefMut;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/async_iter/async_iter.rs`."><title>async_iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-650bd49d.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (84b36a78a 2026-08-06)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.99.0.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-d4bd101e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/async_iter/</div>async_iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::ops::DerefMut;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::pin::Pin;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::task::{Context, Poll};
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -141,24 +141,25 @@
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a><span class="doccomment">/// Converts something into an async iterator
 <a href=#143 id=143 data-nosnippet>143</a></span><span class="attr">#[unstable(feature = <span class="string">"async_iterator"</span>, issue = <span class="string">"79024"</span>)]
-<a href=#144 id=144 data-nosnippet>144</a></span><span class="kw">pub trait </span>IntoAsyncIterator {
-<a href=#145 id=145 data-nosnippet>145</a>    <span class="doccomment">/// The type of the item yielded by the iterator
-<a href=#146 id=146 data-nosnippet>146</a>    </span><span class="kw">type </span>Item;
-<a href=#147 id=147 data-nosnippet>147</a>    <span class="doccomment">/// The type of the resulting iterator
-<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">type </span>IntoAsyncIter: AsyncIterator&lt;Item = <span class="self">Self</span>::Item&gt;;
-<a href=#149 id=149 data-nosnippet>149</a>
-<a href=#150 id=150 data-nosnippet>150</a>    <span class="doccomment">/// Converts `self` into an async iterator
-<a href=#151 id=151 data-nosnippet>151</a>    </span><span class="attr">#[lang = <span class="string">"into_async_iter_into_iter"</span>]
-<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">fn </span>into_async_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoAsyncIter;
-<a href=#153 id=153 data-nosnippet>153</a>}
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a><span class="attr">#[unstable(feature = <span class="string">"async_iterator"</span>, issue = <span class="string">"79024"</span>)]
-<a href=#156 id=156 data-nosnippet>156</a></span><span class="kw">impl</span>&lt;I: AsyncIterator&gt; IntoAsyncIterator <span class="kw">for </span>I {
-<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">type </span>Item = I::Item;
-<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">type </span>IntoAsyncIter = I;
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">fn </span>into_async_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoAsyncIter {
-<a href=#161 id=161 data-nosnippet>161</a>        <span class="self">self
-<a href=#162 id=162 data-nosnippet>162</a>    </span>}
-<a href=#163 id=163 data-nosnippet>163</a>}
+<a href=#144 id=144 data-nosnippet>144</a>#[rustc_diagnostic_item = <span class="string">"IntoAsyncIterator"</span>]
+<a href=#145 id=145 data-nosnippet>145</a></span><span class="kw">pub trait </span>IntoAsyncIterator {
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// The type of the item yielded by the iterator
+<a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">type </span>Item;
+<a href=#148 id=148 data-nosnippet>148</a>    <span class="doccomment">/// The type of the resulting iterator
+<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">type </span>IntoAsyncIter: AsyncIterator&lt;Item = <span class="self">Self</span>::Item&gt;;
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Converts `self` into an async iterator
+<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="attr">#[lang = <span class="string">"into_async_iter_into_iter"</span>]
+<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">fn </span>into_async_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoAsyncIter;
+<a href=#154 id=154 data-nosnippet>154</a>}
+<a href=#155 id=155 data-nosnippet>155</a>
+<a href=#156 id=156 data-nosnippet>156</a><span class="attr">#[unstable(feature = <span class="string">"async_iterator"</span>, issue = <span class="string">"79024"</span>)]
+<a href=#157 id=157 data-nosnippet>157</a></span><span class="kw">impl</span>&lt;I: AsyncIterator&gt; IntoAsyncIterator <span class="kw">for </span>I {
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">type </span>Item = I::Item;
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">type </span>IntoAsyncIter = I;
+<a href=#160 id=160 data-nosnippet>160</a>
+<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">fn </span>into_async_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoAsyncIter {
+<a href=#162 id=162 data-nosnippet>162</a>        <span class="self">self
+<a href=#163 id=163 data-nosnippet>163</a>    </span>}
+<a href=#164 id=164 data-nosnippet>164</a>}
 </code></pre></div></section></main></body></html>
