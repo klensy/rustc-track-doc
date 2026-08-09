@@ -41,7 +41,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f40caeaa.js";
+            window.path_to_searchindex_js = "searchindex-17ab0bfd.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-0e7001e7.js"></script>
@@ -2560,6 +2560,10 @@ inherited by members of a workspace.</p>
 <ul>
 <li>Dependencies from this table cannot be declared as <code>optional</code></li>
 <li><a href="#features-1"><code>features</code></a> declared in this table are additive with the <code>features</code> from <code>[dependencies]</code></li>
+<li><code>default-features</code> declared on a package dependency overrides the value set
+here in Edition 2024 packages (requires Rust 1.99+). Before Rust 1.99, or in
+earlier editions, package-level <code>default-features = false</code> may be ignored or
+rejected unless the workspace dependency also disables default features.</li>
 </ul>
 <p>You can then <a href="#inheriting-a-dependency-from-a-workspace">inherit the workspace dependency as a package dependency</a></p>
 <p>Example:</p>
@@ -2571,14 +2575,17 @@ members = ["bar"]
 cc = "1.0.73"
 rand = "0.8.5"
 regex = { version = "1.6.0", default-features = false, features = ["std"] }
+serde = { version = "1.0.190", default-features = true }
 </code></pre>
 <pre><code class="language-toml"># [PROJECT_DIR]/bar/Cargo.toml
 [package]
 name = "bar"
 version = "0.2.0"
+edition = "2024"
 
 [dependencies]
 regex = { workspace = true, features = ["unicode"] }
+serde = { workspace = true, default-features = false }
 
 [build-dependencies]
 cc.workspace = true
@@ -3101,20 +3108,27 @@ dependency in the workspace’s <a href="#the-dependencies-table"><code>[workspa
 After that, add it to the <code>[dependencies]</code> table with <code>workspace = true</code>.</p>
 <p>Along with the <code>workspace</code> key, dependencies can also include these keys:</p>
 <ul>
-<li><a href="#optional-dependencies"><code>optional</code></a>: Note that the<code>[workspace.dependencies]</code> table is not allowed to specify <code>optional</code>.</li>
+<li><a href="#optional-dependencies"><code>optional</code></a>: Note that the <code>[workspace.dependencies]</code> table is not allowed to specify <code>optional</code>.</li>
 <li><a href="#features-1"><code>features</code></a>: These are additive with the features declared in the <code>[workspace.dependencies]</code></li>
+<li><a href="#dependency-features"><code>default-features</code></a> (Edition 2024 packages, requires Rust 1.99+):
+Overrides the value set in <code>[workspace.dependencies]</code>.
+If neither the package nor the workspace specifies <code>default-features</code>, it defaults to <code>true</code>.
+Before Rust 1.99, or in earlier editions, package-level <code>default-features = false</code>
+may be ignored or rejected unless the workspace dependency also disables default features.</li>
 </ul>
-<p>Other than <code>optional</code> and <code>features</code>, inherited dependencies cannot use any other
-dependency key (such as <code>version</code> or <code>default-features</code>).</p>
+<p>Other than <code>optional</code>, <code>features</code>, and <code>default-features</code>, inherited dependencies
+cannot use any other dependency key (such as <code>version</code>).</p>
 <p>Dependencies in the <code>[dependencies]</code>, <code>[dev-dependencies]</code>, <code>[build-dependencies]</code>, and
 <code>[target."...".dependencies]</code> sections support the ability to reference the
 <code>[workspace.dependencies]</code> definition of dependencies.</p>
 <pre><code class="language-toml">[package]
 name = "bar"
 version = "0.2.0"
+edition = "2024"
 
 [dependencies]
 regex = { workspace = true, features = ["unicode"] }
+serde = { workspace = true, default-features = false }
 
 [build-dependencies]
 cc.workspace = true
@@ -4783,8 +4797,8 @@ non-incremental builds.</p>
 whether or not <a href="https://en.wikipedia.org/wiki/Rpath"><code>rpath</code></a> is enabled.</p>
 <h2 id="default-profiles"><a class="header" href="#default-profiles">Default profiles</a></h2>
 <h3 id="dev"><a class="header" href="#dev">dev</a></h3>
-<p>The <code>dev</code> profile is used for normal development and debugging. It is the
-default for build commands like <a href="#cargo-build1"><code>cargo build</code></a>, and is used for <code>cargo install --debug</code>.</p>
+<p>The <code>dev</code> profile is used for normal development. It is the
+default for build commands like <a href="#cargo-build1"><code>cargo build</code></a>, and is used for <code>cargo install --profile dev</code>.</p>
 <p>The default settings for the <code>dev</code> profile are:</p>
 <pre><code class="language-toml">[profile.dev]
 opt-level = 0
@@ -4798,6 +4812,12 @@ panic = 'unwind'
 incremental = true
 codegen-units = 256
 rpath = false
+</code></pre>
+<h3 id="debug-1"><a class="header" href="#debug-1">debug</a></h3>
+<p>The <code>debug</code> profile is used for creating binaries to run with a debugger. It is used with <code>cargo build --profile debug</code> and <code>cargo install --debug</code>.</p>
+<p>The default settings for the <code>debug</code> profile are:</p>
+<pre><code class="language-toml">[profile.debug]
+inherits = "dev"
 </code></pre>
 <h3 id="release"><a class="header" href="#release">release</a></h3>
 <p>The <code>release</code> profile is intended for optimized artifacts used for releases
@@ -11206,11 +11226,8 @@ toolchains.</p>
 <tbody>
 <tr><td><code>cargo::default</code></td><td>all lints that are on by default (correctness, suspicious, style, complexity, perf)</td><td>warn/deny</td></tr>
 <tr><td><code>cargo::correctness</code></td><td>code that is outright wrong or useless</td><td>deny</td></tr>
-<tr><td><code>cargo::complexity</code></td><td>code that does something simple but in a complex way</td><td>warn</td></tr>
-<tr><td><code>cargo::perf</code></td><td>code that can be written to run faster</td><td>warn</td></tr>
 <tr><td><code>cargo::style</code></td><td>code that should be written in a more idiomatic way</td><td>warn</td></tr>
 <tr><td><code>cargo::suspicious</code></td><td>code that is most likely wrong or useless</td><td>warn</td></tr>
-<tr><td><code>cargo::nursery</code></td><td>new lints that are still under development</td><td>allow</td></tr>
 <tr><td><code>cargo::pedantic</code></td><td>lints which are rather strict or have occasional false positives</td><td>allow</td></tr>
 <tr><td><code>cargo::restriction</code></td><td>lints which prevent the use of Cargo features</td><td>allow</td></tr>
 </tbody>
@@ -14271,8 +14288,8 @@ running benchmarks on the stable channel, such as
 </blockquote>
 <p>By default, <code>cargo bench</code> uses the <a href="#bench"><code>bench</code> profile</a>, which enables
 optimizations and disables debugging information. If you need to debug a
-benchmark, you can use the <code>--profile=dev</code> command-line option to switch to
-the dev profile. You can then run the debug-enabled benchmark within a
+benchmark, you can use the <code>--profile=debug</code> command-line option to switch to
+the debug profile. You can then run the debug-enabled benchmark within a
 debugger.</p>
 <h3 id="working-directory-of-benchmarks"><a class="header" href="#working-directory-of-benchmarks">Working directory of benchmarks</a></h3>
 <p>The working directory of every benchmark is set to the root directory of the
@@ -19116,7 +19133,10 @@ special executable as aforementioned, and then is run serially.</p>
 manifest settings, in which case your code will need to provide its own <code>main</code>
 function to handle running tests.</p>
 <p>By default, <code>cargo test</code> uses the <a href="#test"><code>test</code> profile</a>, which enables
-debugging.</p>
+some optimizations and disables debugging information for fast feedback. If you need to debug a
+test, you can use the <code>--profile=debug</code> command-line option to switch to
+the debug profile. You can then run the debug-enabled test within a
+debugger.</p>
 <h3 id="documentation-tests"><a class="header" href="#documentation-tests">Documentation tests</a></h3>
 <p>Documentation tests are also run by default, which is handled by <code>rustdoc</code>. It
 extracts code samples from documentation comments of the library target, and
@@ -22398,10 +22418,10 @@ requirement in <code>Cargo.toml</code> doesn’t contain any pre-release identif
 
 </dd>
 
-<dt class="option-term" id="option-cargo-update---breaking"><a class="option-anchor" href="#option-cargo-update---breaking"><code>--breaking</code> <em>directory</em></a></dt>
+<dt class="option-term" id="option-cargo-update---breaking"><a class="option-anchor" href="#option-cargo-update---breaking"><code>--breaking</code></a></dt>
 
 <dd class="option-desc">
-<p>Update <em>spec</em> to latest SemVer-breaking version.</p>
+<p>Update <em>spec</em> to highest SemVer-breaking version.</p>
 
 <p>Version requirements will be modified to allow this update.</p>
 
@@ -23390,7 +23410,7 @@ is specified.</p>
 <dt class="option-term" id="option-cargo-install---debug"><a class="option-anchor" href="#option-cargo-install---debug"><code>--debug</code></a></dt>
 
 <dd class="option-desc">
-<p>Build with the <code>dev</code> profile instead of the <code>release</code> profile.
+<p>Build with the <code>debug</code> profile instead of the <code>release</code> profile.
 See also the <code>--profile</code> option for choosing a specific profile by name.</p>
 
 </dd>
@@ -26573,10 +26593,6 @@ when <code>--cap-lints=allow</code> is set.
 <p><a href="https://github.com/rust-lang/cargo/compare/c25859fa...rust-1.98.0">c25859fa…rust-1.98.0</a></p>
 <h3 id="added-1"><a class="header" href="#added-1">Added</a></h3>
 <h3 id="changed-1"><a class="header" href="#changed-1">Changed</a></h3>
-<ul>
-<li>Forward <code>--verbose</code> flag to rustc for local crates
-<a href="https://github.com/rust-lang/cargo/pull/17006">#17006</a></li>
-</ul>
 <h3 id="fixed-1"><a class="header" href="#fixed-1">Fixed</a></h3>
 <ul>
 <li>Strip the trailing carriage return from tokens of <code>cargo:token-from-stdout</code>
