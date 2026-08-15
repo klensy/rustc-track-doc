@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AllocError","Layout","LayoutError"],"trait":["Allocator","GlobalAlloc","GlobalAllocator"],"type":["LayoutErr"]};
+window.SIDEBAR_ITEMS = {"struct":["AllocError","Layout","LayoutError"],"trait":["Allocator","AllocatorClone","GlobalAlloc","GlobalAllocator","StaticAllocator"],"type":["LayoutErr"]};

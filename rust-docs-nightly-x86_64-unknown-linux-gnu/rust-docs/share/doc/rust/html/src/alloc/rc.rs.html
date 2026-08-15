@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (ba28ff76f 2026-08-13)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.99.0.js"></script><script defer src="../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.99.0" data-rustdoc-version="1.99.0-nightly (d453bdd8f 2026-08-14)" data-channel="nightly" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.99.0.js"></script><script defer src="../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
 <a href=#2 id=2 data-nosnippet>2</a>//! Counted'.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! The type [`Rc&lt;T&gt;`][`Rc`] provides shared ownership of a value of type `T`,
@@ -268,7 +268,7 @@
 <a href=#268 id=268 data-nosnippet>268</a>
 <a href=#269 id=269 data-nosnippet>269</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#270 id=270 data-nosnippet>270</a></span><span class="kw">use </span><span class="kw">crate</span>::alloc::handle_alloc_error;
-<a href=#271 id=271 data-nosnippet>271</a><span class="kw">use </span><span class="kw">crate</span>::alloc::{AllocError, Allocator, Global, Layout};
+<a href=#271 id=271 data-nosnippet>271</a><span class="kw">use </span><span class="kw">crate</span>::alloc::{AllocError, Allocator, AllocatorClone, Global, Layout};
 <a href=#272 id=272 data-nosnippet>272</a><span class="kw">use </span><span class="kw">crate</span>::borrow::{Cow, ToOwned};
 <a href=#273 id=273 data-nosnippet>273</a><span class="kw">use </span><span class="kw">crate</span>::boxed::Box;
 <a href=#274 id=274 data-nosnippet>274</a><span class="attr">#[cfg(not(no_global_oom_handling))]
@@ -1771,7 +1771,7 @@
 <a href=#1771 id=1771 data-nosnippet>1771</a>    #[stable(feature = <span class="string">"rc_weak"</span>, since = <span class="string">"1.4.0"</span>)]
 <a href=#1772 id=1772 data-nosnippet>1772</a>    </span><span class="kw">pub fn </span>downgrade(this: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; Weak&lt;T, A&gt;
 <a href=#1773 id=1773 data-nosnippet>1773</a>    <span class="kw">where
-<a href=#1774 id=1774 data-nosnippet>1774</a>        </span>A: Clone,
+<a href=#1774 id=1774 data-nosnippet>1774</a>        </span>A: AllocatorClone,
 <a href=#1775 id=1775 data-nosnippet>1775</a>    {
 <a href=#1776 id=1776 data-nosnippet>1776</a>        this.inner().inc_weak();
 <a href=#1777 id=1777 data-nosnippet>1777</a>        <span class="comment">// Make sure we do not create a dangling Weak
@@ -1852,7 +1852,7 @@
 <a href=#1852 id=1852 data-nosnippet>1852</a>    #[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
 <a href=#1853 id=1853 data-nosnippet>1853</a>    </span><span class="kw">pub unsafe fn </span>increment_strong_count_in(ptr: <span class="kw-2">*const </span>T, alloc: A)
 <a href=#1854 id=1854 data-nosnippet>1854</a>    <span class="kw">where
-<a href=#1855 id=1855 data-nosnippet>1855</a>        </span>A: Clone,
+<a href=#1855 id=1855 data-nosnippet>1855</a>        </span>A: AllocatorClone,
 <a href=#1856 id=1856 data-nosnippet>1856</a>    {
 <a href=#1857 id=1857 data-nosnippet>1857</a>        <span class="comment">// Retain Rc, but don't touch refcount by wrapping in ManuallyDrop
 <a href=#1858 id=1858 data-nosnippet>1858</a>        </span><span class="kw">let </span>rc = <span class="kw">unsafe </span>{ mem::ManuallyDrop::new(Rc::&lt;T, A&gt;::from_raw_in(ptr, alloc)) };
@@ -2028,7 +2028,7 @@
 <a href=#2028 id=2028 data-nosnippet>2028</a>}
 <a href=#2029 id=2029 data-nosnippet>2029</a>
 <a href=#2030 id=2030 data-nosnippet>2030</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#2031 id=2031 data-nosnippet>2031</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + CloneToUninit, A: Allocator + Clone&gt; Rc&lt;T, A&gt; {
+<a href=#2031 id=2031 data-nosnippet>2031</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + CloneToUninit, A: AllocatorClone&gt; Rc&lt;T, A&gt; {
 <a href=#2032 id=2032 data-nosnippet>2032</a>    <span class="doccomment">/// Makes a mutable reference into the given `Rc`.
 <a href=#2033 id=2033 data-nosnippet>2033</a>    ///
 <a href=#2034 id=2034 data-nosnippet>2034</a>    /// If there are other `Rc` pointers to the same allocation, then `make_mut` will
@@ -2309,7 +2309,7 @@
 <a href=#2309 id=2309 data-nosnippet>2309</a>
 <a href=#2310 id=2310 data-nosnippet>2310</a>            <span class="comment">// Free the allocation without dropping its contents
 <a href=#2311 id=2311 data-nosnippet>2311</a>            </span><span class="kw">let </span>(bptr, alloc) = Box::into_raw_with_allocator(src);
-<a href=#2312 id=2312 data-nosnippet>2312</a>            <span class="kw">let </span>src = Box::from_raw_in(bptr <span class="kw">as </span><span class="kw-2">*mut </span>mem::ManuallyDrop&lt;T&gt;, alloc.by_ref());
+<a href=#2312 id=2312 data-nosnippet>2312</a>            <span class="kw">let </span>src = Box::from_raw_in(bptr <span class="kw">as </span><span class="kw-2">*mut </span>mem::ManuallyDrop&lt;T&gt;, <span class="kw-2">&amp;</span>alloc);
 <a href=#2313 id=2313 data-nosnippet>2313</a>            drop(src);
 <a href=#2314 id=2314 data-nosnippet>2314</a>
 <a href=#2315 id=2315 data-nosnippet>2315</a>            <span class="self">Self</span>::from_ptr_in(ptr, alloc)
@@ -2505,7 +2505,7 @@
 <a href=#2505 id=2505 data-nosnippet>2505</a>}
 <a href=#2506 id=2506 data-nosnippet>2506</a>
 <a href=#2507 id=2507 data-nosnippet>2507</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2508 id=2508 data-nosnippet>2508</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; Clone <span class="kw">for </span>Rc&lt;T, A&gt; {
+<a href=#2508 id=2508 data-nosnippet>2508</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; Clone <span class="kw">for </span>Rc&lt;T, A&gt; {
 <a href=#2509 id=2509 data-nosnippet>2509</a>    <span class="doccomment">/// Makes a clone of the `Rc` pointer.
 <a href=#2510 id=2510 data-nosnippet>2510</a>    ///
 <a href=#2511 id=2511 data-nosnippet>2511</a>    /// This creates another pointer to the same allocation, increasing the
@@ -2530,10 +2530,10 @@
 <a href=#2530 id=2530 data-nosnippet>2530</a>}
 <a href=#2531 id=2531 data-nosnippet>2531</a>
 <a href=#2532 id=2532 data-nosnippet>2532</a><span class="attr">#[unstable(feature = <span class="string">"ergonomic_clones"</span>, issue = <span class="string">"132290"</span>)]
-<a href=#2533 id=2533 data-nosnippet>2533</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; UseCloned <span class="kw">for </span>Rc&lt;T, A&gt; {}
+<a href=#2533 id=2533 data-nosnippet>2533</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; UseCloned <span class="kw">for </span>Rc&lt;T, A&gt; {}
 <a href=#2534 id=2534 data-nosnippet>2534</a>
 <a href=#2535 id=2535 data-nosnippet>2535</a><span class="attr">#[unstable(feature = <span class="string">"share_trait"</span>, issue = <span class="string">"156756"</span>)]
-<a href=#2536 id=2536 data-nosnippet>2536</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; Share <span class="kw">for </span>Rc&lt;T, A&gt; {}
+<a href=#2536 id=2536 data-nosnippet>2536</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; Share <span class="kw">for </span>Rc&lt;T, A&gt; {}
 <a href=#2537 id=2537 data-nosnippet>2537</a>
 <a href=#2538 id=2538 data-nosnippet>2538</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#2539 id=2539 data-nosnippet>2539</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
@@ -3554,7 +3554,7 @@
 <a href=#3554 id=3554 data-nosnippet>3554</a>    #[stable(feature = <span class="string">"rc_weak"</span>, since = <span class="string">"1.4.0"</span>)]
 <a href=#3555 id=3555 data-nosnippet>3555</a>    </span><span class="kw">pub fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Rc&lt;T, A&gt;&gt;
 <a href=#3556 id=3556 data-nosnippet>3556</a>    <span class="kw">where
-<a href=#3557 id=3557 data-nosnippet>3557</a>        </span>A: Clone,
+<a href=#3557 id=3557 data-nosnippet>3557</a>        </span>A: AllocatorClone,
 <a href=#3558 id=3558 data-nosnippet>3558</a>    {
 <a href=#3559 id=3559 data-nosnippet>3559</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#3560 id=3560 data-nosnippet>3560</a>
@@ -3699,7 +3699,7 @@
 <a href=#3699 id=3699 data-nosnippet>3699</a>}
 <a href=#3700 id=3700 data-nosnippet>3700</a>
 <a href=#3701 id=3701 data-nosnippet>3701</a><span class="attr">#[stable(feature = <span class="string">"rc_weak"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#3702 id=3702 data-nosnippet>3702</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; Clone <span class="kw">for </span>Weak&lt;T, A&gt; {
+<a href=#3702 id=3702 data-nosnippet>3702</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; Clone <span class="kw">for </span>Weak&lt;T, A&gt; {
 <a href=#3703 id=3703 data-nosnippet>3703</a>    <span class="doccomment">/// Makes a clone of the `Weak` pointer that points to the same allocation.
 <a href=#3704 id=3704 data-nosnippet>3704</a>    ///
 <a href=#3705 id=3705 data-nosnippet>3705</a>    /// # Examples
@@ -3721,7 +3721,7 @@
 <a href=#3721 id=3721 data-nosnippet>3721</a>}
 <a href=#3722 id=3722 data-nosnippet>3722</a>
 <a href=#3723 id=3723 data-nosnippet>3723</a><span class="attr">#[unstable(feature = <span class="string">"ergonomic_clones"</span>, issue = <span class="string">"132290"</span>)]
-<a href=#3724 id=3724 data-nosnippet>3724</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; UseCloned <span class="kw">for </span>Weak&lt;T, A&gt; {}
+<a href=#3724 id=3724 data-nosnippet>3724</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; UseCloned <span class="kw">for </span>Weak&lt;T, A&gt; {}
 <a href=#3725 id=3725 data-nosnippet>3725</a>
 <a href=#3726 id=3726 data-nosnippet>3726</a><span class="attr">#[stable(feature = <span class="string">"rc_weak"</span>, since = <span class="string">"1.4.0"</span>)]
 <a href=#3727 id=3727 data-nosnippet>3727</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; fmt::Debug <span class="kw">for </span>Weak&lt;T, A&gt; {
@@ -4421,7 +4421,7 @@
 <a href=#4421 id=4421 data-nosnippet>4421</a>    }
 <a href=#4422 id=4422 data-nosnippet>4422</a>}
 <a href=#4423 id=4423 data-nosnippet>4423</a>
-<a href=#4424 id=4424 data-nosnippet>4424</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator + Clone&gt; UniqueRc&lt;T, A&gt; {
+<a href=#4424 id=4424 data-nosnippet>4424</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; UniqueRc&lt;T, A&gt; {
 <a href=#4425 id=4425 data-nosnippet>4425</a>    <span class="doccomment">/// Creates a new weak reference to the `UniqueRc`.
 <a href=#4426 id=4426 data-nosnippet>4426</a>    ///
 <a href=#4427 id=4427 data-nosnippet>4427</a>    /// Attempting to upgrade this weak reference will fail before the `UniqueRc` has been converted
@@ -4610,4 +4610,7 @@
 <a href=#4610 id=4610 data-nosnippet>4610</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).shrink(ptr, old_layout, new_layout) }
 <a href=#4611 id=4611 data-nosnippet>4611</a>    }
 <a href=#4612 id=4612 data-nosnippet>4612</a>}
+<a href=#4613 id=4613 data-nosnippet>4613</a>
+<a href=#4614 id=4614 data-nosnippet>4614</a><span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
+<a href=#4615 id=4615 data-nosnippet>4615</a></span><span class="kw">unsafe impl</span>&lt;T: Allocator + <span class="question-mark">?</span>Sized, A: AllocatorClone&gt; AllocatorClone <span class="kw">for </span>Rc&lt;T, A&gt; {}
 </code></pre></div></section></main></body></html>
