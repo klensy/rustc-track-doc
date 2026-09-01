@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fs/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (908501772 2026-08-30)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.100.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fs/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(nonstandard_style)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fs/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (0dfb098f3 2026-08-31)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.100.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fs/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(nonstandard_style)]
 <a href=#2 id=2 data-nosnippet>2</a>#![allow(unsafe_op_in_unsafe_fn)]
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="comment">// miri has some special hacks here that make things unused.
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="attr">#![cfg_attr(miri, allow(unused))]
@@ -2299,296 +2299,288 @@
 <a href=#2299 id=2299 data-nosnippet>2299</a><span class="attr">#[cfg(target_vendor = <span class="string">"apple"</span>)]
 <a href=#2300 id=2300 data-nosnippet>2300</a></span><span class="kw">pub fn </span>copy(from: <span class="kw-2">&amp;</span>Path, to: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;u64&gt; {
 <a href=#2301 id=2301 data-nosnippet>2301</a>    <span class="kw">const </span>COPYFILE_ALL: libc::copyfile_flags_t = libc::COPYFILE_METADATA | libc::COPYFILE_DATA;
-<a href=#2302 id=2302 data-nosnippet>2302</a>
-<a href=#2303 id=2303 data-nosnippet>2303</a>    <span class="kw">struct </span>FreeOnDrop(libc::copyfile_state_t);
-<a href=#2304 id=2304 data-nosnippet>2304</a>    <span class="kw">impl </span>Drop <span class="kw">for </span>FreeOnDrop {
-<a href=#2305 id=2305 data-nosnippet>2305</a>        <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#2306 id=2306 data-nosnippet>2306</a>            <span class="comment">// The code below ensures that `FreeOnDrop` is never a null pointer
-<a href=#2307 id=2307 data-nosnippet>2307</a>            </span><span class="kw">unsafe </span>{
-<a href=#2308 id=2308 data-nosnippet>2308</a>                <span class="comment">// `copyfile_state_free` returns -1 if the `to` or `from` files
-<a href=#2309 id=2309 data-nosnippet>2309</a>                // cannot be closed. However, this is not considered an error.
-<a href=#2310 id=2310 data-nosnippet>2310</a>                </span>libc::copyfile_state_free(<span class="self">self</span>.<span class="number">0</span>);
-<a href=#2311 id=2311 data-nosnippet>2311</a>            }
-<a href=#2312 id=2312 data-nosnippet>2312</a>        }
-<a href=#2313 id=2313 data-nosnippet>2313</a>    }
-<a href=#2314 id=2314 data-nosnippet>2314</a>
-<a href=#2315 id=2315 data-nosnippet>2315</a>    <span class="kw">let </span>(reader, reader_metadata) = open_from(from)<span class="question-mark">?</span>;
-<a href=#2316 id=2316 data-nosnippet>2316</a>
-<a href=#2317 id=2317 data-nosnippet>2317</a>    <span class="kw">let </span>clonefile_result = run_path_with_cstr(to, <span class="kw-2">&amp;</span>|to| {
-<a href=#2318 id=2318 data-nosnippet>2318</a>        cvt(<span class="kw">unsafe </span>{ libc::fclonefileat(reader.as_raw_fd(), libc::AT_FDCWD, to.as_ptr(), <span class="number">0</span>) })
-<a href=#2319 id=2319 data-nosnippet>2319</a>    });
-<a href=#2320 id=2320 data-nosnippet>2320</a>    <span class="kw">match </span>clonefile_result {
-<a href=#2321 id=2321 data-nosnippet>2321</a>        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(reader_metadata.len()),
-<a href=#2322 id=2322 data-nosnippet>2322</a>        <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">match </span>e.raw_os_error() {
-<a href=#2323 id=2323 data-nosnippet>2323</a>            <span class="comment">// `fclonefileat` will fail on non-APFS volumes, if the
-<a href=#2324 id=2324 data-nosnippet>2324</a>            // destination already exists, or if the source and destination
-<a href=#2325 id=2325 data-nosnippet>2325</a>            // are on different devices. In all these cases `fcopyfile`
-<a href=#2326 id=2326 data-nosnippet>2326</a>            // should succeed.
-<a href=#2327 id=2327 data-nosnippet>2327</a>            </span><span class="prelude-val">Some</span>(libc::ENOTSUP) | <span class="prelude-val">Some</span>(libc::EEXIST) | <span class="prelude-val">Some</span>(libc::EXDEV) =&gt; (),
-<a href=#2328 id=2328 data-nosnippet>2328</a>            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
-<a href=#2329 id=2329 data-nosnippet>2329</a>        },
-<a href=#2330 id=2330 data-nosnippet>2330</a>    }
-<a href=#2331 id=2331 data-nosnippet>2331</a>
-<a href=#2332 id=2332 data-nosnippet>2332</a>    <span class="comment">// Fall back to using `fcopyfile` if `fclonefileat` does not succeed.
-<a href=#2333 id=2333 data-nosnippet>2333</a>    </span><span class="kw">let </span>(writer, writer_metadata) = open_to_and_set_permissions(to, <span class="kw-2">&amp;</span>reader_metadata)<span class="question-mark">?</span>;
-<a href=#2334 id=2334 data-nosnippet>2334</a>
-<a href=#2335 id=2335 data-nosnippet>2335</a>    <span class="comment">// We ensure that `FreeOnDrop` never contains a null pointer so it is
-<a href=#2336 id=2336 data-nosnippet>2336</a>    // always safe to call `copyfile_state_free`
-<a href=#2337 id=2337 data-nosnippet>2337</a>    </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{
-<a href=#2338 id=2338 data-nosnippet>2338</a>        <span class="kw">let </span>state = libc::copyfile_state_alloc();
-<a href=#2339 id=2339 data-nosnippet>2339</a>        <span class="kw">if </span>state.is_null() {
-<a href=#2340 id=2340 data-nosnippet>2340</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::io::Error::last_os_error());
-<a href=#2341 id=2341 data-nosnippet>2341</a>        }
-<a href=#2342 id=2342 data-nosnippet>2342</a>        FreeOnDrop(state)
-<a href=#2343 id=2343 data-nosnippet>2343</a>    };
-<a href=#2344 id=2344 data-nosnippet>2344</a>
-<a href=#2345 id=2345 data-nosnippet>2345</a>    <span class="kw">let </span>flags = <span class="kw">if </span>writer_metadata.is_file() { COPYFILE_ALL } <span class="kw">else </span>{ libc::COPYFILE_DATA };
-<a href=#2346 id=2346 data-nosnippet>2346</a>
-<a href=#2347 id=2347 data-nosnippet>2347</a>    cvt(<span class="kw">unsafe </span>{ libc::fcopyfile(reader.as_raw_fd(), writer.as_raw_fd(), state.<span class="number">0</span>, flags) })<span class="question-mark">?</span>;
-<a href=#2348 id=2348 data-nosnippet>2348</a>
-<a href=#2349 id=2349 data-nosnippet>2349</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes_copied: libc::off_t = <span class="number">0</span>;
-<a href=#2350 id=2350 data-nosnippet>2350</a>    cvt(<span class="kw">unsafe </span>{
-<a href=#2351 id=2351 data-nosnippet>2351</a>        libc::copyfile_state_get(
-<a href=#2352 id=2352 data-nosnippet>2352</a>            state.<span class="number">0</span>,
-<a href=#2353 id=2353 data-nosnippet>2353</a>            libc::COPYFILE_STATE_COPIED <span class="kw">as </span>u32,
-<a href=#2354 id=2354 data-nosnippet>2354</a>            (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>bytes_copied) <span class="kw">as </span><span class="kw-2">*mut </span>libc::c_void,
-<a href=#2355 id=2355 data-nosnippet>2355</a>        )
-<a href=#2356 id=2356 data-nosnippet>2356</a>    })<span class="question-mark">?</span>;
-<a href=#2357 id=2357 data-nosnippet>2357</a>    <span class="prelude-val">Ok</span>(bytes_copied <span class="kw">as </span>u64)
+<a href=#2302 id=2302 data-nosnippet>2302</a>    <span class="kw">let </span>(reader, reader_metadata) = open_from(from)<span class="question-mark">?</span>;
+<a href=#2303 id=2303 data-nosnippet>2303</a>
+<a href=#2304 id=2304 data-nosnippet>2304</a>    <span class="kw">let </span>clonefile_result = run_path_with_cstr(to, <span class="kw-2">&amp;</span>|to| {
+<a href=#2305 id=2305 data-nosnippet>2305</a>        cvt(<span class="kw">unsafe </span>{ libc::fclonefileat(reader.as_raw_fd(), libc::AT_FDCWD, to.as_ptr(), <span class="number">0</span>) })
+<a href=#2306 id=2306 data-nosnippet>2306</a>    });
+<a href=#2307 id=2307 data-nosnippet>2307</a>    <span class="kw">match </span>clonefile_result {
+<a href=#2308 id=2308 data-nosnippet>2308</a>        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(reader_metadata.len()),
+<a href=#2309 id=2309 data-nosnippet>2309</a>        <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">match </span>e.raw_os_error() {
+<a href=#2310 id=2310 data-nosnippet>2310</a>            <span class="comment">// `fclonefileat` will fail on non-APFS volumes, if the
+<a href=#2311 id=2311 data-nosnippet>2311</a>            // destination already exists, or if the source and destination
+<a href=#2312 id=2312 data-nosnippet>2312</a>            // are on different devices. In all these cases `fcopyfile`
+<a href=#2313 id=2313 data-nosnippet>2313</a>            // should succeed.
+<a href=#2314 id=2314 data-nosnippet>2314</a>            </span><span class="prelude-val">Some</span>(libc::ENOTSUP) | <span class="prelude-val">Some</span>(libc::EEXIST) | <span class="prelude-val">Some</span>(libc::EXDEV) =&gt; (),
+<a href=#2315 id=2315 data-nosnippet>2315</a>            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
+<a href=#2316 id=2316 data-nosnippet>2316</a>        },
+<a href=#2317 id=2317 data-nosnippet>2317</a>    }
+<a href=#2318 id=2318 data-nosnippet>2318</a>
+<a href=#2319 id=2319 data-nosnippet>2319</a>    <span class="comment">// Fall back to using `fcopyfile` if `fclonefileat` does not succeed.
+<a href=#2320 id=2320 data-nosnippet>2320</a>    </span><span class="kw">let </span>(writer, writer_metadata) = open_to_and_set_permissions(to, <span class="kw-2">&amp;</span>reader_metadata)<span class="question-mark">?</span>;
+<a href=#2321 id=2321 data-nosnippet>2321</a>
+<a href=#2322 id=2322 data-nosnippet>2322</a>    <span class="kw">let </span>state = <span class="kw">unsafe </span>{ libc::copyfile_state_alloc() };
+<a href=#2323 id=2323 data-nosnippet>2323</a>    <span class="comment">// We ensure that the guard never contains a null pointer so it is
+<a href=#2324 id=2324 data-nosnippet>2324</a>    // always safe to call `copyfile_state_free`
+<a href=#2325 id=2325 data-nosnippet>2325</a>    </span><span class="kw">if </span>state.is_null() {
+<a href=#2326 id=2326 data-nosnippet>2326</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::io::Error::last_os_error());
+<a href=#2327 id=2327 data-nosnippet>2327</a>    }
+<a href=#2328 id=2328 data-nosnippet>2328</a>    <span class="kw">let </span>state = <span class="kw">crate</span>::mem::DropGuard::new(state, |state| {
+<a href=#2329 id=2329 data-nosnippet>2329</a>        <span class="comment">// SAFETY: just checked it's not null
+<a href=#2330 id=2330 data-nosnippet>2330</a>        </span><span class="kw">unsafe </span>{
+<a href=#2331 id=2331 data-nosnippet>2331</a>            <span class="comment">// `copyfile_state_free` returns -1 if the `to` or `from` files
+<a href=#2332 id=2332 data-nosnippet>2332</a>            // cannot be closed. However, this is not considered an error.
+<a href=#2333 id=2333 data-nosnippet>2333</a>            </span>libc::copyfile_state_free(state);
+<a href=#2334 id=2334 data-nosnippet>2334</a>        }
+<a href=#2335 id=2335 data-nosnippet>2335</a>    });
+<a href=#2336 id=2336 data-nosnippet>2336</a>
+<a href=#2337 id=2337 data-nosnippet>2337</a>    <span class="kw">let </span>flags = <span class="kw">if </span>writer_metadata.is_file() { COPYFILE_ALL } <span class="kw">else </span>{ libc::COPYFILE_DATA };
+<a href=#2338 id=2338 data-nosnippet>2338</a>
+<a href=#2339 id=2339 data-nosnippet>2339</a>    cvt(<span class="kw">unsafe </span>{ libc::fcopyfile(reader.as_raw_fd(), writer.as_raw_fd(), <span class="kw-2">*</span>state, flags) })<span class="question-mark">?</span>;
+<a href=#2340 id=2340 data-nosnippet>2340</a>
+<a href=#2341 id=2341 data-nosnippet>2341</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes_copied: libc::off_t = <span class="number">0</span>;
+<a href=#2342 id=2342 data-nosnippet>2342</a>    cvt(<span class="kw">unsafe </span>{
+<a href=#2343 id=2343 data-nosnippet>2343</a>        libc::copyfile_state_get(
+<a href=#2344 id=2344 data-nosnippet>2344</a>            <span class="kw-2">*</span>state,
+<a href=#2345 id=2345 data-nosnippet>2345</a>            libc::COPYFILE_STATE_COPIED <span class="kw">as </span>u32,
+<a href=#2346 id=2346 data-nosnippet>2346</a>            (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>bytes_copied) <span class="kw">as </span><span class="kw-2">*mut </span>libc::c_void,
+<a href=#2347 id=2347 data-nosnippet>2347</a>        )
+<a href=#2348 id=2348 data-nosnippet>2348</a>    })<span class="question-mark">?</span>;
+<a href=#2349 id=2349 data-nosnippet>2349</a>    <span class="prelude-val">Ok</span>(bytes_copied <span class="kw">as </span>u64)
+<a href=#2350 id=2350 data-nosnippet>2350</a>}
+<a href=#2351 id=2351 data-nosnippet>2351</a>
+<a href=#2352 id=2352 data-nosnippet>2352</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
+<a href=#2353 id=2353 data-nosnippet>2353</a></span><span class="kw">pub fn </span>chown(path: <span class="kw-2">&amp;</span>Path, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#2354 id=2354 data-nosnippet>2354</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
+<a href=#2355 id=2355 data-nosnippet>2355</a>        cvt(<span class="kw">unsafe </span>{ libc::chown(path.as_ptr(), uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })
+<a href=#2356 id=2356 data-nosnippet>2356</a>            .map(|<span class="kw">_</span>| ())
+<a href=#2357 id=2357 data-nosnippet>2357</a>    })
 <a href=#2358 id=2358 data-nosnippet>2358</a>}
 <a href=#2359 id=2359 data-nosnippet>2359</a>
 <a href=#2360 id=2360 data-nosnippet>2360</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
-<a href=#2361 id=2361 data-nosnippet>2361</a></span><span class="kw">pub fn </span>chown(path: <span class="kw-2">&amp;</span>Path, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#2362 id=2362 data-nosnippet>2362</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
-<a href=#2363 id=2363 data-nosnippet>2363</a>        cvt(<span class="kw">unsafe </span>{ libc::chown(path.as_ptr(), uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })
-<a href=#2364 id=2364 data-nosnippet>2364</a>            .map(|<span class="kw">_</span>| ())
-<a href=#2365 id=2365 data-nosnippet>2365</a>    })
-<a href=#2366 id=2366 data-nosnippet>2366</a>}
-<a href=#2367 id=2367 data-nosnippet>2367</a>
-<a href=#2368 id=2368 data-nosnippet>2368</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
-<a href=#2369 id=2369 data-nosnippet>2369</a></span><span class="kw">pub fn </span>fchown(fd: c_int, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#2370 id=2370 data-nosnippet>2370</a>    cvt(<span class="kw">unsafe </span>{ libc::fchown(fd, uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })<span class="question-mark">?</span>;
-<a href=#2371 id=2371 data-nosnippet>2371</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2361 id=2361 data-nosnippet>2361</a></span><span class="kw">pub fn </span>fchown(fd: c_int, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#2362 id=2362 data-nosnippet>2362</a>    cvt(<span class="kw">unsafe </span>{ libc::fchown(fd, uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })<span class="question-mark">?</span>;
+<a href=#2363 id=2363 data-nosnippet>2363</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2364 id=2364 data-nosnippet>2364</a>}
+<a href=#2365 id=2365 data-nosnippet>2365</a>
+<a href=#2366 id=2366 data-nosnippet>2366</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
+<a href=#2367 id=2367 data-nosnippet>2367</a></span><span class="kw">pub fn </span>lchown(path: <span class="kw-2">&amp;</span>Path, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#2368 id=2368 data-nosnippet>2368</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
+<a href=#2369 id=2369 data-nosnippet>2369</a>        cvt(<span class="kw">unsafe </span>{ libc::lchown(path.as_ptr(), uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })
+<a href=#2370 id=2370 data-nosnippet>2370</a>            .map(|<span class="kw">_</span>| ())
+<a href=#2371 id=2371 data-nosnippet>2371</a>    })
 <a href=#2372 id=2372 data-nosnippet>2372</a>}
 <a href=#2373 id=2373 data-nosnippet>2373</a>
-<a href=#2374 id=2374 data-nosnippet>2374</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
+<a href=#2374 id=2374 data-nosnippet>2374</a><span class="attr">#[cfg(target_os = <span class="string">"vxworks"</span>)]
 <a href=#2375 id=2375 data-nosnippet>2375</a></span><span class="kw">pub fn </span>lchown(path: <span class="kw-2">&amp;</span>Path, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#2376 id=2376 data-nosnippet>2376</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
-<a href=#2377 id=2377 data-nosnippet>2377</a>        cvt(<span class="kw">unsafe </span>{ libc::lchown(path.as_ptr(), uid <span class="kw">as </span>libc::uid_t, gid <span class="kw">as </span>libc::gid_t) })
-<a href=#2378 id=2378 data-nosnippet>2378</a>            .map(|<span class="kw">_</span>| ())
-<a href=#2379 id=2379 data-nosnippet>2379</a>    })
-<a href=#2380 id=2380 data-nosnippet>2380</a>}
-<a href=#2381 id=2381 data-nosnippet>2381</a>
-<a href=#2382 id=2382 data-nosnippet>2382</a><span class="attr">#[cfg(target_os = <span class="string">"vxworks"</span>)]
-<a href=#2383 id=2383 data-nosnippet>2383</a></span><span class="kw">pub fn </span>lchown(path: <span class="kw-2">&amp;</span>Path, uid: u32, gid: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#2384 id=2384 data-nosnippet>2384</a>    <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) = (path, uid, gid);
-<a href=#2385 id=2385 data-nosnippet>2385</a>    <span class="prelude-val">Err</span>(<span class="macro">io::const_error!</span>(io::ErrorKind::Unsupported, <span class="string">"lchown not supported by vxworks"</span>))
-<a href=#2386 id=2386 data-nosnippet>2386</a>}
-<a href=#2387 id=2387 data-nosnippet>2387</a>
-<a href=#2388 id=2388 data-nosnippet>2388</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"fuchsia"</span>, target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
-<a href=#2389 id=2389 data-nosnippet>2389</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
-<a href=#2390 id=2390 data-nosnippet>2390</a>    run_path_with_cstr(dir, <span class="kw-2">&amp;</span>|dir| cvt(<span class="kw">unsafe </span>{ libc::chroot(dir.as_ptr()) }).map(|<span class="kw">_</span>| ()))
-<a href=#2391 id=2391 data-nosnippet>2391</a>}
-<a href=#2392 id=2392 data-nosnippet>2392</a>
-<a href=#2393 id=2393 data-nosnippet>2393</a><span class="attr">#[cfg(target_os = <span class="string">"vxworks"</span>)]
-<a href=#2394 id=2394 data-nosnippet>2394</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
-<a href=#2395 id=2395 data-nosnippet>2395</a>    <span class="kw">let _ </span>= dir;
-<a href=#2396 id=2396 data-nosnippet>2396</a>    <span class="prelude-val">Err</span>(<span class="macro">io::const_error!</span>(io::ErrorKind::Unsupported, <span class="string">"chroot not supported by vxworks"</span>))
-<a href=#2397 id=2397 data-nosnippet>2397</a>}
-<a href=#2398 id=2398 data-nosnippet>2398</a>
-<a href=#2399 id=2399 data-nosnippet>2399</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
-<a href=#2400 id=2400 data-nosnippet>2400</a></span><span class="kw">pub fn </span>mkfifo(path: <span class="kw-2">&amp;</span>Path, mode: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#2401 id=2401 data-nosnippet>2401</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
-<a href=#2402 id=2402 data-nosnippet>2402</a>        cvt(<span class="kw">unsafe </span>{ libc::mkfifo(path.as_ptr(), mode.try_into().unwrap()) }).map(|<span class="kw">_</span>| ())
-<a href=#2403 id=2403 data-nosnippet>2403</a>    })
-<a href=#2404 id=2404 data-nosnippet>2404</a>}
-<a href=#2405 id=2405 data-nosnippet>2405</a>
-<a href=#2406 id=2406 data-nosnippet>2406</a><span class="kw">pub use </span>remove_dir_impl::remove_dir_all;
-<a href=#2407 id=2407 data-nosnippet>2407</a>
-<a href=#2408 id=2408 data-nosnippet>2408</a><span class="comment">// Fallback for REDOX, ESP-ID, Horizon, Vita, Vxworks and Miri
-<a href=#2409 id=2409 data-nosnippet>2409</a></span><span class="attr">#[cfg(any(
-<a href=#2410 id=2410 data-nosnippet>2410</a>    target_os = <span class="string">"redox"</span>,
-<a href=#2411 id=2411 data-nosnippet>2411</a>    target_os = <span class="string">"espidf"</span>,
-<a href=#2412 id=2412 data-nosnippet>2412</a>    target_os = <span class="string">"horizon"</span>,
-<a href=#2413 id=2413 data-nosnippet>2413</a>    target_os = <span class="string">"vita"</span>,
-<a href=#2414 id=2414 data-nosnippet>2414</a>    target_os = <span class="string">"nto"</span>,
-<a href=#2415 id=2415 data-nosnippet>2415</a>    target_os = <span class="string">"qnx"</span>,
-<a href=#2416 id=2416 data-nosnippet>2416</a>    target_os = <span class="string">"vxworks"</span>,
-<a href=#2417 id=2417 data-nosnippet>2417</a>    target_os = <span class="string">"l4re"</span>,
-<a href=#2418 id=2418 data-nosnippet>2418</a>    miri
-<a href=#2419 id=2419 data-nosnippet>2419</a>))]
-<a href=#2420 id=2420 data-nosnippet>2420</a></span><span class="kw">mod </span>remove_dir_impl {
-<a href=#2421 id=2421 data-nosnippet>2421</a>    <span class="kw">pub use </span><span class="kw">crate</span>::sys::fs::common::remove_dir_all;
-<a href=#2422 id=2422 data-nosnippet>2422</a>}
-<a href=#2423 id=2423 data-nosnippet>2423</a>
-<a href=#2424 id=2424 data-nosnippet>2424</a><span class="comment">// Modern implementation using openat(), unlinkat() and fdopendir()
-<a href=#2425 id=2425 data-nosnippet>2425</a></span><span class="attr">#[cfg(not(any(
-<a href=#2426 id=2426 data-nosnippet>2426</a>    target_os = <span class="string">"redox"</span>,
-<a href=#2427 id=2427 data-nosnippet>2427</a>    target_os = <span class="string">"espidf"</span>,
-<a href=#2428 id=2428 data-nosnippet>2428</a>    target_os = <span class="string">"horizon"</span>,
-<a href=#2429 id=2429 data-nosnippet>2429</a>    target_os = <span class="string">"vita"</span>,
-<a href=#2430 id=2430 data-nosnippet>2430</a>    target_os = <span class="string">"nto"</span>,
-<a href=#2431 id=2431 data-nosnippet>2431</a>    target_os = <span class="string">"qnx"</span>,
-<a href=#2432 id=2432 data-nosnippet>2432</a>    target_os = <span class="string">"vxworks"</span>,
-<a href=#2433 id=2433 data-nosnippet>2433</a>    target_os = <span class="string">"l4re"</span>,
-<a href=#2434 id=2434 data-nosnippet>2434</a>    miri
-<a href=#2435 id=2435 data-nosnippet>2435</a>)))]
-<a href=#2436 id=2436 data-nosnippet>2436</a></span><span class="kw">mod </span>remove_dir_impl {
-<a href=#2437 id=2437 data-nosnippet>2437</a>    <span class="attr">#[cfg(not(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>)))]
-<a href=#2438 id=2438 data-nosnippet>2438</a>    </span><span class="kw">use </span>libc::{fdopendir, openat, unlinkat};
-<a href=#2439 id=2439 data-nosnippet>2439</a>    <span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>))]
-<a href=#2440 id=2440 data-nosnippet>2440</a>    </span><span class="kw">use </span>libc::{fdopendir, openat64 <span class="kw">as </span>openat, unlinkat};
-<a href=#2441 id=2441 data-nosnippet>2441</a>
-<a href=#2442 id=2442 data-nosnippet>2442</a>    <span class="kw">use super</span>::{
-<a href=#2443 id=2443 data-nosnippet>2443</a>        AsRawFd, DirEntry, DirStream, FromRawFd, InnerReadDir, IntoRawFd, OwnedFd, RawFd, ReadDir,
-<a href=#2444 id=2444 data-nosnippet>2444</a>        lstat,
-<a href=#2445 id=2445 data-nosnippet>2445</a>    };
-<a href=#2446 id=2446 data-nosnippet>2446</a>    <span class="kw">use </span><span class="kw">crate</span>::ffi::CStr;
-<a href=#2447 id=2447 data-nosnippet>2447</a>    <span class="kw">use </span><span class="kw">crate</span>::io;
-<a href=#2448 id=2448 data-nosnippet>2448</a>    <span class="kw">use </span><span class="kw">crate</span>::path::{Path, PathBuf};
-<a href=#2449 id=2449 data-nosnippet>2449</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::helpers::{ignore_notfound, run_path_with_cstr};
-<a href=#2450 id=2450 data-nosnippet>2450</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::{cvt, cvt_r};
-<a href=#2451 id=2451 data-nosnippet>2451</a>
-<a href=#2452 id=2452 data-nosnippet>2452</a>    <span class="kw">pub fn </span>openat_nofollow_dironly(parent_fd: <span class="prelude-ty">Option</span>&lt;RawFd&gt;, p: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;OwnedFd&gt; {
-<a href=#2453 id=2453 data-nosnippet>2453</a>        <span class="kw">let </span>fd = cvt_r(|| <span class="kw">unsafe </span>{
-<a href=#2454 id=2454 data-nosnippet>2454</a>            openat(
-<a href=#2455 id=2455 data-nosnippet>2455</a>                parent_fd.unwrap_or(libc::AT_FDCWD),
-<a href=#2456 id=2456 data-nosnippet>2456</a>                p.as_ptr(),
-<a href=#2457 id=2457 data-nosnippet>2457</a>                libc::O_CLOEXEC | libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_DIRECTORY,
-<a href=#2458 id=2458 data-nosnippet>2458</a>            )
-<a href=#2459 id=2459 data-nosnippet>2459</a>        })<span class="question-mark">?</span>;
-<a href=#2460 id=2460 data-nosnippet>2460</a>        <span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ OwnedFd::from_raw_fd(fd) })
-<a href=#2461 id=2461 data-nosnippet>2461</a>    }
-<a href=#2462 id=2462 data-nosnippet>2462</a>
-<a href=#2463 id=2463 data-nosnippet>2463</a>    <span class="kw">fn </span>fdreaddir(dir_fd: OwnedFd) -&gt; io::Result&lt;(ReadDir, RawFd)&gt; {
-<a href=#2464 id=2464 data-nosnippet>2464</a>        <span class="kw">let </span>ptr = <span class="kw">unsafe </span>{ fdopendir(dir_fd.as_raw_fd()) };
-<a href=#2465 id=2465 data-nosnippet>2465</a>        <span class="kw">if </span>ptr.is_null() {
-<a href=#2466 id=2466 data-nosnippet>2466</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(io::Error::last_os_error());
-<a href=#2467 id=2467 data-nosnippet>2467</a>        }
-<a href=#2468 id=2468 data-nosnippet>2468</a>        <span class="kw">let </span>dirp = DirStream(ptr);
-<a href=#2469 id=2469 data-nosnippet>2469</a>        <span class="comment">// file descriptor is automatically closed by libc::closedir() now, so give up ownership
-<a href=#2470 id=2470 data-nosnippet>2470</a>        </span><span class="kw">let </span>new_parent_fd = dir_fd.into_raw_fd();
-<a href=#2471 id=2471 data-nosnippet>2471</a>        <span class="comment">// a valid root is not needed because we do not call any functions involving the full path
-<a href=#2472 id=2472 data-nosnippet>2472</a>        // of the `DirEntry`s.
-<a href=#2473 id=2473 data-nosnippet>2473</a>        </span><span class="kw">let </span>dummy_root = PathBuf::new();
-<a href=#2474 id=2474 data-nosnippet>2474</a>        <span class="kw">let </span>inner = InnerReadDir { dirp, root: dummy_root };
-<a href=#2475 id=2475 data-nosnippet>2475</a>        <span class="prelude-val">Ok</span>((ReadDir::new(inner), new_parent_fd))
-<a href=#2476 id=2476 data-nosnippet>2476</a>    }
-<a href=#2477 id=2477 data-nosnippet>2477</a>
-<a href=#2478 id=2478 data-nosnippet>2478</a>    <span class="attr">#[cfg(any(
-<a href=#2479 id=2479 data-nosnippet>2479</a>        target_os = <span class="string">"solaris"</span>,
-<a href=#2480 id=2480 data-nosnippet>2480</a>        target_os = <span class="string">"illumos"</span>,
-<a href=#2481 id=2481 data-nosnippet>2481</a>        target_os = <span class="string">"haiku"</span>,
-<a href=#2482 id=2482 data-nosnippet>2482</a>        target_os = <span class="string">"vxworks"</span>,
-<a href=#2483 id=2483 data-nosnippet>2483</a>        target_os = <span class="string">"aix"</span>,
-<a href=#2484 id=2484 data-nosnippet>2484</a>    ))]
-<a href=#2485 id=2485 data-nosnippet>2485</a>    </span><span class="kw">fn </span>is_dir(_ent: <span class="kw-2">&amp;</span>DirEntry) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
-<a href=#2486 id=2486 data-nosnippet>2486</a>        <span class="prelude-val">None
-<a href=#2487 id=2487 data-nosnippet>2487</a>    </span>}
-<a href=#2488 id=2488 data-nosnippet>2488</a>
-<a href=#2489 id=2489 data-nosnippet>2489</a>    <span class="attr">#[cfg(not(any(
-<a href=#2490 id=2490 data-nosnippet>2490</a>        target_os = <span class="string">"solaris"</span>,
-<a href=#2491 id=2491 data-nosnippet>2491</a>        target_os = <span class="string">"illumos"</span>,
-<a href=#2492 id=2492 data-nosnippet>2492</a>        target_os = <span class="string">"haiku"</span>,
-<a href=#2493 id=2493 data-nosnippet>2493</a>        target_os = <span class="string">"vxworks"</span>,
-<a href=#2494 id=2494 data-nosnippet>2494</a>        target_os = <span class="string">"aix"</span>,
-<a href=#2495 id=2495 data-nosnippet>2495</a>    )))]
-<a href=#2496 id=2496 data-nosnippet>2496</a>    </span><span class="kw">fn </span>is_dir(ent: <span class="kw-2">&amp;</span>DirEntry) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
-<a href=#2497 id=2497 data-nosnippet>2497</a>        <span class="kw">match </span>ent.entry.d_type {
-<a href=#2498 id=2498 data-nosnippet>2498</a>            libc::DT_UNKNOWN =&gt; <span class="prelude-val">None</span>,
-<a href=#2499 id=2499 data-nosnippet>2499</a>            libc::DT_DIR =&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
-<a href=#2500 id=2500 data-nosnippet>2500</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
-<a href=#2501 id=2501 data-nosnippet>2501</a>        }
-<a href=#2502 id=2502 data-nosnippet>2502</a>    }
-<a href=#2503 id=2503 data-nosnippet>2503</a>
-<a href=#2504 id=2504 data-nosnippet>2504</a>    <span class="kw">fn </span>is_enoent(result: <span class="kw-2">&amp;</span>io::Result&lt;()&gt;) -&gt; bool {
-<a href=#2505 id=2505 data-nosnippet>2505</a>        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = result
-<a href=#2506 id=2506 data-nosnippet>2506</a>            &amp;&amp; <span class="macro">matches!</span>(err.raw_os_error(), <span class="prelude-val">Some</span>(libc::ENOENT))
-<a href=#2507 id=2507 data-nosnippet>2507</a>        {
-<a href=#2508 id=2508 data-nosnippet>2508</a>            <span class="bool-val">true
-<a href=#2509 id=2509 data-nosnippet>2509</a>        </span>} <span class="kw">else </span>{
-<a href=#2510 id=2510 data-nosnippet>2510</a>            <span class="bool-val">false
-<a href=#2511 id=2511 data-nosnippet>2511</a>        </span>}
-<a href=#2512 id=2512 data-nosnippet>2512</a>    }
-<a href=#2513 id=2513 data-nosnippet>2513</a>
-<a href=#2514 id=2514 data-nosnippet>2514</a>    <span class="kw">fn </span>remove_dir_all_recursive(parent_fd: <span class="prelude-ty">Option</span>&lt;RawFd&gt;, path: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;()&gt; {
-<a href=#2515 id=2515 data-nosnippet>2515</a>        <span class="comment">// try opening as directory
-<a href=#2516 id=2516 data-nosnippet>2516</a>        </span><span class="kw">let </span>fd = <span class="kw">match </span>openat_nofollow_dironly(parent_fd, path) {
-<a href=#2517 id=2517 data-nosnippet>2517</a>            <span class="prelude-val">Err</span>(err) <span class="kw">if </span><span class="macro">matches!</span>(err.raw_os_error(), <span class="prelude-val">Some</span>(libc::ENOTDIR | libc::ELOOP)) =&gt; {
-<a href=#2518 id=2518 data-nosnippet>2518</a>                <span class="comment">// not a directory - don't traverse further
-<a href=#2519 id=2519 data-nosnippet>2519</a>                // (for symlinks, older Linux kernels may return ELOOP instead of ENOTDIR)
-<a href=#2520 id=2520 data-nosnippet>2520</a>                </span><span class="kw">return match </span>parent_fd {
-<a href=#2521 id=2521 data-nosnippet>2521</a>                    <span class="comment">// unlink...
-<a href=#2522 id=2522 data-nosnippet>2522</a>                    </span><span class="prelude-val">Some</span>(parent_fd) =&gt; {
-<a href=#2523 id=2523 data-nosnippet>2523</a>                        cvt(<span class="kw">unsafe </span>{ unlinkat(parent_fd, path.as_ptr(), <span class="number">0</span>) }).map(drop)
-<a href=#2524 id=2524 data-nosnippet>2524</a>                    }
-<a href=#2525 id=2525 data-nosnippet>2525</a>                    <span class="comment">// ...unless this was supposed to be the deletion root directory
-<a href=#2526 id=2526 data-nosnippet>2526</a>                    </span><span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(err),
-<a href=#2527 id=2527 data-nosnippet>2527</a>                };
-<a href=#2528 id=2528 data-nosnippet>2528</a>            }
-<a href=#2529 id=2529 data-nosnippet>2529</a>            result =&gt; result<span class="question-mark">?</span>,
-<a href=#2530 id=2530 data-nosnippet>2530</a>        };
-<a href=#2531 id=2531 data-nosnippet>2531</a>
-<a href=#2532 id=2532 data-nosnippet>2532</a>        <span class="comment">// open the directory passing ownership of the fd
-<a href=#2533 id=2533 data-nosnippet>2533</a>        </span><span class="kw">let </span>(dir, fd) = fdreaddir(fd)<span class="question-mark">?</span>;
-<a href=#2534 id=2534 data-nosnippet>2534</a>
-<a href=#2535 id=2535 data-nosnippet>2535</a>        <span class="comment">// For WASI all directory entries for this directory are read first
-<a href=#2536 id=2536 data-nosnippet>2536</a>        // before any removal is done. This works around the fact that the
-<a href=#2537 id=2537 data-nosnippet>2537</a>        // WASIp1 API for reading directories is not well-designed for handling
-<a href=#2538 id=2538 data-nosnippet>2538</a>        // mutations between invocations of reading a directory. By reading all
-<a href=#2539 id=2539 data-nosnippet>2539</a>        // the entries at once this ensures that, at least without concurrent
-<a href=#2540 id=2540 data-nosnippet>2540</a>        // modifications, it should be possible to delete everything.
-<a href=#2541 id=2541 data-nosnippet>2541</a>        </span><span class="attr">#[cfg(target_os = <span class="string">"wasi"</span>)]
-<a href=#2542 id=2542 data-nosnippet>2542</a>        </span><span class="kw">let </span>dir = dir.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-<a href=#2543 id=2543 data-nosnippet>2543</a>
-<a href=#2544 id=2544 data-nosnippet>2544</a>        <span class="kw">for </span>child <span class="kw">in </span>dir {
-<a href=#2545 id=2545 data-nosnippet>2545</a>            <span class="kw">let </span>child = child<span class="question-mark">?</span>;
-<a href=#2546 id=2546 data-nosnippet>2546</a>            <span class="comment">// we need an inner try block, because if one of these
-<a href=#2547 id=2547 data-nosnippet>2547</a>            // directories has already been deleted, then we need to
-<a href=#2548 id=2548 data-nosnippet>2548</a>            // continue the loop, not return ok.
-<a href=#2549 id=2549 data-nosnippet>2549</a>            </span><span class="kw">let </span>result: io::Result&lt;()&gt; = <span class="kw">try </span>{
-<a href=#2550 id=2550 data-nosnippet>2550</a>                <span class="kw">match </span>is_dir(<span class="kw-2">&amp;</span>child) {
-<a href=#2551 id=2551 data-nosnippet>2551</a>                    <span class="prelude-val">Some</span>(<span class="bool-val">true</span>) =&gt; {
-<a href=#2552 id=2552 data-nosnippet>2552</a>                        remove_dir_all_recursive(<span class="prelude-val">Some</span>(fd), <span class="kw-2">&amp;</span>child.name)<span class="question-mark">?</span>;
-<a href=#2553 id=2553 data-nosnippet>2553</a>                    }
-<a href=#2554 id=2554 data-nosnippet>2554</a>                    <span class="prelude-val">Some</span>(<span class="bool-val">false</span>) =&gt; {
-<a href=#2555 id=2555 data-nosnippet>2555</a>                        cvt(<span class="kw">unsafe </span>{ unlinkat(fd, child.name.as_ptr(), <span class="number">0</span>) })<span class="question-mark">?</span>;
-<a href=#2556 id=2556 data-nosnippet>2556</a>                    }
-<a href=#2557 id=2557 data-nosnippet>2557</a>                    <span class="prelude-val">None </span>=&gt; {
-<a href=#2558 id=2558 data-nosnippet>2558</a>                        <span class="comment">// POSIX specifies that calling unlink()/unlinkat(..., 0) on a directory can succeed
-<a href=#2559 id=2559 data-nosnippet>2559</a>                        // if the process has the appropriate privileges. This however can causing orphaned
-<a href=#2560 id=2560 data-nosnippet>2560</a>                        // directories requiring an fsck e.g. on Solaris and Illumos. So we try recursing
-<a href=#2561 id=2561 data-nosnippet>2561</a>                        // into it first instead of trying to unlink() it.
-<a href=#2562 id=2562 data-nosnippet>2562</a>                        </span>remove_dir_all_recursive(<span class="prelude-val">Some</span>(fd), <span class="kw-2">&amp;</span>child.name)<span class="question-mark">?</span>;
-<a href=#2563 id=2563 data-nosnippet>2563</a>                    }
-<a href=#2564 id=2564 data-nosnippet>2564</a>                }
-<a href=#2565 id=2565 data-nosnippet>2565</a>            };
-<a href=#2566 id=2566 data-nosnippet>2566</a>            <span class="kw">if </span>result.is_err() &amp;&amp; !is_enoent(<span class="kw-2">&amp;</span>result) {
-<a href=#2567 id=2567 data-nosnippet>2567</a>                <span class="kw">return </span>result;
-<a href=#2568 id=2568 data-nosnippet>2568</a>            }
-<a href=#2569 id=2569 data-nosnippet>2569</a>        }
-<a href=#2570 id=2570 data-nosnippet>2570</a>
-<a href=#2571 id=2571 data-nosnippet>2571</a>        <span class="comment">// unlink the directory after removing its contents
-<a href=#2572 id=2572 data-nosnippet>2572</a>        </span>ignore_notfound(cvt(<span class="kw">unsafe </span>{
-<a href=#2573 id=2573 data-nosnippet>2573</a>            unlinkat(parent_fd.unwrap_or(libc::AT_FDCWD), path.as_ptr(), libc::AT_REMOVEDIR)
-<a href=#2574 id=2574 data-nosnippet>2574</a>        }))<span class="question-mark">?</span>;
-<a href=#2575 id=2575 data-nosnippet>2575</a>        <span class="prelude-val">Ok</span>(())
-<a href=#2576 id=2576 data-nosnippet>2576</a>    }
-<a href=#2577 id=2577 data-nosnippet>2577</a>
-<a href=#2578 id=2578 data-nosnippet>2578</a>    <span class="kw">fn </span>remove_dir_all_modern(p: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;()&gt; {
-<a href=#2579 id=2579 data-nosnippet>2579</a>        <span class="comment">// We cannot just call remove_dir_all_recursive() here because that would not delete a passed
-<a href=#2580 id=2580 data-nosnippet>2580</a>        // symlink. No need to worry about races, because remove_dir_all_recursive() does not recurse
-<a href=#2581 id=2581 data-nosnippet>2581</a>        // into symlinks.
-<a href=#2582 id=2582 data-nosnippet>2582</a>        </span><span class="kw">let </span>attr = lstat(p)<span class="question-mark">?</span>;
-<a href=#2583 id=2583 data-nosnippet>2583</a>        <span class="kw">if </span>attr.file_type().is_symlink() {
-<a href=#2584 id=2584 data-nosnippet>2584</a>            <span class="kw">super</span>::unlink(p)
-<a href=#2585 id=2585 data-nosnippet>2585</a>        } <span class="kw">else </span>{
-<a href=#2586 id=2586 data-nosnippet>2586</a>            remove_dir_all_recursive(<span class="prelude-val">None</span>, p)
-<a href=#2587 id=2587 data-nosnippet>2587</a>        }
-<a href=#2588 id=2588 data-nosnippet>2588</a>    }
-<a href=#2589 id=2589 data-nosnippet>2589</a>
-<a href=#2590 id=2590 data-nosnippet>2590</a>    <span class="kw">pub fn </span>remove_dir_all(p: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
-<a href=#2591 id=2591 data-nosnippet>2591</a>        run_path_with_cstr(p, <span class="kw-2">&amp;</span>remove_dir_all_modern)
-<a href=#2592 id=2592 data-nosnippet>2592</a>    }
-<a href=#2593 id=2593 data-nosnippet>2593</a>}
+<a href=#2376 id=2376 data-nosnippet>2376</a>    <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) = (path, uid, gid);
+<a href=#2377 id=2377 data-nosnippet>2377</a>    <span class="prelude-val">Err</span>(<span class="macro">io::const_error!</span>(io::ErrorKind::Unsupported, <span class="string">"lchown not supported by vxworks"</span>))
+<a href=#2378 id=2378 data-nosnippet>2378</a>}
+<a href=#2379 id=2379 data-nosnippet>2379</a>
+<a href=#2380 id=2380 data-nosnippet>2380</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"fuchsia"</span>, target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
+<a href=#2381 id=2381 data-nosnippet>2381</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
+<a href=#2382 id=2382 data-nosnippet>2382</a>    run_path_with_cstr(dir, <span class="kw-2">&amp;</span>|dir| cvt(<span class="kw">unsafe </span>{ libc::chroot(dir.as_ptr()) }).map(|<span class="kw">_</span>| ()))
+<a href=#2383 id=2383 data-nosnippet>2383</a>}
+<a href=#2384 id=2384 data-nosnippet>2384</a>
+<a href=#2385 id=2385 data-nosnippet>2385</a><span class="attr">#[cfg(target_os = <span class="string">"vxworks"</span>)]
+<a href=#2386 id=2386 data-nosnippet>2386</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
+<a href=#2387 id=2387 data-nosnippet>2387</a>    <span class="kw">let _ </span>= dir;
+<a href=#2388 id=2388 data-nosnippet>2388</a>    <span class="prelude-val">Err</span>(<span class="macro">io::const_error!</span>(io::ErrorKind::Unsupported, <span class="string">"chroot not supported by vxworks"</span>))
+<a href=#2389 id=2389 data-nosnippet>2389</a>}
+<a href=#2390 id=2390 data-nosnippet>2390</a>
+<a href=#2391 id=2391 data-nosnippet>2391</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
+<a href=#2392 id=2392 data-nosnippet>2392</a></span><span class="kw">pub fn </span>mkfifo(path: <span class="kw-2">&amp;</span>Path, mode: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#2393 id=2393 data-nosnippet>2393</a>    run_path_with_cstr(path, <span class="kw-2">&amp;</span>|path| {
+<a href=#2394 id=2394 data-nosnippet>2394</a>        cvt(<span class="kw">unsafe </span>{ libc::mkfifo(path.as_ptr(), mode.try_into().unwrap()) }).map(|<span class="kw">_</span>| ())
+<a href=#2395 id=2395 data-nosnippet>2395</a>    })
+<a href=#2396 id=2396 data-nosnippet>2396</a>}
+<a href=#2397 id=2397 data-nosnippet>2397</a>
+<a href=#2398 id=2398 data-nosnippet>2398</a><span class="kw">pub use </span>remove_dir_impl::remove_dir_all;
+<a href=#2399 id=2399 data-nosnippet>2399</a>
+<a href=#2400 id=2400 data-nosnippet>2400</a><span class="comment">// Fallback for REDOX, ESP-ID, Horizon, Vita, Vxworks and Miri
+<a href=#2401 id=2401 data-nosnippet>2401</a></span><span class="attr">#[cfg(any(
+<a href=#2402 id=2402 data-nosnippet>2402</a>    target_os = <span class="string">"redox"</span>,
+<a href=#2403 id=2403 data-nosnippet>2403</a>    target_os = <span class="string">"espidf"</span>,
+<a href=#2404 id=2404 data-nosnippet>2404</a>    target_os = <span class="string">"horizon"</span>,
+<a href=#2405 id=2405 data-nosnippet>2405</a>    target_os = <span class="string">"vita"</span>,
+<a href=#2406 id=2406 data-nosnippet>2406</a>    target_os = <span class="string">"nto"</span>,
+<a href=#2407 id=2407 data-nosnippet>2407</a>    target_os = <span class="string">"qnx"</span>,
+<a href=#2408 id=2408 data-nosnippet>2408</a>    target_os = <span class="string">"vxworks"</span>,
+<a href=#2409 id=2409 data-nosnippet>2409</a>    target_os = <span class="string">"l4re"</span>,
+<a href=#2410 id=2410 data-nosnippet>2410</a>    miri
+<a href=#2411 id=2411 data-nosnippet>2411</a>))]
+<a href=#2412 id=2412 data-nosnippet>2412</a></span><span class="kw">mod </span>remove_dir_impl {
+<a href=#2413 id=2413 data-nosnippet>2413</a>    <span class="kw">pub use </span><span class="kw">crate</span>::sys::fs::common::remove_dir_all;
+<a href=#2414 id=2414 data-nosnippet>2414</a>}
+<a href=#2415 id=2415 data-nosnippet>2415</a>
+<a href=#2416 id=2416 data-nosnippet>2416</a><span class="comment">// Modern implementation using openat(), unlinkat() and fdopendir()
+<a href=#2417 id=2417 data-nosnippet>2417</a></span><span class="attr">#[cfg(not(any(
+<a href=#2418 id=2418 data-nosnippet>2418</a>    target_os = <span class="string">"redox"</span>,
+<a href=#2419 id=2419 data-nosnippet>2419</a>    target_os = <span class="string">"espidf"</span>,
+<a href=#2420 id=2420 data-nosnippet>2420</a>    target_os = <span class="string">"horizon"</span>,
+<a href=#2421 id=2421 data-nosnippet>2421</a>    target_os = <span class="string">"vita"</span>,
+<a href=#2422 id=2422 data-nosnippet>2422</a>    target_os = <span class="string">"nto"</span>,
+<a href=#2423 id=2423 data-nosnippet>2423</a>    target_os = <span class="string">"qnx"</span>,
+<a href=#2424 id=2424 data-nosnippet>2424</a>    target_os = <span class="string">"vxworks"</span>,
+<a href=#2425 id=2425 data-nosnippet>2425</a>    target_os = <span class="string">"l4re"</span>,
+<a href=#2426 id=2426 data-nosnippet>2426</a>    miri
+<a href=#2427 id=2427 data-nosnippet>2427</a>)))]
+<a href=#2428 id=2428 data-nosnippet>2428</a></span><span class="kw">mod </span>remove_dir_impl {
+<a href=#2429 id=2429 data-nosnippet>2429</a>    <span class="attr">#[cfg(not(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>)))]
+<a href=#2430 id=2430 data-nosnippet>2430</a>    </span><span class="kw">use </span>libc::{fdopendir, openat, unlinkat};
+<a href=#2431 id=2431 data-nosnippet>2431</a>    <span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>))]
+<a href=#2432 id=2432 data-nosnippet>2432</a>    </span><span class="kw">use </span>libc::{fdopendir, openat64 <span class="kw">as </span>openat, unlinkat};
+<a href=#2433 id=2433 data-nosnippet>2433</a>
+<a href=#2434 id=2434 data-nosnippet>2434</a>    <span class="kw">use super</span>::{
+<a href=#2435 id=2435 data-nosnippet>2435</a>        AsRawFd, DirEntry, DirStream, FromRawFd, InnerReadDir, IntoRawFd, OwnedFd, RawFd, ReadDir,
+<a href=#2436 id=2436 data-nosnippet>2436</a>        lstat,
+<a href=#2437 id=2437 data-nosnippet>2437</a>    };
+<a href=#2438 id=2438 data-nosnippet>2438</a>    <span class="kw">use </span><span class="kw">crate</span>::ffi::CStr;
+<a href=#2439 id=2439 data-nosnippet>2439</a>    <span class="kw">use </span><span class="kw">crate</span>::io;
+<a href=#2440 id=2440 data-nosnippet>2440</a>    <span class="kw">use </span><span class="kw">crate</span>::path::{Path, PathBuf};
+<a href=#2441 id=2441 data-nosnippet>2441</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::helpers::{ignore_notfound, run_path_with_cstr};
+<a href=#2442 id=2442 data-nosnippet>2442</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::{cvt, cvt_r};
+<a href=#2443 id=2443 data-nosnippet>2443</a>
+<a href=#2444 id=2444 data-nosnippet>2444</a>    <span class="kw">pub fn </span>openat_nofollow_dironly(parent_fd: <span class="prelude-ty">Option</span>&lt;RawFd&gt;, p: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;OwnedFd&gt; {
+<a href=#2445 id=2445 data-nosnippet>2445</a>        <span class="kw">let </span>fd = cvt_r(|| <span class="kw">unsafe </span>{
+<a href=#2446 id=2446 data-nosnippet>2446</a>            openat(
+<a href=#2447 id=2447 data-nosnippet>2447</a>                parent_fd.unwrap_or(libc::AT_FDCWD),
+<a href=#2448 id=2448 data-nosnippet>2448</a>                p.as_ptr(),
+<a href=#2449 id=2449 data-nosnippet>2449</a>                libc::O_CLOEXEC | libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_DIRECTORY,
+<a href=#2450 id=2450 data-nosnippet>2450</a>            )
+<a href=#2451 id=2451 data-nosnippet>2451</a>        })<span class="question-mark">?</span>;
+<a href=#2452 id=2452 data-nosnippet>2452</a>        <span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ OwnedFd::from_raw_fd(fd) })
+<a href=#2453 id=2453 data-nosnippet>2453</a>    }
+<a href=#2454 id=2454 data-nosnippet>2454</a>
+<a href=#2455 id=2455 data-nosnippet>2455</a>    <span class="kw">fn </span>fdreaddir(dir_fd: OwnedFd) -&gt; io::Result&lt;(ReadDir, RawFd)&gt; {
+<a href=#2456 id=2456 data-nosnippet>2456</a>        <span class="kw">let </span>ptr = <span class="kw">unsafe </span>{ fdopendir(dir_fd.as_raw_fd()) };
+<a href=#2457 id=2457 data-nosnippet>2457</a>        <span class="kw">if </span>ptr.is_null() {
+<a href=#2458 id=2458 data-nosnippet>2458</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(io::Error::last_os_error());
+<a href=#2459 id=2459 data-nosnippet>2459</a>        }
+<a href=#2460 id=2460 data-nosnippet>2460</a>        <span class="kw">let </span>dirp = DirStream(ptr);
+<a href=#2461 id=2461 data-nosnippet>2461</a>        <span class="comment">// file descriptor is automatically closed by libc::closedir() now, so give up ownership
+<a href=#2462 id=2462 data-nosnippet>2462</a>        </span><span class="kw">let </span>new_parent_fd = dir_fd.into_raw_fd();
+<a href=#2463 id=2463 data-nosnippet>2463</a>        <span class="comment">// a valid root is not needed because we do not call any functions involving the full path
+<a href=#2464 id=2464 data-nosnippet>2464</a>        // of the `DirEntry`s.
+<a href=#2465 id=2465 data-nosnippet>2465</a>        </span><span class="kw">let </span>dummy_root = PathBuf::new();
+<a href=#2466 id=2466 data-nosnippet>2466</a>        <span class="kw">let </span>inner = InnerReadDir { dirp, root: dummy_root };
+<a href=#2467 id=2467 data-nosnippet>2467</a>        <span class="prelude-val">Ok</span>((ReadDir::new(inner), new_parent_fd))
+<a href=#2468 id=2468 data-nosnippet>2468</a>    }
+<a href=#2469 id=2469 data-nosnippet>2469</a>
+<a href=#2470 id=2470 data-nosnippet>2470</a>    <span class="attr">#[cfg(any(
+<a href=#2471 id=2471 data-nosnippet>2471</a>        target_os = <span class="string">"solaris"</span>,
+<a href=#2472 id=2472 data-nosnippet>2472</a>        target_os = <span class="string">"illumos"</span>,
+<a href=#2473 id=2473 data-nosnippet>2473</a>        target_os = <span class="string">"haiku"</span>,
+<a href=#2474 id=2474 data-nosnippet>2474</a>        target_os = <span class="string">"vxworks"</span>,
+<a href=#2475 id=2475 data-nosnippet>2475</a>        target_os = <span class="string">"aix"</span>,
+<a href=#2476 id=2476 data-nosnippet>2476</a>    ))]
+<a href=#2477 id=2477 data-nosnippet>2477</a>    </span><span class="kw">fn </span>is_dir(_ent: <span class="kw-2">&amp;</span>DirEntry) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
+<a href=#2478 id=2478 data-nosnippet>2478</a>        <span class="prelude-val">None
+<a href=#2479 id=2479 data-nosnippet>2479</a>    </span>}
+<a href=#2480 id=2480 data-nosnippet>2480</a>
+<a href=#2481 id=2481 data-nosnippet>2481</a>    <span class="attr">#[cfg(not(any(
+<a href=#2482 id=2482 data-nosnippet>2482</a>        target_os = <span class="string">"solaris"</span>,
+<a href=#2483 id=2483 data-nosnippet>2483</a>        target_os = <span class="string">"illumos"</span>,
+<a href=#2484 id=2484 data-nosnippet>2484</a>        target_os = <span class="string">"haiku"</span>,
+<a href=#2485 id=2485 data-nosnippet>2485</a>        target_os = <span class="string">"vxworks"</span>,
+<a href=#2486 id=2486 data-nosnippet>2486</a>        target_os = <span class="string">"aix"</span>,
+<a href=#2487 id=2487 data-nosnippet>2487</a>    )))]
+<a href=#2488 id=2488 data-nosnippet>2488</a>    </span><span class="kw">fn </span>is_dir(ent: <span class="kw-2">&amp;</span>DirEntry) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
+<a href=#2489 id=2489 data-nosnippet>2489</a>        <span class="kw">match </span>ent.entry.d_type {
+<a href=#2490 id=2490 data-nosnippet>2490</a>            libc::DT_UNKNOWN =&gt; <span class="prelude-val">None</span>,
+<a href=#2491 id=2491 data-nosnippet>2491</a>            libc::DT_DIR =&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+<a href=#2492 id=2492 data-nosnippet>2492</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
+<a href=#2493 id=2493 data-nosnippet>2493</a>        }
+<a href=#2494 id=2494 data-nosnippet>2494</a>    }
+<a href=#2495 id=2495 data-nosnippet>2495</a>
+<a href=#2496 id=2496 data-nosnippet>2496</a>    <span class="kw">fn </span>is_enoent(result: <span class="kw-2">&amp;</span>io::Result&lt;()&gt;) -&gt; bool {
+<a href=#2497 id=2497 data-nosnippet>2497</a>        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = result
+<a href=#2498 id=2498 data-nosnippet>2498</a>            &amp;&amp; <span class="macro">matches!</span>(err.raw_os_error(), <span class="prelude-val">Some</span>(libc::ENOENT))
+<a href=#2499 id=2499 data-nosnippet>2499</a>        {
+<a href=#2500 id=2500 data-nosnippet>2500</a>            <span class="bool-val">true
+<a href=#2501 id=2501 data-nosnippet>2501</a>        </span>} <span class="kw">else </span>{
+<a href=#2502 id=2502 data-nosnippet>2502</a>            <span class="bool-val">false
+<a href=#2503 id=2503 data-nosnippet>2503</a>        </span>}
+<a href=#2504 id=2504 data-nosnippet>2504</a>    }
+<a href=#2505 id=2505 data-nosnippet>2505</a>
+<a href=#2506 id=2506 data-nosnippet>2506</a>    <span class="kw">fn </span>remove_dir_all_recursive(parent_fd: <span class="prelude-ty">Option</span>&lt;RawFd&gt;, path: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;()&gt; {
+<a href=#2507 id=2507 data-nosnippet>2507</a>        <span class="comment">// try opening as directory
+<a href=#2508 id=2508 data-nosnippet>2508</a>        </span><span class="kw">let </span>fd = <span class="kw">match </span>openat_nofollow_dironly(parent_fd, path) {
+<a href=#2509 id=2509 data-nosnippet>2509</a>            <span class="prelude-val">Err</span>(err) <span class="kw">if </span><span class="macro">matches!</span>(err.raw_os_error(), <span class="prelude-val">Some</span>(libc::ENOTDIR | libc::ELOOP)) =&gt; {
+<a href=#2510 id=2510 data-nosnippet>2510</a>                <span class="comment">// not a directory - don't traverse further
+<a href=#2511 id=2511 data-nosnippet>2511</a>                // (for symlinks, older Linux kernels may return ELOOP instead of ENOTDIR)
+<a href=#2512 id=2512 data-nosnippet>2512</a>                </span><span class="kw">return match </span>parent_fd {
+<a href=#2513 id=2513 data-nosnippet>2513</a>                    <span class="comment">// unlink...
+<a href=#2514 id=2514 data-nosnippet>2514</a>                    </span><span class="prelude-val">Some</span>(parent_fd) =&gt; {
+<a href=#2515 id=2515 data-nosnippet>2515</a>                        cvt(<span class="kw">unsafe </span>{ unlinkat(parent_fd, path.as_ptr(), <span class="number">0</span>) }).map(drop)
+<a href=#2516 id=2516 data-nosnippet>2516</a>                    }
+<a href=#2517 id=2517 data-nosnippet>2517</a>                    <span class="comment">// ...unless this was supposed to be the deletion root directory
+<a href=#2518 id=2518 data-nosnippet>2518</a>                    </span><span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(err),
+<a href=#2519 id=2519 data-nosnippet>2519</a>                };
+<a href=#2520 id=2520 data-nosnippet>2520</a>            }
+<a href=#2521 id=2521 data-nosnippet>2521</a>            result =&gt; result<span class="question-mark">?</span>,
+<a href=#2522 id=2522 data-nosnippet>2522</a>        };
+<a href=#2523 id=2523 data-nosnippet>2523</a>
+<a href=#2524 id=2524 data-nosnippet>2524</a>        <span class="comment">// open the directory passing ownership of the fd
+<a href=#2525 id=2525 data-nosnippet>2525</a>        </span><span class="kw">let </span>(dir, fd) = fdreaddir(fd)<span class="question-mark">?</span>;
+<a href=#2526 id=2526 data-nosnippet>2526</a>
+<a href=#2527 id=2527 data-nosnippet>2527</a>        <span class="comment">// For WASI all directory entries for this directory are read first
+<a href=#2528 id=2528 data-nosnippet>2528</a>        // before any removal is done. This works around the fact that the
+<a href=#2529 id=2529 data-nosnippet>2529</a>        // WASIp1 API for reading directories is not well-designed for handling
+<a href=#2530 id=2530 data-nosnippet>2530</a>        // mutations between invocations of reading a directory. By reading all
+<a href=#2531 id=2531 data-nosnippet>2531</a>        // the entries at once this ensures that, at least without concurrent
+<a href=#2532 id=2532 data-nosnippet>2532</a>        // modifications, it should be possible to delete everything.
+<a href=#2533 id=2533 data-nosnippet>2533</a>        </span><span class="attr">#[cfg(target_os = <span class="string">"wasi"</span>)]
+<a href=#2534 id=2534 data-nosnippet>2534</a>        </span><span class="kw">let </span>dir = dir.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+<a href=#2535 id=2535 data-nosnippet>2535</a>
+<a href=#2536 id=2536 data-nosnippet>2536</a>        <span class="kw">for </span>child <span class="kw">in </span>dir {
+<a href=#2537 id=2537 data-nosnippet>2537</a>            <span class="kw">let </span>child = child<span class="question-mark">?</span>;
+<a href=#2538 id=2538 data-nosnippet>2538</a>            <span class="comment">// we need an inner try block, because if one of these
+<a href=#2539 id=2539 data-nosnippet>2539</a>            // directories has already been deleted, then we need to
+<a href=#2540 id=2540 data-nosnippet>2540</a>            // continue the loop, not return ok.
+<a href=#2541 id=2541 data-nosnippet>2541</a>            </span><span class="kw">let </span>result: io::Result&lt;()&gt; = <span class="kw">try </span>{
+<a href=#2542 id=2542 data-nosnippet>2542</a>                <span class="kw">match </span>is_dir(<span class="kw-2">&amp;</span>child) {
+<a href=#2543 id=2543 data-nosnippet>2543</a>                    <span class="prelude-val">Some</span>(<span class="bool-val">true</span>) =&gt; {
+<a href=#2544 id=2544 data-nosnippet>2544</a>                        remove_dir_all_recursive(<span class="prelude-val">Some</span>(fd), <span class="kw-2">&amp;</span>child.name)<span class="question-mark">?</span>;
+<a href=#2545 id=2545 data-nosnippet>2545</a>                    }
+<a href=#2546 id=2546 data-nosnippet>2546</a>                    <span class="prelude-val">Some</span>(<span class="bool-val">false</span>) =&gt; {
+<a href=#2547 id=2547 data-nosnippet>2547</a>                        cvt(<span class="kw">unsafe </span>{ unlinkat(fd, child.name.as_ptr(), <span class="number">0</span>) })<span class="question-mark">?</span>;
+<a href=#2548 id=2548 data-nosnippet>2548</a>                    }
+<a href=#2549 id=2549 data-nosnippet>2549</a>                    <span class="prelude-val">None </span>=&gt; {
+<a href=#2550 id=2550 data-nosnippet>2550</a>                        <span class="comment">// POSIX specifies that calling unlink()/unlinkat(..., 0) on a directory can succeed
+<a href=#2551 id=2551 data-nosnippet>2551</a>                        // if the process has the appropriate privileges. This however can causing orphaned
+<a href=#2552 id=2552 data-nosnippet>2552</a>                        // directories requiring an fsck e.g. on Solaris and Illumos. So we try recursing
+<a href=#2553 id=2553 data-nosnippet>2553</a>                        // into it first instead of trying to unlink() it.
+<a href=#2554 id=2554 data-nosnippet>2554</a>                        </span>remove_dir_all_recursive(<span class="prelude-val">Some</span>(fd), <span class="kw-2">&amp;</span>child.name)<span class="question-mark">?</span>;
+<a href=#2555 id=2555 data-nosnippet>2555</a>                    }
+<a href=#2556 id=2556 data-nosnippet>2556</a>                }
+<a href=#2557 id=2557 data-nosnippet>2557</a>            };
+<a href=#2558 id=2558 data-nosnippet>2558</a>            <span class="kw">if </span>result.is_err() &amp;&amp; !is_enoent(<span class="kw-2">&amp;</span>result) {
+<a href=#2559 id=2559 data-nosnippet>2559</a>                <span class="kw">return </span>result;
+<a href=#2560 id=2560 data-nosnippet>2560</a>            }
+<a href=#2561 id=2561 data-nosnippet>2561</a>        }
+<a href=#2562 id=2562 data-nosnippet>2562</a>
+<a href=#2563 id=2563 data-nosnippet>2563</a>        <span class="comment">// unlink the directory after removing its contents
+<a href=#2564 id=2564 data-nosnippet>2564</a>        </span>ignore_notfound(cvt(<span class="kw">unsafe </span>{
+<a href=#2565 id=2565 data-nosnippet>2565</a>            unlinkat(parent_fd.unwrap_or(libc::AT_FDCWD), path.as_ptr(), libc::AT_REMOVEDIR)
+<a href=#2566 id=2566 data-nosnippet>2566</a>        }))<span class="question-mark">?</span>;
+<a href=#2567 id=2567 data-nosnippet>2567</a>        <span class="prelude-val">Ok</span>(())
+<a href=#2568 id=2568 data-nosnippet>2568</a>    }
+<a href=#2569 id=2569 data-nosnippet>2569</a>
+<a href=#2570 id=2570 data-nosnippet>2570</a>    <span class="kw">fn </span>remove_dir_all_modern(p: <span class="kw-2">&amp;</span>CStr) -&gt; io::Result&lt;()&gt; {
+<a href=#2571 id=2571 data-nosnippet>2571</a>        <span class="comment">// We cannot just call remove_dir_all_recursive() here because that would not delete a passed
+<a href=#2572 id=2572 data-nosnippet>2572</a>        // symlink. No need to worry about races, because remove_dir_all_recursive() does not recurse
+<a href=#2573 id=2573 data-nosnippet>2573</a>        // into symlinks.
+<a href=#2574 id=2574 data-nosnippet>2574</a>        </span><span class="kw">let </span>attr = lstat(p)<span class="question-mark">?</span>;
+<a href=#2575 id=2575 data-nosnippet>2575</a>        <span class="kw">if </span>attr.file_type().is_symlink() {
+<a href=#2576 id=2576 data-nosnippet>2576</a>            <span class="kw">super</span>::unlink(p)
+<a href=#2577 id=2577 data-nosnippet>2577</a>        } <span class="kw">else </span>{
+<a href=#2578 id=2578 data-nosnippet>2578</a>            remove_dir_all_recursive(<span class="prelude-val">None</span>, p)
+<a href=#2579 id=2579 data-nosnippet>2579</a>        }
+<a href=#2580 id=2580 data-nosnippet>2580</a>    }
+<a href=#2581 id=2581 data-nosnippet>2581</a>
+<a href=#2582 id=2582 data-nosnippet>2582</a>    <span class="kw">pub fn </span>remove_dir_all(p: <span class="kw-2">&amp;</span>Path) -&gt; io::Result&lt;()&gt; {
+<a href=#2583 id=2583 data-nosnippet>2583</a>        run_path_with_cstr(p, <span class="kw-2">&amp;</span>remove_dir_all_modern)
+<a href=#2584 id=2584 data-nosnippet>2584</a>    }
+<a href=#2585 id=2585 data-nosnippet>2585</a>}
 </code></pre></div></section></main></body></html>
