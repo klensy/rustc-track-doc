@@ -40,7 +40,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fbd844e8.js";
+            window.path_to_searchindex_js = "../searchindex-014c0786.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-0e7001e7.js"></script>
@@ -258,7 +258,6 @@ build-std = ["core", "alloc"]
 <li><a href="#sbom">sbom</a> — Generates SBOM pre-cursor files for compiled artifacts</li>
 <li><a href="#feature-unification">feature-unification</a> — Enable new feature unification modes in workspaces</li>
 <li><a href="#lockfile-publish-time">lockfile-publish-time</a> — Limit resolver to packages older than the specified time</li>
-<li><a href="#min-publish-age">min-publish-age</a> — Filters out dependency versions published more recently than a configured minimum age.</li>
 </ul>
 </li>
 <li>Output behavior
@@ -305,8 +304,8 @@ build-std = ["core", "alloc"]
 <li><a href="#per-package-target">per-package-target</a> — Sets the <code>--target</code> to use for each individual package.</li>
 <li><a href="#artifact-dependencies">artifact dependencies</a> — Allow build artifacts to be included into other build artifacts and build them for different targets.</li>
 <li><a href="#profile-trim-paths-option">Profile <code>trim-paths</code> option</a> — Control the sanitization of file paths in build outputs.</li>
-<li><a href="#lintscargo"><code>[lints.cargo]</code></a> — Allows configuring lints for Cargo.</li>
 <li><a href="#path-bases">path bases</a> — Named base directories for path dependencies.</li>
+<li><a href="#feature-metadata">feature-metadata</a> — Table syntax for feature definitions.</li>
 <li><a href="#unstable-editions"><code>unstable-editions</code></a> — Allows use of editions that are not yet stable.</li>
 </ul>
 </li>
@@ -394,8 +393,9 @@ generated if dev-dependencies are skipped.</p>
 <li>Original Issue: <a href="https://github.com/rust-lang/cargo/issues/4100">#4100</a></li>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/5657">#5657</a></li>
 </ul>
-<blockquote>
-<p>Note: It is not recommended to use this feature. Because it enforces minimal
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>It is not recommended to use this feature. Because it enforces minimal
 versions for all transitive dependencies, its usefulness is limited since
 not all external dependencies declare proper lower version bounds. It is
 intended that it will be changed in the future to only enforce minimal
@@ -1516,15 +1516,15 @@ This is where paths in embedded panic messages come from</li>
 <li><code>"all"</code> and <code>true</code> — sanitize paths in all possible locations</li>
 </ul>
 <p>It also takes an array with the combinations of <code>"macro"</code>, <code>"diagnostics"</code>, and <code>"object"</code>.</p>
-<p>It is defaulted to <code>none</code> for the <code>dev</code> profile, and <code>object</code> for the <code>release</code> profile.
-You can manually override it by specifying this option in <code>Cargo.toml</code>:</p>
+<p>By default, <code>trim-paths</code> is not set and path sanitization is disabled for all profiles.
+You can enable it by specifying this option in <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[profile.dev]
 trim-paths = "all"
 
 [profile.release]
 trim-paths = ["object", "diagnostics"]
 </code></pre>
-<p>The default <code>release</code> profile setting (<code>object</code>) sanitizes only the paths in emitted executable or library files.
+<p>The <code>object</code> setting sanitizes only the paths in emitted executable or library files.
 It always affects paths from macros such as panic messages, and in debug information only if they will be embedded together with the binary
 (the default on platforms with ELF binaries, such as Linux and windows-gnu),
 but will not touch them if they are in separate files (the default on Windows MSVC and macOS).
@@ -1705,23 +1705,6 @@ panic = "immediate-abort"
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/4282">#4282</a></li>
 </ul>
 <p>Use fine grain locking instead of locking the entire build cache.</p>
-<h2 id="lintscargo"><a class="header" href="#lintscargo"><code>[lints.cargo]</code></a></h2>
-<ul>
-<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/12235">#12235</a></li>
-</ul>
-<p>A new <code>lints</code> tool table for <code>cargo</code> that can be used to configure lints emitted
-by <code>cargo</code> itself when <code>-Zcargo-lints</code> is used</p>
-<pre><code class="language-toml">[lints.cargo]
-implicit-features = "warn"
-</code></pre>
-<p>This will work with
-<a href="https://rust-lang.github.io/rfcs/2906-cargo-workspace-deduplicate.html">RFC 2906 <code>workspace-deduplicate</code></a>:</p>
-<pre><code class="language-toml">[workspace.lints.cargo]
-implicit-features = "warn"
-
-[lints]
-workspace = true
-</code></pre>
 <h2 id="path-bases"><a class="header" href="#path-bases">Path Bases</a></h2>
 <ul>
 <li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/14355">#14355</a></li>
@@ -1988,88 +1971,6 @@ option:</p>
 <pre><code class="language-toml">[unstable]
 hint-msrv = true
 </code></pre>
-<h2 id="min-publish-age"><a class="header" href="#min-publish-age">min-publish-age</a></h2>
-<ul>
-<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/17009">#17009</a></li>
-<li>RFC: <a href="https://github.com/rust-lang/rfcs/pull/3923">#3923</a></li>
-</ul>
-<p>The <code>-Zmin-publish-age</code> feature allows users to specify a minimum age for
-dependency versions. When specified, Cargo won’t use a version of a registry
-crate that is newer than the minimum age, with a way to override for exceptions
-like urgent security fixes.</p>
-<p>For example, in your <code>&lt;repo&gt;/.cargo/config.toml</code>:</p>
-<pre><code class="language-toml">[registry]
-global-min-publish-age = "14 days"
-</code></pre>
-<h3 id="added-to-configuration"><a class="header" href="#added-to-configuration">Added to Configuration</a></h3>
-<p>The following will be added to Cargo’s configuration format:</p>
-<pre><code class="language-toml">[resolver]
-incompatible-publish-age = "deny" # Specifies how resolver reacts to these
-
-[registries.&lt;name&gt;]
-min-publish-age = "..."  # Override `registry.global-min-publish-age` for this registry
-
-[registry]
-global-min-publish-age = "0"  # Minimum time span allowed for registry packages by default
-</code></pre>
-<h4 id="resolverincompatible-publish-age"><a class="header" href="#resolverincompatible-publish-age"><code>resolver.incompatible-publish-age</code></a></h4>
-<ul>
-<li>Type: String</li>
-<li>Default: <code>"deny"</code></li>
-<li>Environment: <code>CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE</code></li>
-</ul>
-<p>When resolving the version of a dependency,
-specify the behavior for versions with a <code>pubtime</code> (if present)
-that is incompatible with the configured <code>min-publish-age</code>.
-Values include:</p>
-<ul>
-<li><code>allow</code>: treat pubtime-incompatible versions like any other version</li>
-<li><code>deny</code>: ignore pubtime-incompatible versions unless they already exist in the lock file</li>
-</ul>
-<h4 id="registriesnamemin-publish-age"><a class="header" href="#registriesnamemin-publish-age"><code>registries.&lt;name&gt;.min-publish-age</code></a></h4>
-<ul>
-<li>Type: String</li>
-<li>Default: none</li>
-<li>Environment: <code>CARGO_REGISTRIES_&lt;name&gt;_MIN_PUBLISH_AGE</code></li>
-</ul>
-<p>Specifies the minimum timespan since a version’s <code>pubtime</code> that it may be
-considered for <code>resolver.incompatible-publish-age</code> for packages from this
-registry. If not set, <code>registry.global-min-publish-age</code> will be used.</p>
-<p>Will be ignored if the registry does not support this.</p>
-<p>It supports the following values:</p>
-<ul>
-<li>An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”</li>
-<li><code>"0"</code> to allow all packages</li>
-</ul>
-<h4 id="registryglobal-min-publish-age"><a class="header" href="#registryglobal-min-publish-age"><code>registry.global-min-publish-age</code></a></h4>
-<ul>
-<li>Type: String</li>
-<li>Default: <code>"0"</code></li>
-<li>Environment: <code>CARGO_REGISTRY_GLOBAL_MIN_PUBLISH_AGE</code></li>
-</ul>
-<p>Specifies the global minimum timespan since a version’s <code>pubtime</code> that it may
-be considered for <code>resolver.incompatible-publish-age</code> for packages.
-If <code>min-publish-age</code> is not set for a specific registry using
-<code>registries.&lt;name&gt;.min-publish-age</code>, Cargo will use this minimum publish age.</p>
-<p>It supports the following values:</p>
-<ul>
-<li>An integer followed by “seconds”, “minutes”, “hours”, “days”, “weeks”, or “months”</li>
-<li><code>"0"</code> to allow all packages</li>
-</ul>
-<h3 id="added-to-resolver"><a class="header" href="#added-to-resolver">Added to Resolver</a></h3>
-<p>The following will be added to the <a href="../reference/resolver.html">resolver chapter</a> as a sibling section to
-“Yanked versions”:</p>
-<blockquote>
-<p>“Pubtime-incompatible versions”</p>
-<p>Versions with a publish time newer than the configured <code>min-publish-age</code>
-are considered pubtime-incompatible.
-When <code>resolver.incompatible-publish-age</code> is set to <code>deny</code>,
-the resolver will ignore these versions
-unless they already exist in the <code>Cargo.lock</code> file.
-Setting the config to <code>allow</code> would disable the check,
-which if combined with <code>cargo update --precise</code>,
-cargo would pull in a specific version and its transitive dependencies.</p>
-</blockquote>
 <h1 id="stabilized-and-removed-features"><a class="header" href="#stabilized-and-removed-features">Stabilized and removed features</a></h1>
 <h2 id="compile-progress"><a class="header" href="#compile-progress">Compile progress</a></h2>
 <p>The compile-progress feature has been stabilized in the 1.30 release.
@@ -2252,6 +2153,17 @@ has been stabilized in 1.93.0.
 See the <a href="config.html#include"><code>include</code> config documentation</a> for more.</p>
 <h2 id="pubtime"><a class="header" href="#pubtime">pubtime</a></h2>
 <p>The <code>pubtime</code> index field  has been stabilized in Rust 1.94.0.</p>
+<h2 id="feature-metadata"><a class="header" href="#feature-metadata">feature-metadata</a></h2>
+<ul>
+<li>Tracking Issue: <a href="https://github.com/rust-lang/cargo/issues/14157">#14157</a></li>
+</ul>
+<p>This allows to use a table when defining features, with a required <code>enables</code> key:</p>
+<pre><code class="language-toml">[features]
+# same as `foo = []`
+foo = { enables = [] }
+</code></pre>
+<p>This is equivalent to the array-of-strings syntax.
+Support for other keys should be added later.</p>
 <h2 id="lockfile-path"><a class="header" href="#lockfile-path">lockfile-path</a></h2>
 <p>Support for <code>resolver.lockfile-path</code> config field has been stabilized in Rust 1.97.0.</p>
 <h2 id="warnings"><a class="header" href="#warnings">warnings</a></h2>
@@ -2261,6 +2173,14 @@ See the <a href="config.html#include"><code>include</code> config documentation<
 See <a href="https://github.com/rust-lang/cargo/pull/17333">https://github.com/rust-lang/cargo/pull/17333</a> fopr the reason for its removal.</p>
 <h2 id="build-dir-new-layout"><a class="header" href="#build-dir-new-layout">build-dir-new-layout</a></h2>
 <p>The new build-dir filesystem layout was stabilized in the 1.100.0 release.</p>
+<h2 id="lintscargo"><a class="header" href="#lintscargo"><code>[lints.cargo]</code></a></h2>
+<p>Cargo’s linting system and the <code>[lints.cargo]</code> table have been stabilized in Rust 1.100.
+See the <a href="lints.html">lints chapter</a> and <a href="manifest.html#the-lints-section">the lints section</a>
+for information about configuring Cargo lints.</p>
+<h2 id="min-publish-age"><a class="header" href="#min-publish-age">min-publish-age</a></h2>
+<p>Minimum publish-age configuration for dependency resolution was stabilized in Rust 1.100.
+See the <a href="config.html#registryglobal-min-publish-age">minimum publish-age configuration</a>
+and <a href="resolver.html#publish-age">resolver behavior</a> for more information.</p>
 
                     </main>
 
