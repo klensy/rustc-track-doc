@@ -40,7 +40,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-014c0786.js";
+            window.path_to_searchindex_js = "../searchindex-224475a8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-0e7001e7.js"></script>
@@ -641,7 +641,7 @@ that are uplifted into the target or artifact directories.</p>
     "workspace_wrapper": null,
     // Commit hash for rustc
     "commit_hash": "bef3c3b01f690de16738b1c9f36470fbfc6ac623",
-    // Host target triple
+    // Host target tuple
     "host": "x86_64-pc-windows-msvc",
     // Verbose version string: `rustc -vV`
     "verbose_version": "rustc 1.86.0-nightly (bef3c3b01 2025-02-04)\nbinary: rustc\ncommit-hash: bef3c3b01f690de16738b1c9f36470fbfc6ac623\ncommit-date: 2025-02-04\nhost: x86_64-pc-windows-msvc\nrelease: 1.86.0-nightly\nLLVM version: 19.1.7\n"
@@ -788,10 +788,10 @@ been somewhat inconsistent.
 When <code>--target</code> is <em>not</em> passed, Cargo respects the same <code>linker</code> and
 <code>rustflags</code> for build scripts as for all other compile artifacts. When
 <code>--target</code> <em>is</em> passed, however, Cargo respects <code>linker</code> from
-<a href="config.html#targettriplelinker"><code>[target.&lt;host triple&gt;]</code></a>, and does not
+<a href="config.html#targettuplelinker"><code>[target.&lt;host tuple&gt;]</code></a>, and does not
 pick up any <code>rustflags</code> configuration.
 This dual behavior is confusing, but also makes it difficult to correctly
-configure builds where the host triple and the <a href="../appendix/glossary.html#target" title="&quot;target&quot; (glossary)">target triple</a> happen to
+configure builds where the host tuple and the <a href="../appendix/glossary.html#target" title="&quot;target&quot; (glossary)">target tuple</a> happen to
 be the same, but artifacts intended to run on the build host should still
 be configured differently.</p>
 <p><code>-Ztarget-applies-to-host</code> enables the top-level
@@ -800,7 +800,7 @@ allows users to opt into different (and more consistent) behavior for
 these properties. When <code>target-applies-to-host</code> is unset, or set to
 <code>true</code>, in the configuration file, the existing Cargo behavior is
 preserved (though see <code>-Zhost-config</code>, which changes that default). When
-it is set to <code>false</code>, no options from <code>[target.&lt;host triple&gt;]</code>,
+it is set to <code>false</code>, no options from <code>[target.&lt;host tuple&gt;]</code>,
 <code>RUSTFLAGS</code>, or <code>[build]</code> are respected for host artifacts regardless of
 whether <code>--target</code> is passed to Cargo. To customize artifacts intended
 to be run on the host, use <code>[host]</code> (<a href="#host-config"><code>host-config</code></a>).</p>
@@ -834,7 +834,7 @@ rustflags = ["-Clink-arg=--verbose"]
 linker = "/path/to/target/linker"
 </code></pre>
 <p>The <code>host.runner</code> setting wraps execution of host build targets such as build
-scripts, similar to how <code>target.&lt;triple&gt;.runner</code> wraps <code>cargo run</code>/<code>test</code>/<code>bench</code>.</p>
+scripts, similar to how <code>target.&lt;tuple&gt;.runner</code> wraps <code>cargo run</code>/<code>test</code>/<code>bench</code>.</p>
 <p>The generic <code>host</code> table above will be entirely ignored when building on an
 <code>x86_64-unknown-linux-gnu</code> host as the <code>host.x86_64-unknown-linux-gnu</code> table
 takes precedence.</p>
@@ -921,7 +921,7 @@ tests.</p>
       },
       /* Which platform this target is being built for.
          A value of `null` indicates it is for the host.
-         Otherwise it is a string of the target triple (such as
+         Otherwise it is a string of the target tuple (such as
          "x86_64-unknown-linux-gnu").
       */
       "platform": null,
@@ -1490,7 +1490,7 @@ This can be enabled like so:</p>
 # ...
 
 [profile.release]
-trim-paths = ["diagnostics", "object"]
+trim-paths = "object"
 </code></pre>
 <p>To set this in a profile in Cargo configuration,
 you need to use either <code>-Z trim-paths</code> or <code>[unstable]</code> table to enable it.
@@ -1500,43 +1500,53 @@ For example,</p>
 trim-paths = true
 
 [profile.release]
-trim-paths = ["diagnostics", "object"]
+trim-paths = "object"
 </code></pre>
 <h3 id="documentation-updates-1"><a class="header" href="#documentation-updates-1">Documentation updates</a></h3>
 <h4 id="trim-paths"><a class="header" href="#trim-paths">trim-paths</a></h4>
 <p><em>as a new <a href="./profiles.html#profile-settings">“Profiles settings” entry</a></em></p>
-<p><code>trim-paths</code> is a profile setting which enables and controls the sanitization of file paths in build outputs.
-It takes the following values:</p>
+<p>The <code>trim-paths</code> option controls the scope of path sanitization in build outputs
+Paths are sanitized according to these <a href="#remapping-rules">remapping rules</a>.</p>
+<p>The valid options are:</p>
 <ul>
-<li><code>"none"</code> and <code>false</code> — disable path sanitization</li>
-<li><code>"macro"</code> — sanitize paths in the expansion of <code>std::file!()</code> macro.
-This is where paths in embedded panic messages come from</li>
-<li><code>"diagnostics"</code> — sanitize paths in printed compiler diagnostics</li>
-<li><code>"object"</code> — sanitize paths in compiled executables or libraries</li>
-<li><code>"all"</code> and <code>true</code> — sanitize paths in all possible locations</li>
+<li><code>"none"</code> — disables path sanitization.</li>
+<li><code>"object"</code> — sanitizes paths embedded in compiled executables and libraries.
+Useful for improving artifact reproducibility
+with less impact on local development.</li>
+<li><code>"all"</code> — sanitizes paths in all supported locations.
+Useful for hermetic or remote builds that need artifacts and diagnostics
+to be independent of the build environment.</li>
 </ul>
-<p>It also takes an array with the combinations of <code>"macro"</code>, <code>"diagnostics"</code>, and <code>"object"</code>.</p>
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>The <code>"all"</code> option remaps compiler diagnostics,
+including <a href="./external-tools.html#json-messages">compiler JSON messages</a>.
+Some remapped paths may not resolve to files on the local filesystem,
+which can affect editors and other tools that consume the diagnostic output.</p>
+</blockquote>
+<p>For details about each scope,
+see rustc’s <a href="../../rustc/remap-source-paths.html#--remap-path-scope"><code>--remap-path-scope</code></a> documentation.</p>
 <p>By default, <code>trim-paths</code> is not set and path sanitization is disabled for all profiles.
 You can enable it by specifying this option in <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[profile.dev]
 trim-paths = "all"
 
 [profile.release]
-trim-paths = ["object", "diagnostics"]
+trim-paths = "object"
 </code></pre>
-<p>The <code>object</code> setting sanitizes only the paths in emitted executable or library files.
-It always affects paths from macros such as panic messages, and in debug information only if they will be embedded together with the binary
-(the default on platforms with ELF binaries, such as Linux and windows-gnu),
-but will not touch them if they are in separate files (the default on Windows MSVC and macOS).
-But the paths to these separate files are sanitized.</p>
-<p>If <code>trim-paths</code> is not <code>none</code> or <code>false</code>, then the following paths are sanitized if they appear in a selected scope:</p>
+<h5 id="remapping-rules"><a class="header" href="#remapping-rules">Remapping rules</a></h5>
+<p>The exact remap path prefixes are unspecified and may change across Cargo versions.
+Tools that map paths embedded in artifacts back to local sources
+should consume <a href="#unremap-files">unremap files</a> instead of interpreting these prefixes.</p>
+<p>If <code>trim-paths</code> is not <code>"none"</code>,
+then the following paths are sanitized if they appear in a selected scope:</p>
 <ol>
 <li>Path to the source files of the standard and core library (sysroot) will begin with <code>/rustc/&lt;rustc commit hash&gt;</code>,
 e.g. <code>/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs</code> -&gt;
 <code>/rustc/fe72845f7bb6a77b9e671e6a4f32fe714962cec4/library/core/src/result.rs</code></li>
-<li>Path to the current package will be stripped,
-relatively to the current workspace root,
-e.g. <code>/home/username/crate/src/lib.rs</code> -&gt; <code>src/lib.rs</code>.
+<li>Path to a local package within the workspace will begin with <code>.</code>,
+which replaces the workspace root,
+e.g. <code>/home/username/crate/src/lib.rs</code> -&gt; <code>./src/lib.rs</code>.
 This also covers path dependencies located inside the workspace directory.</li>
 <li>Path to a registry dependency will begin with <code>/cargo/registry/&lt;registry id&gt;</code>,
 which replaces the registry’s extraction directory,
@@ -1556,21 +1566,16 @@ will begin with <code>/cargo/build-dir</code>.</li>
 are sanitized by their file location instead,
 like workspace paths when inside the workspace directory,
 otherwise like path dependencies.</p>
-<p>When a path to the source files of the standard and core library is <em>not</em> in scope for sanitization,
-the emitted path will depend on if <code>rust-src</code> component is present.
-If it is, then some paths will point to the copy of the source files on your file system;
-if it isn’t, then they will show up as <code>/rustc/[rustc commit hash]/library/...</code>
-(just like when it is selected for sanitization).
-Paths to all other source files will not be affected.</p>
-<p>This will not affect any hard-coded paths in the source code, such as in strings.</p>
-<p>The exact remap path prefixes are not stable across Cargo versions.
-Tools that map paths embedded in artifacts back to local sources
-should consume unremap files instead of interpreting these prefixes.</p>
 <h5 id="unremap-files"><a class="header" href="#unremap-files">Unremap files</a></h5>
 <p>When the <code>object</code> scope is active and debuginfo is enabled,
 Cargo writes an unremap file beside each final artifact.
 The file is aimed at helping debuggers substitute sanitized paths back to local ones,
 e.g., via GDB’s <code>set substitute-path</code> or LLDB’s <code>target.source-map</code>.</p>
+<p>The Rust toolchain provides <code>rust-gdb</code> and <code>rust-lldb</code> wrappers,
+which can load unremap files automatically.
+This integration is currently unstable and available only in nightly toolchains.
+To enable it,
+set <code>RUST_GDB_TRIM_PATHS=unstable</code> or <code>RUST_LLDB_TRIM_PATHS=unstable</code> respectively.</p>
 <p>The unremap file name ends with <code>.trim-paths.jsonl</code>.
 For example,
 your <code>my-app</code> executable would come with an unremap file named
@@ -1598,17 +1603,37 @@ which is the inverse of <code>--remap-path-prefix</code>.</li>
 it includes absolute paths of your system,
 so there is no artifact privacy guarantee.
 You might want to exclude <code>*.trim-paths.jsonl</code> files when distributing artifacts.</p>
+<h5 id="limitations"><a class="header" href="#limitations">Limitations</a></h5>
+<p><code>trim-paths</code> supports remapping source path prefixes as a best effort.
+Linkers may add paths that rustc cannot remap.
+See <a href="../../rustc/remap-source-paths.html#caveats-and-limitations">the limitations section</a> on rustc’s documentation for more.</p>
+<p>For example, on macOS,
+linkers generate OSO entries containing absolute paths to object files
+when debuginfo is enabled.
+The following profile settings keep these paths out of the executable
+while preserving debuginfo in a separate dSYM bundle:</p>
+<pre><code class="language-toml">[profile.release]
+debug = true
+trim-paths = "object"
+split-debuginfo = "packed"
+strip = "debuginfo"
+</code></pre>
+<p>The dSYM bundle can be used for debugging,
+but it still contains absolute paths.</p>
 <h4 id="environment-variable"><a class="header" href="#environment-variable">Environment variable</a></h4>
 <p><em>as a new entry of <a href="./environment-variables.html#environment-variables-cargo-sets-for-crates">“Environment variables Cargo sets for build scripts”</a></em></p>
 <ul>
 <li><code>CARGO_TRIM_PATHS_SCOPE</code> — The value of <code>trim-paths</code> profile option.
-<code>false</code>, <code>"none"</code>, and empty arrays would be converted to <code>none</code>.
-<code>true</code> and <code>"all"</code> become <code>all</code>.
-Values in a non-empty array would be joined into a comma-separated list.
 If the build script introduces absolute paths to built artifacts (such as by invoking a compiler),
 the user may request them to be sanitized in different types of artifacts.
 Common paths requiring sanitization include <code>OUT_DIR</code>, <code>CARGO_MANIFEST_DIR</code> and <code>CARGO_MANIFEST_PATH</code>,
-plus any other introduced by the build script, such as include directories.</li>
+plus any other introduced by the build script, such as include directories.
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>For forward compatibility,
+build scripts should accept a comma-separated list of scopes.</p>
+</blockquote>
+</li>
 <li><code>CARGO_TRIM_PATHS_REMAP</code> — The <code>&lt;from&gt;=&lt;to&gt;</code> path remap pairs Cargo passes to the compiler,
 joined by the platform path separator.
 Only set when <code>trim-paths</code> profile is active.
@@ -2087,7 +2112,7 @@ information.</p>
 <h2 id="multitarget"><a class="header" href="#multitarget">multitarget</a></h2>
 <p>The <code>-Z multitarget</code> option has been stabilized in the 1.64 release.
 See <a href="config.html#buildtarget"><code>build.target</code></a> for more information about
-setting the default <a href="../appendix/glossary.html#target" title="&quot;target&quot; (glossary)">target platform triples</a>.</p>
+setting the default <a href="../appendix/glossary.html#target" title="&quot;target&quot; (glossary)">target platform tuples</a>.</p>
 <h2 id="crate-type"><a class="header" href="#crate-type">crate-type</a></h2>
 <p>The <code>--crate-type</code> flag for <code>cargo rustc</code> has been stabilized in the 1.64
 release. See the <a href="../commands/cargo-rustc.html"><code>cargo rustc</code> documentation</a>
