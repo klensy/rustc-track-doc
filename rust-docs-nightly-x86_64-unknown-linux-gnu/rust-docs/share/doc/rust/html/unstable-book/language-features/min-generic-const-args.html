@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3607da07.js";
+            window.path_to_searchindex_js = "../searchindex-82d43033.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-8ab5fa98.js"></script>
+        <script src="../toc-2d16b0c3.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args">min_generic_const_args</a></h1>
-<p>Enables the generic const args MVP (paths to type const items and constructors for ADTs and primitives).</p>
+<p>Enables the generic const args MVP (paths to direct const items and constructors for ADTs and primitives).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
 <hr>
 <p>Warning: This feature is incomplete; its design and syntax may change.</p>
@@ -198,18 +198,18 @@ expression “directly”, i.e. without an anon const, in a way that is visible 
 <p>(Note that plain paths to generic parameters are always represented directly, without <code>direct_const_arg!</code>, as this
 already works on stable)</p>
 <p>See <a href="macroless-generic-const-args.html">macroless_generic_const_args</a> as a feature to disable the requirement of writing <code>direct_const_arg!</code>.</p>
-<h2 id="type-const-syntax"><a class="header" href="#type-const-syntax"><code>type const</code> syntax</a></h2>
-<p>This feature introduces new syntax: <code>type const</code>.
-Constants marked as <code>type const</code> are allowed to be used in type contexts, e.g.:</p>
+<h2 id="direct-const-items"><a class="header" href="#direct-const-items">direct const items</a></h2>
+<p>This feature introduces a new item kind: consts with a <code>direct_const_arg!</code> right-hand side.
+Constants with a direct right-hand side are allowed to be used in type contexts, e.g.:</p>
 <pre><code class="language-compile_fail">#![allow(incomplete_features)]
 #![feature(min_generic_const_args)]
 
-type const X: usize = 1;
+const X: usize = core::direct_const_arg!(1);
 const Y: usize = 1;
 
 struct Foo {
     good_arr: [(); core::direct_const_arg!(X)], // Allowed
-    bad_arr: [(); core::direct_const_arg!(Y)], // Will not compile, `Y` must be `type const`.
+    bad_arr: [(); core::direct_const_arg!(Y)], // Will not compile
 }
 </code></pre>
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
@@ -219,15 +219,17 @@ struct Foo {
 
 <span class="boring">fn main() {
 </span>trait Bar {
-    type const VAL: usize;
-    type const VAL2: usize;
+    #[rustc_always_gca]
+    const VAL: usize;
+    #[rustc_always_gca]
+    const VAL2: usize;
 }
 
 struct Baz;
 
 impl Bar for Baz {
-    type const VAL: usize = 2;
-    type const VAL2: usize = const { Self::VAL * 2 };
+    const VAL: usize = core::direct_const_arg!(2);
+    const VAL2: usize = core::direct_const_arg!(const { Self::VAL * 2 });
 }
 
 struct Foo&lt;B: Bar&gt; {
@@ -274,7 +276,7 @@ const fn inc(val: usize) -&gt; usize {
     val + 1
 }
 
-type const INC: usize = const { inc(VAL) };
+const INC: usize = core::direct_const_arg!(const { inc(VAL) });
 
 const ARR: [usize; INC] = [0; INC];
 <span class="boring">}</span></code></pre>
