@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (923c95cdf 2026-09-16)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.100.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A module for working with processes.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (330d31712 2026-09-17)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.100.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A module for working with processes.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module is mostly concerned with spawning and interacting with child
 <a href=#4 id=4 data-nosnippet>4</a>//! processes, but it also provides [`abort`] and [`exit`] for terminating the
@@ -2206,517 +2206,518 @@
 <a href=#2206 id=2206 data-nosnippet>2206</a>/// ```
 <a href=#2207 id=2207 data-nosnippet>2207</a></span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq)]
 <a href=#2208 id=2208 data-nosnippet>2208</a>#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2209 id=2209 data-nosnippet>2209</a></span><span class="kw">pub struct </span>ExitCode(imp::ExitCode);
-<a href=#2210 id=2210 data-nosnippet>2210</a>
-<a href=#2211 id=2211 data-nosnippet>2211</a><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2212 id=2212 data-nosnippet>2212</a></span><span class="kw">impl </span>ExitCode {
-<a href=#2213 id=2213 data-nosnippet>2213</a>    <span class="doccomment">/// The canonical `ExitCode` for successful termination on this platform.
-<a href=#2214 id=2214 data-nosnippet>2214</a>    ///
-<a href=#2215 id=2215 data-nosnippet>2215</a>    /// Note that a `()`-returning `main` implicitly results in a successful
-<a href=#2216 id=2216 data-nosnippet>2216</a>    /// termination, so there's no need to return this from `main` unless
-<a href=#2217 id=2217 data-nosnippet>2217</a>    /// you're also returning other possible codes.
-<a href=#2218 id=2218 data-nosnippet>2218</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2219 id=2219 data-nosnippet>2219</a>    </span><span class="kw">pub const </span>SUCCESS: ExitCode = ExitCode(imp::ExitCode::SUCCESS);
-<a href=#2220 id=2220 data-nosnippet>2220</a>
-<a href=#2221 id=2221 data-nosnippet>2221</a>    <span class="doccomment">/// The canonical `ExitCode` for unsuccessful termination on this platform.
-<a href=#2222 id=2222 data-nosnippet>2222</a>    ///
-<a href=#2223 id=2223 data-nosnippet>2223</a>    /// If you're only returning this and `SUCCESS` from `main`, consider
-<a href=#2224 id=2224 data-nosnippet>2224</a>    /// instead returning `Err(_)` and `Ok(())` respectively, which will
-<a href=#2225 id=2225 data-nosnippet>2225</a>    /// return the same codes (but will also `eprintln!` the error).
-<a href=#2226 id=2226 data-nosnippet>2226</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2227 id=2227 data-nosnippet>2227</a>    </span><span class="kw">pub const </span>FAILURE: ExitCode = ExitCode(imp::ExitCode::FAILURE);
-<a href=#2228 id=2228 data-nosnippet>2228</a>
-<a href=#2229 id=2229 data-nosnippet>2229</a>    <span class="doccomment">/// Exit the current process with the given `ExitCode`.
-<a href=#2230 id=2230 data-nosnippet>2230</a>    ///
-<a href=#2231 id=2231 data-nosnippet>2231</a>    /// Note that this has the same caveats as [`process::exit()`][exit], namely that this function
-<a href=#2232 id=2232 data-nosnippet>2232</a>    /// terminates the process immediately, so no destructors on the current stack or any other
-<a href=#2233 id=2233 data-nosnippet>2233</a>    /// thread's stack will be run. Also see those docs for some important notes on interop with C
-<a href=#2234 id=2234 data-nosnippet>2234</a>    /// code. If a clean shutdown is needed, it is recommended to simply return this ExitCode from
-<a href=#2235 id=2235 data-nosnippet>2235</a>    /// the `main` function, as demonstrated in the [type documentation](#examples).
-<a href=#2236 id=2236 data-nosnippet>2236</a>    ///
-<a href=#2237 id=2237 data-nosnippet>2237</a>    /// # Differences from `process::exit()`
-<a href=#2238 id=2238 data-nosnippet>2238</a>    ///
-<a href=#2239 id=2239 data-nosnippet>2239</a>    /// `process::exit()` accepts any `i32` value as the exit code for the process; however, there
-<a href=#2240 id=2240 data-nosnippet>2240</a>    /// are platforms that only use a subset of that value (see [`process::exit` platform-specific
-<a href=#2241 id=2241 data-nosnippet>2241</a>    /// behavior][exit#platform-specific-behavior]). `ExitCode` exists because of this; only
-<a href=#2242 id=2242 data-nosnippet>2242</a>    /// `ExitCode`s that are supported by a majority of our platforms can be created, so those
-<a href=#2243 id=2243 data-nosnippet>2243</a>    /// problems don't exist (as much) with this method.
-<a href=#2244 id=2244 data-nosnippet>2244</a>    ///
-<a href=#2245 id=2245 data-nosnippet>2245</a>    /// # Examples
-<a href=#2246 id=2246 data-nosnippet>2246</a>    ///
-<a href=#2247 id=2247 data-nosnippet>2247</a>    /// ```
-<a href=#2248 id=2248 data-nosnippet>2248</a>    /// #![feature(exitcode_exit_method)]
-<a href=#2249 id=2249 data-nosnippet>2249</a>    /// # use std::process::ExitCode;
-<a href=#2250 id=2250 data-nosnippet>2250</a>    /// # use std::fmt;
-<a href=#2251 id=2251 data-nosnippet>2251</a>    /// # enum UhOhError { GenericProblem, Specific, WithCode { exit_code: ExitCode, _x: () } }
-<a href=#2252 id=2252 data-nosnippet>2252</a>    /// # impl fmt::Display for UhOhError {
-<a href=#2253 id=2253 data-nosnippet>2253</a>    /// #     fn fmt(&amp;self, _: &amp;mut fmt::Formatter&lt;'_&gt;) -&gt; fmt::Result { unimplemented!() }
-<a href=#2254 id=2254 data-nosnippet>2254</a>    /// # }
-<a href=#2255 id=2255 data-nosnippet>2255</a>    /// // there's no way to gracefully recover from an UhOhError, so we just
-<a href=#2256 id=2256 data-nosnippet>2256</a>    /// // print a message and exit
-<a href=#2257 id=2257 data-nosnippet>2257</a>    /// fn handle_unrecoverable_error(err: UhOhError) -&gt; ! {
-<a href=#2258 id=2258 data-nosnippet>2258</a>    ///     eprintln!("UH OH! {err}");
-<a href=#2259 id=2259 data-nosnippet>2259</a>    ///     let code = match err {
-<a href=#2260 id=2260 data-nosnippet>2260</a>    ///         UhOhError::GenericProblem =&gt; ExitCode::FAILURE,
-<a href=#2261 id=2261 data-nosnippet>2261</a>    ///         UhOhError::Specific =&gt; ExitCode::from(3),
-<a href=#2262 id=2262 data-nosnippet>2262</a>    ///         UhOhError::WithCode { exit_code, .. } =&gt; exit_code,
-<a href=#2263 id=2263 data-nosnippet>2263</a>    ///     };
-<a href=#2264 id=2264 data-nosnippet>2264</a>    ///     code.exit_process()
-<a href=#2265 id=2265 data-nosnippet>2265</a>    /// }
-<a href=#2266 id=2266 data-nosnippet>2266</a>    /// ```
-<a href=#2267 id=2267 data-nosnippet>2267</a>    </span><span class="attr">#[unstable(feature = <span class="string">"exitcode_exit_method"</span>, issue = <span class="string">"97100"</span>)]
-<a href=#2268 id=2268 data-nosnippet>2268</a>    </span><span class="kw">pub fn </span>exit_process(<span class="self">self</span>) -&gt; ! {
-<a href=#2269 id=2269 data-nosnippet>2269</a>        exit(<span class="self">self</span>.to_i32())
-<a href=#2270 id=2270 data-nosnippet>2270</a>    }
-<a href=#2271 id=2271 data-nosnippet>2271</a>}
-<a href=#2272 id=2272 data-nosnippet>2272</a>
-<a href=#2273 id=2273 data-nosnippet>2273</a><span class="kw">impl </span>ExitCode {
-<a href=#2274 id=2274 data-nosnippet>2274</a>    <span class="comment">// This is private/perma-unstable because ExitCode is opaque; we don't know that i32 will serve
-<a href=#2275 id=2275 data-nosnippet>2275</a>    // all usecases, for example windows seems to use u32, unix uses the 8-15th bits of an i32, we
-<a href=#2276 id=2276 data-nosnippet>2276</a>    // likely want to isolate users anything that could restrict the platform specific
-<a href=#2277 id=2277 data-nosnippet>2277</a>    // representation of an ExitCode
-<a href=#2278 id=2278 data-nosnippet>2278</a>    //
-<a href=#2279 id=2279 data-nosnippet>2279</a>    // More info: https://internals.rust-lang.org/t/mini-pre-rfc-redesigning-process-exitstatus/5426
-<a href=#2280 id=2280 data-nosnippet>2280</a>    </span><span class="doccomment">/// Converts an `ExitCode` into an i32
-<a href=#2281 id=2281 data-nosnippet>2281</a>    </span><span class="attr">#[unstable(
-<a href=#2282 id=2282 data-nosnippet>2282</a>        feature = <span class="string">"process_exitcode_internals"</span>,
-<a href=#2283 id=2283 data-nosnippet>2283</a>        reason = <span class="string">"exposed only for libstd"</span>,
-<a href=#2284 id=2284 data-nosnippet>2284</a>        issue = <span class="string">"none"
-<a href=#2285 id=2285 data-nosnippet>2285</a>    </span>)]
-<a href=#2286 id=2286 data-nosnippet>2286</a>    #[inline]
-<a href=#2287 id=2287 data-nosnippet>2287</a>    #[doc(hidden)]
-<a href=#2288 id=2288 data-nosnippet>2288</a>    </span><span class="kw">pub fn </span>to_i32(<span class="self">self</span>) -&gt; i32 {
-<a href=#2289 id=2289 data-nosnippet>2289</a>        <span class="self">self</span>.<span class="number">0</span>.as_i32()
-<a href=#2290 id=2290 data-nosnippet>2290</a>    }
-<a href=#2291 id=2291 data-nosnippet>2291</a>}
-<a href=#2292 id=2292 data-nosnippet>2292</a>
-<a href=#2293 id=2293 data-nosnippet>2293</a><span class="doccomment">/// The default value is [`ExitCode::SUCCESS`]
-<a href=#2294 id=2294 data-nosnippet>2294</a></span><span class="attr">#[stable(feature = <span class="string">"process_exitcode_default"</span>, since = <span class="string">"1.75.0"</span>)]
-<a href=#2295 id=2295 data-nosnippet>2295</a></span><span class="kw">impl </span>Default <span class="kw">for </span>ExitCode {
-<a href=#2296 id=2296 data-nosnippet>2296</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#2297 id=2297 data-nosnippet>2297</a>        ExitCode::SUCCESS
-<a href=#2298 id=2298 data-nosnippet>2298</a>    }
-<a href=#2299 id=2299 data-nosnippet>2299</a>}
-<a href=#2300 id=2300 data-nosnippet>2300</a>
-<a href=#2301 id=2301 data-nosnippet>2301</a><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2302 id=2302 data-nosnippet>2302</a></span><span class="kw">impl </span>From&lt;u8&gt; <span class="kw">for </span>ExitCode {
-<a href=#2303 id=2303 data-nosnippet>2303</a>    <span class="doccomment">/// Constructs an `ExitCode` from an arbitrary u8 value.
-<a href=#2304 id=2304 data-nosnippet>2304</a>    </span><span class="kw">fn </span>from(code: u8) -&gt; <span class="self">Self </span>{
-<a href=#2305 id=2305 data-nosnippet>2305</a>        ExitCode(imp::ExitCode::from(code))
-<a href=#2306 id=2306 data-nosnippet>2306</a>    }
-<a href=#2307 id=2307 data-nosnippet>2307</a>}
-<a href=#2308 id=2308 data-nosnippet>2308</a>
-<a href=#2309 id=2309 data-nosnippet>2309</a><span class="kw">impl </span>AsInner&lt;imp::ExitCode&gt; <span class="kw">for </span>ExitCode {
-<a href=#2310 id=2310 data-nosnippet>2310</a>    <span class="attr">#[inline]
-<a href=#2311 id=2311 data-nosnippet>2311</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>imp::ExitCode {
-<a href=#2312 id=2312 data-nosnippet>2312</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
-<a href=#2313 id=2313 data-nosnippet>2313</a>    </span>}
-<a href=#2314 id=2314 data-nosnippet>2314</a>}
-<a href=#2315 id=2315 data-nosnippet>2315</a>
-<a href=#2316 id=2316 data-nosnippet>2316</a><span class="kw">impl </span>FromInner&lt;imp::ExitCode&gt; <span class="kw">for </span>ExitCode {
-<a href=#2317 id=2317 data-nosnippet>2317</a>    <span class="kw">fn </span>from_inner(s: imp::ExitCode) -&gt; ExitCode {
-<a href=#2318 id=2318 data-nosnippet>2318</a>        ExitCode(s)
-<a href=#2319 id=2319 data-nosnippet>2319</a>    }
-<a href=#2320 id=2320 data-nosnippet>2320</a>}
-<a href=#2321 id=2321 data-nosnippet>2321</a>
-<a href=#2322 id=2322 data-nosnippet>2322</a><span class="kw">impl </span>Child {
-<a href=#2323 id=2323 data-nosnippet>2323</a>    <span class="doccomment">/// Forces the child process to exit. If the child has already exited, `Ok(())`
-<a href=#2324 id=2324 data-nosnippet>2324</a>    /// is returned.
-<a href=#2325 id=2325 data-nosnippet>2325</a>    ///
-<a href=#2326 id=2326 data-nosnippet>2326</a>    /// The mapping to [`ErrorKind`]s is not part of the compatibility contract of the function.
-<a href=#2327 id=2327 data-nosnippet>2327</a>    ///
-<a href=#2328 id=2328 data-nosnippet>2328</a>    /// This is equivalent to sending a SIGKILL on Unix platforms.
-<a href=#2329 id=2329 data-nosnippet>2329</a>    ///
-<a href=#2330 id=2330 data-nosnippet>2330</a>    /// # Examples
-<a href=#2331 id=2331 data-nosnippet>2331</a>    ///
-<a href=#2332 id=2332 data-nosnippet>2332</a>    /// ```no_run
-<a href=#2333 id=2333 data-nosnippet>2333</a>    /// use std::process::Command;
-<a href=#2334 id=2334 data-nosnippet>2334</a>    ///
-<a href=#2335 id=2335 data-nosnippet>2335</a>    /// let mut command = Command::new("yes");
-<a href=#2336 id=2336 data-nosnippet>2336</a>    /// if let Ok(mut child) = command.spawn() {
-<a href=#2337 id=2337 data-nosnippet>2337</a>    ///     child.kill().expect("process should be killed");
-<a href=#2338 id=2338 data-nosnippet>2338</a>    /// } else {
-<a href=#2339 id=2339 data-nosnippet>2339</a>    ///     println!("yes command didn't start");
-<a href=#2340 id=2340 data-nosnippet>2340</a>    /// }
-<a href=#2341 id=2341 data-nosnippet>2341</a>    /// ```
-<a href=#2342 id=2342 data-nosnippet>2342</a>    ///
-<a href=#2343 id=2343 data-nosnippet>2343</a>    /// [`ErrorKind`]: io::ErrorKind
-<a href=#2344 id=2344 data-nosnippet>2344</a>    /// [`InvalidInput`]: io::ErrorKind::InvalidInput
-<a href=#2345 id=2345 data-nosnippet>2345</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2346 id=2346 data-nosnippet>2346</a>    #[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"child_kill"</span>)]
-<a href=#2347 id=2347 data-nosnippet>2347</a>    </span><span class="kw">pub fn </span>kill(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; {
-<a href=#2348 id=2348 data-nosnippet>2348</a>        <span class="self">self</span>.handle.kill()
-<a href=#2349 id=2349 data-nosnippet>2349</a>    }
-<a href=#2350 id=2350 data-nosnippet>2350</a>
-<a href=#2351 id=2351 data-nosnippet>2351</a>    <span class="doccomment">/// Returns the OS-assigned process identifier associated with this child.
-<a href=#2352 id=2352 data-nosnippet>2352</a>    ///
-<a href=#2353 id=2353 data-nosnippet>2353</a>    /// # Examples
-<a href=#2354 id=2354 data-nosnippet>2354</a>    ///
-<a href=#2355 id=2355 data-nosnippet>2355</a>    /// ```no_run
-<a href=#2356 id=2356 data-nosnippet>2356</a>    /// use std::process::Command;
-<a href=#2357 id=2357 data-nosnippet>2357</a>    ///
-<a href=#2358 id=2358 data-nosnippet>2358</a>    /// let mut command = Command::new("ls");
-<a href=#2359 id=2359 data-nosnippet>2359</a>    /// if let Ok(child) = command.spawn() {
-<a href=#2360 id=2360 data-nosnippet>2360</a>    ///     println!("Child's ID is {}", child.id());
-<a href=#2361 id=2361 data-nosnippet>2361</a>    /// } else {
-<a href=#2362 id=2362 data-nosnippet>2362</a>    ///     println!("ls command didn't start");
-<a href=#2363 id=2363 data-nosnippet>2363</a>    /// }
-<a href=#2364 id=2364 data-nosnippet>2364</a>    /// ```
-<a href=#2365 id=2365 data-nosnippet>2365</a>    </span><span class="attr">#[must_use]
-<a href=#2366 id=2366 data-nosnippet>2366</a>    #[stable(feature = <span class="string">"process_id"</span>, since = <span class="string">"1.3.0"</span>)]
-<a href=#2367 id=2367 data-nosnippet>2367</a>    #[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"child_id"</span>)]
-<a href=#2368 id=2368 data-nosnippet>2368</a>    </span><span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-<a href=#2369 id=2369 data-nosnippet>2369</a>        <span class="self">self</span>.handle.id()
-<a href=#2370 id=2370 data-nosnippet>2370</a>    }
-<a href=#2371 id=2371 data-nosnippet>2371</a>
-<a href=#2372 id=2372 data-nosnippet>2372</a>    <span class="doccomment">/// Waits for the child to exit completely, returning the status that it
-<a href=#2373 id=2373 data-nosnippet>2373</a>    /// exited with. This function will continue to have the same return value
-<a href=#2374 id=2374 data-nosnippet>2374</a>    /// after it has been called at least once.
-<a href=#2375 id=2375 data-nosnippet>2375</a>    ///
-<a href=#2376 id=2376 data-nosnippet>2376</a>    /// The stdin handle to the child process, if any, will be closed
-<a href=#2377 id=2377 data-nosnippet>2377</a>    /// before waiting. This helps avoid deadlock: it ensures that the
-<a href=#2378 id=2378 data-nosnippet>2378</a>    /// child does not block waiting for input from the parent, while
-<a href=#2379 id=2379 data-nosnippet>2379</a>    /// the parent waits for the child to exit.
-<a href=#2380 id=2380 data-nosnippet>2380</a>    ///
-<a href=#2381 id=2381 data-nosnippet>2381</a>    /// # Examples
-<a href=#2382 id=2382 data-nosnippet>2382</a>    ///
-<a href=#2383 id=2383 data-nosnippet>2383</a>    /// ```no_run
-<a href=#2384 id=2384 data-nosnippet>2384</a>    /// use std::process::Command;
-<a href=#2385 id=2385 data-nosnippet>2385</a>    ///
-<a href=#2386 id=2386 data-nosnippet>2386</a>    /// let mut command = Command::new("ls");
-<a href=#2387 id=2387 data-nosnippet>2387</a>    /// if let Ok(mut child) = command.spawn() {
-<a href=#2388 id=2388 data-nosnippet>2388</a>    ///     child.wait().expect("child should be running");
-<a href=#2389 id=2389 data-nosnippet>2389</a>    ///     println!("Child has finished its execution!");
-<a href=#2390 id=2390 data-nosnippet>2390</a>    /// } else {
-<a href=#2391 id=2391 data-nosnippet>2391</a>    ///     println!("ls command didn't start");
-<a href=#2392 id=2392 data-nosnippet>2392</a>    /// }
-<a href=#2393 id=2393 data-nosnippet>2393</a>    /// ```
-<a href=#2394 id=2394 data-nosnippet>2394</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2395 id=2395 data-nosnippet>2395</a>    </span><span class="kw">pub fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;ExitStatus&gt; {
-<a href=#2396 id=2396 data-nosnippet>2396</a>        drop(<span class="self">self</span>.stdin.take());
-<a href=#2397 id=2397 data-nosnippet>2397</a>        <span class="self">self</span>.handle.wait().map(ExitStatus)
-<a href=#2398 id=2398 data-nosnippet>2398</a>    }
-<a href=#2399 id=2399 data-nosnippet>2399</a>
-<a href=#2400 id=2400 data-nosnippet>2400</a>    <span class="doccomment">/// Attempts to collect the exit status of the child if it has already
-<a href=#2401 id=2401 data-nosnippet>2401</a>    /// exited.
-<a href=#2402 id=2402 data-nosnippet>2402</a>    ///
-<a href=#2403 id=2403 data-nosnippet>2403</a>    /// This function will not block the calling thread and will only
-<a href=#2404 id=2404 data-nosnippet>2404</a>    /// check to see if the child process has exited or not. If the child has
-<a href=#2405 id=2405 data-nosnippet>2405</a>    /// exited then on Unix the process ID is reaped. This function is
-<a href=#2406 id=2406 data-nosnippet>2406</a>    /// guaranteed to repeatedly return a successful exit status so long as the
-<a href=#2407 id=2407 data-nosnippet>2407</a>    /// child has already exited.
-<a href=#2408 id=2408 data-nosnippet>2408</a>    ///
-<a href=#2409 id=2409 data-nosnippet>2409</a>    /// If the child has exited, then `Ok(Some(status))` is returned. If the
-<a href=#2410 id=2410 data-nosnippet>2410</a>    /// exit status is not available at this time then `Ok(None)` is returned.
-<a href=#2411 id=2411 data-nosnippet>2411</a>    /// If an error occurs, then that error is returned.
-<a href=#2412 id=2412 data-nosnippet>2412</a>    ///
-<a href=#2413 id=2413 data-nosnippet>2413</a>    /// Note that unlike `wait`, this function will not attempt to drop stdin.
-<a href=#2414 id=2414 data-nosnippet>2414</a>    ///
-<a href=#2415 id=2415 data-nosnippet>2415</a>    /// # Examples
-<a href=#2416 id=2416 data-nosnippet>2416</a>    ///
-<a href=#2417 id=2417 data-nosnippet>2417</a>    /// ```no_run
-<a href=#2418 id=2418 data-nosnippet>2418</a>    /// use std::process::Command;
-<a href=#2419 id=2419 data-nosnippet>2419</a>    ///
-<a href=#2420 id=2420 data-nosnippet>2420</a>    /// let mut child = Command::new("ls").spawn()?;
-<a href=#2421 id=2421 data-nosnippet>2421</a>    ///
-<a href=#2422 id=2422 data-nosnippet>2422</a>    /// match child.try_wait() {
-<a href=#2423 id=2423 data-nosnippet>2423</a>    ///     Ok(Some(status)) =&gt; println!("exited with: {status}"),
-<a href=#2424 id=2424 data-nosnippet>2424</a>    ///     Ok(None) =&gt; {
-<a href=#2425 id=2425 data-nosnippet>2425</a>    ///         println!("status not ready yet, let's really wait");
-<a href=#2426 id=2426 data-nosnippet>2426</a>    ///         let res = child.wait();
-<a href=#2427 id=2427 data-nosnippet>2427</a>    ///         println!("result: {res:?}");
-<a href=#2428 id=2428 data-nosnippet>2428</a>    ///     }
-<a href=#2429 id=2429 data-nosnippet>2429</a>    ///     Err(e) =&gt; println!("error attempting to wait: {e}"),
-<a href=#2430 id=2430 data-nosnippet>2430</a>    /// }
-<a href=#2431 id=2431 data-nosnippet>2431</a>    /// # std::io::Result::Ok(())
-<a href=#2432 id=2432 data-nosnippet>2432</a>    /// ```
-<a href=#2433 id=2433 data-nosnippet>2433</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_try_wait"</span>, since = <span class="string">"1.18.0"</span>)]
-<a href=#2434 id=2434 data-nosnippet>2434</a>    </span><span class="kw">pub fn </span>try_wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;ExitStatus&gt;&gt; {
-<a href=#2435 id=2435 data-nosnippet>2435</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.handle.try_wait()<span class="question-mark">?</span>.map(ExitStatus))
-<a href=#2436 id=2436 data-nosnippet>2436</a>    }
-<a href=#2437 id=2437 data-nosnippet>2437</a>
-<a href=#2438 id=2438 data-nosnippet>2438</a>    <span class="doccomment">/// Simultaneously waits for the child to exit and collect all remaining
-<a href=#2439 id=2439 data-nosnippet>2439</a>    /// output on the stdout/stderr handles, returning an `Output`
-<a href=#2440 id=2440 data-nosnippet>2440</a>    /// instance.
-<a href=#2441 id=2441 data-nosnippet>2441</a>    ///
-<a href=#2442 id=2442 data-nosnippet>2442</a>    /// The stdin handle to the child process, if any, will be closed
-<a href=#2443 id=2443 data-nosnippet>2443</a>    /// before waiting. This helps avoid deadlock: it ensures that the
-<a href=#2444 id=2444 data-nosnippet>2444</a>    /// child does not block waiting for input from the parent, while
-<a href=#2445 id=2445 data-nosnippet>2445</a>    /// the parent waits for the child to exit.
-<a href=#2446 id=2446 data-nosnippet>2446</a>    ///
-<a href=#2447 id=2447 data-nosnippet>2447</a>    /// By default, stdin, stdout and stderr are inherited from the parent.
-<a href=#2448 id=2448 data-nosnippet>2448</a>    /// In order to capture the output into this `Result&lt;Output&gt;` it is
-<a href=#2449 id=2449 data-nosnippet>2449</a>    /// necessary to create new pipes between parent and child. Use
-<a href=#2450 id=2450 data-nosnippet>2450</a>    /// `stdout(Stdio::piped())` or `stderr(Stdio::piped())`, respectively.
-<a href=#2451 id=2451 data-nosnippet>2451</a>    ///
-<a href=#2452 id=2452 data-nosnippet>2452</a>    /// # Examples
-<a href=#2453 id=2453 data-nosnippet>2453</a>    ///
-<a href=#2454 id=2454 data-nosnippet>2454</a>    /// ```should_panic
-<a href=#2455 id=2455 data-nosnippet>2455</a>    /// use std::process::{Command, Stdio};
-<a href=#2456 id=2456 data-nosnippet>2456</a>    ///
-<a href=#2457 id=2457 data-nosnippet>2457</a>    /// let child = Command::new("/bin/cat")
-<a href=#2458 id=2458 data-nosnippet>2458</a>    ///     .arg("file.txt")
-<a href=#2459 id=2459 data-nosnippet>2459</a>    ///     .stdout(Stdio::piped())
-<a href=#2460 id=2460 data-nosnippet>2460</a>    ///     .spawn()
-<a href=#2461 id=2461 data-nosnippet>2461</a>    ///     .expect("child should spawn");
-<a href=#2462 id=2462 data-nosnippet>2462</a>    ///
-<a href=#2463 id=2463 data-nosnippet>2463</a>    /// let output = child
-<a href=#2464 id=2464 data-nosnippet>2464</a>    ///     .wait_with_output()
-<a href=#2465 id=2465 data-nosnippet>2465</a>    ///     .expect("wait_with_output on child should succeed");
-<a href=#2466 id=2466 data-nosnippet>2466</a>    ///
-<a href=#2467 id=2467 data-nosnippet>2467</a>    /// assert!(output.status.success());
-<a href=#2468 id=2468 data-nosnippet>2468</a>    /// ```
-<a href=#2469 id=2469 data-nosnippet>2469</a>    ///
-<a href=#2470 id=2470 data-nosnippet>2470</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2471 id=2471 data-nosnippet>2471</a>    </span><span class="kw">pub fn </span>wait_with_output(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; io::Result&lt;Output&gt; {
-<a href=#2472 id=2472 data-nosnippet>2472</a>        drop(<span class="self">self</span>.stdin.take());
-<a href=#2473 id=2473 data-nosnippet>2473</a>
-<a href=#2474 id=2474 data-nosnippet>2474</a>        <span class="kw">let </span>(<span class="kw-2">mut </span>stdout, <span class="kw-2">mut </span>stderr) = (Vec::new(), Vec::new());
-<a href=#2475 id=2475 data-nosnippet>2475</a>        <span class="kw">match </span>(<span class="self">self</span>.stdout.take(), <span class="self">self</span>.stderr.take()) {
-<a href=#2476 id=2476 data-nosnippet>2476</a>            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
-<a href=#2477 id=2477 data-nosnippet>2477</a>            (<span class="prelude-val">Some</span>(<span class="kw-2">mut </span>out), <span class="prelude-val">None</span>) =&gt; {
-<a href=#2478 id=2478 data-nosnippet>2478</a>                <span class="kw">let </span>res = out.read_to_end(<span class="kw-2">&amp;mut </span>stdout);
-<a href=#2479 id=2479 data-nosnippet>2479</a>                res.unwrap();
-<a href=#2480 id=2480 data-nosnippet>2480</a>            }
-<a href=#2481 id=2481 data-nosnippet>2481</a>            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw-2">mut </span>err)) =&gt; {
-<a href=#2482 id=2482 data-nosnippet>2482</a>                <span class="kw">let </span>res = err.read_to_end(<span class="kw-2">&amp;mut </span>stderr);
-<a href=#2483 id=2483 data-nosnippet>2483</a>                res.unwrap();
-<a href=#2484 id=2484 data-nosnippet>2484</a>            }
-<a href=#2485 id=2485 data-nosnippet>2485</a>            (<span class="prelude-val">Some</span>(out), <span class="prelude-val">Some</span>(err)) =&gt; {
-<a href=#2486 id=2486 data-nosnippet>2486</a>                <span class="kw">let </span>res = imp::read_output(out.inner, <span class="kw-2">&amp;mut </span>stdout, err.inner, <span class="kw-2">&amp;mut </span>stderr);
-<a href=#2487 id=2487 data-nosnippet>2487</a>                res.unwrap();
-<a href=#2488 id=2488 data-nosnippet>2488</a>            }
-<a href=#2489 id=2489 data-nosnippet>2489</a>        }
-<a href=#2490 id=2490 data-nosnippet>2490</a>
-<a href=#2491 id=2491 data-nosnippet>2491</a>        <span class="kw">let </span>status = <span class="self">self</span>.wait()<span class="question-mark">?</span>;
-<a href=#2492 id=2492 data-nosnippet>2492</a>        <span class="prelude-val">Ok</span>(Output { status, stdout, stderr })
-<a href=#2493 id=2493 data-nosnippet>2493</a>    }
-<a href=#2494 id=2494 data-nosnippet>2494</a>}
-<a href=#2495 id=2495 data-nosnippet>2495</a>
-<a href=#2496 id=2496 data-nosnippet>2496</a><span class="doccomment">/// Terminates the current process with the specified exit code.
-<a href=#2497 id=2497 data-nosnippet>2497</a>///
-<a href=#2498 id=2498 data-nosnippet>2498</a>/// This function will never return and will immediately terminate the current
-<a href=#2499 id=2499 data-nosnippet>2499</a>/// process. The exit code is passed through to the underlying OS and will be
-<a href=#2500 id=2500 data-nosnippet>2500</a>/// available for consumption by another process.
-<a href=#2501 id=2501 data-nosnippet>2501</a>///
-<a href=#2502 id=2502 data-nosnippet>2502</a>/// Note that because this function never returns, and that it terminates the
-<a href=#2503 id=2503 data-nosnippet>2503</a>/// process, no destructors on the current stack or any other thread's stack
-<a href=#2504 id=2504 data-nosnippet>2504</a>/// will be run. If a clean shutdown is needed it is recommended to only call
-<a href=#2505 id=2505 data-nosnippet>2505</a>/// this function at a known point where there are no more destructors left
-<a href=#2506 id=2506 data-nosnippet>2506</a>/// to run; or, preferably, simply return a type implementing [`Termination`]
-<a href=#2507 id=2507 data-nosnippet>2507</a>/// (such as [`ExitCode`] or `Result`) from the `main` function and avoid this
-<a href=#2508 id=2508 data-nosnippet>2508</a>/// function altogether:
-<a href=#2509 id=2509 data-nosnippet>2509</a>///
-<a href=#2510 id=2510 data-nosnippet>2510</a>/// ```
-<a href=#2511 id=2511 data-nosnippet>2511</a>/// # use std::io::Error as MyError;
-<a href=#2512 id=2512 data-nosnippet>2512</a>/// fn main() -&gt; Result&lt;(), MyError&gt; {
-<a href=#2513 id=2513 data-nosnippet>2513</a>///     // ...
-<a href=#2514 id=2514 data-nosnippet>2514</a>///     Ok(())
-<a href=#2515 id=2515 data-nosnippet>2515</a>/// }
-<a href=#2516 id=2516 data-nosnippet>2516</a>/// ```
-<a href=#2517 id=2517 data-nosnippet>2517</a>///
-<a href=#2518 id=2518 data-nosnippet>2518</a>/// In its current implementation, this function will execute exit handlers registered with `atexit`
-<a href=#2519 id=2519 data-nosnippet>2519</a>/// as well as other platform-specific exit handlers (e.g. `fini` sections of ELF shared objects).
-<a href=#2520 id=2520 data-nosnippet>2520</a>/// This means that Rust requires that all exit handlers are safe to execute at any time. In
-<a href=#2521 id=2521 data-nosnippet>2521</a>/// particular, if an exit handler cleans up some state that might be concurrently accessed by other
-<a href=#2522 id=2522 data-nosnippet>2522</a>/// threads, it is required that the exit handler performs suitable synchronization with those
-<a href=#2523 id=2523 data-nosnippet>2523</a>/// threads. (The alternative to this requirement would be to not run exit handlers at all, which is
-<a href=#2524 id=2524 data-nosnippet>2524</a>/// considered undesirable. Note that returning from `main` also calls `exit`, so making `exit` an
-<a href=#2525 id=2525 data-nosnippet>2525</a>/// unsafe operation is not an option.)
-<a href=#2526 id=2526 data-nosnippet>2526</a>///
-<a href=#2527 id=2527 data-nosnippet>2527</a>/// ## Platform-specific behavior
-<a href=#2528 id=2528 data-nosnippet>2528</a>///
-<a href=#2529 id=2529 data-nosnippet>2529</a>/// **Unix**: On Unix-like platforms, it is unlikely that all 32 bits of `exit`
-<a href=#2530 id=2530 data-nosnippet>2530</a>/// will be visible to a parent process inspecting the exit code. On most
-<a href=#2531 id=2531 data-nosnippet>2531</a>/// Unix-like platforms, only the eight least-significant bits are considered.
-<a href=#2532 id=2532 data-nosnippet>2532</a>///
-<a href=#2533 id=2533 data-nosnippet>2533</a>/// For example, the exit code for this example will be `0` on Linux, but `256`
-<a href=#2534 id=2534 data-nosnippet>2534</a>/// on Windows:
-<a href=#2535 id=2535 data-nosnippet>2535</a>///
-<a href=#2536 id=2536 data-nosnippet>2536</a>/// ```no_run
-<a href=#2537 id=2537 data-nosnippet>2537</a>/// use std::process;
-<a href=#2538 id=2538 data-nosnippet>2538</a>///
-<a href=#2539 id=2539 data-nosnippet>2539</a>/// process::exit(0x0100);
-<a href=#2540 id=2540 data-nosnippet>2540</a>/// ```
-<a href=#2541 id=2541 data-nosnippet>2541</a>///
-<a href=#2542 id=2542 data-nosnippet>2542</a>/// ### Safe interop with C code
-<a href=#2543 id=2543 data-nosnippet>2543</a>///
-<a href=#2544 id=2544 data-nosnippet>2544</a>/// On Unix, this function is currently implemented using the `exit` C function [`exit`][C-exit]. As
-<a href=#2545 id=2545 data-nosnippet>2545</a>/// of C23, the C standard does not permit multiple threads to call `exit` concurrently. Rust
-<a href=#2546 id=2546 data-nosnippet>2546</a>/// mitigates this with a lock, but if C code calls `exit`, that can still cause undefined behavior.
-<a href=#2547 id=2547 data-nosnippet>2547</a>/// Note that returning from `main` is equivalent to calling `exit`.
-<a href=#2548 id=2548 data-nosnippet>2548</a>///
-<a href=#2549 id=2549 data-nosnippet>2549</a>/// Therefore, it is undefined behavior to have two concurrent threads perform the following
-<a href=#2550 id=2550 data-nosnippet>2550</a>/// without synchronization:
-<a href=#2551 id=2551 data-nosnippet>2551</a>/// - One thread calls Rust's `exit` function or returns from Rust's `main` function
-<a href=#2552 id=2552 data-nosnippet>2552</a>/// - Another thread calls the C function `exit` or `quick_exit`, or returns from C's `main` function
-<a href=#2553 id=2553 data-nosnippet>2553</a>///
-<a href=#2554 id=2554 data-nosnippet>2554</a>/// Note that if a binary contains multiple copies of the Rust runtime (e.g., when combining
-<a href=#2555 id=2555 data-nosnippet>2555</a>/// multiple `cdylib` or `staticlib`), they each have their own separate lock, so from the
-<a href=#2556 id=2556 data-nosnippet>2556</a>/// perspective of code running in one of the Rust runtimes, the "outside" Rust code is basically C
-<a href=#2557 id=2557 data-nosnippet>2557</a>/// code, and concurrent `exit` again causes undefined behavior.
-<a href=#2558 id=2558 data-nosnippet>2558</a>///
-<a href=#2559 id=2559 data-nosnippet>2559</a>/// Individual C implementations might provide more guarantees than the standard and permit concurrent
-<a href=#2560 id=2560 data-nosnippet>2560</a>/// calls to `exit`; consult the documentation of your C implementation for details.
-<a href=#2561 id=2561 data-nosnippet>2561</a>///
-<a href=#2562 id=2562 data-nosnippet>2562</a>/// For some of the on-going discussion to make `exit` thread-safe in C, see:
-<a href=#2563 id=2563 data-nosnippet>2563</a>/// - [Rust issue #126600](https://github.com/rust-lang/rust/issues/126600)
-<a href=#2564 id=2564 data-nosnippet>2564</a>/// - [Austin Group Bugzilla (for POSIX)](https://austingroupbugs.net/view.php?id=1845)
-<a href=#2565 id=2565 data-nosnippet>2565</a>/// - [GNU C library Bugzilla](https://sourceware.org/bugzilla/show_bug.cgi?id=31997)
-<a href=#2566 id=2566 data-nosnippet>2566</a>///
-<a href=#2567 id=2567 data-nosnippet>2567</a>/// [C-exit]: https://en.cppreference.com/w/c/program/exit
-<a href=#2568 id=2568 data-nosnippet>2568</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2569 id=2569 data-nosnippet>2569</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"process_exit"</span>)]
-<a href=#2570 id=2570 data-nosnippet>2570</a></span><span class="kw">pub fn </span>exit(code: i32) -&gt; ! {
-<a href=#2571 id=2571 data-nosnippet>2571</a>    <span class="kw">crate</span>::rt::cleanup();
-<a href=#2572 id=2572 data-nosnippet>2572</a>    <span class="kw">crate</span>::sys::exit::exit(code)
-<a href=#2573 id=2573 data-nosnippet>2573</a>}
-<a href=#2574 id=2574 data-nosnippet>2574</a>
-<a href=#2575 id=2575 data-nosnippet>2575</a><span class="doccomment">/// Terminates the process in an abnormal fashion.
-<a href=#2576 id=2576 data-nosnippet>2576</a>///
-<a href=#2577 id=2577 data-nosnippet>2577</a>/// The function will never return and will immediately terminate the current
-<a href=#2578 id=2578 data-nosnippet>2578</a>/// process in a platform specific "abnormal" manner. As a consequence,
-<a href=#2579 id=2579 data-nosnippet>2579</a>/// no destructors on the current stack or any other thread's stack
-<a href=#2580 id=2580 data-nosnippet>2580</a>/// will be run, Rust IO buffers (eg, from `BufWriter`) will not be flushed,
-<a href=#2581 id=2581 data-nosnippet>2581</a>/// and C stdio buffers will (on most platforms) not be flushed.
-<a href=#2582 id=2582 data-nosnippet>2582</a>///
-<a href=#2583 id=2583 data-nosnippet>2583</a>/// This is in contrast to the default behavior of [`panic!`] which unwinds
-<a href=#2584 id=2584 data-nosnippet>2584</a>/// the current thread's stack and calls all destructors.
-<a href=#2585 id=2585 data-nosnippet>2585</a>/// When `panic="abort"` is set, either as an argument to `rustc` or in a
-<a href=#2586 id=2586 data-nosnippet>2586</a>/// crate's Cargo.toml, [`panic!`] and `abort` are similar. However,
-<a href=#2587 id=2587 data-nosnippet>2587</a>/// [`panic!`] will still call the [panic hook] while `abort` will not.
-<a href=#2588 id=2588 data-nosnippet>2588</a>///
-<a href=#2589 id=2589 data-nosnippet>2589</a>/// If a clean shutdown is needed it is recommended to only call
-<a href=#2590 id=2590 data-nosnippet>2590</a>/// this function at a known point where there are no more destructors left
-<a href=#2591 id=2591 data-nosnippet>2591</a>/// to run.
-<a href=#2592 id=2592 data-nosnippet>2592</a>///
-<a href=#2593 id=2593 data-nosnippet>2593</a>/// The process's termination will be similar to that from the C `abort()`
-<a href=#2594 id=2594 data-nosnippet>2594</a>/// function.  On Unix, the process will terminate with signal `SIGABRT`, which
-<a href=#2595 id=2595 data-nosnippet>2595</a>/// typically means that the shell prints "Aborted".
-<a href=#2596 id=2596 data-nosnippet>2596</a>///
-<a href=#2597 id=2597 data-nosnippet>2597</a>/// # Examples
-<a href=#2598 id=2598 data-nosnippet>2598</a>///
-<a href=#2599 id=2599 data-nosnippet>2599</a>/// ```no_run
-<a href=#2600 id=2600 data-nosnippet>2600</a>/// use std::process;
-<a href=#2601 id=2601 data-nosnippet>2601</a>///
-<a href=#2602 id=2602 data-nosnippet>2602</a>/// fn main() {
-<a href=#2603 id=2603 data-nosnippet>2603</a>///     println!("aborting");
-<a href=#2604 id=2604 data-nosnippet>2604</a>///
-<a href=#2605 id=2605 data-nosnippet>2605</a>///     process::abort();
-<a href=#2606 id=2606 data-nosnippet>2606</a>///
-<a href=#2607 id=2607 data-nosnippet>2607</a>///     // execution never gets here
-<a href=#2608 id=2608 data-nosnippet>2608</a>/// }
-<a href=#2609 id=2609 data-nosnippet>2609</a>/// ```
-<a href=#2610 id=2610 data-nosnippet>2610</a>///
-<a href=#2611 id=2611 data-nosnippet>2611</a>/// The `abort` function terminates the process, so the destructor will not
-<a href=#2612 id=2612 data-nosnippet>2612</a>/// get run on the example below:
-<a href=#2613 id=2613 data-nosnippet>2613</a>///
-<a href=#2614 id=2614 data-nosnippet>2614</a>/// ```no_run
-<a href=#2615 id=2615 data-nosnippet>2615</a>/// use std::process;
-<a href=#2616 id=2616 data-nosnippet>2616</a>///
-<a href=#2617 id=2617 data-nosnippet>2617</a>/// struct HasDrop;
-<a href=#2618 id=2618 data-nosnippet>2618</a>///
-<a href=#2619 id=2619 data-nosnippet>2619</a>/// impl Drop for HasDrop {
-<a href=#2620 id=2620 data-nosnippet>2620</a>///     fn drop(&amp;mut self) {
-<a href=#2621 id=2621 data-nosnippet>2621</a>///         println!("This will never be printed!");
-<a href=#2622 id=2622 data-nosnippet>2622</a>///     }
-<a href=#2623 id=2623 data-nosnippet>2623</a>/// }
-<a href=#2624 id=2624 data-nosnippet>2624</a>///
-<a href=#2625 id=2625 data-nosnippet>2625</a>/// fn main() {
-<a href=#2626 id=2626 data-nosnippet>2626</a>///     let _x = HasDrop;
-<a href=#2627 id=2627 data-nosnippet>2627</a>///     process::abort();
-<a href=#2628 id=2628 data-nosnippet>2628</a>///     // the destructor implemented for HasDrop will never get run
-<a href=#2629 id=2629 data-nosnippet>2629</a>/// }
-<a href=#2630 id=2630 data-nosnippet>2630</a>/// ```
-<a href=#2631 id=2631 data-nosnippet>2631</a>///
-<a href=#2632 id=2632 data-nosnippet>2632</a>/// [panic hook]: crate::panic::set_hook
-<a href=#2633 id=2633 data-nosnippet>2633</a></span><span class="attr">#[stable(feature = <span class="string">"process_abort"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#2634 id=2634 data-nosnippet>2634</a>#[cold]
-<a href=#2635 id=2635 data-nosnippet>2635</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"process_abort"</span>)]
-<a href=#2636 id=2636 data-nosnippet>2636</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2637 id=2637 data-nosnippet>2637</a></span><span class="kw">pub fn </span>abort() -&gt; ! {
-<a href=#2638 id=2638 data-nosnippet>2638</a>    <span class="kw">crate</span>::sys::abort_internal();
-<a href=#2639 id=2639 data-nosnippet>2639</a>}
-<a href=#2640 id=2640 data-nosnippet>2640</a>
-<a href=#2641 id=2641 data-nosnippet>2641</a><span class="attr">#[doc(inline)]
-<a href=#2642 id=2642 data-nosnippet>2642</a>#[unstable(feature = <span class="string">"abort_immediate"</span>, issue = <span class="string">"154601"</span>)]
-<a href=#2643 id=2643 data-nosnippet>2643</a></span><span class="kw">pub use </span>core::process::abort_immediate;
-<a href=#2644 id=2644 data-nosnippet>2644</a>
-<a href=#2645 id=2645 data-nosnippet>2645</a><span class="doccomment">/// Returns the OS-assigned process identifier associated with this process.
-<a href=#2646 id=2646 data-nosnippet>2646</a>///
-<a href=#2647 id=2647 data-nosnippet>2647</a>/// # Examples
-<a href=#2648 id=2648 data-nosnippet>2648</a>///
-<a href=#2649 id=2649 data-nosnippet>2649</a>/// ```no_run
-<a href=#2650 id=2650 data-nosnippet>2650</a>/// use std::process;
-<a href=#2651 id=2651 data-nosnippet>2651</a>///
-<a href=#2652 id=2652 data-nosnippet>2652</a>/// println!("My pid is {}", process::id());
-<a href=#2653 id=2653 data-nosnippet>2653</a>/// ```
-<a href=#2654 id=2654 data-nosnippet>2654</a></span><span class="attr">#[must_use]
-<a href=#2655 id=2655 data-nosnippet>2655</a>#[stable(feature = <span class="string">"getpid"</span>, since = <span class="string">"1.26.0"</span>)]
-<a href=#2656 id=2656 data-nosnippet>2656</a></span><span class="kw">pub fn </span>id() -&gt; u32 {
-<a href=#2657 id=2657 data-nosnippet>2657</a>    imp::getpid()
-<a href=#2658 id=2658 data-nosnippet>2658</a>}
-<a href=#2659 id=2659 data-nosnippet>2659</a>
-<a href=#2660 id=2660 data-nosnippet>2660</a><span class="doccomment">/// A trait for implementing arbitrary return types in the `main` function.
-<a href=#2661 id=2661 data-nosnippet>2661</a>///
-<a href=#2662 id=2662 data-nosnippet>2662</a>/// The C-main function only supports returning integers.
-<a href=#2663 id=2663 data-nosnippet>2663</a>/// So, every type implementing the `Termination` trait has to be converted
-<a href=#2664 id=2664 data-nosnippet>2664</a>/// to an integer.
-<a href=#2665 id=2665 data-nosnippet>2665</a>///
-<a href=#2666 id=2666 data-nosnippet>2666</a>/// The default implementations are returning `libc::EXIT_SUCCESS` to indicate
-<a href=#2667 id=2667 data-nosnippet>2667</a>/// a successful execution. In case of a failure, `libc::EXIT_FAILURE` is returned.
-<a href=#2668 id=2668 data-nosnippet>2668</a>///
-<a href=#2669 id=2669 data-nosnippet>2669</a>/// Because different runtimes have different specifications on the return value
-<a href=#2670 id=2670 data-nosnippet>2670</a>/// of the `main` function, this trait is likely to be available only on
-<a href=#2671 id=2671 data-nosnippet>2671</a>/// standard library's runtime for convenience. Other runtimes are not required
-<a href=#2672 id=2672 data-nosnippet>2672</a>/// to provide similar functionality.
-<a href=#2673 id=2673 data-nosnippet>2673</a></span><span class="attr">#[cfg_attr(not(any(test, doctest)), lang = <span class="string">"termination"</span>)]
-<a href=#2674 id=2674 data-nosnippet>2674</a>#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2675 id=2675 data-nosnippet>2675</a>#[rustc_on_unimplemented(on(
-<a href=#2676 id=2676 data-nosnippet>2676</a>    cause = <span class="string">"MainFunctionType"</span>,
-<a href=#2677 id=2677 data-nosnippet>2677</a>    message = <span class="string">"`main` has invalid return type `{Self}`"</span>,
-<a href=#2678 id=2678 data-nosnippet>2678</a>    label = <span class="string">"`main` can only return types that implement `{This}`"
-<a href=#2679 id=2679 data-nosnippet>2679</a></span>))]
-<a href=#2680 id=2680 data-nosnippet>2680</a></span><span class="kw">pub trait </span>Termination {
-<a href=#2681 id=2681 data-nosnippet>2681</a>    <span class="doccomment">/// Is called to get the representation of the value as status code.
-<a href=#2682 id=2682 data-nosnippet>2682</a>    /// This status code is returned to the operating system.
-<a href=#2683 id=2683 data-nosnippet>2683</a>    </span><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2684 id=2684 data-nosnippet>2684</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode;
-<a href=#2685 id=2685 data-nosnippet>2685</a>}
-<a href=#2686 id=2686 data-nosnippet>2686</a>
-<a href=#2687 id=2687 data-nosnippet>2687</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2688 id=2688 data-nosnippet>2688</a></span><span class="kw">impl </span>Termination <span class="kw">for </span>() {
-<a href=#2689 id=2689 data-nosnippet>2689</a>    <span class="attr">#[inline]
-<a href=#2690 id=2690 data-nosnippet>2690</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
-<a href=#2691 id=2691 data-nosnippet>2691</a>        ExitCode::SUCCESS
-<a href=#2692 id=2692 data-nosnippet>2692</a>    }
-<a href=#2693 id=2693 data-nosnippet>2693</a>}
-<a href=#2694 id=2694 data-nosnippet>2694</a>
-<a href=#2695 id=2695 data-nosnippet>2695</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2696 id=2696 data-nosnippet>2696</a></span><span class="kw">impl </span>Termination <span class="macro">for !</span> {
-<a href=#2697 id=2697 data-nosnippet>2697</a>    <span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
-<a href=#2698 id=2698 data-nosnippet>2698</a>        <span class="self">self
-<a href=#2699 id=2699 data-nosnippet>2699</a>    </span>}
-<a href=#2700 id=2700 data-nosnippet>2700</a>}
-<a href=#2701 id=2701 data-nosnippet>2701</a>
-<a href=#2702 id=2702 data-nosnippet>2702</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2703 id=2703 data-nosnippet>2703</a></span><span class="kw">impl </span>Termination <span class="kw">for </span>ExitCode {
-<a href=#2704 id=2704 data-nosnippet>2704</a>    <span class="attr">#[inline]
-<a href=#2705 id=2705 data-nosnippet>2705</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
-<a href=#2706 id=2706 data-nosnippet>2706</a>        <span class="self">self
-<a href=#2707 id=2707 data-nosnippet>2707</a>    </span>}
-<a href=#2708 id=2708 data-nosnippet>2708</a>}
-<a href=#2709 id=2709 data-nosnippet>2709</a>
-<a href=#2710 id=2710 data-nosnippet>2710</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
-<a href=#2711 id=2711 data-nosnippet>2711</a></span><span class="kw">impl</span>&lt;T: Termination, E: fmt::Debug&gt; Termination <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
-<a href=#2712 id=2712 data-nosnippet>2712</a>    <span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
-<a href=#2713 id=2713 data-nosnippet>2713</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#2714 id=2714 data-nosnippet>2714</a>            <span class="prelude-val">Ok</span>(val) =&gt; val.report(),
-<a href=#2715 id=2715 data-nosnippet>2715</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#2716 id=2716 data-nosnippet>2716</a>                io::attempt_print_to_stderr(<span class="macro">format_args_nl!</span>(<span class="string">"Error: {err:?}"</span>));
-<a href=#2717 id=2717 data-nosnippet>2717</a>                ExitCode::FAILURE
-<a href=#2718 id=2718 data-nosnippet>2718</a>            }
-<a href=#2719 id=2719 data-nosnippet>2719</a>        }
-<a href=#2720 id=2720 data-nosnippet>2720</a>    }
-<a href=#2721 id=2721 data-nosnippet>2721</a>}
+<a href=#2209 id=2209 data-nosnippet>2209</a>#[must_use]
+<a href=#2210 id=2210 data-nosnippet>2210</a></span><span class="kw">pub struct </span>ExitCode(imp::ExitCode);
+<a href=#2211 id=2211 data-nosnippet>2211</a>
+<a href=#2212 id=2212 data-nosnippet>2212</a><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2213 id=2213 data-nosnippet>2213</a></span><span class="kw">impl </span>ExitCode {
+<a href=#2214 id=2214 data-nosnippet>2214</a>    <span class="doccomment">/// The canonical `ExitCode` for successful termination on this platform.
+<a href=#2215 id=2215 data-nosnippet>2215</a>    ///
+<a href=#2216 id=2216 data-nosnippet>2216</a>    /// Note that a `()`-returning `main` implicitly results in a successful
+<a href=#2217 id=2217 data-nosnippet>2217</a>    /// termination, so there's no need to return this from `main` unless
+<a href=#2218 id=2218 data-nosnippet>2218</a>    /// you're also returning other possible codes.
+<a href=#2219 id=2219 data-nosnippet>2219</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2220 id=2220 data-nosnippet>2220</a>    </span><span class="kw">pub const </span>SUCCESS: ExitCode = ExitCode(imp::ExitCode::SUCCESS);
+<a href=#2221 id=2221 data-nosnippet>2221</a>
+<a href=#2222 id=2222 data-nosnippet>2222</a>    <span class="doccomment">/// The canonical `ExitCode` for unsuccessful termination on this platform.
+<a href=#2223 id=2223 data-nosnippet>2223</a>    ///
+<a href=#2224 id=2224 data-nosnippet>2224</a>    /// If you're only returning this and `SUCCESS` from `main`, consider
+<a href=#2225 id=2225 data-nosnippet>2225</a>    /// instead returning `Err(_)` and `Ok(())` respectively, which will
+<a href=#2226 id=2226 data-nosnippet>2226</a>    /// return the same codes (but will also `eprintln!` the error).
+<a href=#2227 id=2227 data-nosnippet>2227</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2228 id=2228 data-nosnippet>2228</a>    </span><span class="kw">pub const </span>FAILURE: ExitCode = ExitCode(imp::ExitCode::FAILURE);
+<a href=#2229 id=2229 data-nosnippet>2229</a>
+<a href=#2230 id=2230 data-nosnippet>2230</a>    <span class="doccomment">/// Exit the current process with the given `ExitCode`.
+<a href=#2231 id=2231 data-nosnippet>2231</a>    ///
+<a href=#2232 id=2232 data-nosnippet>2232</a>    /// Note that this has the same caveats as [`process::exit()`][exit], namely that this function
+<a href=#2233 id=2233 data-nosnippet>2233</a>    /// terminates the process immediately, so no destructors on the current stack or any other
+<a href=#2234 id=2234 data-nosnippet>2234</a>    /// thread's stack will be run. Also see those docs for some important notes on interop with C
+<a href=#2235 id=2235 data-nosnippet>2235</a>    /// code. If a clean shutdown is needed, it is recommended to simply return this ExitCode from
+<a href=#2236 id=2236 data-nosnippet>2236</a>    /// the `main` function, as demonstrated in the [type documentation](#examples).
+<a href=#2237 id=2237 data-nosnippet>2237</a>    ///
+<a href=#2238 id=2238 data-nosnippet>2238</a>    /// # Differences from `process::exit()`
+<a href=#2239 id=2239 data-nosnippet>2239</a>    ///
+<a href=#2240 id=2240 data-nosnippet>2240</a>    /// `process::exit()` accepts any `i32` value as the exit code for the process; however, there
+<a href=#2241 id=2241 data-nosnippet>2241</a>    /// are platforms that only use a subset of that value (see [`process::exit` platform-specific
+<a href=#2242 id=2242 data-nosnippet>2242</a>    /// behavior][exit#platform-specific-behavior]). `ExitCode` exists because of this; only
+<a href=#2243 id=2243 data-nosnippet>2243</a>    /// `ExitCode`s that are supported by a majority of our platforms can be created, so those
+<a href=#2244 id=2244 data-nosnippet>2244</a>    /// problems don't exist (as much) with this method.
+<a href=#2245 id=2245 data-nosnippet>2245</a>    ///
+<a href=#2246 id=2246 data-nosnippet>2246</a>    /// # Examples
+<a href=#2247 id=2247 data-nosnippet>2247</a>    ///
+<a href=#2248 id=2248 data-nosnippet>2248</a>    /// ```
+<a href=#2249 id=2249 data-nosnippet>2249</a>    /// #![feature(exitcode_exit_method)]
+<a href=#2250 id=2250 data-nosnippet>2250</a>    /// # use std::process::ExitCode;
+<a href=#2251 id=2251 data-nosnippet>2251</a>    /// # use std::fmt;
+<a href=#2252 id=2252 data-nosnippet>2252</a>    /// # enum UhOhError { GenericProblem, Specific, WithCode { exit_code: ExitCode, _x: () } }
+<a href=#2253 id=2253 data-nosnippet>2253</a>    /// # impl fmt::Display for UhOhError {
+<a href=#2254 id=2254 data-nosnippet>2254</a>    /// #     fn fmt(&amp;self, _: &amp;mut fmt::Formatter&lt;'_&gt;) -&gt; fmt::Result { unimplemented!() }
+<a href=#2255 id=2255 data-nosnippet>2255</a>    /// # }
+<a href=#2256 id=2256 data-nosnippet>2256</a>    /// // there's no way to gracefully recover from an UhOhError, so we just
+<a href=#2257 id=2257 data-nosnippet>2257</a>    /// // print a message and exit
+<a href=#2258 id=2258 data-nosnippet>2258</a>    /// fn handle_unrecoverable_error(err: UhOhError) -&gt; ! {
+<a href=#2259 id=2259 data-nosnippet>2259</a>    ///     eprintln!("UH OH! {err}");
+<a href=#2260 id=2260 data-nosnippet>2260</a>    ///     let code = match err {
+<a href=#2261 id=2261 data-nosnippet>2261</a>    ///         UhOhError::GenericProblem =&gt; ExitCode::FAILURE,
+<a href=#2262 id=2262 data-nosnippet>2262</a>    ///         UhOhError::Specific =&gt; ExitCode::from(3),
+<a href=#2263 id=2263 data-nosnippet>2263</a>    ///         UhOhError::WithCode { exit_code, .. } =&gt; exit_code,
+<a href=#2264 id=2264 data-nosnippet>2264</a>    ///     };
+<a href=#2265 id=2265 data-nosnippet>2265</a>    ///     code.exit_process()
+<a href=#2266 id=2266 data-nosnippet>2266</a>    /// }
+<a href=#2267 id=2267 data-nosnippet>2267</a>    /// ```
+<a href=#2268 id=2268 data-nosnippet>2268</a>    </span><span class="attr">#[unstable(feature = <span class="string">"exitcode_exit_method"</span>, issue = <span class="string">"97100"</span>)]
+<a href=#2269 id=2269 data-nosnippet>2269</a>    </span><span class="kw">pub fn </span>exit_process(<span class="self">self</span>) -&gt; ! {
+<a href=#2270 id=2270 data-nosnippet>2270</a>        exit(<span class="self">self</span>.to_i32())
+<a href=#2271 id=2271 data-nosnippet>2271</a>    }
+<a href=#2272 id=2272 data-nosnippet>2272</a>}
+<a href=#2273 id=2273 data-nosnippet>2273</a>
+<a href=#2274 id=2274 data-nosnippet>2274</a><span class="kw">impl </span>ExitCode {
+<a href=#2275 id=2275 data-nosnippet>2275</a>    <span class="comment">// This is private/perma-unstable because ExitCode is opaque; we don't know that i32 will serve
+<a href=#2276 id=2276 data-nosnippet>2276</a>    // all usecases, for example windows seems to use u32, unix uses the 8-15th bits of an i32, we
+<a href=#2277 id=2277 data-nosnippet>2277</a>    // likely want to isolate users anything that could restrict the platform specific
+<a href=#2278 id=2278 data-nosnippet>2278</a>    // representation of an ExitCode
+<a href=#2279 id=2279 data-nosnippet>2279</a>    //
+<a href=#2280 id=2280 data-nosnippet>2280</a>    // More info: https://internals.rust-lang.org/t/mini-pre-rfc-redesigning-process-exitstatus/5426
+<a href=#2281 id=2281 data-nosnippet>2281</a>    </span><span class="doccomment">/// Converts an `ExitCode` into an i32
+<a href=#2282 id=2282 data-nosnippet>2282</a>    </span><span class="attr">#[unstable(
+<a href=#2283 id=2283 data-nosnippet>2283</a>        feature = <span class="string">"process_exitcode_internals"</span>,
+<a href=#2284 id=2284 data-nosnippet>2284</a>        reason = <span class="string">"exposed only for libstd"</span>,
+<a href=#2285 id=2285 data-nosnippet>2285</a>        issue = <span class="string">"none"
+<a href=#2286 id=2286 data-nosnippet>2286</a>    </span>)]
+<a href=#2287 id=2287 data-nosnippet>2287</a>    #[inline]
+<a href=#2288 id=2288 data-nosnippet>2288</a>    #[doc(hidden)]
+<a href=#2289 id=2289 data-nosnippet>2289</a>    </span><span class="kw">pub fn </span>to_i32(<span class="self">self</span>) -&gt; i32 {
+<a href=#2290 id=2290 data-nosnippet>2290</a>        <span class="self">self</span>.<span class="number">0</span>.as_i32()
+<a href=#2291 id=2291 data-nosnippet>2291</a>    }
+<a href=#2292 id=2292 data-nosnippet>2292</a>}
+<a href=#2293 id=2293 data-nosnippet>2293</a>
+<a href=#2294 id=2294 data-nosnippet>2294</a><span class="doccomment">/// The default value is [`ExitCode::SUCCESS`]
+<a href=#2295 id=2295 data-nosnippet>2295</a></span><span class="attr">#[stable(feature = <span class="string">"process_exitcode_default"</span>, since = <span class="string">"1.75.0"</span>)]
+<a href=#2296 id=2296 data-nosnippet>2296</a></span><span class="kw">impl </span>Default <span class="kw">for </span>ExitCode {
+<a href=#2297 id=2297 data-nosnippet>2297</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#2298 id=2298 data-nosnippet>2298</a>        ExitCode::SUCCESS
+<a href=#2299 id=2299 data-nosnippet>2299</a>    }
+<a href=#2300 id=2300 data-nosnippet>2300</a>}
+<a href=#2301 id=2301 data-nosnippet>2301</a>
+<a href=#2302 id=2302 data-nosnippet>2302</a><span class="attr">#[stable(feature = <span class="string">"process_exitcode"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2303 id=2303 data-nosnippet>2303</a></span><span class="kw">impl </span>From&lt;u8&gt; <span class="kw">for </span>ExitCode {
+<a href=#2304 id=2304 data-nosnippet>2304</a>    <span class="doccomment">/// Constructs an `ExitCode` from an arbitrary u8 value.
+<a href=#2305 id=2305 data-nosnippet>2305</a>    </span><span class="kw">fn </span>from(code: u8) -&gt; <span class="self">Self </span>{
+<a href=#2306 id=2306 data-nosnippet>2306</a>        ExitCode(imp::ExitCode::from(code))
+<a href=#2307 id=2307 data-nosnippet>2307</a>    }
+<a href=#2308 id=2308 data-nosnippet>2308</a>}
+<a href=#2309 id=2309 data-nosnippet>2309</a>
+<a href=#2310 id=2310 data-nosnippet>2310</a><span class="kw">impl </span>AsInner&lt;imp::ExitCode&gt; <span class="kw">for </span>ExitCode {
+<a href=#2311 id=2311 data-nosnippet>2311</a>    <span class="attr">#[inline]
+<a href=#2312 id=2312 data-nosnippet>2312</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>imp::ExitCode {
+<a href=#2313 id=2313 data-nosnippet>2313</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#2314 id=2314 data-nosnippet>2314</a>    </span>}
+<a href=#2315 id=2315 data-nosnippet>2315</a>}
+<a href=#2316 id=2316 data-nosnippet>2316</a>
+<a href=#2317 id=2317 data-nosnippet>2317</a><span class="kw">impl </span>FromInner&lt;imp::ExitCode&gt; <span class="kw">for </span>ExitCode {
+<a href=#2318 id=2318 data-nosnippet>2318</a>    <span class="kw">fn </span>from_inner(s: imp::ExitCode) -&gt; ExitCode {
+<a href=#2319 id=2319 data-nosnippet>2319</a>        ExitCode(s)
+<a href=#2320 id=2320 data-nosnippet>2320</a>    }
+<a href=#2321 id=2321 data-nosnippet>2321</a>}
+<a href=#2322 id=2322 data-nosnippet>2322</a>
+<a href=#2323 id=2323 data-nosnippet>2323</a><span class="kw">impl </span>Child {
+<a href=#2324 id=2324 data-nosnippet>2324</a>    <span class="doccomment">/// Forces the child process to exit. If the child has already exited, `Ok(())`
+<a href=#2325 id=2325 data-nosnippet>2325</a>    /// is returned.
+<a href=#2326 id=2326 data-nosnippet>2326</a>    ///
+<a href=#2327 id=2327 data-nosnippet>2327</a>    /// The mapping to [`ErrorKind`]s is not part of the compatibility contract of the function.
+<a href=#2328 id=2328 data-nosnippet>2328</a>    ///
+<a href=#2329 id=2329 data-nosnippet>2329</a>    /// This is equivalent to sending a SIGKILL on Unix platforms.
+<a href=#2330 id=2330 data-nosnippet>2330</a>    ///
+<a href=#2331 id=2331 data-nosnippet>2331</a>    /// # Examples
+<a href=#2332 id=2332 data-nosnippet>2332</a>    ///
+<a href=#2333 id=2333 data-nosnippet>2333</a>    /// ```no_run
+<a href=#2334 id=2334 data-nosnippet>2334</a>    /// use std::process::Command;
+<a href=#2335 id=2335 data-nosnippet>2335</a>    ///
+<a href=#2336 id=2336 data-nosnippet>2336</a>    /// let mut command = Command::new("yes");
+<a href=#2337 id=2337 data-nosnippet>2337</a>    /// if let Ok(mut child) = command.spawn() {
+<a href=#2338 id=2338 data-nosnippet>2338</a>    ///     child.kill().expect("process should be killed");
+<a href=#2339 id=2339 data-nosnippet>2339</a>    /// } else {
+<a href=#2340 id=2340 data-nosnippet>2340</a>    ///     println!("yes command didn't start");
+<a href=#2341 id=2341 data-nosnippet>2341</a>    /// }
+<a href=#2342 id=2342 data-nosnippet>2342</a>    /// ```
+<a href=#2343 id=2343 data-nosnippet>2343</a>    ///
+<a href=#2344 id=2344 data-nosnippet>2344</a>    /// [`ErrorKind`]: io::ErrorKind
+<a href=#2345 id=2345 data-nosnippet>2345</a>    /// [`InvalidInput`]: io::ErrorKind::InvalidInput
+<a href=#2346 id=2346 data-nosnippet>2346</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2347 id=2347 data-nosnippet>2347</a>    #[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"child_kill"</span>)]
+<a href=#2348 id=2348 data-nosnippet>2348</a>    </span><span class="kw">pub fn </span>kill(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; {
+<a href=#2349 id=2349 data-nosnippet>2349</a>        <span class="self">self</span>.handle.kill()
+<a href=#2350 id=2350 data-nosnippet>2350</a>    }
+<a href=#2351 id=2351 data-nosnippet>2351</a>
+<a href=#2352 id=2352 data-nosnippet>2352</a>    <span class="doccomment">/// Returns the OS-assigned process identifier associated with this child.
+<a href=#2353 id=2353 data-nosnippet>2353</a>    ///
+<a href=#2354 id=2354 data-nosnippet>2354</a>    /// # Examples
+<a href=#2355 id=2355 data-nosnippet>2355</a>    ///
+<a href=#2356 id=2356 data-nosnippet>2356</a>    /// ```no_run
+<a href=#2357 id=2357 data-nosnippet>2357</a>    /// use std::process::Command;
+<a href=#2358 id=2358 data-nosnippet>2358</a>    ///
+<a href=#2359 id=2359 data-nosnippet>2359</a>    /// let mut command = Command::new("ls");
+<a href=#2360 id=2360 data-nosnippet>2360</a>    /// if let Ok(child) = command.spawn() {
+<a href=#2361 id=2361 data-nosnippet>2361</a>    ///     println!("Child's ID is {}", child.id());
+<a href=#2362 id=2362 data-nosnippet>2362</a>    /// } else {
+<a href=#2363 id=2363 data-nosnippet>2363</a>    ///     println!("ls command didn't start");
+<a href=#2364 id=2364 data-nosnippet>2364</a>    /// }
+<a href=#2365 id=2365 data-nosnippet>2365</a>    /// ```
+<a href=#2366 id=2366 data-nosnippet>2366</a>    </span><span class="attr">#[must_use]
+<a href=#2367 id=2367 data-nosnippet>2367</a>    #[stable(feature = <span class="string">"process_id"</span>, since = <span class="string">"1.3.0"</span>)]
+<a href=#2368 id=2368 data-nosnippet>2368</a>    #[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"child_id"</span>)]
+<a href=#2369 id=2369 data-nosnippet>2369</a>    </span><span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+<a href=#2370 id=2370 data-nosnippet>2370</a>        <span class="self">self</span>.handle.id()
+<a href=#2371 id=2371 data-nosnippet>2371</a>    }
+<a href=#2372 id=2372 data-nosnippet>2372</a>
+<a href=#2373 id=2373 data-nosnippet>2373</a>    <span class="doccomment">/// Waits for the child to exit completely, returning the status that it
+<a href=#2374 id=2374 data-nosnippet>2374</a>    /// exited with. This function will continue to have the same return value
+<a href=#2375 id=2375 data-nosnippet>2375</a>    /// after it has been called at least once.
+<a href=#2376 id=2376 data-nosnippet>2376</a>    ///
+<a href=#2377 id=2377 data-nosnippet>2377</a>    /// The stdin handle to the child process, if any, will be closed
+<a href=#2378 id=2378 data-nosnippet>2378</a>    /// before waiting. This helps avoid deadlock: it ensures that the
+<a href=#2379 id=2379 data-nosnippet>2379</a>    /// child does not block waiting for input from the parent, while
+<a href=#2380 id=2380 data-nosnippet>2380</a>    /// the parent waits for the child to exit.
+<a href=#2381 id=2381 data-nosnippet>2381</a>    ///
+<a href=#2382 id=2382 data-nosnippet>2382</a>    /// # Examples
+<a href=#2383 id=2383 data-nosnippet>2383</a>    ///
+<a href=#2384 id=2384 data-nosnippet>2384</a>    /// ```no_run
+<a href=#2385 id=2385 data-nosnippet>2385</a>    /// use std::process::Command;
+<a href=#2386 id=2386 data-nosnippet>2386</a>    ///
+<a href=#2387 id=2387 data-nosnippet>2387</a>    /// let mut command = Command::new("ls");
+<a href=#2388 id=2388 data-nosnippet>2388</a>    /// if let Ok(mut child) = command.spawn() {
+<a href=#2389 id=2389 data-nosnippet>2389</a>    ///     child.wait().expect("child should be running");
+<a href=#2390 id=2390 data-nosnippet>2390</a>    ///     println!("Child has finished its execution!");
+<a href=#2391 id=2391 data-nosnippet>2391</a>    /// } else {
+<a href=#2392 id=2392 data-nosnippet>2392</a>    ///     println!("ls command didn't start");
+<a href=#2393 id=2393 data-nosnippet>2393</a>    /// }
+<a href=#2394 id=2394 data-nosnippet>2394</a>    /// ```
+<a href=#2395 id=2395 data-nosnippet>2395</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2396 id=2396 data-nosnippet>2396</a>    </span><span class="kw">pub fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;ExitStatus&gt; {
+<a href=#2397 id=2397 data-nosnippet>2397</a>        drop(<span class="self">self</span>.stdin.take());
+<a href=#2398 id=2398 data-nosnippet>2398</a>        <span class="self">self</span>.handle.wait().map(ExitStatus)
+<a href=#2399 id=2399 data-nosnippet>2399</a>    }
+<a href=#2400 id=2400 data-nosnippet>2400</a>
+<a href=#2401 id=2401 data-nosnippet>2401</a>    <span class="doccomment">/// Attempts to collect the exit status of the child if it has already
+<a href=#2402 id=2402 data-nosnippet>2402</a>    /// exited.
+<a href=#2403 id=2403 data-nosnippet>2403</a>    ///
+<a href=#2404 id=2404 data-nosnippet>2404</a>    /// This function will not block the calling thread and will only
+<a href=#2405 id=2405 data-nosnippet>2405</a>    /// check to see if the child process has exited or not. If the child has
+<a href=#2406 id=2406 data-nosnippet>2406</a>    /// exited then on Unix the process ID is reaped. This function is
+<a href=#2407 id=2407 data-nosnippet>2407</a>    /// guaranteed to repeatedly return a successful exit status so long as the
+<a href=#2408 id=2408 data-nosnippet>2408</a>    /// child has already exited.
+<a href=#2409 id=2409 data-nosnippet>2409</a>    ///
+<a href=#2410 id=2410 data-nosnippet>2410</a>    /// If the child has exited, then `Ok(Some(status))` is returned. If the
+<a href=#2411 id=2411 data-nosnippet>2411</a>    /// exit status is not available at this time then `Ok(None)` is returned.
+<a href=#2412 id=2412 data-nosnippet>2412</a>    /// If an error occurs, then that error is returned.
+<a href=#2413 id=2413 data-nosnippet>2413</a>    ///
+<a href=#2414 id=2414 data-nosnippet>2414</a>    /// Note that unlike `wait`, this function will not attempt to drop stdin.
+<a href=#2415 id=2415 data-nosnippet>2415</a>    ///
+<a href=#2416 id=2416 data-nosnippet>2416</a>    /// # Examples
+<a href=#2417 id=2417 data-nosnippet>2417</a>    ///
+<a href=#2418 id=2418 data-nosnippet>2418</a>    /// ```no_run
+<a href=#2419 id=2419 data-nosnippet>2419</a>    /// use std::process::Command;
+<a href=#2420 id=2420 data-nosnippet>2420</a>    ///
+<a href=#2421 id=2421 data-nosnippet>2421</a>    /// let mut child = Command::new("ls").spawn()?;
+<a href=#2422 id=2422 data-nosnippet>2422</a>    ///
+<a href=#2423 id=2423 data-nosnippet>2423</a>    /// match child.try_wait() {
+<a href=#2424 id=2424 data-nosnippet>2424</a>    ///     Ok(Some(status)) =&gt; println!("exited with: {status}"),
+<a href=#2425 id=2425 data-nosnippet>2425</a>    ///     Ok(None) =&gt; {
+<a href=#2426 id=2426 data-nosnippet>2426</a>    ///         println!("status not ready yet, let's really wait");
+<a href=#2427 id=2427 data-nosnippet>2427</a>    ///         let res = child.wait();
+<a href=#2428 id=2428 data-nosnippet>2428</a>    ///         println!("result: {res:?}");
+<a href=#2429 id=2429 data-nosnippet>2429</a>    ///     }
+<a href=#2430 id=2430 data-nosnippet>2430</a>    ///     Err(e) =&gt; println!("error attempting to wait: {e}"),
+<a href=#2431 id=2431 data-nosnippet>2431</a>    /// }
+<a href=#2432 id=2432 data-nosnippet>2432</a>    /// # std::io::Result::Ok(())
+<a href=#2433 id=2433 data-nosnippet>2433</a>    /// ```
+<a href=#2434 id=2434 data-nosnippet>2434</a>    </span><span class="attr">#[stable(feature = <span class="string">"process_try_wait"</span>, since = <span class="string">"1.18.0"</span>)]
+<a href=#2435 id=2435 data-nosnippet>2435</a>    </span><span class="kw">pub fn </span>try_wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;ExitStatus&gt;&gt; {
+<a href=#2436 id=2436 data-nosnippet>2436</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.handle.try_wait()<span class="question-mark">?</span>.map(ExitStatus))
+<a href=#2437 id=2437 data-nosnippet>2437</a>    }
+<a href=#2438 id=2438 data-nosnippet>2438</a>
+<a href=#2439 id=2439 data-nosnippet>2439</a>    <span class="doccomment">/// Simultaneously waits for the child to exit and collect all remaining
+<a href=#2440 id=2440 data-nosnippet>2440</a>    /// output on the stdout/stderr handles, returning an `Output`
+<a href=#2441 id=2441 data-nosnippet>2441</a>    /// instance.
+<a href=#2442 id=2442 data-nosnippet>2442</a>    ///
+<a href=#2443 id=2443 data-nosnippet>2443</a>    /// The stdin handle to the child process, if any, will be closed
+<a href=#2444 id=2444 data-nosnippet>2444</a>    /// before waiting. This helps avoid deadlock: it ensures that the
+<a href=#2445 id=2445 data-nosnippet>2445</a>    /// child does not block waiting for input from the parent, while
+<a href=#2446 id=2446 data-nosnippet>2446</a>    /// the parent waits for the child to exit.
+<a href=#2447 id=2447 data-nosnippet>2447</a>    ///
+<a href=#2448 id=2448 data-nosnippet>2448</a>    /// By default, stdin, stdout and stderr are inherited from the parent.
+<a href=#2449 id=2449 data-nosnippet>2449</a>    /// In order to capture the output into this `Result&lt;Output&gt;` it is
+<a href=#2450 id=2450 data-nosnippet>2450</a>    /// necessary to create new pipes between parent and child. Use
+<a href=#2451 id=2451 data-nosnippet>2451</a>    /// `stdout(Stdio::piped())` or `stderr(Stdio::piped())`, respectively.
+<a href=#2452 id=2452 data-nosnippet>2452</a>    ///
+<a href=#2453 id=2453 data-nosnippet>2453</a>    /// # Examples
+<a href=#2454 id=2454 data-nosnippet>2454</a>    ///
+<a href=#2455 id=2455 data-nosnippet>2455</a>    /// ```should_panic
+<a href=#2456 id=2456 data-nosnippet>2456</a>    /// use std::process::{Command, Stdio};
+<a href=#2457 id=2457 data-nosnippet>2457</a>    ///
+<a href=#2458 id=2458 data-nosnippet>2458</a>    /// let child = Command::new("/bin/cat")
+<a href=#2459 id=2459 data-nosnippet>2459</a>    ///     .arg("file.txt")
+<a href=#2460 id=2460 data-nosnippet>2460</a>    ///     .stdout(Stdio::piped())
+<a href=#2461 id=2461 data-nosnippet>2461</a>    ///     .spawn()
+<a href=#2462 id=2462 data-nosnippet>2462</a>    ///     .expect("child should spawn");
+<a href=#2463 id=2463 data-nosnippet>2463</a>    ///
+<a href=#2464 id=2464 data-nosnippet>2464</a>    /// let output = child
+<a href=#2465 id=2465 data-nosnippet>2465</a>    ///     .wait_with_output()
+<a href=#2466 id=2466 data-nosnippet>2466</a>    ///     .expect("wait_with_output on child should succeed");
+<a href=#2467 id=2467 data-nosnippet>2467</a>    ///
+<a href=#2468 id=2468 data-nosnippet>2468</a>    /// assert!(output.status.success());
+<a href=#2469 id=2469 data-nosnippet>2469</a>    /// ```
+<a href=#2470 id=2470 data-nosnippet>2470</a>    ///
+<a href=#2471 id=2471 data-nosnippet>2471</a>    </span><span class="attr">#[stable(feature = <span class="string">"process"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2472 id=2472 data-nosnippet>2472</a>    </span><span class="kw">pub fn </span>wait_with_output(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; io::Result&lt;Output&gt; {
+<a href=#2473 id=2473 data-nosnippet>2473</a>        drop(<span class="self">self</span>.stdin.take());
+<a href=#2474 id=2474 data-nosnippet>2474</a>
+<a href=#2475 id=2475 data-nosnippet>2475</a>        <span class="kw">let </span>(<span class="kw-2">mut </span>stdout, <span class="kw-2">mut </span>stderr) = (Vec::new(), Vec::new());
+<a href=#2476 id=2476 data-nosnippet>2476</a>        <span class="kw">match </span>(<span class="self">self</span>.stdout.take(), <span class="self">self</span>.stderr.take()) {
+<a href=#2477 id=2477 data-nosnippet>2477</a>            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
+<a href=#2478 id=2478 data-nosnippet>2478</a>            (<span class="prelude-val">Some</span>(<span class="kw-2">mut </span>out), <span class="prelude-val">None</span>) =&gt; {
+<a href=#2479 id=2479 data-nosnippet>2479</a>                <span class="kw">let </span>res = out.read_to_end(<span class="kw-2">&amp;mut </span>stdout);
+<a href=#2480 id=2480 data-nosnippet>2480</a>                res.unwrap();
+<a href=#2481 id=2481 data-nosnippet>2481</a>            }
+<a href=#2482 id=2482 data-nosnippet>2482</a>            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw-2">mut </span>err)) =&gt; {
+<a href=#2483 id=2483 data-nosnippet>2483</a>                <span class="kw">let </span>res = err.read_to_end(<span class="kw-2">&amp;mut </span>stderr);
+<a href=#2484 id=2484 data-nosnippet>2484</a>                res.unwrap();
+<a href=#2485 id=2485 data-nosnippet>2485</a>            }
+<a href=#2486 id=2486 data-nosnippet>2486</a>            (<span class="prelude-val">Some</span>(out), <span class="prelude-val">Some</span>(err)) =&gt; {
+<a href=#2487 id=2487 data-nosnippet>2487</a>                <span class="kw">let </span>res = imp::read_output(out.inner, <span class="kw-2">&amp;mut </span>stdout, err.inner, <span class="kw-2">&amp;mut </span>stderr);
+<a href=#2488 id=2488 data-nosnippet>2488</a>                res.unwrap();
+<a href=#2489 id=2489 data-nosnippet>2489</a>            }
+<a href=#2490 id=2490 data-nosnippet>2490</a>        }
+<a href=#2491 id=2491 data-nosnippet>2491</a>
+<a href=#2492 id=2492 data-nosnippet>2492</a>        <span class="kw">let </span>status = <span class="self">self</span>.wait()<span class="question-mark">?</span>;
+<a href=#2493 id=2493 data-nosnippet>2493</a>        <span class="prelude-val">Ok</span>(Output { status, stdout, stderr })
+<a href=#2494 id=2494 data-nosnippet>2494</a>    }
+<a href=#2495 id=2495 data-nosnippet>2495</a>}
+<a href=#2496 id=2496 data-nosnippet>2496</a>
+<a href=#2497 id=2497 data-nosnippet>2497</a><span class="doccomment">/// Terminates the current process with the specified exit code.
+<a href=#2498 id=2498 data-nosnippet>2498</a>///
+<a href=#2499 id=2499 data-nosnippet>2499</a>/// This function will never return and will immediately terminate the current
+<a href=#2500 id=2500 data-nosnippet>2500</a>/// process. The exit code is passed through to the underlying OS and will be
+<a href=#2501 id=2501 data-nosnippet>2501</a>/// available for consumption by another process.
+<a href=#2502 id=2502 data-nosnippet>2502</a>///
+<a href=#2503 id=2503 data-nosnippet>2503</a>/// Note that because this function never returns, and that it terminates the
+<a href=#2504 id=2504 data-nosnippet>2504</a>/// process, no destructors on the current stack or any other thread's stack
+<a href=#2505 id=2505 data-nosnippet>2505</a>/// will be run. If a clean shutdown is needed it is recommended to only call
+<a href=#2506 id=2506 data-nosnippet>2506</a>/// this function at a known point where there are no more destructors left
+<a href=#2507 id=2507 data-nosnippet>2507</a>/// to run; or, preferably, simply return a type implementing [`Termination`]
+<a href=#2508 id=2508 data-nosnippet>2508</a>/// (such as [`ExitCode`] or `Result`) from the `main` function and avoid this
+<a href=#2509 id=2509 data-nosnippet>2509</a>/// function altogether:
+<a href=#2510 id=2510 data-nosnippet>2510</a>///
+<a href=#2511 id=2511 data-nosnippet>2511</a>/// ```
+<a href=#2512 id=2512 data-nosnippet>2512</a>/// # use std::io::Error as MyError;
+<a href=#2513 id=2513 data-nosnippet>2513</a>/// fn main() -&gt; Result&lt;(), MyError&gt; {
+<a href=#2514 id=2514 data-nosnippet>2514</a>///     // ...
+<a href=#2515 id=2515 data-nosnippet>2515</a>///     Ok(())
+<a href=#2516 id=2516 data-nosnippet>2516</a>/// }
+<a href=#2517 id=2517 data-nosnippet>2517</a>/// ```
+<a href=#2518 id=2518 data-nosnippet>2518</a>///
+<a href=#2519 id=2519 data-nosnippet>2519</a>/// In its current implementation, this function will execute exit handlers registered with `atexit`
+<a href=#2520 id=2520 data-nosnippet>2520</a>/// as well as other platform-specific exit handlers (e.g. `fini` sections of ELF shared objects).
+<a href=#2521 id=2521 data-nosnippet>2521</a>/// This means that Rust requires that all exit handlers are safe to execute at any time. In
+<a href=#2522 id=2522 data-nosnippet>2522</a>/// particular, if an exit handler cleans up some state that might be concurrently accessed by other
+<a href=#2523 id=2523 data-nosnippet>2523</a>/// threads, it is required that the exit handler performs suitable synchronization with those
+<a href=#2524 id=2524 data-nosnippet>2524</a>/// threads. (The alternative to this requirement would be to not run exit handlers at all, which is
+<a href=#2525 id=2525 data-nosnippet>2525</a>/// considered undesirable. Note that returning from `main` also calls `exit`, so making `exit` an
+<a href=#2526 id=2526 data-nosnippet>2526</a>/// unsafe operation is not an option.)
+<a href=#2527 id=2527 data-nosnippet>2527</a>///
+<a href=#2528 id=2528 data-nosnippet>2528</a>/// ## Platform-specific behavior
+<a href=#2529 id=2529 data-nosnippet>2529</a>///
+<a href=#2530 id=2530 data-nosnippet>2530</a>/// **Unix**: On Unix-like platforms, it is unlikely that all 32 bits of `exit`
+<a href=#2531 id=2531 data-nosnippet>2531</a>/// will be visible to a parent process inspecting the exit code. On most
+<a href=#2532 id=2532 data-nosnippet>2532</a>/// Unix-like platforms, only the eight least-significant bits are considered.
+<a href=#2533 id=2533 data-nosnippet>2533</a>///
+<a href=#2534 id=2534 data-nosnippet>2534</a>/// For example, the exit code for this example will be `0` on Linux, but `256`
+<a href=#2535 id=2535 data-nosnippet>2535</a>/// on Windows:
+<a href=#2536 id=2536 data-nosnippet>2536</a>///
+<a href=#2537 id=2537 data-nosnippet>2537</a>/// ```no_run
+<a href=#2538 id=2538 data-nosnippet>2538</a>/// use std::process;
+<a href=#2539 id=2539 data-nosnippet>2539</a>///
+<a href=#2540 id=2540 data-nosnippet>2540</a>/// process::exit(0x0100);
+<a href=#2541 id=2541 data-nosnippet>2541</a>/// ```
+<a href=#2542 id=2542 data-nosnippet>2542</a>///
+<a href=#2543 id=2543 data-nosnippet>2543</a>/// ### Safe interop with C code
+<a href=#2544 id=2544 data-nosnippet>2544</a>///
+<a href=#2545 id=2545 data-nosnippet>2545</a>/// On Unix, this function is currently implemented using the `exit` C function [`exit`][C-exit]. As
+<a href=#2546 id=2546 data-nosnippet>2546</a>/// of C23, the C standard does not permit multiple threads to call `exit` concurrently. Rust
+<a href=#2547 id=2547 data-nosnippet>2547</a>/// mitigates this with a lock, but if C code calls `exit`, that can still cause undefined behavior.
+<a href=#2548 id=2548 data-nosnippet>2548</a>/// Note that returning from `main` is equivalent to calling `exit`.
+<a href=#2549 id=2549 data-nosnippet>2549</a>///
+<a href=#2550 id=2550 data-nosnippet>2550</a>/// Therefore, it is undefined behavior to have two concurrent threads perform the following
+<a href=#2551 id=2551 data-nosnippet>2551</a>/// without synchronization:
+<a href=#2552 id=2552 data-nosnippet>2552</a>/// - One thread calls Rust's `exit` function or returns from Rust's `main` function
+<a href=#2553 id=2553 data-nosnippet>2553</a>/// - Another thread calls the C function `exit` or `quick_exit`, or returns from C's `main` function
+<a href=#2554 id=2554 data-nosnippet>2554</a>///
+<a href=#2555 id=2555 data-nosnippet>2555</a>/// Note that if a binary contains multiple copies of the Rust runtime (e.g., when combining
+<a href=#2556 id=2556 data-nosnippet>2556</a>/// multiple `cdylib` or `staticlib`), they each have their own separate lock, so from the
+<a href=#2557 id=2557 data-nosnippet>2557</a>/// perspective of code running in one of the Rust runtimes, the "outside" Rust code is basically C
+<a href=#2558 id=2558 data-nosnippet>2558</a>/// code, and concurrent `exit` again causes undefined behavior.
+<a href=#2559 id=2559 data-nosnippet>2559</a>///
+<a href=#2560 id=2560 data-nosnippet>2560</a>/// Individual C implementations might provide more guarantees than the standard and permit concurrent
+<a href=#2561 id=2561 data-nosnippet>2561</a>/// calls to `exit`; consult the documentation of your C implementation for details.
+<a href=#2562 id=2562 data-nosnippet>2562</a>///
+<a href=#2563 id=2563 data-nosnippet>2563</a>/// For some of the on-going discussion to make `exit` thread-safe in C, see:
+<a href=#2564 id=2564 data-nosnippet>2564</a>/// - [Rust issue #126600](https://github.com/rust-lang/rust/issues/126600)
+<a href=#2565 id=2565 data-nosnippet>2565</a>/// - [Austin Group Bugzilla (for POSIX)](https://austingroupbugs.net/view.php?id=1845)
+<a href=#2566 id=2566 data-nosnippet>2566</a>/// - [GNU C library Bugzilla](https://sourceware.org/bugzilla/show_bug.cgi?id=31997)
+<a href=#2567 id=2567 data-nosnippet>2567</a>///
+<a href=#2568 id=2568 data-nosnippet>2568</a>/// [C-exit]: https://en.cppreference.com/w/c/program/exit
+<a href=#2569 id=2569 data-nosnippet>2569</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2570 id=2570 data-nosnippet>2570</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"process_exit"</span>)]
+<a href=#2571 id=2571 data-nosnippet>2571</a></span><span class="kw">pub fn </span>exit(code: i32) -&gt; ! {
+<a href=#2572 id=2572 data-nosnippet>2572</a>    <span class="kw">crate</span>::rt::cleanup();
+<a href=#2573 id=2573 data-nosnippet>2573</a>    <span class="kw">crate</span>::sys::exit::exit(code)
+<a href=#2574 id=2574 data-nosnippet>2574</a>}
+<a href=#2575 id=2575 data-nosnippet>2575</a>
+<a href=#2576 id=2576 data-nosnippet>2576</a><span class="doccomment">/// Terminates the process in an abnormal fashion.
+<a href=#2577 id=2577 data-nosnippet>2577</a>///
+<a href=#2578 id=2578 data-nosnippet>2578</a>/// The function will never return and will immediately terminate the current
+<a href=#2579 id=2579 data-nosnippet>2579</a>/// process in a platform specific "abnormal" manner. As a consequence,
+<a href=#2580 id=2580 data-nosnippet>2580</a>/// no destructors on the current stack or any other thread's stack
+<a href=#2581 id=2581 data-nosnippet>2581</a>/// will be run, Rust IO buffers (eg, from `BufWriter`) will not be flushed,
+<a href=#2582 id=2582 data-nosnippet>2582</a>/// and C stdio buffers will (on most platforms) not be flushed.
+<a href=#2583 id=2583 data-nosnippet>2583</a>///
+<a href=#2584 id=2584 data-nosnippet>2584</a>/// This is in contrast to the default behavior of [`panic!`] which unwinds
+<a href=#2585 id=2585 data-nosnippet>2585</a>/// the current thread's stack and calls all destructors.
+<a href=#2586 id=2586 data-nosnippet>2586</a>/// When `panic="abort"` is set, either as an argument to `rustc` or in a
+<a href=#2587 id=2587 data-nosnippet>2587</a>/// crate's Cargo.toml, [`panic!`] and `abort` are similar. However,
+<a href=#2588 id=2588 data-nosnippet>2588</a>/// [`panic!`] will still call the [panic hook] while `abort` will not.
+<a href=#2589 id=2589 data-nosnippet>2589</a>///
+<a href=#2590 id=2590 data-nosnippet>2590</a>/// If a clean shutdown is needed it is recommended to only call
+<a href=#2591 id=2591 data-nosnippet>2591</a>/// this function at a known point where there are no more destructors left
+<a href=#2592 id=2592 data-nosnippet>2592</a>/// to run.
+<a href=#2593 id=2593 data-nosnippet>2593</a>///
+<a href=#2594 id=2594 data-nosnippet>2594</a>/// The process's termination will be similar to that from the C `abort()`
+<a href=#2595 id=2595 data-nosnippet>2595</a>/// function.  On Unix, the process will terminate with signal `SIGABRT`, which
+<a href=#2596 id=2596 data-nosnippet>2596</a>/// typically means that the shell prints "Aborted".
+<a href=#2597 id=2597 data-nosnippet>2597</a>///
+<a href=#2598 id=2598 data-nosnippet>2598</a>/// # Examples
+<a href=#2599 id=2599 data-nosnippet>2599</a>///
+<a href=#2600 id=2600 data-nosnippet>2600</a>/// ```no_run
+<a href=#2601 id=2601 data-nosnippet>2601</a>/// use std::process;
+<a href=#2602 id=2602 data-nosnippet>2602</a>///
+<a href=#2603 id=2603 data-nosnippet>2603</a>/// fn main() {
+<a href=#2604 id=2604 data-nosnippet>2604</a>///     println!("aborting");
+<a href=#2605 id=2605 data-nosnippet>2605</a>///
+<a href=#2606 id=2606 data-nosnippet>2606</a>///     process::abort();
+<a href=#2607 id=2607 data-nosnippet>2607</a>///
+<a href=#2608 id=2608 data-nosnippet>2608</a>///     // execution never gets here
+<a href=#2609 id=2609 data-nosnippet>2609</a>/// }
+<a href=#2610 id=2610 data-nosnippet>2610</a>/// ```
+<a href=#2611 id=2611 data-nosnippet>2611</a>///
+<a href=#2612 id=2612 data-nosnippet>2612</a>/// The `abort` function terminates the process, so the destructor will not
+<a href=#2613 id=2613 data-nosnippet>2613</a>/// get run on the example below:
+<a href=#2614 id=2614 data-nosnippet>2614</a>///
+<a href=#2615 id=2615 data-nosnippet>2615</a>/// ```no_run
+<a href=#2616 id=2616 data-nosnippet>2616</a>/// use std::process;
+<a href=#2617 id=2617 data-nosnippet>2617</a>///
+<a href=#2618 id=2618 data-nosnippet>2618</a>/// struct HasDrop;
+<a href=#2619 id=2619 data-nosnippet>2619</a>///
+<a href=#2620 id=2620 data-nosnippet>2620</a>/// impl Drop for HasDrop {
+<a href=#2621 id=2621 data-nosnippet>2621</a>///     fn drop(&amp;mut self) {
+<a href=#2622 id=2622 data-nosnippet>2622</a>///         println!("This will never be printed!");
+<a href=#2623 id=2623 data-nosnippet>2623</a>///     }
+<a href=#2624 id=2624 data-nosnippet>2624</a>/// }
+<a href=#2625 id=2625 data-nosnippet>2625</a>///
+<a href=#2626 id=2626 data-nosnippet>2626</a>/// fn main() {
+<a href=#2627 id=2627 data-nosnippet>2627</a>///     let _x = HasDrop;
+<a href=#2628 id=2628 data-nosnippet>2628</a>///     process::abort();
+<a href=#2629 id=2629 data-nosnippet>2629</a>///     // the destructor implemented for HasDrop will never get run
+<a href=#2630 id=2630 data-nosnippet>2630</a>/// }
+<a href=#2631 id=2631 data-nosnippet>2631</a>/// ```
+<a href=#2632 id=2632 data-nosnippet>2632</a>///
+<a href=#2633 id=2633 data-nosnippet>2633</a>/// [panic hook]: crate::panic::set_hook
+<a href=#2634 id=2634 data-nosnippet>2634</a></span><span class="attr">#[stable(feature = <span class="string">"process_abort"</span>, since = <span class="string">"1.17.0"</span>)]
+<a href=#2635 id=2635 data-nosnippet>2635</a>#[cold]
+<a href=#2636 id=2636 data-nosnippet>2636</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"process_abort"</span>)]
+<a href=#2637 id=2637 data-nosnippet>2637</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
+<a href=#2638 id=2638 data-nosnippet>2638</a></span><span class="kw">pub fn </span>abort() -&gt; ! {
+<a href=#2639 id=2639 data-nosnippet>2639</a>    <span class="kw">crate</span>::sys::abort_internal();
+<a href=#2640 id=2640 data-nosnippet>2640</a>}
+<a href=#2641 id=2641 data-nosnippet>2641</a>
+<a href=#2642 id=2642 data-nosnippet>2642</a><span class="attr">#[doc(inline)]
+<a href=#2643 id=2643 data-nosnippet>2643</a>#[unstable(feature = <span class="string">"abort_immediate"</span>, issue = <span class="string">"154601"</span>)]
+<a href=#2644 id=2644 data-nosnippet>2644</a></span><span class="kw">pub use </span>core::process::abort_immediate;
+<a href=#2645 id=2645 data-nosnippet>2645</a>
+<a href=#2646 id=2646 data-nosnippet>2646</a><span class="doccomment">/// Returns the OS-assigned process identifier associated with this process.
+<a href=#2647 id=2647 data-nosnippet>2647</a>///
+<a href=#2648 id=2648 data-nosnippet>2648</a>/// # Examples
+<a href=#2649 id=2649 data-nosnippet>2649</a>///
+<a href=#2650 id=2650 data-nosnippet>2650</a>/// ```no_run
+<a href=#2651 id=2651 data-nosnippet>2651</a>/// use std::process;
+<a href=#2652 id=2652 data-nosnippet>2652</a>///
+<a href=#2653 id=2653 data-nosnippet>2653</a>/// println!("My pid is {}", process::id());
+<a href=#2654 id=2654 data-nosnippet>2654</a>/// ```
+<a href=#2655 id=2655 data-nosnippet>2655</a></span><span class="attr">#[must_use]
+<a href=#2656 id=2656 data-nosnippet>2656</a>#[stable(feature = <span class="string">"getpid"</span>, since = <span class="string">"1.26.0"</span>)]
+<a href=#2657 id=2657 data-nosnippet>2657</a></span><span class="kw">pub fn </span>id() -&gt; u32 {
+<a href=#2658 id=2658 data-nosnippet>2658</a>    imp::getpid()
+<a href=#2659 id=2659 data-nosnippet>2659</a>}
+<a href=#2660 id=2660 data-nosnippet>2660</a>
+<a href=#2661 id=2661 data-nosnippet>2661</a><span class="doccomment">/// A trait for implementing arbitrary return types in the `main` function.
+<a href=#2662 id=2662 data-nosnippet>2662</a>///
+<a href=#2663 id=2663 data-nosnippet>2663</a>/// The C-main function only supports returning integers.
+<a href=#2664 id=2664 data-nosnippet>2664</a>/// So, every type implementing the `Termination` trait has to be converted
+<a href=#2665 id=2665 data-nosnippet>2665</a>/// to an integer.
+<a href=#2666 id=2666 data-nosnippet>2666</a>///
+<a href=#2667 id=2667 data-nosnippet>2667</a>/// The default implementations are returning `libc::EXIT_SUCCESS` to indicate
+<a href=#2668 id=2668 data-nosnippet>2668</a>/// a successful execution. In case of a failure, `libc::EXIT_FAILURE` is returned.
+<a href=#2669 id=2669 data-nosnippet>2669</a>///
+<a href=#2670 id=2670 data-nosnippet>2670</a>/// Because different runtimes have different specifications on the return value
+<a href=#2671 id=2671 data-nosnippet>2671</a>/// of the `main` function, this trait is likely to be available only on
+<a href=#2672 id=2672 data-nosnippet>2672</a>/// standard library's runtime for convenience. Other runtimes are not required
+<a href=#2673 id=2673 data-nosnippet>2673</a>/// to provide similar functionality.
+<a href=#2674 id=2674 data-nosnippet>2674</a></span><span class="attr">#[cfg_attr(not(any(test, doctest)), lang = <span class="string">"termination"</span>)]
+<a href=#2675 id=2675 data-nosnippet>2675</a>#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2676 id=2676 data-nosnippet>2676</a>#[rustc_on_unimplemented(on(
+<a href=#2677 id=2677 data-nosnippet>2677</a>    cause = <span class="string">"MainFunctionType"</span>,
+<a href=#2678 id=2678 data-nosnippet>2678</a>    message = <span class="string">"`main` has invalid return type `{Self}`"</span>,
+<a href=#2679 id=2679 data-nosnippet>2679</a>    label = <span class="string">"`main` can only return types that implement `{This}`"
+<a href=#2680 id=2680 data-nosnippet>2680</a></span>))]
+<a href=#2681 id=2681 data-nosnippet>2681</a></span><span class="kw">pub trait </span>Termination {
+<a href=#2682 id=2682 data-nosnippet>2682</a>    <span class="doccomment">/// Is called to get the representation of the value as status code.
+<a href=#2683 id=2683 data-nosnippet>2683</a>    /// This status code is returned to the operating system.
+<a href=#2684 id=2684 data-nosnippet>2684</a>    </span><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2685 id=2685 data-nosnippet>2685</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode;
+<a href=#2686 id=2686 data-nosnippet>2686</a>}
+<a href=#2687 id=2687 data-nosnippet>2687</a>
+<a href=#2688 id=2688 data-nosnippet>2688</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2689 id=2689 data-nosnippet>2689</a></span><span class="kw">impl </span>Termination <span class="kw">for </span>() {
+<a href=#2690 id=2690 data-nosnippet>2690</a>    <span class="attr">#[inline]
+<a href=#2691 id=2691 data-nosnippet>2691</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
+<a href=#2692 id=2692 data-nosnippet>2692</a>        ExitCode::SUCCESS
+<a href=#2693 id=2693 data-nosnippet>2693</a>    }
+<a href=#2694 id=2694 data-nosnippet>2694</a>}
+<a href=#2695 id=2695 data-nosnippet>2695</a>
+<a href=#2696 id=2696 data-nosnippet>2696</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2697 id=2697 data-nosnippet>2697</a></span><span class="kw">impl </span>Termination <span class="macro">for !</span> {
+<a href=#2698 id=2698 data-nosnippet>2698</a>    <span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
+<a href=#2699 id=2699 data-nosnippet>2699</a>        <span class="self">self
+<a href=#2700 id=2700 data-nosnippet>2700</a>    </span>}
+<a href=#2701 id=2701 data-nosnippet>2701</a>}
+<a href=#2702 id=2702 data-nosnippet>2702</a>
+<a href=#2703 id=2703 data-nosnippet>2703</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2704 id=2704 data-nosnippet>2704</a></span><span class="kw">impl </span>Termination <span class="kw">for </span>ExitCode {
+<a href=#2705 id=2705 data-nosnippet>2705</a>    <span class="attr">#[inline]
+<a href=#2706 id=2706 data-nosnippet>2706</a>    </span><span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
+<a href=#2707 id=2707 data-nosnippet>2707</a>        <span class="self">self
+<a href=#2708 id=2708 data-nosnippet>2708</a>    </span>}
+<a href=#2709 id=2709 data-nosnippet>2709</a>}
+<a href=#2710 id=2710 data-nosnippet>2710</a>
+<a href=#2711 id=2711 data-nosnippet>2711</a><span class="attr">#[stable(feature = <span class="string">"termination_trait_lib"</span>, since = <span class="string">"1.61.0"</span>)]
+<a href=#2712 id=2712 data-nosnippet>2712</a></span><span class="kw">impl</span>&lt;T: Termination, E: fmt::Debug&gt; Termination <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
+<a href=#2713 id=2713 data-nosnippet>2713</a>    <span class="kw">fn </span>report(<span class="self">self</span>) -&gt; ExitCode {
+<a href=#2714 id=2714 data-nosnippet>2714</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#2715 id=2715 data-nosnippet>2715</a>            <span class="prelude-val">Ok</span>(val) =&gt; val.report(),
+<a href=#2716 id=2716 data-nosnippet>2716</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#2717 id=2717 data-nosnippet>2717</a>                io::attempt_print_to_stderr(<span class="macro">format_args_nl!</span>(<span class="string">"Error: {err:?}"</span>));
+<a href=#2718 id=2718 data-nosnippet>2718</a>                ExitCode::FAILURE
+<a href=#2719 id=2719 data-nosnippet>2719</a>            }
+<a href=#2720 id=2720 data-nosnippet>2720</a>        }
+<a href=#2721 id=2721 data-nosnippet>2721</a>    }
+<a href=#2722 id=2722 data-nosnippet>2722</a>}
 </code></pre></div></section></main></body></html>
