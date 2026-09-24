@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/linked_list.rs`."><title>linked_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (6bb1652a0 2026-09-22)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.100.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/</div>linked_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A doubly-linked list with owned nodes.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/linked_list.rs`."><title>linked_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (6eeff9a52 2026-09-23)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.100.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/</div>linked_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A doubly-linked list with owned nodes.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! The `LinkedList` allows pushing and popping elements at either end
 <a href=#4 id=4 data-nosnippet>4</a>//! in constant time.
@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>#[rustc_insignificant_dtor]
 <a href=#51 id=51 data-nosnippet>51</a></span><span class="kw">pub struct </span>LinkedList&lt;
 <a href=#52 id=52 data-nosnippet>52</a>    T,
-<a href=#53 id=53 data-nosnippet>53</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)] </span>A: Allocator = Global,
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)] </span>A: Allocator = Global,
 <a href=#54 id=54 data-nosnippet>54</a>&gt; {
 <a href=#55 id=55 data-nosnippet>55</a>    head: <span class="prelude-ty">Option</span>&lt;NonNull&lt;Node&lt;T&gt;&gt;&gt;,
 <a href=#56 id=56 data-nosnippet>56</a>    tail: <span class="prelude-ty">Option</span>&lt;NonNull&lt;Node&lt;T&gt;&gt;&gt;,
@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#142 id=142 data-nosnippet>142</a></span><span class="kw">pub struct </span>IntoIter&lt;
 <a href=#143 id=143 data-nosnippet>143</a>    T,
-<a href=#144 id=144 data-nosnippet>144</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)] </span>A: Allocator = Global,
+<a href=#144 id=144 data-nosnippet>144</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)] </span>A: Allocator = Global,
 <a href=#145 id=145 data-nosnippet>145</a>&gt; {
 <a href=#146 id=146 data-nosnippet>146</a>    list: LinkedList&lt;T, A&gt;,
 <a href=#147 id=147 data-nosnippet>147</a>}
@@ -515,7 +515,7 @@
 <a href=#515 id=515 data-nosnippet>515</a>    /// # Examples
 <a href=#516 id=516 data-nosnippet>516</a>    ///
 <a href=#517 id=517 data-nosnippet>517</a>    /// ```
-<a href=#518 id=518 data-nosnippet>518</a>    /// #![feature(allocator_api)]
+<a href=#518 id=518 data-nosnippet>518</a>    /// #![feature(allocator_ext)]
 <a href=#519 id=519 data-nosnippet>519</a>    ///
 <a href=#520 id=520 data-nosnippet>520</a>    /// use std::alloc::System;
 <a href=#521 id=521 data-nosnippet>521</a>    /// use std::collections::LinkedList;
@@ -523,7 +523,7 @@
 <a href=#523 id=523 data-nosnippet>523</a>    /// let list: LinkedList&lt;i32, System&gt; = LinkedList::new_in(System);
 <a href=#524 id=524 data-nosnippet>524</a>    /// ```
 <a href=#525 id=525 data-nosnippet>525</a>    </span><span class="attr">#[inline]
-<a href=#526 id=526 data-nosnippet>526</a>    #[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)]
+<a href=#526 id=526 data-nosnippet>526</a>    #[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
 <a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">pub const fn </span>new_in(alloc: A) -&gt; <span class="self">Self </span>{
 <a href=#528 id=528 data-nosnippet>528</a>        LinkedList { head: <span class="prelude-val">None</span>, tail: <span class="prelude-val">None</span>, len: <span class="number">0</span>, alloc, marker: PhantomData }
 <a href=#529 id=529 data-nosnippet>529</a>    }
@@ -1365,7 +1365,7 @@
 <a href=#1365 id=1365 data-nosnippet>1365</a></span><span class="kw">pub struct </span>Cursor&lt;
 <a href=#1366 id=1366 data-nosnippet>1366</a>    <span class="lifetime">'a</span>,
 <a href=#1367 id=1367 data-nosnippet>1367</a>    T: <span class="lifetime">'a</span>,
-<a href=#1368 id=1368 data-nosnippet>1368</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)] </span>A: Allocator = Global,
+<a href=#1368 id=1368 data-nosnippet>1368</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)] </span>A: Allocator = Global,
 <a href=#1369 id=1369 data-nosnippet>1369</a>&gt; {
 <a href=#1370 id=1370 data-nosnippet>1370</a>    index: usize,
 <a href=#1371 id=1371 data-nosnippet>1371</a>    current: <span class="prelude-ty">Option</span>&lt;NonNull&lt;Node&lt;T&gt;&gt;&gt;,
@@ -1401,7 +1401,7 @@
 <a href=#1401 id=1401 data-nosnippet>1401</a></span><span class="kw">pub struct </span>CursorMut&lt;
 <a href=#1402 id=1402 data-nosnippet>1402</a>    <span class="lifetime">'a</span>,
 <a href=#1403 id=1403 data-nosnippet>1403</a>    T: <span class="lifetime">'a</span>,
-<a href=#1404 id=1404 data-nosnippet>1404</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)] </span>A: Allocator = Global,
+<a href=#1404 id=1404 data-nosnippet>1404</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)] </span>A: Allocator = Global,
 <a href=#1405 id=1405 data-nosnippet>1405</a>&gt; {
 <a href=#1406 id=1406 data-nosnippet>1406</a>    index: usize,
 <a href=#1407 id=1407 data-nosnippet>1407</a>    current: <span class="prelude-ty">Option</span>&lt;NonNull&lt;Node&lt;T&gt;&gt;&gt;,
@@ -2000,7 +2000,7 @@
 <a href=#2000 id=2000 data-nosnippet>2000</a>    <span class="lifetime">'a</span>,
 <a href=#2001 id=2001 data-nosnippet>2001</a>    T: <span class="lifetime">'a</span>,
 <a href=#2002 id=2002 data-nosnippet>2002</a>    F: <span class="lifetime">'a</span>,
-<a href=#2003 id=2003 data-nosnippet>2003</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_api"</span>, issue = <span class="string">"32838"</span>)] </span>A: Allocator = Global,
+<a href=#2003 id=2003 data-nosnippet>2003</a>    <span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)] </span>A: Allocator = Global,
 <a href=#2004 id=2004 data-nosnippet>2004</a>&gt; {
 <a href=#2005 id=2005 data-nosnippet>2005</a>    list: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>LinkedList&lt;T, A&gt;,
 <a href=#2006 id=2006 data-nosnippet>2006</a>    it: <span class="prelude-ty">Option</span>&lt;NonNull&lt;Node&lt;T&gt;&gt;&gt;,

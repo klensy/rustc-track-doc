@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (6bb1652a0 2026-09-22)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.100.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::once::OnceExclusiveState;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.100.0" data-rustdoc-version="1.100.0-nightly (6eeff9a52 2026-09-23)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.100.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::once::OnceExclusiveState;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::marker::PhantomData;
@@ -585,148 +585,186 @@
 <a href=#585 id=585 data-nosnippet>585</a>        res
 <a href=#586 id=586 data-nosnippet>586</a>    }
 <a href=#587 id=587 data-nosnippet>587</a>
-<a href=#588 id=588 data-nosnippet>588</a>    <span class="doccomment">/// # Safety
-<a href=#589 id=589 data-nosnippet>589</a>    ///
-<a href=#590 id=590 data-nosnippet>590</a>    /// The cell must be initialized
-<a href=#591 id=591 data-nosnippet>591</a>    </span><span class="attr">#[inline]
-<a href=#592 id=592 data-nosnippet>592</a>    </span><span class="kw">unsafe fn </span>get_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#593 id=593 data-nosnippet>593</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized());
-<a href=#594 id=594 data-nosnippet>594</a>        <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;*</span><span class="self">self</span>.value.get()).assume_init_ref() }
-<a href=#595 id=595 data-nosnippet>595</a>    }
-<a href=#596 id=596 data-nosnippet>596</a>
-<a href=#597 id=597 data-nosnippet>597</a>    <span class="doccomment">/// # Safety
-<a href=#598 id=598 data-nosnippet>598</a>    ///
-<a href=#599 id=599 data-nosnippet>599</a>    /// The cell must be initialized
-<a href=#600 id=600 data-nosnippet>600</a>    </span><span class="attr">#[inline]
-<a href=#601 id=601 data-nosnippet>601</a>    </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#602 id=602 data-nosnippet>602</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized_mut());
-<a href=#603 id=603 data-nosnippet>603</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_mut() }
-<a href=#604 id=604 data-nosnippet>604</a>    }
-<a href=#605 id=605 data-nosnippet>605</a>}
-<a href=#606 id=606 data-nosnippet>606</a>
-<a href=#607 id=607 data-nosnippet>607</a><span class="comment">// Why do we need `T: Send`?
-<a href=#608 id=608 data-nosnippet>608</a>// Thread A creates a `OnceLock` and shares it with
-<a href=#609 id=609 data-nosnippet>609</a>// scoped thread B, which fills the cell, which is
-<a href=#610 id=610 data-nosnippet>610</a>// then destroyed by A. That is, destructor observes
-<a href=#611 id=611 data-nosnippet>611</a>// a sent value.
-<a href=#612 id=612 data-nosnippet>612</a></span><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#613 id=613 data-nosnippet>613</a></span><span class="kw">unsafe impl</span>&lt;T: Sync + Send&gt; Sync <span class="kw">for </span>OnceLock&lt;T&gt; {}
-<a href=#614 id=614 data-nosnippet>614</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#615 id=615 data-nosnippet>615</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>OnceLock&lt;T&gt; {}
-<a href=#616 id=616 data-nosnippet>616</a>
-<a href=#617 id=617 data-nosnippet>617</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#618 id=618 data-nosnippet>618</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + UnwindSafe&gt; RefUnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
-<a href=#619 id=619 data-nosnippet>619</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#620 id=620 data-nosnippet>620</a></span><span class="kw">impl</span>&lt;T: UnwindSafe&gt; UnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
-<a href=#621 id=621 data-nosnippet>621</a>
-<a href=#622 id=622 data-nosnippet>622</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#623 id=623 data-nosnippet>623</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
-<a href=#624 id=624 data-nosnippet>624</a></span><span class="kw">const impl</span>&lt;T&gt; Default <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#625 id=625 data-nosnippet>625</a>    <span class="doccomment">/// Creates a new uninitialized cell.
+<a href=#588 id=588 data-nosnippet>588</a>    <span class="doccomment">/// Returns a reference to the value in the `OnceLock` without checking
+<a href=#589 id=589 data-nosnippet>589</a>    /// whether it has been initialized.
+<a href=#590 id=590 data-nosnippet>590</a>    ///
+<a href=#591 id=591 data-nosnippet>591</a>    /// # Safety
+<a href=#592 id=592 data-nosnippet>592</a>    ///
+<a href=#593 id=593 data-nosnippet>593</a>    /// The `OnceLock` must be initialized before calling this function.
+<a href=#594 id=594 data-nosnippet>594</a>    ///
+<a href=#595 id=595 data-nosnippet>595</a>    /// # Examples
+<a href=#596 id=596 data-nosnippet>596</a>    ///
+<a href=#597 id=597 data-nosnippet>597</a>    /// ```
+<a href=#598 id=598 data-nosnippet>598</a>    /// #![feature(once_lazy_lock_get_unchecked)]
+<a href=#599 id=599 data-nosnippet>599</a>    ///
+<a href=#600 id=600 data-nosnippet>600</a>    /// use std::sync::OnceLock;
+<a href=#601 id=601 data-nosnippet>601</a>    ///
+<a href=#602 id=602 data-nosnippet>602</a>    /// let cell = OnceLock::new();
+<a href=#603 id=603 data-nosnippet>603</a>    /// cell.set(42).unwrap();
+<a href=#604 id=604 data-nosnippet>604</a>    ///
+<a href=#605 id=605 data-nosnippet>605</a>    /// let value = unsafe { cell.get_unchecked() };
+<a href=#606 id=606 data-nosnippet>606</a>    /// assert_eq!(*value, 42);
+<a href=#607 id=607 data-nosnippet>607</a>    /// ```
+<a href=#608 id=608 data-nosnippet>608</a>    </span><span class="attr">#[inline]
+<a href=#609 id=609 data-nosnippet>609</a>    #[unstable(feature = <span class="string">"once_lazy_lock_get_unchecked"</span>, issue = <span class="string">"162716"</span>)]
+<a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#611 id=611 data-nosnippet>611</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized());
+<a href=#612 id=612 data-nosnippet>612</a>        <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;*</span><span class="self">self</span>.value.get()).assume_init_ref() }
+<a href=#613 id=613 data-nosnippet>613</a>    }
+<a href=#614 id=614 data-nosnippet>614</a>
+<a href=#615 id=615 data-nosnippet>615</a>    <span class="doccomment">/// Returns a mutable reference to the value in the `OnceLock` without
+<a href=#616 id=616 data-nosnippet>616</a>    /// checking whether it has been initialized.
+<a href=#617 id=617 data-nosnippet>617</a>    ///
+<a href=#618 id=618 data-nosnippet>618</a>    /// # Safety
+<a href=#619 id=619 data-nosnippet>619</a>    ///
+<a href=#620 id=620 data-nosnippet>620</a>    /// The `OnceLock` must be initialized before calling this function.
+<a href=#621 id=621 data-nosnippet>621</a>    ///
+<a href=#622 id=622 data-nosnippet>622</a>    /// # Examples
+<a href=#623 id=623 data-nosnippet>623</a>    ///
+<a href=#624 id=624 data-nosnippet>624</a>    /// ```
+<a href=#625 id=625 data-nosnippet>625</a>    /// #![feature(once_lazy_lock_get_unchecked)]
 <a href=#626 id=626 data-nosnippet>626</a>    ///
-<a href=#627 id=627 data-nosnippet>627</a>    /// # Example
+<a href=#627 id=627 data-nosnippet>627</a>    /// use std::sync::OnceLock;
 <a href=#628 id=628 data-nosnippet>628</a>    ///
-<a href=#629 id=629 data-nosnippet>629</a>    /// ```
-<a href=#630 id=630 data-nosnippet>630</a>    /// use std::sync::OnceLock;
+<a href=#629 id=629 data-nosnippet>629</a>    /// let mut cell = OnceLock::new();
+<a href=#630 id=630 data-nosnippet>630</a>    /// cell.set(42).unwrap();
 <a href=#631 id=631 data-nosnippet>631</a>    ///
-<a href=#632 id=632 data-nosnippet>632</a>    /// fn main() {
-<a href=#633 id=633 data-nosnippet>633</a>    ///     assert_eq!(OnceLock::&lt;()&gt;::new(), OnceLock::default());
-<a href=#634 id=634 data-nosnippet>634</a>    /// }
-<a href=#635 id=635 data-nosnippet>635</a>    /// ```
-<a href=#636 id=636 data-nosnippet>636</a>    </span><span class="attr">#[inline]
-<a href=#637 id=637 data-nosnippet>637</a>    </span><span class="kw">fn </span>default() -&gt; OnceLock&lt;T&gt; {
-<a href=#638 id=638 data-nosnippet>638</a>        OnceLock::new()
-<a href=#639 id=639 data-nosnippet>639</a>    }
-<a href=#640 id=640 data-nosnippet>640</a>}
-<a href=#641 id=641 data-nosnippet>641</a>
-<a href=#642 id=642 data-nosnippet>642</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#643 id=643 data-nosnippet>643</a></span><span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#644 id=644 data-nosnippet>644</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#645 id=645 data-nosnippet>645</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = f.debug_tuple(<span class="string">"OnceLock"</span>);
-<a href=#646 id=646 data-nosnippet>646</a>        <span class="kw">match </span><span class="self">self</span>.get() {
-<a href=#647 id=647 data-nosnippet>647</a>            <span class="prelude-val">Some</span>(v) =&gt; d.field(v),
-<a href=#648 id=648 data-nosnippet>648</a>            <span class="prelude-val">None </span>=&gt; d.field(<span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"&lt;uninit&gt;"</span>)),
-<a href=#649 id=649 data-nosnippet>649</a>        };
-<a href=#650 id=650 data-nosnippet>650</a>        d.finish()
-<a href=#651 id=651 data-nosnippet>651</a>    }
-<a href=#652 id=652 data-nosnippet>652</a>}
-<a href=#653 id=653 data-nosnippet>653</a>
-<a href=#654 id=654 data-nosnippet>654</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#655 id=655 data-nosnippet>655</a></span><span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#656 id=656 data-nosnippet>656</a>    <span class="attr">#[inline]
-<a href=#657 id=657 data-nosnippet>657</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OnceLock&lt;T&gt; {
-<a href=#658 id=658 data-nosnippet>658</a>        <span class="self">self</span>.get().cloned().map_or_default(<span class="self">Self</span>::from)
-<a href=#659 id=659 data-nosnippet>659</a>    }
-<a href=#660 id=660 data-nosnippet>660</a>}
-<a href=#661 id=661 data-nosnippet>661</a>
-<a href=#662 id=662 data-nosnippet>662</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#663 id=663 data-nosnippet>663</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;T&gt; <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#664 id=664 data-nosnippet>664</a>    <span class="doccomment">/// Creates a new cell with its contents set to `value`.
-<a href=#665 id=665 data-nosnippet>665</a>    ///
-<a href=#666 id=666 data-nosnippet>666</a>    /// # Example
-<a href=#667 id=667 data-nosnippet>667</a>    ///
-<a href=#668 id=668 data-nosnippet>668</a>    /// ```
-<a href=#669 id=669 data-nosnippet>669</a>    /// use std::sync::OnceLock;
-<a href=#670 id=670 data-nosnippet>670</a>    ///
-<a href=#671 id=671 data-nosnippet>671</a>    /// # fn main() -&gt; Result&lt;(), i32&gt; {
-<a href=#672 id=672 data-nosnippet>672</a>    /// let a = OnceLock::from(3);
-<a href=#673 id=673 data-nosnippet>673</a>    /// let b = OnceLock::new();
-<a href=#674 id=674 data-nosnippet>674</a>    /// b.set(3)?;
-<a href=#675 id=675 data-nosnippet>675</a>    /// assert_eq!(a, b);
-<a href=#676 id=676 data-nosnippet>676</a>    /// Ok(())
-<a href=#677 id=677 data-nosnippet>677</a>    /// # }
-<a href=#678 id=678 data-nosnippet>678</a>    /// ```
-<a href=#679 id=679 data-nosnippet>679</a>    </span><span class="attr">#[inline]
-<a href=#680 id=680 data-nosnippet>680</a>    </span><span class="kw">fn </span>from(value: T) -&gt; <span class="self">Self </span>{
-<a href=#681 id=681 data-nosnippet>681</a>        OnceLock {
-<a href=#682 id=682 data-nosnippet>682</a>            once: Once::new_complete(),
-<a href=#683 id=683 data-nosnippet>683</a>            value: UnsafeCell::new(MaybeUninit::new(value)),
-<a href=#684 id=684 data-nosnippet>684</a>            _marker: PhantomData,
-<a href=#685 id=685 data-nosnippet>685</a>        }
-<a href=#686 id=686 data-nosnippet>686</a>    }
-<a href=#687 id=687 data-nosnippet>687</a>}
-<a href=#688 id=688 data-nosnippet>688</a>
-<a href=#689 id=689 data-nosnippet>689</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#690 id=690 data-nosnippet>690</a></span><span class="kw">impl</span>&lt;T: PartialEq&gt; PartialEq <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#691 id=691 data-nosnippet>691</a>    <span class="doccomment">/// Equality for two `OnceLock`s.
-<a href=#692 id=692 data-nosnippet>692</a>    ///
-<a href=#693 id=693 data-nosnippet>693</a>    /// Two `OnceLock`s are equal if they either both contain values and their
-<a href=#694 id=694 data-nosnippet>694</a>    /// values are equal, or if neither contains a value.
-<a href=#695 id=695 data-nosnippet>695</a>    ///
-<a href=#696 id=696 data-nosnippet>696</a>    /// # Examples
-<a href=#697 id=697 data-nosnippet>697</a>    ///
-<a href=#698 id=698 data-nosnippet>698</a>    /// ```
-<a href=#699 id=699 data-nosnippet>699</a>    /// use std::sync::OnceLock;
-<a href=#700 id=700 data-nosnippet>700</a>    ///
-<a href=#701 id=701 data-nosnippet>701</a>    /// let five = OnceLock::new();
-<a href=#702 id=702 data-nosnippet>702</a>    /// five.set(5).unwrap();
+<a href=#632 id=632 data-nosnippet>632</a>    /// let value = unsafe { cell.get_unchecked_mut() };
+<a href=#633 id=633 data-nosnippet>633</a>    /// *value = 100;
+<a href=#634 id=634 data-nosnippet>634</a>    ///
+<a href=#635 id=635 data-nosnippet>635</a>    /// assert_eq!(*cell.get().unwrap(), 100);
+<a href=#636 id=636 data-nosnippet>636</a>    /// ```
+<a href=#637 id=637 data-nosnippet>637</a>    </span><span class="attr">#[inline]
+<a href=#638 id=638 data-nosnippet>638</a>    #[unstable(feature = <span class="string">"once_lazy_lock_get_unchecked"</span>, issue = <span class="string">"162716"</span>)]
+<a href=#639 id=639 data-nosnippet>639</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#640 id=640 data-nosnippet>640</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized_mut());
+<a href=#641 id=641 data-nosnippet>641</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_mut() }
+<a href=#642 id=642 data-nosnippet>642</a>    }
+<a href=#643 id=643 data-nosnippet>643</a>}
+<a href=#644 id=644 data-nosnippet>644</a>
+<a href=#645 id=645 data-nosnippet>645</a><span class="comment">// Why do we need `T: Send`?
+<a href=#646 id=646 data-nosnippet>646</a>// Thread A creates a `OnceLock` and shares it with
+<a href=#647 id=647 data-nosnippet>647</a>// scoped thread B, which fills the cell, which is
+<a href=#648 id=648 data-nosnippet>648</a>// then destroyed by A. That is, destructor observes
+<a href=#649 id=649 data-nosnippet>649</a>// a sent value.
+<a href=#650 id=650 data-nosnippet>650</a></span><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#651 id=651 data-nosnippet>651</a></span><span class="kw">unsafe impl</span>&lt;T: Sync + Send&gt; Sync <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#652 id=652 data-nosnippet>652</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#653 id=653 data-nosnippet>653</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#654 id=654 data-nosnippet>654</a>
+<a href=#655 id=655 data-nosnippet>655</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#656 id=656 data-nosnippet>656</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + UnwindSafe&gt; RefUnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#657 id=657 data-nosnippet>657</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#658 id=658 data-nosnippet>658</a></span><span class="kw">impl</span>&lt;T: UnwindSafe&gt; UnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#659 id=659 data-nosnippet>659</a>
+<a href=#660 id=660 data-nosnippet>660</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#661 id=661 data-nosnippet>661</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
+<a href=#662 id=662 data-nosnippet>662</a></span><span class="kw">const impl</span>&lt;T&gt; Default <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#663 id=663 data-nosnippet>663</a>    <span class="doccomment">/// Creates a new uninitialized cell.
+<a href=#664 id=664 data-nosnippet>664</a>    ///
+<a href=#665 id=665 data-nosnippet>665</a>    /// # Example
+<a href=#666 id=666 data-nosnippet>666</a>    ///
+<a href=#667 id=667 data-nosnippet>667</a>    /// ```
+<a href=#668 id=668 data-nosnippet>668</a>    /// use std::sync::OnceLock;
+<a href=#669 id=669 data-nosnippet>669</a>    ///
+<a href=#670 id=670 data-nosnippet>670</a>    /// fn main() {
+<a href=#671 id=671 data-nosnippet>671</a>    ///     assert_eq!(OnceLock::&lt;()&gt;::new(), OnceLock::default());
+<a href=#672 id=672 data-nosnippet>672</a>    /// }
+<a href=#673 id=673 data-nosnippet>673</a>    /// ```
+<a href=#674 id=674 data-nosnippet>674</a>    </span><span class="attr">#[inline]
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>default() -&gt; OnceLock&lt;T&gt; {
+<a href=#676 id=676 data-nosnippet>676</a>        OnceLock::new()
+<a href=#677 id=677 data-nosnippet>677</a>    }
+<a href=#678 id=678 data-nosnippet>678</a>}
+<a href=#679 id=679 data-nosnippet>679</a>
+<a href=#680 id=680 data-nosnippet>680</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#681 id=681 data-nosnippet>681</a></span><span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#682 id=682 data-nosnippet>682</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#683 id=683 data-nosnippet>683</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = f.debug_tuple(<span class="string">"OnceLock"</span>);
+<a href=#684 id=684 data-nosnippet>684</a>        <span class="kw">match </span><span class="self">self</span>.get() {
+<a href=#685 id=685 data-nosnippet>685</a>            <span class="prelude-val">Some</span>(v) =&gt; d.field(v),
+<a href=#686 id=686 data-nosnippet>686</a>            <span class="prelude-val">None </span>=&gt; d.field(<span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"&lt;uninit&gt;"</span>)),
+<a href=#687 id=687 data-nosnippet>687</a>        };
+<a href=#688 id=688 data-nosnippet>688</a>        d.finish()
+<a href=#689 id=689 data-nosnippet>689</a>    }
+<a href=#690 id=690 data-nosnippet>690</a>}
+<a href=#691 id=691 data-nosnippet>691</a>
+<a href=#692 id=692 data-nosnippet>692</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#693 id=693 data-nosnippet>693</a></span><span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#694 id=694 data-nosnippet>694</a>    <span class="attr">#[inline]
+<a href=#695 id=695 data-nosnippet>695</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OnceLock&lt;T&gt; {
+<a href=#696 id=696 data-nosnippet>696</a>        <span class="self">self</span>.get().cloned().map_or_default(<span class="self">Self</span>::from)
+<a href=#697 id=697 data-nosnippet>697</a>    }
+<a href=#698 id=698 data-nosnippet>698</a>}
+<a href=#699 id=699 data-nosnippet>699</a>
+<a href=#700 id=700 data-nosnippet>700</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#701 id=701 data-nosnippet>701</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;T&gt; <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#702 id=702 data-nosnippet>702</a>    <span class="doccomment">/// Creates a new cell with its contents set to `value`.
 <a href=#703 id=703 data-nosnippet>703</a>    ///
-<a href=#704 id=704 data-nosnippet>704</a>    /// let also_five = OnceLock::new();
-<a href=#705 id=705 data-nosnippet>705</a>    /// also_five.set(5).unwrap();
-<a href=#706 id=706 data-nosnippet>706</a>    ///
-<a href=#707 id=707 data-nosnippet>707</a>    /// assert!(five == also_five);
+<a href=#704 id=704 data-nosnippet>704</a>    /// # Example
+<a href=#705 id=705 data-nosnippet>705</a>    ///
+<a href=#706 id=706 data-nosnippet>706</a>    /// ```
+<a href=#707 id=707 data-nosnippet>707</a>    /// use std::sync::OnceLock;
 <a href=#708 id=708 data-nosnippet>708</a>    ///
-<a href=#709 id=709 data-nosnippet>709</a>    /// assert!(OnceLock::&lt;u32&gt;::new() == OnceLock::&lt;u32&gt;::new());
-<a href=#710 id=710 data-nosnippet>710</a>    /// ```
-<a href=#711 id=711 data-nosnippet>711</a>    </span><span class="attr">#[inline]
-<a href=#712 id=712 data-nosnippet>712</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>OnceLock&lt;T&gt;) -&gt; bool {
-<a href=#713 id=713 data-nosnippet>713</a>        <span class="self">self</span>.get() == other.get()
-<a href=#714 id=714 data-nosnippet>714</a>    }
-<a href=#715 id=715 data-nosnippet>715</a>}
-<a href=#716 id=716 data-nosnippet>716</a>
-<a href=#717 id=717 data-nosnippet>717</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#718 id=718 data-nosnippet>718</a></span><span class="kw">impl</span>&lt;T: Eq&gt; Eq <span class="kw">for </span>OnceLock&lt;T&gt; {}
-<a href=#719 id=719 data-nosnippet>719</a>
-<a href=#720 id=720 data-nosnippet>720</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#721 id=721 data-nosnippet>721</a></span><span class="kw">unsafe impl</span>&lt;<span class="attr">#[may_dangle] </span>T&gt; Drop <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#722 id=722 data-nosnippet>722</a>    <span class="attr">#[inline]
-<a href=#723 id=723 data-nosnippet>723</a>    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#724 id=724 data-nosnippet>724</a>        <span class="kw">if </span><span class="self">self</span>.initialized_mut() {
-<a href=#725 id=725 data-nosnippet>725</a>            <span class="comment">// SAFETY: The cell is initialized and being dropped, so it can't
-<a href=#726 id=726 data-nosnippet>726</a>            // be accessed again. We also don't touch the `T` other than
-<a href=#727 id=727 data-nosnippet>727</a>            // dropping it, which validates our usage of #[may_dangle].
-<a href=#728 id=728 data-nosnippet>728</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_drop() };
-<a href=#729 id=729 data-nosnippet>729</a>        }
-<a href=#730 id=730 data-nosnippet>730</a>    }
-<a href=#731 id=731 data-nosnippet>731</a>}
+<a href=#709 id=709 data-nosnippet>709</a>    /// # fn main() -&gt; Result&lt;(), i32&gt; {
+<a href=#710 id=710 data-nosnippet>710</a>    /// let a = OnceLock::from(3);
+<a href=#711 id=711 data-nosnippet>711</a>    /// let b = OnceLock::new();
+<a href=#712 id=712 data-nosnippet>712</a>    /// b.set(3)?;
+<a href=#713 id=713 data-nosnippet>713</a>    /// assert_eq!(a, b);
+<a href=#714 id=714 data-nosnippet>714</a>    /// Ok(())
+<a href=#715 id=715 data-nosnippet>715</a>    /// # }
+<a href=#716 id=716 data-nosnippet>716</a>    /// ```
+<a href=#717 id=717 data-nosnippet>717</a>    </span><span class="attr">#[inline]
+<a href=#718 id=718 data-nosnippet>718</a>    </span><span class="kw">fn </span>from(value: T) -&gt; <span class="self">Self </span>{
+<a href=#719 id=719 data-nosnippet>719</a>        OnceLock {
+<a href=#720 id=720 data-nosnippet>720</a>            once: Once::new_complete(),
+<a href=#721 id=721 data-nosnippet>721</a>            value: UnsafeCell::new(MaybeUninit::new(value)),
+<a href=#722 id=722 data-nosnippet>722</a>            _marker: PhantomData,
+<a href=#723 id=723 data-nosnippet>723</a>        }
+<a href=#724 id=724 data-nosnippet>724</a>    }
+<a href=#725 id=725 data-nosnippet>725</a>}
+<a href=#726 id=726 data-nosnippet>726</a>
+<a href=#727 id=727 data-nosnippet>727</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#728 id=728 data-nosnippet>728</a></span><span class="kw">impl</span>&lt;T: PartialEq&gt; PartialEq <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#729 id=729 data-nosnippet>729</a>    <span class="doccomment">/// Equality for two `OnceLock`s.
+<a href=#730 id=730 data-nosnippet>730</a>    ///
+<a href=#731 id=731 data-nosnippet>731</a>    /// Two `OnceLock`s are equal if they either both contain values and their
+<a href=#732 id=732 data-nosnippet>732</a>    /// values are equal, or if neither contains a value.
+<a href=#733 id=733 data-nosnippet>733</a>    ///
+<a href=#734 id=734 data-nosnippet>734</a>    /// # Examples
+<a href=#735 id=735 data-nosnippet>735</a>    ///
+<a href=#736 id=736 data-nosnippet>736</a>    /// ```
+<a href=#737 id=737 data-nosnippet>737</a>    /// use std::sync::OnceLock;
+<a href=#738 id=738 data-nosnippet>738</a>    ///
+<a href=#739 id=739 data-nosnippet>739</a>    /// let five = OnceLock::new();
+<a href=#740 id=740 data-nosnippet>740</a>    /// five.set(5).unwrap();
+<a href=#741 id=741 data-nosnippet>741</a>    ///
+<a href=#742 id=742 data-nosnippet>742</a>    /// let also_five = OnceLock::new();
+<a href=#743 id=743 data-nosnippet>743</a>    /// also_five.set(5).unwrap();
+<a href=#744 id=744 data-nosnippet>744</a>    ///
+<a href=#745 id=745 data-nosnippet>745</a>    /// assert!(five == also_five);
+<a href=#746 id=746 data-nosnippet>746</a>    ///
+<a href=#747 id=747 data-nosnippet>747</a>    /// assert!(OnceLock::&lt;u32&gt;::new() == OnceLock::&lt;u32&gt;::new());
+<a href=#748 id=748 data-nosnippet>748</a>    /// ```
+<a href=#749 id=749 data-nosnippet>749</a>    </span><span class="attr">#[inline]
+<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>OnceLock&lt;T&gt;) -&gt; bool {
+<a href=#751 id=751 data-nosnippet>751</a>        <span class="self">self</span>.get() == other.get()
+<a href=#752 id=752 data-nosnippet>752</a>    }
+<a href=#753 id=753 data-nosnippet>753</a>}
+<a href=#754 id=754 data-nosnippet>754</a>
+<a href=#755 id=755 data-nosnippet>755</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#756 id=756 data-nosnippet>756</a></span><span class="kw">impl</span>&lt;T: Eq&gt; Eq <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#757 id=757 data-nosnippet>757</a>
+<a href=#758 id=758 data-nosnippet>758</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
+<a href=#759 id=759 data-nosnippet>759</a></span><span class="kw">unsafe impl</span>&lt;<span class="attr">#[may_dangle] </span>T&gt; Drop <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#760 id=760 data-nosnippet>760</a>    <span class="attr">#[inline]
+<a href=#761 id=761 data-nosnippet>761</a>    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#762 id=762 data-nosnippet>762</a>        <span class="kw">if </span><span class="self">self</span>.initialized_mut() {
+<a href=#763 id=763 data-nosnippet>763</a>            <span class="comment">// SAFETY: The cell is initialized and being dropped, so it can't
+<a href=#764 id=764 data-nosnippet>764</a>            // be accessed again. We also don't touch the `T` other than
+<a href=#765 id=765 data-nosnippet>765</a>            // dropping it, which validates our usage of #[may_dangle].
+<a href=#766 id=766 data-nosnippet>766</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_drop() };
+<a href=#767 id=767 data-nosnippet>767</a>        }
+<a href=#768 id=768 data-nosnippet>768</a>    }
+<a href=#769 id=769 data-nosnippet>769</a>}
 </code></pre></div></section></main></body></html>
