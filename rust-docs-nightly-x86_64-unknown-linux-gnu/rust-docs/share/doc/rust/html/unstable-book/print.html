@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f0e217c0.js";
+            window.path_to_searchindex_js = "searchindex-a3c6217e.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-40c44ac5.js"></script>
+        <script src="toc-42dcaea4.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -5974,29 +5974,21 @@ fn main() {
 <p>Allows using the <code>#[fundamental]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29635">#29635</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="gen_blocks"><a class="header" href="#gen_blocks"><code>gen_blocks</code></a></h1>
-<p>Allows defining gen blocks and <code>gen fn</code>.</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/117078">#117078</a></p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generic_assert"><a class="header" href="#generic_assert"><code>generic_assert</code></a></h1>
-<p>Outputs useful <code>assert!</code> messages</p>
-<p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="generic_const_args"><a class="header" href="#generic_const_args">generic_const_args</a></h1>
+<h1 id="gca_const_items"><a class="header" href="#gca_const_items">gca_const_items</a></h1>
 <p>Allows using generics in more complex const expressions, based on definitional equality.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/151972">#151972</a></p>
 <hr>
 <p>Warning: This feature is incomplete; its design and syntax may change.</p>
 <p>This feature enables many of the same use cases supported by <a href="#generic_const_exprs">generic_const_exprs</a>,
-but based on the machinery developed for <a href="#min_generic_const_args">min_generic_const_args</a>. In a way, it is
+but based on the machinery developed for <a href="#gca_min_const_items">gca_min_const_items</a>. In a way, it is
 meant to be an interim successor for GCE (though it might not currently support all
 the valid cases that supported by GCE).</p>
 <p>See also: <a href="#generic_const_items">generic_const_items</a></p>
 <h2 id="examples-11"><a class="header" href="#examples-11">Examples</a></h2>
-<!-- NOTE(ignore) generic_const_args requires -Znext-solver to compile -->
+<!-- NOTE(ignore) gca_const_items requires -Znext-solver to compile -->
 <pre><code class="language-rust ignore (requires-Z-next-solver)">#![feature(generic_const_items)]
-#![feature(min_generic_const_args)]
-#![feature(generic_const_args)]
+#![feature(gca_min_const_items)]
+#![feature(gca_const_items)]
 #![expect(incomplete_features)]
 
 type const ADD1&lt;const N: usize&gt;: usize = const { N + 1 };
@@ -6005,14 +5997,245 @@ type const INC&lt;const N: usize&gt;: usize = ADD1::&lt;N&gt;;
 
 const ARR: [(); ADD1::&lt;0&gt;] = [(); INC::&lt;0&gt;];</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gca_macroless_args"><a class="header" href="#gca_macroless_args">gca_macroless_args</a></h1>
+<p>Enables using <code>#![feature(gca_min_const_items)]</code> without the <code>gca!</code> macro.</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/159006">#159006</a></p>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>Related features:</p>
+<ul>
+<li><a href="#gca_min_const_items">gca_min_const_items</a>. See that doc for what the <code>gca!</code> is. This feature enables
+support for directly represented const arguments without the macro.</li>
+<li><a href="#gca_macroless_args-1">gca_macroless_items</a>. For a version of this feature that works for const arguments
+as the right hand side of a const item.</li>
+</ul>
+<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
+<p>Here is an example from <a href="#gca_min_const_items">gca_min_const_items</a>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(gca_min_const_items)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    #[rustc_always_gca]
+    const VAL: usize;
+    #[rustc_always_gca]
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    const VAL: usize = core::gca!(2);
+    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; core::gca!(B::VAL)],
+    arr2: [usize; core::gca!(B::VAL2)],
+}
+<span class="boring">}</span></code></pre>
+<p>Using <code>#![feature(gca_macroless_args)]</code> enables you to write the above without the macro:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(gca_min_const_items, gca_macroless_args)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    #[rustc_always_gca]
+    const VAL: usize;
+    #[rustc_always_gca]
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    // note these still need a macro, macroless for these is `gca_macroless_items`
+    const VAL: usize = core::gca!(2);
+    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gca_macroless_args-1"><a class="header" href="#gca_macroless_args-1">gca_macroless_args</a></h1>
+<p>Enables implementing const items under <code>#![feature(gca_min_const_items)]</code> and <code>#![feature(gca_const_items)]</code> without the <code>gca!</code> macro.</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/162540">#162540</a></p>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>Related features:</p>
+<ul>
+<li><a href="#gca_min_const_items">gca_min_const_items</a>. See that doc for what the <code>gca!</code> is. This feature enables
+support for directly represented const arguments as the rhs of const items without the macro.</li>
+<li><a href="#gca_macroless_args">gca_macroless_args</a>. For a version of this feature that works for const arguments in other
+positions</li>
+</ul>
+<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<p>Here is an example from <a href="#gca_min_const_items">gca_min_const_items</a>:</p>
+<pre><code class="language-rust ignore (needs new solver)">#![allow(incomplete_features)]
+#![feature(
+    gca_min_const_items,
+    gca_const_items,
+    gca_macroless_args,
+    generic_const_items,
+)]
+
+trait Trait {
+    const ASSOC&lt;const N: usize&gt;: usize;
+}
+
+impl Trait for () {
+    const ASSOC&lt;const N: usize&gt;: usize = core::gca!(N);
+}
+
+fn foo&lt;const N: usize&gt;() {
+    let a: [(); &lt;() as Trait&gt;::ASSOC::&lt;N&gt;]
+        = [(); N];
+}</code></pre>
+<p>Using <code>#![feature(gca_macroless_items)]</code> enables you to write the above without the macro:</p>
+<pre><code class="language-rust ignore (needs new solver)">#![allow(incomplete_features)]
+#![feature(
+    gca_min_const_items,
+    gca_const_items,
+    gca_macroless_args,
+    gca_macroless_items,
+    generic_const_items,
+)]
+
+trait Trait {
+    const ASSOC&lt;const N: usize&gt;: usize;
+}
+
+impl Trait for () {
+    const ASSOC&lt;const N: usize&gt;: usize = N;
+}
+
+fn foo&lt;const N: usize&gt;() {
+    let a: [(); &lt;() as Trait&gt;::ASSOC::&lt;N&gt;]
+        = [(); N];
+}</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gca_min_const_items"><a class="header" href="#gca_min_const_items">gca_min_const_items</a></h1>
+<p>Enables the generic const args MVP (paths to direct const items and constructors for ADTs and primitives).</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
+<hr>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>This feature acts as a minimal alternative to <a href="#generic_const_exprs">generic_const_exprs</a> that allows a smaller subset of functionality,
+and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
+cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
+for more details.</p>
+<p>Related features: <a href="#gca_macroless_args">gca_macroless_args</a>, <a href="#gca_const_items">gca_const_items</a>, <a href="#generic_const_items">generic_const_items</a>.</p>
+<h2 id="gca-macro"><a class="header" href="#gca-macro"><code>gca!</code> macro</a></h2>
+<p>This feature introduces a new macro: <code>gca!</code>.</p>
+<p>When an expression is used as a generic argument, it is typically lowered as an “anon const”, which is an expression
+that is opaque to the type system and cannot contain generics. Using <code>gca!</code> instead represents the
+expression “directly”, i.e. without an anon const, in a way that is visible to the type system.</p>
+<p>(Note that plain paths to generic parameters are always represented directly, without <code>gca!</code>, as this
+already works on stable)</p>
+<p>See <a href="#gca_macroless_args">gca_macroless_args</a> as a feature to disable the requirement of writing <code>gca!</code>.</p>
+<h2 id="direct-const-items"><a class="header" href="#direct-const-items">direct const items</a></h2>
+<p>This feature introduces a new item kind: consts with a <code>gca!</code> right-hand side.
+Constants with a direct right-hand side are allowed to be used in type contexts, e.g.:</p>
+<pre><code class="language-compile_fail">#![allow(incomplete_features)]
+#![feature(gca_min_const_items)]
+
+const X: usize = core::gca!(1);
+const Y: usize = 1;
+
+struct Foo {
+    good_arr: [(); core::gca!(X)], // Allowed
+    bad_arr: [(); core::gca!(Y)], // Will not compile
+}
+</code></pre>
+<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(gca_min_const_items)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    #[rustc_always_gca]
+    const VAL: usize;
+    #[rustc_always_gca]
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    const VAL: usize = core::gca!(2);
+    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
+}
+
+struct Foo&lt;B: Bar&gt; {
+    arr1: [usize; core::gca!(B::VAL)],
+    arr2: [usize; core::gca!(B::VAL2)],
+}
+<span class="boring">}</span></code></pre>
+<p>Note that with <a href="#generic_const_exprs">generic_const_exprs</a> the same example would look as follows:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
+<span class="boring">fn main() {
+</span>trait Bar {
+    const VAL: usize;
+    const VAL2: usize;
+}
+
+struct Baz;
+
+impl Bar for Baz {
+    const VAL: usize = 2;
+    const VAL2: usize = const { Self::VAL * 2 };
+}
+
+struct Foo&lt;B: Bar&gt;
+where
+    [(); B::VAL]:,
+    [(); B::VAL2]:,
+{
+    arr1: [usize; B::VAL],
+    arr2: [usize; B::VAL2],
+}
+<span class="boring">}</span></code></pre>
+<p>Use of const functions is allowed:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span>#![allow(incomplete_features)]
+#![feature(gca_min_const_items)]
+
+<span class="boring">fn main() {
+</span>const VAL: usize = 1;
+
+const fn inc(val: usize) -&gt; usize {
+    val + 1
+}
+
+const INC: usize = core::gca!(const { inc(VAL) });
+
+const ARR: [usize; INC] = [0; INC];
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gen_blocks"><a class="header" href="#gen_blocks"><code>gen_blocks</code></a></h1>
+<p>Allows defining gen blocks and <code>gen fn</code>.</p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/117078">#117078</a></p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
+<h1 id="generic_assert"><a class="header" href="#generic_assert"><code>generic_assert</code></a></h1>
+<p>Outputs useful <code>assert!</code> messages</p>
+<p>This feature has no tracking issue, and is therefore likely internal to the compiler, not being intended for general use.</p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="generic_const_exprs"><a class="header" href="#generic_const_exprs">generic_const_exprs</a></h1>
 <p>Allows non-trivial generic constants which have to be shown to successfully evaluate
 to a value by being part of an item signature.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/76560">#76560</a></p>
 <hr>
 <p>Warning: This feature is incomplete; its design and syntax may change.</p>
-<p>See also: <a href="#min_generic_const_args">min_generic_const_args</a>, <a href="#generic_const_args">generic_const_args</a></p>
-<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
+<p>See also: <a href="#gca_min_const_items">gca_min_const_items</a>, <a href="#gca_const_items">gca_const_items</a></p>
+<h2 id="examples-15"><a class="header" href="#examples-15">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
@@ -6073,8 +6296,8 @@ impl&lt;const N: usize&gt; Grow&lt;N&gt; {
 <hr>
 <p>Warning: This feature is an <a href="https://lang-team.rust-lang.org/how_to/experiment.html">experiment</a> and lacks an RFC.
 There are no guarantees that it will ever be stabilized.</p>
-<p>See also: <a href="#generic_const_exprs">generic_const_exprs</a>, <a href="#min_generic_const_args">min_generic_const_args</a>.</p>
-<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<p>See also: <a href="#generic_const_exprs">generic_const_exprs</a>, <a href="#gca_min_const_items">gca_min_const_items</a>.</p>
+<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
 <h3 id="generic-constant-values"><a class="header" href="#generic-constant-values">Generic constant values</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
@@ -6518,7 +6741,7 @@ pub struct ThirdThing;
 <h3 id="syntax-2"><a class="header" href="#syntax-2">Syntax</a></h3>
 <p>This feature builds upon the metavariable expression syntax <code>${ .. }</code> as specified in <a href="https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html">RFC 3086</a> (<a href="#macro_metavar_expr"><code>macro_metavar_expr</code></a>).
 <code>concat</code> is available like <code>${ concat(items) }</code>, where <code>items</code> is a comma separated sequence of idents and/or literals.</p>
-<h3 id="examples-14"><a class="header" href="#examples-14">Examples</a></h3>
+<h3 id="examples-17"><a class="header" href="#examples-17">Examples</a></h3>
 <h4 id="create-a-function-or-method-with-a-concatenated-name"><a class="header" href="#create-a-function-or-method-with-a-concatenated-name">Create a function or method with a concatenated name</a></h4>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(macro_metavar_expr_concat)]
@@ -6592,128 +6815,6 @@ test test_u64_subtraction ... ok
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="macroless_generic_const_args"><a class="header" href="#macroless_generic_const_args">macroless_generic_const_args</a></h1>
-<p>Enables implementing const items under <code>#![feature(min_generic_const_args)]</code> and <code>#![feature(generic_const_args)]</code> without the <code>gca!</code> macro.</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/162540">#162540</a></p>
-<hr>
-<p>Warning: This feature is incomplete; its design and syntax may change.</p>
-<p>Related features:</p>
-<ul>
-<li><a href="#min_generic_const_args">min_generic_const_args</a>. See that doc for what the <code>gca!</code> is. This feature enables
-support for directly represented const arguments as the rhs of const items without the macro.</li>
-<li><a href="#macroless_generic_const_args-1">macroless_generic_const_args</a>. For a version of this feature that works for const arguments in other
-positions</li>
-</ul>
-<h2 id="examples-15"><a class="header" href="#examples-15">Examples</a></h2>
-<p>Here is an example from <a href="#min_generic_const_args">min_generic_const_args</a>:</p>
-<pre><code class="language-rust ignore (needs new solver)">#![allow(incomplete_features)]
-#![feature(
-    min_generic_const_args,
-    generic_const_args,
-    macroless_generic_const_args,
-    generic_const_items,
-)]
-
-trait Trait {
-    const ASSOC&lt;const N: usize&gt;: usize;
-}
-
-impl Trait for () {
-    const ASSOC&lt;const N: usize&gt;: usize = core::gca!(N);
-}
-
-fn foo&lt;const N: usize&gt;() {
-    let a: [(); &lt;() as Trait&gt;::ASSOC::&lt;N&gt;]
-        = [(); N];
-}</code></pre>
-<p>Using <code>#![feature(macroless_const_item_generic_const_args)]</code> enables you to write the above without the macro:</p>
-<pre><code class="language-rust ignore (needs new solver)">#![allow(incomplete_features)]
-#![feature(
-    min_generic_const_args,
-    generic_const_args,
-    macroless_generic_const_args,
-    macroless_const_item_generic_const_args,
-    generic_const_items,
-)]
-
-trait Trait {
-    const ASSOC&lt;const N: usize&gt;: usize;
-}
-
-impl Trait for () {
-    const ASSOC&lt;const N: usize&gt;: usize = N;
-}
-
-fn foo&lt;const N: usize&gt;() {
-    let a: [(); &lt;() as Trait&gt;::ASSOC::&lt;N&gt;]
-        = [(); N];
-}</code></pre>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="macroless_generic_const_args-1"><a class="header" href="#macroless_generic_const_args-1">macroless_generic_const_args</a></h1>
-<p>Enables using <code>#![feature(min_generic_const_args)]</code> without the <code>gca!</code> macro.</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/159006">#159006</a></p>
-<hr>
-<p>Warning: This feature is incomplete; its design and syntax may change.</p>
-<p>Related features:</p>
-<ul>
-<li><a href="#min_generic_const_args">min_generic_const_args</a>. See that doc for what the <code>gca!</code> is. This feature enables
-support for directly represented const arguments without the macro.</li>
-<li><a href="#macroless_generic_const_args">macroless_const_item_generic_const_args</a>. For a version of this feature that works for const arguments
-as the right hand side of a const item.</li>
-</ul>
-<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
-<p>Here is an example from <a href="#min_generic_const_args">min_generic_const_args</a>:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![allow(incomplete_features)]
-#![feature(min_generic_const_args)]
-
-<span class="boring">fn main() {
-</span>trait Bar {
-    #[rustc_always_gca]
-    const VAL: usize;
-    #[rustc_always_gca]
-    const VAL2: usize;
-}
-
-struct Baz;
-
-impl Bar for Baz {
-    const VAL: usize = core::gca!(2);
-    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
-}
-
-struct Foo&lt;B: Bar&gt; {
-    arr1: [usize; core::gca!(B::VAL)],
-    arr2: [usize; core::gca!(B::VAL2)],
-}
-<span class="boring">}</span></code></pre>
-<p>Using <code>#![feature(macroless_generic_const_args)]</code> enables you to write the above without the macro:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![allow(incomplete_features)]
-#![feature(min_generic_const_args, macroless_generic_const_args)]
-
-<span class="boring">fn main() {
-</span>trait Bar {
-    #[rustc_always_gca]
-    const VAL: usize;
-    #[rustc_always_gca]
-    const VAL2: usize;
-}
-
-struct Baz;
-
-impl Bar for Baz {
-    // note these still need a macro, macroless for these is `macroless_const_item_generic_const_args`
-    const VAL: usize = core::gca!(2);
-    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
-}
-
-struct Foo&lt;B: Bar&gt; {
-    arr1: [usize; B::VAL],
-    arr2: [usize; B::VAL2],
-}
-<span class="boring">}</span></code></pre>
-<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="marker_trait_attr"><a class="header" href="#marker_trait_attr"><code>marker_trait_attr</code></a></h1>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29864">#29864</a></p>
 <hr>
@@ -6748,107 +6849,6 @@ feature, which applied to all empty traits (without needing an opt-in).</p>
 <p>Allows additional const parameter types, such as [u8; 10] or user defined types. User defined types must not have fields more private than the type itself.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/154042">#154042</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
-<h1 id="min_generic_const_args"><a class="header" href="#min_generic_const_args">min_generic_const_args</a></h1>
-<p>Enables the generic const args MVP (paths to direct const items and constructors for ADTs and primitives).</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/132980">#132980</a></p>
-<hr>
-<p>Warning: This feature is incomplete; its design and syntax may change.</p>
-<p>This feature acts as a minimal alternative to <a href="#generic_const_exprs">generic_const_exprs</a> that allows a smaller subset of functionality,
-and uses a different approach for implementation. It is intentionally more restrictive, which helps with avoiding edge
-cases that make the <code>generic_const_exprs</code> hard to implement properly. See <a href="https://github.com/rust-lang/project-const-generics/blob/main/documents/min_const_generics_plan.md">Feature background</a>
-for more details.</p>
-<p>Related features: <a href="#macroless_generic_const_args-1">macroless_generic_const_args</a>, <a href="#generic_const_args">generic_const_args</a>, <a href="#generic_const_items">generic_const_items</a>.</p>
-<h2 id="gca-macro"><a class="header" href="#gca-macro"><code>gca!</code> macro</a></h2>
-<p>This feature introduces a new macro: <code>gca!</code>.</p>
-<p>When an expression is used as a generic argument, it is typically lowered as an “anon const”, which is an expression
-that is opaque to the type system and cannot contain generics. Using <code>gca!</code> instead represents the
-expression “directly”, i.e. without an anon const, in a way that is visible to the type system.</p>
-<p>(Note that plain paths to generic parameters are always represented directly, without <code>gca!</code>, as this
-already works on stable)</p>
-<p>See <a href="#macroless_generic_const_args-1">macroless_generic_const_args</a> as a feature to disable the requirement of writing <code>gca!</code>.</p>
-<h2 id="direct-const-items"><a class="header" href="#direct-const-items">direct const items</a></h2>
-<p>This feature introduces a new item kind: consts with a <code>gca!</code> right-hand side.
-Constants with a direct right-hand side are allowed to be used in type contexts, e.g.:</p>
-<pre><code class="language-compile_fail">#![allow(incomplete_features)]
-#![feature(min_generic_const_args)]
-
-const X: usize = core::gca!(1);
-const Y: usize = 1;
-
-struct Foo {
-    good_arr: [(); core::gca!(X)], // Allowed
-    bad_arr: [(); core::gca!(Y)], // Will not compile
-}
-</code></pre>
-<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![allow(incomplete_features)]
-#![feature(min_generic_const_args)]
-
-<span class="boring">fn main() {
-</span>trait Bar {
-    #[rustc_always_gca]
-    const VAL: usize;
-    #[rustc_always_gca]
-    const VAL2: usize;
-}
-
-struct Baz;
-
-impl Bar for Baz {
-    const VAL: usize = core::gca!(2);
-    const VAL2: usize = core::gca!(const { Self::VAL * 2 });
-}
-
-struct Foo&lt;B: Bar&gt; {
-    arr1: [usize; core::gca!(B::VAL)],
-    arr2: [usize; core::gca!(B::VAL2)],
-}
-<span class="boring">}</span></code></pre>
-<p>Note that with <a href="#generic_const_exprs">generic_const_exprs</a> the same example would look as follows:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![allow(incomplete_features)]
-#![feature(generic_const_exprs)]
-
-<span class="boring">fn main() {
-</span>trait Bar {
-    const VAL: usize;
-    const VAL2: usize;
-}
-
-struct Baz;
-
-impl Bar for Baz {
-    const VAL: usize = 2;
-    const VAL2: usize = const { Self::VAL * 2 };
-}
-
-struct Foo&lt;B: Bar&gt;
-where
-    [(); B::VAL]:,
-    [(); B::VAL2]:,
-{
-    arr1: [usize; B::VAL],
-    arr2: [usize; B::VAL2],
-}
-<span class="boring">}</span></code></pre>
-<p>Use of const functions is allowed:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span>#![allow(incomplete_features)]
-#![feature(min_generic_const_args)]
-
-<span class="boring">fn main() {
-</span>const VAL: usize = 1;
-
-const fn inc(val: usize) -&gt; usize {
-    val + 1
-}
-
-const INC: usize = core::gca!(const { inc(VAL) });
-
-const ARR: [usize; INC] = [0; INC];
-<span class="boring">}</span></code></pre>
-<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="min_specialization"><a class="header" href="#min_specialization"><code>min_specialization</code></a></h1>
 <p>A minimal, sound subset of specialization intended to be used by the standard library until the soundness issues with specialization are fixed.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/31844">#31844</a></p>
