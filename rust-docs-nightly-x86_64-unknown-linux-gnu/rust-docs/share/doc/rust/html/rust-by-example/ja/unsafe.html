@@ -110,7 +110,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-54ef331a.js";
+            window.path_to_searchindex_js = "searchindex-c691022e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-06fc9e32.js"></script>
@@ -262,6 +262,7 @@
 <li>安全でない関数やメソッドの呼び出し(FFI経由の関数の呼び出しを含む (詳細は <a href="std_misc/ffi.html">本書のFFIに関する説明</a> を参照ください))</li>
 <li>静的なミュータブル変数へのアクセスや変更</li>
 <li>安全でないトレイトの実装</li>
+<li>accessing elements of a <code>union</code></li>
 </ul>
 <h3 id="生ポインタ"><a class="header" href="#生ポインタ">生ポインタ</a></h3>
 <p>生ポインタ<code>*</code>と参照<code>&amp;T</code>はよく似た機能を持ちますが、後者は必ず有効なデータを指していることが借用チェッカーによって保証されているので、常に安全です。生ポインタのデリファレンスはアンセーフなブロックでしか実行できません。</p>
@@ -289,6 +290,27 @@ fn main() {
     }
 }</code></pre>
 <p><code>slice::from_raw_parts</code> は、次のふたつの仮定に基づいて処理します。ひとつは渡されたポインタが有効なメモリ位置を指していること、もうひとつはそのメモリに格納された値が正しい型であることです。この仮定を満たさない場合、プログラムの動作は不定となり、何が起こるかわかりません。</p>
+<h3 id="union-elements"><a class="header" href="#union-elements">Union Elements</a></h3>
+<p>Elements of unions overlap in memory, thus changing the value of one element automatically changes every element’s value. They can be used, if you don’t know which data type you will need at runtime. Since Rust offers <em>safe</em> Enums, the main purpose of Unions is to allow interacting with C code. Accessing and changing elements of unions is only allowed in unsafe Rust.</p>
+<pre class="playground"><code class="language-rust editable edition2021">union MyFirstUnion {
+    float: f32,
+    integer: u32
+}
+
+fn main() {
+    // Creating an object of a union type doesn't require Unsafe Rust.
+    let mut u = MyFirstUnion { float: 123.45 };
+    
+    // Reading and changing u.float or u.integer is only allowed in Unsafe Rust.
+    unsafe {
+        assert_eq!(u.float, 123.45);
+        println!("u.float = 123.45, but u.integer = {}", u.integer);
+
+        u.integer = 42;
+        assert_eq!(u.integer, 42);
+        println!("u.integer = 42, but u.float = {}", u.float);
+    }
+}</code></pre>
 
                     </main>
 

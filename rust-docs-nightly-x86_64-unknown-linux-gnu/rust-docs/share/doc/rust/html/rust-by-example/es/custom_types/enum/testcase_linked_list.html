@@ -110,7 +110,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-a3737c66.js";
+            window.path_to_searchindex_js = "../../searchindex-296c6a5f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-b09e2282.js"></script>
@@ -256,67 +256,59 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="ejemplo-lista-ligada"><a class="header" href="#ejemplo-lista-ligada">Ejemplo: lista ligada</a></h1>
-<p>A common way to implement a linked-list is via <code>enums</code>:</p>
-<pre class="playground"><code class="language-rust editable edition2021">use crate::List::*;
-
-enum List {
-    // Cons: Tuple struct that wraps an element and a pointer to the next node
-    Cons(u32, Box&lt;List&gt;),
-    // Nil: A node that signifies the end of the linked list
-    Nil,
+<p>A possible way to implement a linked list of <code>u32</code> elements is via enums:</p>
+<pre class="playground"><code class="language-rust editable edition2021">enum LinkedList {
+    // Next: Tuple struct that wraps an element and a boxed link to the next node
+    Next(u32, Box&lt;LinkedList&gt;),
+    // End: A node that signifies the end of the linked list
+    End,
 }
 
+// `use` brings the enum variants into scope, so they can be used without the `LinkedList::` prefix
+use LinkedList::*;
+
 // Methods can be attached to an enum
-impl List {
-    // Create an empty list
-    fn new() -&gt; List {
-        // `Nil` has type `List`
-        Nil
+impl LinkedList {
+    // Create an empty linked list
+    fn new() -&gt; LinkedList {
+        // `End` has type `LinkedList`
+        End
     }
 
-    // Consume a list, and return the same list with a new element at its front
-    fn prepend(self, elem: u32) -&gt; List {
-        // `Cons` also has type List
-        Cons(elem, Box::new(self))
+    // Take ownership of a linked list, and return a new one with a new element at its front
+    fn prepend(self, elem: u32) -&gt; LinkedList {
+        // `Next` also has type `LinkedList`, since it is a variant of the `LinkedList` enum
+        Next(elem, Box::new(self))
     }
 
-    // Return the length of the list
+    // Return the length of the linked list
     fn len(&amp;self) -&gt; u32 {
-        // `self` has to be matched, because the behavior of this method
-        // depends on the variant of `self`
-        // `self` has type `&amp;List`, and `*self` has type `List`, matching on a
-        // concrete type `T` is preferred over a match on a reference `&amp;T`
-        // after Rust 2018 you can use self here and tail (with no ref) below as well,
-        // rust will infer &amp;s and ref tail.
-        // See https://doc.rust-lang.org/edition-guide/rust-2018/ownership-and-lifetimes/default-match-bindings.html
-        match *self {
-            // Can't take ownership of the tail, because `self` is borrowed;
-            // instead take a reference to the tail
-            // And it's a non-tail recursive call which may cause stack overflow for long lists.
-            Cons(_, ref tail) =&gt; 1 + tail.len(),
-            // Base Case: An empty list has zero length
-            Nil =&gt; 0
+        // `len` depends on which enum variant we have, so we pattern-match on `self`
+        // Since this method only borrows `self`, the `tail` binding is also a borrow
+        // Note: In Rust 2018+, match infers the needed references automatically
+        match self {
+            // Count this node and recursively count the rest of the linked list
+            // Note: this is not tail-recursive and could overflow for very long linked lists
+            Next(_, tail) =&gt; 1 + tail.len(),
+            // Base case: the empty linked list has length 0.
+            End =&gt; 0,
         }
     }
+}
 
-    // Return representation of the list as a (heap allocated) string
-    fn stringify(&amp;self) -&gt; String {
-        match *self {
-            Cons(head, ref tail) =&gt; {
-                // `format!` is similar to `print!`, but returns a heap
-                // allocated string instead of printing to the console
-                format!("{}, {}", head, tail.stringify())
-            },
-            Nil =&gt; {
-                format!("Nil")
-            },
+// Implement `Display` for `LinkedList` so it can be printed to the console using `println!`
+impl std::fmt::Display for LinkedList {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            Next(head, tail) =&gt; write!(f, "({}, {})", head, tail),
+            End =&gt; write!(f, "End"),
         }
     }
 }
 
 fn main() {
     // Create an empty linked list
-    let mut list = List::new();
+    let mut list = LinkedList::new();
 
     // Prepend some elements
     list = list.prepend(1);
@@ -325,7 +317,7 @@ fn main() {
 
     // Show the final state of the list
     println!("linked list has length: {}", list.len());
-    println!("{}", list.stringify());
+    println!("{}", list);
 }</code></pre>
 <h3 id="ver-también"><a class="header" href="#ver-también">Ver también</a></h3>
 <p><a href="../../std/box.html"><code>Box</code></a> and <a href="../../fn/methods.html">methods</a></p>

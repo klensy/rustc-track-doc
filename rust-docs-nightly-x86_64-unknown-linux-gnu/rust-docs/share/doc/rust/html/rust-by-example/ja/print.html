@@ -111,7 +111,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-54ef331a.js";
+            window.path_to_searchindex_js = "searchindex-c691022e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-06fc9e32.js"></script>
@@ -1257,67 +1257,59 @@ fn main() {
 <p><a href="#型キャスト">キャスト</a></p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="テストケース連結リスト"><a class="header" href="#テストケース連結リスト">テストケース：連結リスト</a></h1>
-<p><code>enum</code>の使用が適切なパターンのひとつに、連結リストを作成する場合があります。</p>
-<pre class="playground"><code class="language-rust editable edition2021">use crate::List::*;
-
-enum List {
-    // Cons：要素をラップし、次の要素へのポインタを保持するタプル構造体
-    Cons(u32, Box&lt;List&gt;),
-    // Nil：連結リストの終端であることを示すノード
-    Nil,
+<p>A possible way to implement a linked list of <code>u32</code> elements is via enums:</p>
+<pre class="playground"><code class="language-rust editable edition2021">enum LinkedList {
+    // Next: Tuple struct that wraps an element and a boxed link to the next node
+    Next(u32, Box&lt;LinkedList&gt;),
+    // End: A node that signifies the end of the linked list
+    End,
 }
 
+// `use` brings the enum variants into scope, so they can be used without the `LinkedList::` prefix
+use LinkedList::*;
+
 // 列挙型にはメソッドを付与することができます。
-impl List {
-    // 空リストの作成
-    fn new() -&gt; List {
-        // `Nil`は`List`型を持ちます。
-        Nil
+impl LinkedList {
+    // 空の連結リストを作成。
+    fn new() -&gt; LinkedList {
+        // `End` has type `LinkedList`
+        End
     }
 
-    // リストを受け取り、その始端に新しい要素を付加したものを返す関数
-    fn prepend(self, elem: u32) -&gt; List {
-        // この`Cons`自体も、その第2要素もどちらもList型です。
-        Cons(elem, Box::new(self))
+    // Take ownership of a linked list, and return a new one with a new element at its front
+    fn prepend(self, elem: u32) -&gt; LinkedList {
+        // `Next` also has type `LinkedList`, since it is a variant of the `LinkedList` enum
+        Next(elem, Box::new(self))
     }
 
-    // リストの長さを返すメソッド
+    // Return the length of the linked list
     fn len(&amp;self) -&gt; u32 {
-        // `self` has to be matched, because the behavior of this method
-        // depends on the variant of `self`
-        // `self` has type `&amp;List`, and `*self` has type `List`, matching on a
-        // concrete type `T` is preferred over a match on a reference `&amp;T`
-        // after Rust 2018 you can use self here and tail (with no ref) below as well,
-        // rust will infer &amp;s and ref tail.
-        // See https://doc.rust-lang.org/edition-guide/rust-2018/ownership-and-lifetimes/default-match-bindings.html
-        match *self {
-            // Can't take ownership of the tail, because `self` is borrowed;
-            // instead take a reference to the tail
-            // And it's a non-tail recursive call which may cause stack overflow for long lists.
-            Cons(_, ref tail) =&gt; 1 + tail.len(),
-            // 空リストならば長さは0
-            Nil =&gt; 0
+        // `len` depends on which enum variant we have, so we pattern-match on `self`
+        // Since this method only borrows `self`, the `tail` binding is also a borrow
+        // Note: In Rust 2018+, match infers the needed references automatically
+        match self {
+            // Count this node and recursively count the rest of the linked list
+            // Note: this is not tail-recursive and could overflow for very long linked lists
+            Next(_, tail) =&gt; 1 + tail.len(),
+            // Base case: the empty linked list has length 0.
+            End =&gt; 0,
         }
     }
+}
 
-    // リストをヒープ上の文字列として表したものを返すメソッド
-    fn stringify(&amp;self) -&gt; String {
-        match *self {
-            Cons(head, ref tail) =&gt; {
-                // `format!`は`print!`に似ていますが、コンソール上に出力
-                // する代わりに、ヒープ上の文字列を返します。
-                format!("{}, {}", head, tail.stringify())
-            },
-            Nil =&gt; {
-                format!("Nil")
-            },
+// Implement `Display` for `LinkedList` so it can be printed to the console using `println!`
+impl std::fmt::Display for LinkedList {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            Next(head, tail) =&gt; write!(f, "({}, {})", head, tail),
+            End =&gt; write!(f, "End"),
         }
     }
 }
 
 fn main() {
     // 空の連結リストを作成。
-    let mut list = List::new();
+    let mut list = LinkedList::new();
 
     // 要素を追加。
     list = list.prepend(1);
@@ -1326,7 +1318,7 @@ fn main() {
 
     // 追加後の状態を表示。
     println!("linked list has length: {}", list.len());
-    println!("{}", list.stringify());
+    println!("{}", list);
 }</code></pre>
 <h3 id="参照-11"><a class="header" href="#参照-11">参照</a></h3>
 <p><a href="#boxスタックとヒープ"><code>Box</code></a>, <a href="#関連関数とメソッド">メソッド</a></p>
@@ -2017,13 +2009,13 @@ fn main() {
         }
     }
 }</code></pre>
-<p>Just remember that even though you can compile the code when a&gt;b, the loop gets never executed.</p>
-<pre class="playground"><code class="language-rust editable edition2021">for i in 10..1{
-println!("fizzbuzz");
+<p>Just remember that even though you can compile the code when <code>a&gt;b</code>, the loop gets never executed.</p>
+<pre class="playground"><code class="language-rust editable edition2021">for i in 10..1 {
+    println!("fizzbuzz");
 }</code></pre>
 <p>If you want to count down, you need to use .rev() instead</p>
-<pre class="playground"><code class="language-rust editable edition2021">for i in (1..10).rev(){
-println!("fizzbuzz");
+<pre class="playground"><code class="language-rust editable edition2021">for i in (1..10).rev() {
+    println!("fizzbuzz");
 }</code></pre>
 <h2 id="forとイテレータ"><a class="header" href="#forとイテレータ">forとイテレータ</a></h2>
 <p><code>for in</code>構文はイテレータとさまざまな方法でやり取りできます。<a href="#イテレータ">Iterator</a>トレイトの章で説明したように、デフォルトでは<code>for</code>ループにおいて<code>into_iter</code>関数がコレクションに対して適用されます。しかし、コレクションをイテレータに変換する方法はこれだけではありません。</p>
@@ -9304,6 +9296,7 @@ mod tests {
 <li>安全でない関数やメソッドの呼び出し(FFI経由の関数の呼び出しを含む (詳細は <a href="#他言語関数インターフェイス">本書のFFIに関する説明</a> を参照ください))</li>
 <li>静的なミュータブル変数へのアクセスや変更</li>
 <li>安全でないトレイトの実装</li>
+<li>accessing elements of a <code>union</code></li>
 </ul>
 <h3 id="生ポインタ"><a class="header" href="#生ポインタ">生ポインタ</a></h3>
 <p>生ポインタ<code>*</code>と参照<code>&amp;T</code>はよく似た機能を持ちますが、後者は必ず有効なデータを指していることが借用チェッカーによって保証されているので、常に安全です。生ポインタのデリファレンスはアンセーフなブロックでしか実行できません。</p>
@@ -9331,6 +9324,27 @@ fn main() {
     }
 }</code></pre>
 <p><code>slice::from_raw_parts</code> は、次のふたつの仮定に基づいて処理します。ひとつは渡されたポインタが有効なメモリ位置を指していること、もうひとつはそのメモリに格納された値が正しい型であることです。この仮定を満たさない場合、プログラムの動作は不定となり、何が起こるかわかりません。</p>
+<h3 id="union-elements"><a class="header" href="#union-elements">Union Elements</a></h3>
+<p>Elements of unions overlap in memory, thus changing the value of one element automatically changes every element’s value. They can be used, if you don’t know which data type you will need at runtime. Since Rust offers <em>safe</em> Enums, the main purpose of Unions is to allow interacting with C code. Accessing and changing elements of unions is only allowed in unsafe Rust.</p>
+<pre class="playground"><code class="language-rust editable edition2021">union MyFirstUnion {
+    float: f32,
+    integer: u32
+}
+
+fn main() {
+    // Creating an object of a union type doesn't require Unsafe Rust.
+    let mut u = MyFirstUnion { float: 123.45 };
+    
+    // Reading and changing u.float or u.integer is only allowed in Unsafe Rust.
+    unsafe {
+        assert_eq!(u.float, 123.45);
+        println!("u.float = 123.45, but u.integer = {}", u.integer);
+
+        u.integer = 42;
+        assert_eq!(u.integer, 42);
+        println!("u.integer = 42, but u.float = {}", u.float);
+    }
+}</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="インラインアセンブリ"><a class="header" href="#インラインアセンブリ">インラインアセンブリ</a></h1>
 <p>Rustは<code>asm!</code>マクロによってインラインアセンブリをサポートしています。コンパイラが生成するアセンブリに、手書きのアセンブリを埋め込むことができます。一般的には必要ありませんが、要求されるパフォーマンスやタイミングを達成するために必要な場合があります。カーネルコードのような、低レベルなハードウェアの基本要素にアクセスする場合にも、この機能が必要でしょう。</p>

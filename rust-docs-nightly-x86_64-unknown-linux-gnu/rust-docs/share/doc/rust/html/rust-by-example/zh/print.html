@@ -111,7 +111,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cf59f0d0.js";
+            window.path_to_searchindex_js = "searchindex-5c4f0d38.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-92c92fad.js"></script>
@@ -1250,66 +1250,59 @@ fn main() {
 <p><a href="#类型转换">类型转换</a></p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="测试实例链表"><a class="header" href="#测试实例链表">测试实例：链表</a></h1>
-<p>使用 <code>enum</code> 是实现链表的常见方法：</p>
-<pre class="playground"><code class="language-rust editable edition2021">use crate::List::*;
-
-enum List {
-    // Cons：包含一个元素和指向下一节点指针的元组结构体
-    Cons(u32, Box&lt;List&gt;),
-    // Nil：表示链表末尾的节点
-    Nil,
+<p>A possible way to implement a linked list of <code>u32</code> elements is via enums:</p>
+<pre class="playground"><code class="language-rust editable edition2021">enum LinkedList {
+    // Next: Tuple struct that wraps an element and a boxed link to the next node
+    Next(u32, Box&lt;LinkedList&gt;),
+    // End: A node that signifies the end of the linked list
+    End,
 }
 
+// `use` brings the enum variants into scope, so they can be used without the `LinkedList::` prefix
+use LinkedList::*;
+
 // 可以为枚举实现方法
-impl List {
+impl LinkedList {
     // 创建空链表
-    fn new() -&gt; List {
-        // `Nil` 的类型是 `List`
-        Nil
+    fn new() -&gt; LinkedList {
+        // `End` has type `LinkedList`
+        End
     }
 
-    // 消耗一个链表，并返回在其头部添加新元素后的链表
-    fn prepend(self, elem: u32) -&gt; List {
-        // `Cons` 的类型也是 List
-        Cons(elem, Box::new(self))
+    // Take ownership of a linked list, and return a new one with a new element at its front
+    fn prepend(self, elem: u32) -&gt; LinkedList {
+        // `Next` also has type `LinkedList`, since it is a variant of the `LinkedList` enum
+        Next(elem, Box::new(self))
     }
 
-    // 返回链表长度
+    // Return the length of the linked list
     fn len(&amp;self) -&gt; u32 {
-        // 需要对 `self` 进行匹配，因为方法的行为取决于 `self` 的变体
-        // `self` 的类型是 `&amp;List`，而 `*self` 的类型是 `List`
-        // 匹配具体类型 `T` 优于匹配引用 `&amp;T`
-        // 在 Rust 2018 版本后，这里可以直接使用 self，下面可以使用 tail（无需 ref）
-        // Rust 会自动推断为 &amp;s 和 ref tail
-        // 参见 https://doc.rust-lang.org/edition-guide/rust-2018/ownership-and-lifetimes/default-match-bindings.html
-        match *self {
-            // 无法获取 tail 的所有权，因为 `self` 是借用的；
-            // 所以改为获取 tail 的引用
-            // 而且这是一个非尾递归调用，对于长列表可能导致栈溢出。
-            Cons(_, ref tail) =&gt; 1 + tail.len(),
-            // 基本情况：空链表长度为零
-            Nil =&gt; 0
+        // `len` depends on which enum variant we have, so we pattern-match on `self`
+        // Since this method only borrows `self`, the `tail` binding is also a borrow
+        // Note: In Rust 2018+, match infers the needed references automatically
+        match self {
+            // Count this node and recursively count the rest of the linked list
+            // Note: this is not tail-recursive and could overflow for very long linked lists
+            Next(_, tail) =&gt; 1 + tail.len(),
+            // Base case: the empty linked list has length 0.
+            End =&gt; 0,
         }
     }
+}
 
-    // 返回链表的字符串表示（堆分配）
-    fn stringify(&amp;self) -&gt; String {
-        match *self {
-            Cons(head, ref tail) =&gt; {
-                // `format!` 类似于 `print!`，但返回堆分配的字符串，
-                // 而不是打印到控制台
-                format!("{}, {}", head, tail.stringify())
-            },
-            Nil =&gt; {
-                format!("Nil")
-            },
+// Implement `Display` for `LinkedList` so it can be printed to the console using `println!`
+impl std::fmt::Display for LinkedList {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            Next(head, tail) =&gt; write!(f, "({}, {})", head, tail),
+            End =&gt; write!(f, "End"),
         }
     }
 }
 
 fn main() {
     // 创建空链表
-    let mut list = List::new();
+    let mut list = LinkedList::new();
 
     // 在头部添加一些元素
     list = list.prepend(1);
@@ -1318,7 +1311,7 @@ fn main() {
 
     // 显示链表的最终状态
     println!("链表长度为：{}", list.len());
-    println!("{}", list.stringify());
+    println!("{}", list);
 }</code></pre>
 <h3 id="另请参阅-11"><a class="header" href="#另请参阅-11">另请参阅：</a></h3>
 <p><a href="#box栈和堆"><code>Box</code></a> 和<a href="#关联函数和方法">方法</a></p>
@@ -2004,13 +1997,13 @@ fn main() {
         }
     }
 }</code></pre>
-<p>请记住，即使在 a&gt;b 时代码依然能够编译，循环体也永远不会执行。</p>
-<pre class="playground"><code class="language-rust editable edition2021">for i in 10..1{
-println!("fizzbuzz");
+<p>Just remember that even though you can compile the code when <code>a&gt;b</code>, the loop gets never executed.</p>
+<pre class="playground"><code class="language-rust editable edition2021">for i in 10..1 {
+    println!("fizzbuzz");
 }</code></pre>
 <p>如果你想倒序计数，则需要使用 .rev()</p>
-<pre class="playground"><code class="language-rust editable edition2021">for i in (1..10).rev(){
-println!("fizzbuzz");
+<pre class="playground"><code class="language-rust editable edition2021">for i in (1..10).rev() {
+    println!("fizzbuzz");
 }</code></pre>
 <h2 id="for-与迭代器"><a class="header" href="#for-与迭代器">for 与迭代器</a></h2>
 <p><code>for in</code> 结构能以多种方式与 <code>Iterator</code> 交互。正如在 <a href="#迭代器">Iterator</a> 特质一节中讨论的那样，默认情况下 <code>for</code> 循环会对集合应用 <code>into_iter</code> 函数。然而，这并不是将集合转换为迭代器的唯一方法。</p>
@@ -9262,6 +9255,7 @@ mod tests {
 <li>调用被标记为 <code>unsafe</code> 的函数或方法（包括通过 FFI 调用函数，参见本书<a href="#外部函数接口">前面的章节</a>）</li>
 <li>访问或修改静态可变变量</li>
 <li>实现不安全特征</li>
+<li>accessing elements of a <code>union</code></li>
 </ul>
 <h3 id="裸指针"><a class="header" href="#裸指针">裸指针</a></h3>
 <p>裸指针 <code>*</code> 和引用 <code>&amp;T</code> 的功能类似，但引用总是安全的，因为借用检查器保证它们指向有效数据。解引用裸指针只能在 unsafe 块中进行。</p>
@@ -9289,6 +9283,27 @@ fn main() {
     }
 }</code></pre>
 <p>对于 <code>slice::from_raw_parts</code>，<strong>必须</strong>遵守的一个假设是：传入的指针指向有效内存，且指向的内存类型正确。如果这些不变量未被遵守，那么程序的行为将是未定义的，无法预知会发生什么。</p>
+<h3 id="union-elements"><a class="header" href="#union-elements">Union Elements</a></h3>
+<p>Elements of unions overlap in memory, thus changing the value of one element automatically changes every element’s value. They can be used, if you don’t know which data type you will need at runtime. Since Rust offers <em>safe</em> Enums, the main purpose of Unions is to allow interacting with C code. Accessing and changing elements of unions is only allowed in unsafe Rust.</p>
+<pre class="playground"><code class="language-rust editable edition2021">union MyFirstUnion {
+    float: f32,
+    integer: u32
+}
+
+fn main() {
+    // Creating an object of a union type doesn't require Unsafe Rust.
+    let mut u = MyFirstUnion { float: 123.45 };
+    
+    // Reading and changing u.float or u.integer is only allowed in Unsafe Rust.
+    unsafe {
+        assert_eq!(u.float, 123.45);
+        println!("u.float = 123.45, but u.integer = {}", u.integer);
+
+        u.integer = 42;
+        assert_eq!(u.integer, 42);
+        println!("u.integer = 42, but u.float = {}", u.float);
+    }
+}</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="内联汇编"><a class="header" href="#内联汇编">内联汇编</a></h1>
 <p>Rust 通过 <code>asm!</code> 宏提供了内联汇编支持。它可以用于在编译器生成的汇编输出中嵌入手写的汇编代码。通常这不是必需的，但在无法通过其他方式实现所需性能或时序要求时可能会用到。访问底层硬件原语（例如在内核代码中）也可能需要这个功能。</p>

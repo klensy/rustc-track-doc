@@ -110,7 +110,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cf59f0d0.js";
+            window.path_to_searchindex_js = "searchindex-5c4f0d38.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-92c92fad.js"></script>
@@ -262,6 +262,7 @@
 <li>调用被标记为 <code>unsafe</code> 的函数或方法（包括通过 FFI 调用函数，参见本书<a href="std_misc/ffi.html">前面的章节</a>）</li>
 <li>访问或修改静态可变变量</li>
 <li>实现不安全特征</li>
+<li>accessing elements of a <code>union</code></li>
 </ul>
 <h3 id="裸指针"><a class="header" href="#裸指针">裸指针</a></h3>
 <p>裸指针 <code>*</code> 和引用 <code>&amp;T</code> 的功能类似，但引用总是安全的，因为借用检查器保证它们指向有效数据。解引用裸指针只能在 unsafe 块中进行。</p>
@@ -289,6 +290,27 @@ fn main() {
     }
 }</code></pre>
 <p>对于 <code>slice::from_raw_parts</code>，<strong>必须</strong>遵守的一个假设是：传入的指针指向有效内存，且指向的内存类型正确。如果这些不变量未被遵守，那么程序的行为将是未定义的，无法预知会发生什么。</p>
+<h3 id="union-elements"><a class="header" href="#union-elements">Union Elements</a></h3>
+<p>Elements of unions overlap in memory, thus changing the value of one element automatically changes every element’s value. They can be used, if you don’t know which data type you will need at runtime. Since Rust offers <em>safe</em> Enums, the main purpose of Unions is to allow interacting with C code. Accessing and changing elements of unions is only allowed in unsafe Rust.</p>
+<pre class="playground"><code class="language-rust editable edition2021">union MyFirstUnion {
+    float: f32,
+    integer: u32
+}
+
+fn main() {
+    // Creating an object of a union type doesn't require Unsafe Rust.
+    let mut u = MyFirstUnion { float: 123.45 };
+    
+    // Reading and changing u.float or u.integer is only allowed in Unsafe Rust.
+    unsafe {
+        assert_eq!(u.float, 123.45);
+        println!("u.float = 123.45, but u.integer = {}", u.integer);
+
+        u.integer = 42;
+        assert_eq!(u.integer, 42);
+        println!("u.integer = 42, but u.float = {}", u.float);
+    }
+}</code></pre>
 
                     </main>
 

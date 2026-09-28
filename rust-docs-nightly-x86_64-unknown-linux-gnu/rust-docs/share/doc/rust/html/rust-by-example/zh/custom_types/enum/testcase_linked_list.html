@@ -110,7 +110,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-cf59f0d0.js";
+            window.path_to_searchindex_js = "../../searchindex-5c4f0d38.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-92c92fad.js"></script>
@@ -256,66 +256,59 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="测试实例链表"><a class="header" href="#测试实例链表">测试实例：链表</a></h1>
-<p>使用 <code>enum</code> 是实现链表的常见方法：</p>
-<pre class="playground"><code class="language-rust editable edition2021">use crate::List::*;
-
-enum List {
-    // Cons：包含一个元素和指向下一节点指针的元组结构体
-    Cons(u32, Box&lt;List&gt;),
-    // Nil：表示链表末尾的节点
-    Nil,
+<p>A possible way to implement a linked list of <code>u32</code> elements is via enums:</p>
+<pre class="playground"><code class="language-rust editable edition2021">enum LinkedList {
+    // Next: Tuple struct that wraps an element and a boxed link to the next node
+    Next(u32, Box&lt;LinkedList&gt;),
+    // End: A node that signifies the end of the linked list
+    End,
 }
 
+// `use` brings the enum variants into scope, so they can be used without the `LinkedList::` prefix
+use LinkedList::*;
+
 // 可以为枚举实现方法
-impl List {
+impl LinkedList {
     // 创建空链表
-    fn new() -&gt; List {
-        // `Nil` 的类型是 `List`
-        Nil
+    fn new() -&gt; LinkedList {
+        // `End` has type `LinkedList`
+        End
     }
 
-    // 消耗一个链表，并返回在其头部添加新元素后的链表
-    fn prepend(self, elem: u32) -&gt; List {
-        // `Cons` 的类型也是 List
-        Cons(elem, Box::new(self))
+    // Take ownership of a linked list, and return a new one with a new element at its front
+    fn prepend(self, elem: u32) -&gt; LinkedList {
+        // `Next` also has type `LinkedList`, since it is a variant of the `LinkedList` enum
+        Next(elem, Box::new(self))
     }
 
-    // 返回链表长度
+    // Return the length of the linked list
     fn len(&amp;self) -&gt; u32 {
-        // 需要对 `self` 进行匹配，因为方法的行为取决于 `self` 的变体
-        // `self` 的类型是 `&amp;List`，而 `*self` 的类型是 `List`
-        // 匹配具体类型 `T` 优于匹配引用 `&amp;T`
-        // 在 Rust 2018 版本后，这里可以直接使用 self，下面可以使用 tail（无需 ref）
-        // Rust 会自动推断为 &amp;s 和 ref tail
-        // 参见 https://doc.rust-lang.org/edition-guide/rust-2018/ownership-and-lifetimes/default-match-bindings.html
-        match *self {
-            // 无法获取 tail 的所有权，因为 `self` 是借用的；
-            // 所以改为获取 tail 的引用
-            // 而且这是一个非尾递归调用，对于长列表可能导致栈溢出。
-            Cons(_, ref tail) =&gt; 1 + tail.len(),
-            // 基本情况：空链表长度为零
-            Nil =&gt; 0
+        // `len` depends on which enum variant we have, so we pattern-match on `self`
+        // Since this method only borrows `self`, the `tail` binding is also a borrow
+        // Note: In Rust 2018+, match infers the needed references automatically
+        match self {
+            // Count this node and recursively count the rest of the linked list
+            // Note: this is not tail-recursive and could overflow for very long linked lists
+            Next(_, tail) =&gt; 1 + tail.len(),
+            // Base case: the empty linked list has length 0.
+            End =&gt; 0,
         }
     }
+}
 
-    // 返回链表的字符串表示（堆分配）
-    fn stringify(&amp;self) -&gt; String {
-        match *self {
-            Cons(head, ref tail) =&gt; {
-                // `format!` 类似于 `print!`，但返回堆分配的字符串，
-                // 而不是打印到控制台
-                format!("{}, {}", head, tail.stringify())
-            },
-            Nil =&gt; {
-                format!("Nil")
-            },
+// Implement `Display` for `LinkedList` so it can be printed to the console using `println!`
+impl std::fmt::Display for LinkedList {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            Next(head, tail) =&gt; write!(f, "({}, {})", head, tail),
+            End =&gt; write!(f, "End"),
         }
     }
 }
 
 fn main() {
     // 创建空链表
-    let mut list = List::new();
+    let mut list = LinkedList::new();
 
     // 在头部添加一些元素
     list = list.prepend(1);
@@ -324,7 +317,7 @@ fn main() {
 
     // 显示链表的最终状态
     println!("链表长度为：{}", list.len());
-    println!("{}", list.stringify());
+    println!("{}", list);
 }</code></pre>
 <h3 id="另请参阅"><a class="header" href="#另请参阅">另请参阅：</a></h3>
 <p><a href="../../std/box.html"><code>Box</code></a> 和<a href="../../fn/methods.html">方法</a></p>
