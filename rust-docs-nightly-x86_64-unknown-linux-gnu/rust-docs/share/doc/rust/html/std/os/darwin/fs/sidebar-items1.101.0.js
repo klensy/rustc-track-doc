@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["FileTimesExt","MetadataExt"]};
+window.SIDEBAR_ITEMS = {"trait":["FileTimesExt","HomeDirsExt","MediaDirsExt","MetadataExt"]};
