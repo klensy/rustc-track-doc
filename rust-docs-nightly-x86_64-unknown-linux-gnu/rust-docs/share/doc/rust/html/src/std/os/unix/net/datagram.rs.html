@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/net/datagram.rs`."><title>datagram.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (21b707e3f 2026-09-30)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/net/</div>datagram.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(any(
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/net/datagram.rs`."><title>datagram.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-203241e4.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c36f14571 2026-10-01)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/net/</div>datagram.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(any(
 <a href=#2 id=2 data-nosnippet>2</a>    target_os = <span class="string">"linux"</span>,
 <a href=#3 id=3 data-nosnippet>3</a>    target_os = <span class="string">"android"</span>,
 <a href=#4 id=4 data-nosnippet>4</a>    target_os = <span class="string">"dragonfly"</span>,
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>    ///
 <a href=#274 id=274 data-nosnippet>274</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#275 id=275 data-nosnippet>275</a>    ///     let sock = UnixDatagram::bind("/path/to/the/socket")?;
-<a href=#276 id=276 data-nosnippet>276</a>    ///     let sock_copy = sock.try_clone().expect("try_clone failed");
+<a href=#276 id=276 data-nosnippet>276</a>    ///     let sock_copy = sock.try_clone().expect("`UnixDatagram::try_clone` should not fail");
 <a href=#277 id=277 data-nosnippet>277</a>    ///     Ok(())
 <a href=#278 id=278 data-nosnippet>278</a>    /// }
 <a href=#279 id=279 data-nosnippet>279</a>    /// ```
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>    ///
 <a href=#293 id=293 data-nosnippet>293</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#294 id=294 data-nosnippet>294</a>    ///     let sock = UnixDatagram::bind("/path/to/the/socket")?;
-<a href=#295 id=295 data-nosnippet>295</a>    ///     let addr = sock.local_addr().expect("Couldn't get local address");
+<a href=#295 id=295 data-nosnippet>295</a>    ///     let addr = sock.local_addr().expect("`UnixDatagram::local_addr` should not fail");
 <a href=#296 id=296 data-nosnippet>296</a>    ///     Ok(())
 <a href=#297 id=297 data-nosnippet>297</a>    /// }
 <a href=#298 id=298 data-nosnippet>298</a>    /// ```
@@ -317,7 +317,7 @@
 <a href=#317 id=317 data-nosnippet>317</a>    ///     let sock = UnixDatagram::unbound()?;
 <a href=#318 id=318 data-nosnippet>318</a>    ///     sock.connect("/path/to/the/socket")?;
 <a href=#319 id=319 data-nosnippet>319</a>    ///
-<a href=#320 id=320 data-nosnippet>320</a>    ///     let addr = sock.peer_addr().expect("Couldn't get peer address");
+<a href=#320 id=320 data-nosnippet>320</a>    ///     let addr = sock.peer_addr().expect("`UnixDatagram::peer_addr` should not fail");
 <a href=#321 id=321 data-nosnippet>321</a>    ///     Ok(())
 <a href=#322 id=322 data-nosnippet>322</a>    /// }
 <a href=#323 id=323 data-nosnippet>323</a>    /// ```
@@ -390,7 +390,7 @@
 <a href=#390 id=390 data-nosnippet>390</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#391 id=391 data-nosnippet>391</a>    ///     let sock = UnixDatagram::bind("/path/to/the/socket")?;
 <a href=#392 id=392 data-nosnippet>392</a>    ///     let mut buf = vec![0; 10];
-<a href=#393 id=393 data-nosnippet>393</a>    ///     sock.recv(buf.as_mut_slice()).expect("recv function failed");
+<a href=#393 id=393 data-nosnippet>393</a>    ///     sock.recv(buf.as_mut_slice()).expect("`UnixDatagram::recv` should not fail");
 <a href=#394 id=394 data-nosnippet>394</a>    ///     Ok(())
 <a href=#395 id=395 data-nosnippet>395</a>    /// }
 <a href=#396 id=396 data-nosnippet>396</a>    /// ```
@@ -523,7 +523,7 @@
 <a href=#523 id=523 data-nosnippet>523</a>    ///
 <a href=#524 id=524 data-nosnippet>524</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#525 id=525 data-nosnippet>525</a>    ///     let sock = UnixDatagram::unbound()?;
-<a href=#526 id=526 data-nosnippet>526</a>    ///     sock.send_to(b"omelette au fromage", "/some/sock").expect("send_to function failed");
+<a href=#526 id=526 data-nosnippet>526</a>    ///     sock.send_to(b"omelette au fromage", "/some/sock").expect("`UnixDatagram::send_to` should not fail");
 <a href=#527 id=527 data-nosnippet>527</a>    ///     Ok(())
 <a href=#528 id=528 data-nosnippet>528</a>    /// }
 <a href=#529 id=529 data-nosnippet>529</a>    /// ```
@@ -561,7 +561,7 @@
 <a href=#561 id=561 data-nosnippet>561</a>    ///     let addr = bound.local_addr()?;
 <a href=#562 id=562 data-nosnippet>562</a>    ///
 <a href=#563 id=563 data-nosnippet>563</a>    ///     let sock = UnixDatagram::unbound()?;
-<a href=#564 id=564 data-nosnippet>564</a>    ///     sock.send_to_addr(b"bacon egg and cheese", &amp;addr).expect("send_to_addr function failed");
+<a href=#564 id=564 data-nosnippet>564</a>    ///     sock.send_to_addr(b"bacon egg and cheese", &amp;addr).expect("`UnixDatagram::send_to_addr` should not fail");
 <a href=#565 id=565 data-nosnippet>565</a>    ///     Ok(())
 <a href=#566 id=566 data-nosnippet>566</a>    /// }
 <a href=#567 id=567 data-nosnippet>567</a>    /// ```
@@ -595,8 +595,8 @@
 <a href=#595 id=595 data-nosnippet>595</a>    ///
 <a href=#596 id=596 data-nosnippet>596</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#597 id=597 data-nosnippet>597</a>    ///     let sock = UnixDatagram::unbound()?;
-<a href=#598 id=598 data-nosnippet>598</a>    ///     sock.connect("/some/sock").expect("Couldn't connect");
-<a href=#599 id=599 data-nosnippet>599</a>    ///     sock.send(b"omelette au fromage").expect("send_to function failed");
+<a href=#598 id=598 data-nosnippet>598</a>    ///     sock.connect("/some/sock").expect("`UnixDatagram::connect` should not fail");
+<a href=#599 id=599 data-nosnippet>599</a>    ///     sock.send(b"omelette au fromage").expect("`UnixDatagram` is not connected");
 <a href=#600 id=600 data-nosnippet>600</a>    ///     Ok(())
 <a href=#601 id=601 data-nosnippet>601</a>    /// }
 <a href=#602 id=602 data-nosnippet>602</a>    /// ```
@@ -638,7 +638,7 @@
 <a href=#638 id=638 data-nosnippet>638</a>    ///     let mut ancillary = SocketAncillary::new(&amp;mut ancillary_buffer[..]);
 <a href=#639 id=639 data-nosnippet>639</a>    ///     ancillary.add_fds(&amp;fds[..]);
 <a href=#640 id=640 data-nosnippet>640</a>    ///     sock.send_vectored_with_ancillary_to(bufs, &amp;mut ancillary, "/some/sock")
-<a href=#641 id=641 data-nosnippet>641</a>    ///         .expect("send_vectored_with_ancillary_to function failed");
+<a href=#641 id=641 data-nosnippet>641</a>    ///         .expect("`UnixDatagram::send_vectored_with_ancillary_to` should not fail");
 <a href=#642 id=642 data-nosnippet>642</a>    ///     Ok(())
 <a href=#643 id=643 data-nosnippet>643</a>    /// }
 <a href=#644 id=644 data-nosnippet>644</a>    /// ```
@@ -686,7 +686,7 @@
 <a href=#686 id=686 data-nosnippet>686</a>    ///     let mut ancillary = SocketAncillary::new(&amp;mut ancillary_buffer[..]);
 <a href=#687 id=687 data-nosnippet>687</a>    ///     ancillary.add_fds(&amp;fds[..]);
 <a href=#688 id=688 data-nosnippet>688</a>    ///     sock.send_vectored_with_ancillary(bufs, &amp;mut ancillary)
-<a href=#689 id=689 data-nosnippet>689</a>    ///         .expect("send_vectored_with_ancillary function failed");
+<a href=#689 id=689 data-nosnippet>689</a>    ///         .expect("`UnixDatagram::send_vectored_with_ancillary` should not fail");
 <a href=#690 id=690 data-nosnippet>690</a>    ///     Ok(())
 <a href=#691 id=691 data-nosnippet>691</a>    /// }
 <a href=#692 id=692 data-nosnippet>692</a>    /// ```
@@ -719,7 +719,7 @@
 <a href=#719 id=719 data-nosnippet>719</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#720 id=720 data-nosnippet>720</a>    ///     let sock = UnixDatagram::unbound()?;
 <a href=#721 id=721 data-nosnippet>721</a>    ///     sock.set_read_timeout(Some(Duration::new(1, 0)))
-<a href=#722 id=722 data-nosnippet>722</a>    ///         .expect("set_read_timeout function failed");
+<a href=#722 id=722 data-nosnippet>722</a>    ///         .expect("`UnixDatagram::set_read_timeout` should not fail");
 <a href=#723 id=723 data-nosnippet>723</a>    ///     Ok(())
 <a href=#724 id=724 data-nosnippet>724</a>    /// }
 <a href=#725 id=725 data-nosnippet>725</a>    /// ```
@@ -765,7 +765,7 @@
 <a href=#765 id=765 data-nosnippet>765</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#766 id=766 data-nosnippet>766</a>    ///     let sock = UnixDatagram::unbound()?;
 <a href=#767 id=767 data-nosnippet>767</a>    ///     sock.set_write_timeout(Some(Duration::new(1, 0)))
-<a href=#768 id=768 data-nosnippet>768</a>    ///         .expect("set_write_timeout function failed");
+<a href=#768 id=768 data-nosnippet>768</a>    ///         .expect("`UnixDatagram::set_write_timeout` should not fail");
 <a href=#769 id=769 data-nosnippet>769</a>    ///     Ok(())
 <a href=#770 id=770 data-nosnippet>770</a>    /// }
 <a href=#771 id=771 data-nosnippet>771</a>    /// ```
@@ -804,7 +804,7 @@
 <a href=#804 id=804 data-nosnippet>804</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#805 id=805 data-nosnippet>805</a>    ///     let sock = UnixDatagram::unbound()?;
 <a href=#806 id=806 data-nosnippet>806</a>    ///     sock.set_read_timeout(Some(Duration::new(1, 0)))
-<a href=#807 id=807 data-nosnippet>807</a>    ///         .expect("set_read_timeout function failed");
+<a href=#807 id=807 data-nosnippet>807</a>    ///         .expect("`UnixDatagram::set_read_timeout` should not fail");
 <a href=#808 id=808 data-nosnippet>808</a>    ///     assert_eq!(sock.read_timeout()?, Some(Duration::new(1, 0)));
 <a href=#809 id=809 data-nosnippet>809</a>    ///     Ok(())
 <a href=#810 id=810 data-nosnippet>810</a>    /// }
@@ -826,7 +826,7 @@
 <a href=#826 id=826 data-nosnippet>826</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#827 id=827 data-nosnippet>827</a>    ///     let sock = UnixDatagram::unbound()?;
 <a href=#828 id=828 data-nosnippet>828</a>    ///     sock.set_write_timeout(Some(Duration::new(1, 0)))
-<a href=#829 id=829 data-nosnippet>829</a>    ///         .expect("set_write_timeout function failed");
+<a href=#829 id=829 data-nosnippet>829</a>    ///         .expect("`UnixDatagram::set_write_timeout` should not fail");
 <a href=#830 id=830 data-nosnippet>830</a>    ///     assert_eq!(sock.write_timeout()?, Some(Duration::new(1, 0)));
 <a href=#831 id=831 data-nosnippet>831</a>    ///     Ok(())
 <a href=#832 id=832 data-nosnippet>832</a>    /// }
@@ -846,7 +846,7 @@
 <a href=#846 id=846 data-nosnippet>846</a>    ///
 <a href=#847 id=847 data-nosnippet>847</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#848 id=848 data-nosnippet>848</a>    ///     let sock = UnixDatagram::unbound()?;
-<a href=#849 id=849 data-nosnippet>849</a>    ///     sock.set_nonblocking(true).expect("set_nonblocking function failed");
+<a href=#849 id=849 data-nosnippet>849</a>    ///     sock.set_nonblocking(true).expect("`UnixDatagram::set_nonblocking` should not fail");
 <a href=#850 id=850 data-nosnippet>850</a>    ///     Ok(())
 <a href=#851 id=851 data-nosnippet>851</a>    /// }
 <a href=#852 id=852 data-nosnippet>852</a>    /// ```
@@ -914,7 +914,7 @@
 <a href=#914 id=914 data-nosnippet>914</a>    ///
 <a href=#915 id=915 data-nosnippet>915</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#916 id=916 data-nosnippet>916</a>    ///     let sock = UnixDatagram::unbound()?;
-<a href=#917 id=917 data-nosnippet>917</a>    ///     sock.shutdown(Shutdown::Both).expect("shutdown function failed");
+<a href=#917 id=917 data-nosnippet>917</a>    ///     sock.shutdown(Shutdown::Both).expect("`UnixDatagram::shutdown` should not fail");
 <a href=#918 id=918 data-nosnippet>918</a>    ///     Ok(())
 <a href=#919 id=919 data-nosnippet>919</a>    /// }
 <a href=#920 id=920 data-nosnippet>920</a>    /// ```
@@ -941,7 +941,7 @@
 <a href=#941 id=941 data-nosnippet>941</a>    /// fn main() -&gt; std::io::Result&lt;()&gt; {
 <a href=#942 id=942 data-nosnippet>942</a>    ///     let socket = UnixDatagram::bind("/tmp/sock")?;
 <a href=#943 id=943 data-nosnippet>943</a>    ///     let mut buf = [0; 10];
-<a href=#944 id=944 data-nosnippet>944</a>    ///     let len = socket.peek(&amp;mut buf).expect("peek failed");
+<a href=#944 id=944 data-nosnippet>944</a>    ///     let len = socket.peek(&amp;mut buf).expect("`UnixDatagram::peek` should not fail");
 <a href=#945 id=945 data-nosnippet>945</a>    ///     Ok(())
 <a href=#946 id=946 data-nosnippet>946</a>    /// }
 <a href=#947 id=947 data-nosnippet>947</a>    /// ```
