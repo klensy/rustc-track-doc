@@ -35,7 +35,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-3f03ef4e.js";
+            window.path_to_searchindex_js = "../../searchindex-a8fcb155.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-724e4e6b.js"></script>
@@ -232,6 +232,7 @@
 <li><a href="#undropped-manually-drops"><code>undropped_manually_drops</code></a></li>
 <li><a href="#uninhabited-static"><code>uninhabited_static</code></a></li>
 <li><a href="#unknown-crate-types"><code>unknown_crate_types</code></a></li>
+<li><a href="#unstable-imports"><code>unstable_imports</code></a></li>
 <li><a href="#useless-deprecated"><code>useless_deprecated</code></a></li>
 <li><a href="#varargs-without-pattern"><code>varargs_without_pattern</code></a></li>
 <li><a href="#x86-softfloat-sse"><code>x86_softfloat_sse</code></a></li>
@@ -1554,7 +1555,7 @@ to a hard error in the future. See <a href="https://github.com/rust-lang/rust/is
   |
   = note: the `test_unstable_lint` lint is unstable
   = help: add `#![feature(test_unstable_lint)]` to the crate attributes to enable
-  = note: this compiler was built on 2026-10-03; consider upgrading it if it is out of date
+  = note: this compiler was built on 2026-10-04; consider upgrading it if it is out of date
   = note: `#[warn(unknown_lints)]` on by default
 
 </code></pre>
@@ -1728,9 +1729,34 @@ fn main() {}</code></pre>
 <h3 id="explanation-47"><a class="header" href="#explanation-47">Explanation</a></h3>
 <p>An unknown value give to the <code>crate_type</code> attribute is almost
 certainly a mistake.</p>
+<h2 id="unstable-imports"><a class="header" href="#unstable-imports">unstable-imports</a></h2>
+<p>The <code>unstable_imports</code> lints detects imports that go through unstable modules.</p>
+<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
+<pre><code class="language-rust">use core::intrinsics::transmute;</code></pre>
+<p>This will produce:</p>
+<pre><code class="language-text">error: use of deprecated import through accidentally stabilized module `intrinsics`
+ --&gt; lint_example.rs:2:5
+  |
+2 | use core::intrinsics::transmute;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+  = note: for more information, see issue #163160 &lt;https://github.com/rust-lang/rust/issues/163160&gt;
+  = note: `#[deny(unstable_imports)]` (part of `#[deny(future_incompatible)]`) on by default
+help: import this function via the `mem` module instead
+  |
+2 - use core::intrinsics::transmute;
+2 + use core::mem::transmute;
+  |
+
+</code></pre>
+<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
+<p>Previous versions of Rust accidentally allowed certain imports through unstable modules
+because stability information of modules was not correctly accounted for if the imported
+item was stable itself.</p>
 <h2 id="useless-deprecated"><a class="header" href="#useless-deprecated">useless-deprecated</a></h2>
 <p>The <code>useless_deprecated</code> lint detects deprecation attributes with no effect.</p>
-<h3 id="example-48"><a class="header" href="#example-48">Example</a></h3>
+<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
 <pre><code class="language-rust compile_fail">struct X;
 
 #[deprecated = "message"]
@@ -1751,12 +1777,12 @@ impl Default for X {
   = note: `#[deny(useless_deprecated)]` on by default
 
 </code></pre>
-<h3 id="explanation-48"><a class="header" href="#explanation-48">Explanation</a></h3>
+<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
 <p>Deprecation attributes have no effect on trait implementations.</p>
 <h2 id="varargs-without-pattern"><a class="header" href="#varargs-without-pattern">varargs-without-pattern</a></h2>
 <p>The <code>varargs_without_pattern</code> lint detects when <code>...</code> is used as an argument to a
 non-foreign function without any pattern being specified.</p>
-<h3 id="example-49"><a class="header" href="#example-49">Example</a></h3>
+<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
 <pre><code class="language-rust compile_fail">// Using `...` in non-foreign function definitions is unstable, however stability is
 // currently only checked after attributes are expanded, so using `#[cfg(false)]` here will
 // allow this to compile on stable Rust.
@@ -1780,7 +1806,7 @@ help: name the argument, or use `_` to continue ignoring it
   |        ++
 
 </code></pre>
-<h3 id="explanation-49"><a class="header" href="#explanation-49">Explanation</a></h3>
+<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
 <p>Patterns are currently required for all non-<code>...</code> arguments in function definitions (with
 some exceptions in the 2015 edition). Requiring <code>...</code> arguments to have patterns in
 non-foreign function definitions makes the language more consistent, and removes a source of
@@ -1798,7 +1824,7 @@ compiles on stable Rust.</p>
 <p>The <code>x86_softfloat_sse</code> lint detects usage of <code>#[target_feature(enable = "sse")]</code> or target
 features that imply SSE on softfloat x86 and x86-64 targets. Enabling this target feature
 in a soft-float configuration is not supported by LLVM and can lead to crashes.</p>
-<h3 id="example-50"><a class="header" href="#example-50">Example</a></h3>
+<h3 id="example-51"><a class="header" href="#example-51">Example</a></h3>
 <pre><code class="language-rust ignore (needs x86_64-unknown-none)">#[target_feature(enable = "avx")]
 fn with_avx() {}</code></pre>
 <p>This will produce:</p>
@@ -1811,7 +1837,7 @@ fn with_avx() {}</code></pre>
    = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
    = note: for more information, see issue #117938 &lt;https://github.com/rust-lang/rust/issues/117938&gt;
 </code></pre>
-<h3 id="explanation-50"><a class="header" href="#explanation-50">Explanation</a></h3>
+<h3 id="explanation-51"><a class="header" href="#explanation-51">Explanation</a></h3>
 <p>LLVM does not support combining the <code>soft-float</code> target feature (which is implicitly enabled
 on these targets) with <code>sse</code>. This can lead to crashes of the backend. To prevent that,
 Rust is turning that combination into an error.</p>
