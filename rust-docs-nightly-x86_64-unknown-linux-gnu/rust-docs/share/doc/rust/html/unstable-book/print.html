@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0678cde7.js";
+            window.path_to_searchindex_js = "searchindex-30a907b8.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-3b2acc79.js"></script>
+        <script src="toc-3fa29582.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -5479,7 +5479,7 @@ annotated declaration is involved in a name resolution error.</p>
 <p>Format parameters with the given named parameter will be replaced with the following text:</p>
 <ul>
 <li><code>{Unresolved}</code> — The <code>SimplePathSegment</code> of the import path that could not be resolved.</li>
-<li><code>{This}</code> — The name of the annotated item. On <code>use</code> statements this is identical to <code>{Unresolved}</code>.</li>
+<li><code>{this}</code> — The name of the annotated item. On <code>use</code> statements this is identical to <code>{unresolved}</code>.</li>
 </ul>
 <p>The original error message will not be suppressed but is emitted as a note instead.</p>
 <h3 id="on-use-declarations"><a class="header" href="#on-use-declarations">On use declarations</a></h3>
@@ -5510,7 +5510,7 @@ For more information about this error, try `rustc --explain E0432`.
 
 <span class="boring">fn main() {
 </span>#[diagnostic::on_unknown(
-    message = "module `{This}` is empty, there is no `{Unresolved}` here",
+    message = "module `{this}` is empty, there is no `{unresolved}` here",
     label = "can't import something from an empty module"
 )]
 mod empty {}
@@ -5656,7 +5656,7 @@ errors still use their existing diagnostics.</p>
 
 <span class="boring">fn main() {
 </span>#[diagnostic::on_unmatched_args(
-    message = "invalid arguments to {This} macro invocation",
+    message = "invalid arguments to {this} macro invocation",
     label = "expected a type and value here",
     note = "this macro expects a type and a value, like `pair!(u8, 0)`",
     note = "see &lt;link/to/docs&gt;",
@@ -5986,6 +5986,113 @@ fn main() {
     let x: libc::c_int = 1i32;
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="function_arg_const_generics"><a class="header" href="#function_arg_const_generics">function_arg_const_generics</a></h1>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/163261">#163261</a></p>
+<hr>
+<p>The <code>#![feature(function_arg_const_generics)]</code> allows const generic parameters to be declared in a function’s value parameter list and supplied as ordinary call arguments, rather than through generic arguments (turbofish syntax).</p>
+<p>Warning: This feature is incomplete; its design and syntax may change.</p>
+<p>This feature requires either <code>#![feature(gca_min_const_items)]</code> or <code>#![feature(gca_adts)]</code>.</p>
+<h2 id="examples-11"><a class="header" href="#examples-11">Examples</a></h2>
+<p>Normally, const generic parameters are declared in the generic parameter list and supplied using turbofish syntax:</p>
+<pre class="playground"><code class="language-rust">fn foo&lt;const N: usize&gt;(value: u8) {
+    let _ = N;
+}
+
+fn main() {
+    foo::&lt;42&gt;(10);
+}</code></pre>
+<p>With <code>function_arg_const_generics</code>, the const generic parameter can instead be declared in the function’s value parameter list:</p>
+<pre class="playground"><code class="language-rust">#![allow(incomplete_features)]
+#![feature(function_arg_const_generics, gca_min_const_items)]
+
+fn foo(const N: usize, value: u8) {
+    let _ = (N, value);
+}
+
+fn main() {
+    foo(42, 10);
+}</code></pre>
+<p>Here, <code>N</code> is still a const generic parameter, but its value is supplied as the first argument to the function call.</p>
+<h3 id="methods-and-trait-functions"><a class="header" href="#methods-and-trait-functions">Methods and trait functions</a></h3>
+<p>Argument position const generic parameters are supported in free functions, inherent methods, trait methods, and trait implementations.</p>
+<pre class="playground"><code class="language-rust">#![allow(incomplete_features)]
+#![feature(function_arg_const_generics, gca_min_const_items)]
+
+struct Foo;
+
+impl Foo {
+    fn bar(&amp;self, const N: usize) {
+        let _ = N;
+    }
+}
+
+trait Trait {
+    fn baz(const N: usize);
+}
+
+impl Trait for Foo {
+    fn baz(const N: usize) {
+        let _ = N;
+    }
+}
+
+fn main() {
+    Foo.bar(10);
+    Foo::baz(20);
+}</code></pre>
+<h3 id="supported-const-arguments"><a class="header" href="#supported-const-arguments">Supported const arguments</a></h3>
+<p>Currently, only the following forms of const arguments are supported:</p>
+<ul>
+<li>Literals.</li>
+<li>Paths to const generic parameters.</li>
+<li>Paths to const items, provided the const item is marked for use in the type system, for example using <code>gca!</code>.</li>
+</ul>
+<pre class="playground"><code class="language-rust">#![allow(incomplete_features)]
+#![feature(function_arg_const_generics, gca_min_const_items)]
+
+fn foo(const N: usize) {
+    let _ = N;
+}
+
+const VALUE: usize = core::gca!(42);
+
+fn bar&lt;const K: usize&gt;() {
+    foo(K);
+}
+
+fn main() {
+    foo(10);    // OK: integer literal
+    foo(VALUE); // OK: const item marked with gca!
+    bar::&lt;20&gt;();
+}</code></pre>
+<h3 id="restrictions"><a class="header" href="#restrictions">Restrictions</a></h3>
+<p>Argument position const generic parameters have the following restrictions:</p>
+<ul>
+<li>They must be declared using a plain identifier, such as <code>const N: usize</code>.</li>
+<li>They cannot be explicitly supplied using turbofish syntax.</li>
+<li>Arguments must use one of the supported const argument forms described above.</li>
+</ul>
+<p>For example, a runtime local variable cannot be used as a const argument:</p>
+<pre class="playground"><code class="language-rust compile_fail">#![allow(incomplete_features)]
+#![feature(function_arg_const_generics, gca_min_const_items)]
+
+fn foo(const N: usize) {}
+
+fn main() {
+    let n = 10;
+    foo(n); // ERROR: runtime local variable
+}</code></pre>
+<p>Similarly, argument position const generic parameters cannot be specified using turbofish syntax:</p>
+<pre class="playground"><code class="language-rust compile_fail E0107">#![allow(incomplete_features)]
+#![feature(function_arg_const_generics, gca_min_const_items)]
+
+fn foo(const N: usize) {}
+
+fn main() {
+    foo::&lt;10&gt;(10); // ERROR: N cannot be specified using turbofish
+}</code></pre>
+<p>Argument position const generic parameters are not currently supported in function pointer types, <code>Fn()</code> trait syntax, or foreign function declarations.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="fundamental"><a class="header" href="#fundamental"><code>fundamental</code></a></h1>
 <p>Allows using the <code>#[fundamental]</code> attribute.</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/29635">#29635</a></p>
@@ -5993,7 +6100,7 @@ fn main() {
 <h1 id="gca_adts"><a class="header" href="#gca_adts">gca_adts</a></h1>
 <p>Enables ADTs under the generic const args family of features (e.g. <code>gca!</code> macro).</p>
 <p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/163420">#163420</a></p>
-<h2 id="examples-11"><a class="header" href="#examples-11">Examples</a></h2>
+<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
 <pre class="playground"><code class="language-rust">#![feature(gca_min_const_items, min_adt_const_params, gca_adts)]
 
 use std::gca;
@@ -6014,7 +6121,7 @@ but based on the machinery developed for <a href="#gca_min_const_items">gca_min_
 meant to be an interim successor for GCE (though it might not currently support all
 the valid cases that supported by GCE).</p>
 <p>See also: <a href="#generic_const_items">generic_const_items</a></p>
-<h2 id="examples-12"><a class="header" href="#examples-12">Examples</a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
 <!-- NOTE(ignore) gca_const_items requires -Znext-solver to compile -->
 <pre><code class="language-rust ignore (requires-Z-next-solver)">#![feature(generic_const_items)]
 #![feature(gca_min_const_items)]
@@ -6039,7 +6146,7 @@ support for directly represented const arguments without the macro.</li>
 <li><a href="#gca_macroless_args-1">gca_macroless_items</a>. For a version of this feature that works for const arguments
 as the right hand side of a const item.</li>
 </ul>
-<h2 id="examples-13"><a class="header" href="#examples-13">Examples</a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
 <p>Here is an example from <a href="#gca_min_const_items">gca_min_const_items</a>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
@@ -6104,7 +6211,7 @@ support for directly represented const arguments as the rhs of const items witho
 <li><a href="#gca_macroless_args">gca_macroless_args</a>. For a version of this feature that works for const arguments in other
 positions</li>
 </ul>
-<h2 id="examples-14"><a class="header" href="#examples-14">Examples</a></h2>
+<h2 id="examples-15"><a class="header" href="#examples-15">Examples</a></h2>
 <p>Here is an example from <a href="#gca_min_const_items">gca_min_const_items</a>:</p>
 <pre><code class="language-rust ignore (needs new solver)">#![allow(incomplete_features)]
 #![feature(
@@ -6181,7 +6288,7 @@ struct Foo {
     bad_arr: [(); core::gca!(Y)], // Will not compile
 }
 </code></pre>
-<h2 id="examples-15"><a class="header" href="#examples-15">Examples</a></h2>
+<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
 #![feature(gca_min_const_items)]
@@ -6265,7 +6372,7 @@ to a value by being part of an item signature.</p>
 <hr>
 <p>Warning: This feature is incomplete; its design and syntax may change.</p>
 <p>See also: <a href="#gca_min_const_items">gca_min_const_items</a>, <a href="#gca_const_items">gca_const_items</a></p>
-<h2 id="examples-16"><a class="header" href="#examples-16">Examples</a></h2>
+<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
@@ -6327,7 +6434,7 @@ impl&lt;const N: usize&gt; Grow&lt;N&gt; {
 <p>Warning: This feature is an <a href="https://lang-team.rust-lang.org/how_to/experiment.html">experiment</a> and lacks an RFC.
 There are no guarantees that it will ever be stabilized.</p>
 <p>See also: <a href="#generic_const_exprs">generic_const_exprs</a>, <a href="#gca_min_const_items">gca_min_const_items</a>.</p>
-<h2 id="examples-17"><a class="header" href="#examples-17">Examples</a></h2>
+<h2 id="examples-18"><a class="header" href="#examples-18">Examples</a></h2>
 <h3 id="generic-constant-values"><a class="header" href="#generic-constant-values">Generic constant values</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![allow(incomplete_features)]
@@ -6771,7 +6878,7 @@ pub struct ThirdThing;
 <h3 id="syntax-2"><a class="header" href="#syntax-2">Syntax</a></h3>
 <p>This feature builds upon the metavariable expression syntax <code>${ .. }</code> as specified in <a href="https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html">RFC 3086</a> (<a href="#macro_metavar_expr"><code>macro_metavar_expr</code></a>).
 <code>concat</code> is available like <code>${ concat(items) }</code>, where <code>items</code> is a comma separated sequence of idents and/or literals.</p>
-<h3 id="examples-18"><a class="header" href="#examples-18">Examples</a></h3>
+<h3 id="examples-19"><a class="header" href="#examples-19">Examples</a></h3>
 <h4 id="create-a-function-or-method-with-a-concatenated-name"><a class="header" href="#create-a-function-or-method-with-a-concatenated-name">Create a function or method with a concatenated name</a></h4>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(macro_metavar_expr_concat)]
@@ -7235,7 +7342,7 @@ Attributes using the registered tool are checked for valid syntax, and lint attr
 When compiling with <code>-Z unstable-features</code>, <code>rustc::*</code> lints can also be used. Like <code>rustdoc</code>, the <code>rustc</code> namespace can only be used with lints, not attributes.</p>
 <p>The compiler will emit an error if it encounters a lint/attribute whose namespace isn’t a registered tool.</p>
 <p>Tool namespaces cannot be nested; <code>register_tool(main_tool::subtool)</code> is an error.</p>
-<h2 id="examples-19"><a class="header" href="#examples-19">Examples</a></h2>
+<h2 id="examples-20"><a class="header" href="#examples-20">Examples</a></h2>
 <p>Tool attributes:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(register_tool)]
@@ -7302,7 +7409,7 @@ that is way more verbose.</p>
 <p>Options provided by <code>#[rustc_dump_layout(...)]</code> are <code>backend_repr</code>, <code>align</code>,
 <code>debug</code>, <code>homogeneous_aggregate</code> and <code>size</code>.
 Note that it only works on sized types without generics.</p>
-<h2 id="examples-20"><a class="header" href="#examples-20">Examples</a></h2>
+<h2 id="examples-21"><a class="header" href="#examples-21">Examples</a></h2>
 <pre class="playground"><code class="language-rust compile_fail"><span class="boring">#![allow(unused)]
 </span>#![feature(rustc_attrs)]
 
@@ -7390,7 +7497,7 @@ longer instrument non-atomic store / load operations, but it will instrument
 atomic operations to avoid reporting false positives and provide meaning full
 stack traces.</p>
 <p>This attribute was previously named <code>no_sanitize</code>.</p>
-<h2 id="examples-21"><a class="header" href="#examples-21">Examples</a></h2>
+<h2 id="examples-22"><a class="header" href="#examples-22">Examples</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span>#![feature(sanitize)]
 
@@ -7844,7 +7951,7 @@ fn main() {}</code></pre>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="unsized_const_params"><a class="header" href="#unsized_const_params"><code>unsized_const_params</code></a></h1>
 <p>Allows const generic parameters to be defined with types that are not <code>Sized</code>, e.g. <code>fn foo&lt;const N: [u8]&gt;() {</code>.</p>
-<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/95174">#95174</a></p>
+<p>The tracking issue for this feature is: <a href="https://github.com/rust-lang/rust/issues/128028">#128028</a></p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="unsized_fn_params"><a class="header" href="#unsized_fn_params"><code>unsized_fn_params</code></a></h1>
 <p>Allows unsized fn parameters.</p>
@@ -9431,7 +9538,7 @@ even when using either of the above.</p>
 <p>The tracking issue for this feature is <a href="https://github.com/rust-lang/rust/issues/29598">#29598</a>.</p>
 <hr>
 <p>With <code>trace_macros</code> you can trace the expansion of macros in your code.</p>
-<h2 id="examples-22"><a class="header" href="#examples-22">Examples</a></h2>
+<h2 id="examples-23"><a class="header" href="#examples-23">Examples</a></h2>
 <pre class="playground"><code class="language-rust">#![feature(trace_macros)]
 
 fn main() {
