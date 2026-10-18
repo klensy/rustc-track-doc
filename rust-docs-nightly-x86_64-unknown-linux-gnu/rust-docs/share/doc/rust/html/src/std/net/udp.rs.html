@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/net/udp.rs`."><title>udp.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (5d8fec066 2026-10-16)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/net/</div>udp.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/net/udp.rs`."><title>udp.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (8006091eb 2026-10-17)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/net/</div>udp.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(
 <a href=#2 id=2 data-nosnippet>2</a>    test,
 <a href=#3 id=3 data-nosnippet>3</a>    not(any(
 <a href=#4 id=4 data-nosnippet>4</a>        target_os = <span class="string">"emscripten"</span>,
@@ -589,273 +589,349 @@
 <a href=#589 id=589 data-nosnippet>589</a>        <span class="self">self</span>.<span class="number">0</span>.ttl()
 <a href=#590 id=590 data-nosnippet>590</a>    }
 <a href=#591 id=591 data-nosnippet>591</a>
-<a href=#592 id=592 data-nosnippet>592</a>    <span class="doccomment">/// Executes an operation of the `IP_ADD_MEMBERSHIP` type.
+<a href=#592 id=592 data-nosnippet>592</a>    <span class="doccomment">/// Sets the value for the `IPV6_UNICAST_HOPS` option on this socket.
 <a href=#593 id=593 data-nosnippet>593</a>    ///
-<a href=#594 id=594 data-nosnippet>594</a>    /// This function specifies a new multicast group for this socket to join.
-<a href=#595 id=595 data-nosnippet>595</a>    /// The address must be a valid multicast address, and `interface` is the
-<a href=#596 id=596 data-nosnippet>596</a>    /// address of the local interface with which the system should join the
-<a href=#597 id=597 data-nosnippet>597</a>    /// multicast group. If it's equal to [`UNSPECIFIED`](Ipv4Addr::UNSPECIFIED)
-<a href=#598 id=598 data-nosnippet>598</a>    /// then an appropriate interface is chosen by the system.
-<a href=#599 id=599 data-nosnippet>599</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#600 id=600 data-nosnippet>600</a>    </span><span class="kw">pub fn </span>join_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
-<a href=#601 id=601 data-nosnippet>601</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v4(multiaddr, interface)
-<a href=#602 id=602 data-nosnippet>602</a>    }
-<a href=#603 id=603 data-nosnippet>603</a>
-<a href=#604 id=604 data-nosnippet>604</a>    <span class="doccomment">/// Executes an operation of the `IPV6_ADD_MEMBERSHIP` type.
-<a href=#605 id=605 data-nosnippet>605</a>    ///
-<a href=#606 id=606 data-nosnippet>606</a>    /// This function specifies a new multicast group for this socket to join.
-<a href=#607 id=607 data-nosnippet>607</a>    /// The address must be a valid multicast address, and `interface` is the
-<a href=#608 id=608 data-nosnippet>608</a>    /// index of the interface to join/leave (or 0 to indicate any interface).
-<a href=#609 id=609 data-nosnippet>609</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">pub fn </span>join_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#611 id=611 data-nosnippet>611</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v6(multiaddr, interface)
-<a href=#612 id=612 data-nosnippet>612</a>    }
-<a href=#613 id=613 data-nosnippet>613</a>
-<a href=#614 id=614 data-nosnippet>614</a>    <span class="doccomment">/// Executes an operation of the `IP_DROP_MEMBERSHIP` type.
-<a href=#615 id=615 data-nosnippet>615</a>    ///
-<a href=#616 id=616 data-nosnippet>616</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v4`].
-<a href=#617 id=617 data-nosnippet>617</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#618 id=618 data-nosnippet>618</a>    </span><span class="kw">pub fn </span>leave_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
-<a href=#619 id=619 data-nosnippet>619</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v4(multiaddr, interface)
-<a href=#620 id=620 data-nosnippet>620</a>    }
-<a href=#621 id=621 data-nosnippet>621</a>
-<a href=#622 id=622 data-nosnippet>622</a>    <span class="doccomment">/// Executes an operation of the `IPV6_DROP_MEMBERSHIP` type.
-<a href=#623 id=623 data-nosnippet>623</a>    ///
-<a href=#624 id=624 data-nosnippet>624</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v6`].
-<a href=#625 id=625 data-nosnippet>625</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#626 id=626 data-nosnippet>626</a>    </span><span class="kw">pub fn </span>leave_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#627 id=627 data-nosnippet>627</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v6(multiaddr, interface)
+<a href=#594 id=594 data-nosnippet>594</a>    /// This value sets the unicast hop limit field that is used in every packet
+<a href=#595 id=595 data-nosnippet>595</a>    /// sent from this socket.
+<a href=#596 id=596 data-nosnippet>596</a>    ///
+<a href=#597 id=597 data-nosnippet>597</a>    /// # Examples
+<a href=#598 id=598 data-nosnippet>598</a>    ///
+<a href=#599 id=599 data-nosnippet>599</a>    /// ```no_run
+<a href=#600 id=600 data-nosnippet>600</a>    /// #![feature(ipv6_hop_limit)]
+<a href=#601 id=601 data-nosnippet>601</a>    /// use std::net::UdpSocket;
+<a href=#602 id=602 data-nosnippet>602</a>    ///
+<a href=#603 id=603 data-nosnippet>603</a>    /// let socket = UdpSocket::bind("[::1]:12345").expect("couldn't bind to address");
+<a href=#604 id=604 data-nosnippet>604</a>    /// socket.set_hop_limit_v6(88).expect("set_hop_limit_v6 call failed");
+<a href=#605 id=605 data-nosnippet>605</a>    /// ```
+<a href=#606 id=606 data-nosnippet>606</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
+<a href=#607 id=607 data-nosnippet>607</a>    </span><span class="kw">pub fn </span>set_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u8) -&gt; io::Result&lt;()&gt; {
+<a href=#608 id=608 data-nosnippet>608</a>        <span class="self">self</span>.<span class="number">0</span>.set_hop_limit_v6(limit)
+<a href=#609 id=609 data-nosnippet>609</a>    }
+<a href=#610 id=610 data-nosnippet>610</a>
+<a href=#611 id=611 data-nosnippet>611</a>    <span class="doccomment">/// Gets the value of the `IPV6_UNICAST_HOPS` option on this socket.
+<a href=#612 id=612 data-nosnippet>612</a>    ///
+<a href=#613 id=613 data-nosnippet>613</a>    /// For more information about this option, see [`UdpSocket::set_hop_limit_v6`].
+<a href=#614 id=614 data-nosnippet>614</a>    ///
+<a href=#615 id=615 data-nosnippet>615</a>    /// # Examples
+<a href=#616 id=616 data-nosnippet>616</a>    ///
+<a href=#617 id=617 data-nosnippet>617</a>    /// ```no_run
+<a href=#618 id=618 data-nosnippet>618</a>    /// #![feature(ipv6_hop_limit)]
+<a href=#619 id=619 data-nosnippet>619</a>    /// use std::net::UdpSocket;
+<a href=#620 id=620 data-nosnippet>620</a>    ///
+<a href=#621 id=621 data-nosnippet>621</a>    /// let socket = UdpSocket::bind("[::1]:12345").expect("couldn't bind to address");
+<a href=#622 id=622 data-nosnippet>622</a>    /// socket.set_hop_limit_v6(88).expect("set_hop_limit_v6 call failed");
+<a href=#623 id=623 data-nosnippet>623</a>    /// assert_eq!(socket.hop_limit_v6().unwrap(), 88);
+<a href=#624 id=624 data-nosnippet>624</a>    /// ```
+<a href=#625 id=625 data-nosnippet>625</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
+<a href=#626 id=626 data-nosnippet>626</a>    </span><span class="kw">pub fn </span>hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u8&gt; {
+<a href=#627 id=627 data-nosnippet>627</a>        <span class="self">self</span>.<span class="number">0</span>.hop_limit_v6()
 <a href=#628 id=628 data-nosnippet>628</a>    }
 <a href=#629 id=629 data-nosnippet>629</a>
-<a href=#630 id=630 data-nosnippet>630</a>    <span class="doccomment">/// Gets the value of the `SO_ERROR` option on this socket.
+<a href=#630 id=630 data-nosnippet>630</a>    <span class="doccomment">/// Sets the value for the `IPV6_MULTICAST_HOPS` option on this socket.
 <a href=#631 id=631 data-nosnippet>631</a>    ///
-<a href=#632 id=632 data-nosnippet>632</a>    /// This will retrieve the stored error in the underlying socket, clearing
-<a href=#633 id=633 data-nosnippet>633</a>    /// the field in the process. This can be useful for checking errors between
-<a href=#634 id=634 data-nosnippet>634</a>    /// calls.
-<a href=#635 id=635 data-nosnippet>635</a>    ///
-<a href=#636 id=636 data-nosnippet>636</a>    /// # Examples
-<a href=#637 id=637 data-nosnippet>637</a>    ///
-<a href=#638 id=638 data-nosnippet>638</a>    /// ```no_run
+<a href=#632 id=632 data-nosnippet>632</a>    /// This value sets the hop limit field for outgoing multicast packets
+<a href=#633 id=633 data-nosnippet>633</a>    /// sent from this socket.
+<a href=#634 id=634 data-nosnippet>634</a>    ///
+<a href=#635 id=635 data-nosnippet>635</a>    /// # Examples
+<a href=#636 id=636 data-nosnippet>636</a>    ///
+<a href=#637 id=637 data-nosnippet>637</a>    /// ```no_run
+<a href=#638 id=638 data-nosnippet>638</a>    /// #![feature(ipv6_hop_limit)]
 <a href=#639 id=639 data-nosnippet>639</a>    /// use std::net::UdpSocket;
 <a href=#640 id=640 data-nosnippet>640</a>    ///
-<a href=#641 id=641 data-nosnippet>641</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
-<a href=#642 id=642 data-nosnippet>642</a>    /// match socket.take_error() {
-<a href=#643 id=643 data-nosnippet>643</a>    ///     Ok(Some(error)) =&gt; println!("UdpSocket error: {error:?}"),
-<a href=#644 id=644 data-nosnippet>644</a>    ///     Ok(None) =&gt; println!("No error"),
-<a href=#645 id=645 data-nosnippet>645</a>    ///     Err(error) =&gt; println!("UdpSocket.take_error failed: {error:?}"),
-<a href=#646 id=646 data-nosnippet>646</a>    /// }
-<a href=#647 id=647 data-nosnippet>647</a>    /// ```
-<a href=#648 id=648 data-nosnippet>648</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#649 id=649 data-nosnippet>649</a>    </span><span class="kw">pub fn </span>take_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;io::Error&gt;&gt; {
-<a href=#650 id=650 data-nosnippet>650</a>        <span class="self">self</span>.<span class="number">0</span>.take_error()
-<a href=#651 id=651 data-nosnippet>651</a>    }
-<a href=#652 id=652 data-nosnippet>652</a>
-<a href=#653 id=653 data-nosnippet>653</a>    <span class="doccomment">/// Connects this UDP socket to a remote address, allowing the `send` and
-<a href=#654 id=654 data-nosnippet>654</a>    /// `recv` syscalls to be used to send data and also applies filters to only
-<a href=#655 id=655 data-nosnippet>655</a>    /// receive data from the specified address.
-<a href=#656 id=656 data-nosnippet>656</a>    ///
-<a href=#657 id=657 data-nosnippet>657</a>    /// If `addr` yields multiple addresses, `connect` will be attempted with
-<a href=#658 id=658 data-nosnippet>658</a>    /// each of the addresses until the underlying OS function returns no
-<a href=#659 id=659 data-nosnippet>659</a>    /// error. Note that usually, a successful `connect` call does not specify
-<a href=#660 id=660 data-nosnippet>660</a>    /// that there is a remote server listening on the port, rather, such an
-<a href=#661 id=661 data-nosnippet>661</a>    /// error would only be detected after the first send. If the OS returns an
-<a href=#662 id=662 data-nosnippet>662</a>    /// error for each of the specified addresses, the error returned from the
-<a href=#663 id=663 data-nosnippet>663</a>    /// last connection attempt (the last address) is returned.
-<a href=#664 id=664 data-nosnippet>664</a>    ///
-<a href=#665 id=665 data-nosnippet>665</a>    /// # Examples
-<a href=#666 id=666 data-nosnippet>666</a>    ///
-<a href=#667 id=667 data-nosnippet>667</a>    /// Creates a UDP socket bound to `127.0.0.1:3400` and connect the socket to
-<a href=#668 id=668 data-nosnippet>668</a>    /// `127.0.0.1:8080`:
+<a href=#641 id=641 data-nosnippet>641</a>    /// let socket = UdpSocket::bind("[::1]:12345").expect("couldn't bind to address");
+<a href=#642 id=642 data-nosnippet>642</a>    /// socket.set_multicast_hop_limit_v6(88).expect("set_multicast_hop_limit_v6 call failed");
+<a href=#643 id=643 data-nosnippet>643</a>    /// ```
+<a href=#644 id=644 data-nosnippet>644</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
+<a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">pub fn </span>set_multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u8) -&gt; io::Result&lt;()&gt; {
+<a href=#646 id=646 data-nosnippet>646</a>        <span class="self">self</span>.<span class="number">0</span>.set_multicast_hop_limit_v6(limit)
+<a href=#647 id=647 data-nosnippet>647</a>    }
+<a href=#648 id=648 data-nosnippet>648</a>
+<a href=#649 id=649 data-nosnippet>649</a>    <span class="doccomment">/// Gets the value of the `IPV6_MULTICAST_HOPS` option on this socket.
+<a href=#650 id=650 data-nosnippet>650</a>    ///
+<a href=#651 id=651 data-nosnippet>651</a>    /// For more information about this option, see [`UdpSocket::set_multicast_hop_limit_v6`].
+<a href=#652 id=652 data-nosnippet>652</a>    ///
+<a href=#653 id=653 data-nosnippet>653</a>    /// # Examples
+<a href=#654 id=654 data-nosnippet>654</a>    ///
+<a href=#655 id=655 data-nosnippet>655</a>    /// ```no_run
+<a href=#656 id=656 data-nosnippet>656</a>    /// #![feature(ipv6_hop_limit)]
+<a href=#657 id=657 data-nosnippet>657</a>    /// use std::net::UdpSocket;
+<a href=#658 id=658 data-nosnippet>658</a>    ///
+<a href=#659 id=659 data-nosnippet>659</a>    /// let socket = UdpSocket::bind("[::1]:12345").expect("couldn't bind to address");
+<a href=#660 id=660 data-nosnippet>660</a>    /// socket.set_multicast_hop_limit_v6(88).expect("set_multicast_hop_limit_v6 call failed");
+<a href=#661 id=661 data-nosnippet>661</a>    /// assert_eq!(socket.multicast_hop_limit_v6().unwrap(), 88);
+<a href=#662 id=662 data-nosnippet>662</a>    /// ```
+<a href=#663 id=663 data-nosnippet>663</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
+<a href=#664 id=664 data-nosnippet>664</a>    </span><span class="kw">pub fn </span>multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u8&gt; {
+<a href=#665 id=665 data-nosnippet>665</a>        <span class="self">self</span>.<span class="number">0</span>.multicast_hop_limit_v6()
+<a href=#666 id=666 data-nosnippet>666</a>    }
+<a href=#667 id=667 data-nosnippet>667</a>
+<a href=#668 id=668 data-nosnippet>668</a>    <span class="doccomment">/// Executes an operation of the `IP_ADD_MEMBERSHIP` type.
 <a href=#669 id=669 data-nosnippet>669</a>    ///
-<a href=#670 id=670 data-nosnippet>670</a>    /// ```no_run
-<a href=#671 id=671 data-nosnippet>671</a>    /// use std::net::UdpSocket;
-<a href=#672 id=672 data-nosnippet>672</a>    ///
-<a href=#673 id=673 data-nosnippet>673</a>    /// let socket = UdpSocket::bind("127.0.0.1:3400").expect("bind should succeed");
-<a href=#674 id=674 data-nosnippet>674</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
-<a href=#675 id=675 data-nosnippet>675</a>    /// ```
-<a href=#676 id=676 data-nosnippet>676</a>    ///
-<a href=#677 id=677 data-nosnippet>677</a>    /// Unlike in the TCP case, passing an array of addresses to the `connect`
-<a href=#678 id=678 data-nosnippet>678</a>    /// function of a UDP socket is not a useful thing to do: The OS will be
-<a href=#679 id=679 data-nosnippet>679</a>    /// unable to determine whether something is listening on the remote
-<a href=#680 id=680 data-nosnippet>680</a>    /// address without the application sending data.
+<a href=#670 id=670 data-nosnippet>670</a>    /// This function specifies a new multicast group for this socket to join.
+<a href=#671 id=671 data-nosnippet>671</a>    /// The address must be a valid multicast address, and `interface` is the
+<a href=#672 id=672 data-nosnippet>672</a>    /// address of the local interface with which the system should join the
+<a href=#673 id=673 data-nosnippet>673</a>    /// multicast group. If it's equal to [`UNSPECIFIED`](Ipv4Addr::UNSPECIFIED)
+<a href=#674 id=674 data-nosnippet>674</a>    /// then an appropriate interface is chosen by the system.
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#676 id=676 data-nosnippet>676</a>    </span><span class="kw">pub fn </span>join_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
+<a href=#677 id=677 data-nosnippet>677</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v4(multiaddr, interface)
+<a href=#678 id=678 data-nosnippet>678</a>    }
+<a href=#679 id=679 data-nosnippet>679</a>
+<a href=#680 id=680 data-nosnippet>680</a>    <span class="doccomment">/// Executes an operation of the `IPV6_ADD_MEMBERSHIP` type.
 <a href=#681 id=681 data-nosnippet>681</a>    ///
-<a href=#682 id=682 data-nosnippet>682</a>    /// If your first `connect` is to a loopback address, subsequent
-<a href=#683 id=683 data-nosnippet>683</a>    /// `connect`s to non-loopback addresses might fail, depending
-<a href=#684 id=684 data-nosnippet>684</a>    /// on the platform.
+<a href=#682 id=682 data-nosnippet>682</a>    /// This function specifies a new multicast group for this socket to join.
+<a href=#683 id=683 data-nosnippet>683</a>    /// The address must be a valid multicast address, and `interface` is the
+<a href=#684 id=684 data-nosnippet>684</a>    /// index of the interface to join/leave (or 0 to indicate any interface).
 <a href=#685 id=685 data-nosnippet>685</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#686 id=686 data-nosnippet>686</a>    </span><span class="kw">pub fn </span>connect&lt;A: ToSocketAddrs&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: A) -&gt; io::Result&lt;()&gt; {
-<a href=#687 id=687 data-nosnippet>687</a>        <span class="self">self</span>.<span class="number">0</span>.connect(addr)
+<a href=#686 id=686 data-nosnippet>686</a>    </span><span class="kw">pub fn </span>join_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#687 id=687 data-nosnippet>687</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v6(multiaddr, interface)
 <a href=#688 id=688 data-nosnippet>688</a>    }
 <a href=#689 id=689 data-nosnippet>689</a>
-<a href=#690 id=690 data-nosnippet>690</a>    <span class="doccomment">/// Sends data on the socket to the remote address to which it is connected.
-<a href=#691 id=691 data-nosnippet>691</a>    /// On success, returns the number of bytes written. Note that the operating
-<a href=#692 id=692 data-nosnippet>692</a>    /// system may refuse buffers larger than 65507. However, partial writes are
-<a href=#693 id=693 data-nosnippet>693</a>    /// not possible until buffer sizes above `i32::MAX`.
-<a href=#694 id=694 data-nosnippet>694</a>    ///
-<a href=#695 id=695 data-nosnippet>695</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
-<a href=#696 id=696 data-nosnippet>696</a>    /// method will fail if the socket is not connected.
-<a href=#697 id=697 data-nosnippet>697</a>    ///
-<a href=#698 id=698 data-nosnippet>698</a>    /// # Examples
+<a href=#690 id=690 data-nosnippet>690</a>    <span class="doccomment">/// Executes an operation of the `IP_DROP_MEMBERSHIP` type.
+<a href=#691 id=691 data-nosnippet>691</a>    ///
+<a href=#692 id=692 data-nosnippet>692</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v4`].
+<a href=#693 id=693 data-nosnippet>693</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#694 id=694 data-nosnippet>694</a>    </span><span class="kw">pub fn </span>leave_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
+<a href=#695 id=695 data-nosnippet>695</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v4(multiaddr, interface)
+<a href=#696 id=696 data-nosnippet>696</a>    }
+<a href=#697 id=697 data-nosnippet>697</a>
+<a href=#698 id=698 data-nosnippet>698</a>    <span class="doccomment">/// Executes an operation of the `IPV6_DROP_MEMBERSHIP` type.
 <a href=#699 id=699 data-nosnippet>699</a>    ///
-<a href=#700 id=700 data-nosnippet>700</a>    /// ```no_run
-<a href=#701 id=701 data-nosnippet>701</a>    /// use std::net::UdpSocket;
-<a href=#702 id=702 data-nosnippet>702</a>    ///
-<a href=#703 id=703 data-nosnippet>703</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
-<a href=#704 id=704 data-nosnippet>704</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
-<a href=#705 id=705 data-nosnippet>705</a>    /// socket.send(&amp;[0, 1, 2]).expect("send should succeed");
-<a href=#706 id=706 data-nosnippet>706</a>    /// ```
-<a href=#707 id=707 data-nosnippet>707</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#708 id=708 data-nosnippet>708</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#709 id=709 data-nosnippet>709</a>        <span class="self">self</span>.<span class="number">0</span>.send(buf)
-<a href=#710 id=710 data-nosnippet>710</a>    }
-<a href=#711 id=711 data-nosnippet>711</a>
-<a href=#712 id=712 data-nosnippet>712</a>    <span class="doccomment">/// Receives a single datagram message on the socket from the remote address to
-<a href=#713 id=713 data-nosnippet>713</a>    /// which it is connected. On success, returns the number of bytes read.
-<a href=#714 id=714 data-nosnippet>714</a>    ///
-<a href=#715 id=715 data-nosnippet>715</a>    /// The function must be called with valid byte array `buf` of sufficient size to
-<a href=#716 id=716 data-nosnippet>716</a>    /// hold the message bytes. If a message is too long to fit in the supplied buffer,
-<a href=#717 id=717 data-nosnippet>717</a>    /// excess bytes may be discarded.
-<a href=#718 id=718 data-nosnippet>718</a>    ///
-<a href=#719 id=719 data-nosnippet>719</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
-<a href=#720 id=720 data-nosnippet>720</a>    /// method will fail if the socket is not connected.
-<a href=#721 id=721 data-nosnippet>721</a>    ///
-<a href=#722 id=722 data-nosnippet>722</a>    /// Refer to the platform-specific documentation on this function; it is considered
-<a href=#723 id=723 data-nosnippet>723</a>    /// correct for its behavior to differ from [`UdpSocket::recv_from`] if the underlying
-<a href=#724 id=724 data-nosnippet>724</a>    /// system call does so.
-<a href=#725 id=725 data-nosnippet>725</a>    ///
-<a href=#726 id=726 data-nosnippet>726</a>    /// # Examples
-<a href=#727 id=727 data-nosnippet>727</a>    ///
-<a href=#728 id=728 data-nosnippet>728</a>    /// ```no_run
-<a href=#729 id=729 data-nosnippet>729</a>    /// use std::net::UdpSocket;
-<a href=#730 id=730 data-nosnippet>730</a>    ///
-<a href=#731 id=731 data-nosnippet>731</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
-<a href=#732 id=732 data-nosnippet>732</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
-<a href=#733 id=733 data-nosnippet>733</a>    /// let mut buf = [0; 10];
-<a href=#734 id=734 data-nosnippet>734</a>    /// match socket.recv(&amp;mut buf) {
-<a href=#735 id=735 data-nosnippet>735</a>    ///     Ok(received) =&gt; println!("received {received} bytes {:?}", &amp;buf[..received]),
-<a href=#736 id=736 data-nosnippet>736</a>    ///     Err(e) =&gt; println!("recv function failed: {e:?}"),
-<a href=#737 id=737 data-nosnippet>737</a>    /// }
-<a href=#738 id=738 data-nosnippet>738</a>    /// ```
-<a href=#739 id=739 data-nosnippet>739</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#740 id=740 data-nosnippet>740</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#741 id=741 data-nosnippet>741</a>        <span class="self">self</span>.<span class="number">0</span>.recv(buf)
-<a href=#742 id=742 data-nosnippet>742</a>    }
-<a href=#743 id=743 data-nosnippet>743</a>
-<a href=#744 id=744 data-nosnippet>744</a>    <span class="doccomment">/// Receives single datagram on the socket from the remote address to which it is
-<a href=#745 id=745 data-nosnippet>745</a>    /// connected, without removing the message from input queue. On success, returns
-<a href=#746 id=746 data-nosnippet>746</a>    /// the number of bytes peeked.
-<a href=#747 id=747 data-nosnippet>747</a>    ///
-<a href=#748 id=748 data-nosnippet>748</a>    /// The function must be called with valid byte array `buf` of sufficient size to
-<a href=#749 id=749 data-nosnippet>749</a>    /// hold the message bytes. If a message is too long to fit in the supplied buffer,
-<a href=#750 id=750 data-nosnippet>750</a>    /// excess bytes may be discarded.
-<a href=#751 id=751 data-nosnippet>751</a>    ///
-<a href=#752 id=752 data-nosnippet>752</a>    /// Successive calls return the same data. This is accomplished by passing
-<a href=#753 id=753 data-nosnippet>753</a>    /// `MSG_PEEK` as a flag to the underlying `recv` system call.
-<a href=#754 id=754 data-nosnippet>754</a>    ///
-<a href=#755 id=755 data-nosnippet>755</a>    /// Do not use this function to implement busy waiting, instead use `libc::poll` to
-<a href=#756 id=756 data-nosnippet>756</a>    /// synchronize IO events on one or more sockets.
+<a href=#700 id=700 data-nosnippet>700</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v6`].
+<a href=#701 id=701 data-nosnippet>701</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#702 id=702 data-nosnippet>702</a>    </span><span class="kw">pub fn </span>leave_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
+<a href=#703 id=703 data-nosnippet>703</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v6(multiaddr, interface)
+<a href=#704 id=704 data-nosnippet>704</a>    }
+<a href=#705 id=705 data-nosnippet>705</a>
+<a href=#706 id=706 data-nosnippet>706</a>    <span class="doccomment">/// Gets the value of the `SO_ERROR` option on this socket.
+<a href=#707 id=707 data-nosnippet>707</a>    ///
+<a href=#708 id=708 data-nosnippet>708</a>    /// This will retrieve the stored error in the underlying socket, clearing
+<a href=#709 id=709 data-nosnippet>709</a>    /// the field in the process. This can be useful for checking errors between
+<a href=#710 id=710 data-nosnippet>710</a>    /// calls.
+<a href=#711 id=711 data-nosnippet>711</a>    ///
+<a href=#712 id=712 data-nosnippet>712</a>    /// # Examples
+<a href=#713 id=713 data-nosnippet>713</a>    ///
+<a href=#714 id=714 data-nosnippet>714</a>    /// ```no_run
+<a href=#715 id=715 data-nosnippet>715</a>    /// use std::net::UdpSocket;
+<a href=#716 id=716 data-nosnippet>716</a>    ///
+<a href=#717 id=717 data-nosnippet>717</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
+<a href=#718 id=718 data-nosnippet>718</a>    /// match socket.take_error() {
+<a href=#719 id=719 data-nosnippet>719</a>    ///     Ok(Some(error)) =&gt; println!("UdpSocket error: {error:?}"),
+<a href=#720 id=720 data-nosnippet>720</a>    ///     Ok(None) =&gt; println!("No error"),
+<a href=#721 id=721 data-nosnippet>721</a>    ///     Err(error) =&gt; println!("UdpSocket.take_error failed: {error:?}"),
+<a href=#722 id=722 data-nosnippet>722</a>    /// }
+<a href=#723 id=723 data-nosnippet>723</a>    /// ```
+<a href=#724 id=724 data-nosnippet>724</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#725 id=725 data-nosnippet>725</a>    </span><span class="kw">pub fn </span>take_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;io::Error&gt;&gt; {
+<a href=#726 id=726 data-nosnippet>726</a>        <span class="self">self</span>.<span class="number">0</span>.take_error()
+<a href=#727 id=727 data-nosnippet>727</a>    }
+<a href=#728 id=728 data-nosnippet>728</a>
+<a href=#729 id=729 data-nosnippet>729</a>    <span class="doccomment">/// Connects this UDP socket to a remote address, allowing the `send` and
+<a href=#730 id=730 data-nosnippet>730</a>    /// `recv` syscalls to be used to send data and also applies filters to only
+<a href=#731 id=731 data-nosnippet>731</a>    /// receive data from the specified address.
+<a href=#732 id=732 data-nosnippet>732</a>    ///
+<a href=#733 id=733 data-nosnippet>733</a>    /// If `addr` yields multiple addresses, `connect` will be attempted with
+<a href=#734 id=734 data-nosnippet>734</a>    /// each of the addresses until the underlying OS function returns no
+<a href=#735 id=735 data-nosnippet>735</a>    /// error. Note that usually, a successful `connect` call does not specify
+<a href=#736 id=736 data-nosnippet>736</a>    /// that there is a remote server listening on the port, rather, such an
+<a href=#737 id=737 data-nosnippet>737</a>    /// error would only be detected after the first send. If the OS returns an
+<a href=#738 id=738 data-nosnippet>738</a>    /// error for each of the specified addresses, the error returned from the
+<a href=#739 id=739 data-nosnippet>739</a>    /// last connection attempt (the last address) is returned.
+<a href=#740 id=740 data-nosnippet>740</a>    ///
+<a href=#741 id=741 data-nosnippet>741</a>    /// # Examples
+<a href=#742 id=742 data-nosnippet>742</a>    ///
+<a href=#743 id=743 data-nosnippet>743</a>    /// Creates a UDP socket bound to `127.0.0.1:3400` and connect the socket to
+<a href=#744 id=744 data-nosnippet>744</a>    /// `127.0.0.1:8080`:
+<a href=#745 id=745 data-nosnippet>745</a>    ///
+<a href=#746 id=746 data-nosnippet>746</a>    /// ```no_run
+<a href=#747 id=747 data-nosnippet>747</a>    /// use std::net::UdpSocket;
+<a href=#748 id=748 data-nosnippet>748</a>    ///
+<a href=#749 id=749 data-nosnippet>749</a>    /// let socket = UdpSocket::bind("127.0.0.1:3400").expect("bind should succeed");
+<a href=#750 id=750 data-nosnippet>750</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
+<a href=#751 id=751 data-nosnippet>751</a>    /// ```
+<a href=#752 id=752 data-nosnippet>752</a>    ///
+<a href=#753 id=753 data-nosnippet>753</a>    /// Unlike in the TCP case, passing an array of addresses to the `connect`
+<a href=#754 id=754 data-nosnippet>754</a>    /// function of a UDP socket is not a useful thing to do: The OS will be
+<a href=#755 id=755 data-nosnippet>755</a>    /// unable to determine whether something is listening on the remote
+<a href=#756 id=756 data-nosnippet>756</a>    /// address without the application sending data.
 <a href=#757 id=757 data-nosnippet>757</a>    ///
-<a href=#758 id=758 data-nosnippet>758</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
-<a href=#759 id=759 data-nosnippet>759</a>    /// method will fail if the socket is not connected.
-<a href=#760 id=760 data-nosnippet>760</a>    ///
-<a href=#761 id=761 data-nosnippet>761</a>    /// # Errors
-<a href=#762 id=762 data-nosnippet>762</a>    ///
-<a href=#763 id=763 data-nosnippet>763</a>    /// This method will fail if the socket is not connected. The `connect` method
-<a href=#764 id=764 data-nosnippet>764</a>    /// will connect this socket to a remote address.
-<a href=#765 id=765 data-nosnippet>765</a>    ///
-<a href=#766 id=766 data-nosnippet>766</a>    /// # Examples
-<a href=#767 id=767 data-nosnippet>767</a>    ///
-<a href=#768 id=768 data-nosnippet>768</a>    /// ```no_run
-<a href=#769 id=769 data-nosnippet>769</a>    /// use std::net::UdpSocket;
+<a href=#758 id=758 data-nosnippet>758</a>    /// If your first `connect` is to a loopback address, subsequent
+<a href=#759 id=759 data-nosnippet>759</a>    /// `connect`s to non-loopback addresses might fail, depending
+<a href=#760 id=760 data-nosnippet>760</a>    /// on the platform.
+<a href=#761 id=761 data-nosnippet>761</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#762 id=762 data-nosnippet>762</a>    </span><span class="kw">pub fn </span>connect&lt;A: ToSocketAddrs&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: A) -&gt; io::Result&lt;()&gt; {
+<a href=#763 id=763 data-nosnippet>763</a>        <span class="self">self</span>.<span class="number">0</span>.connect(addr)
+<a href=#764 id=764 data-nosnippet>764</a>    }
+<a href=#765 id=765 data-nosnippet>765</a>
+<a href=#766 id=766 data-nosnippet>766</a>    <span class="doccomment">/// Sends data on the socket to the remote address to which it is connected.
+<a href=#767 id=767 data-nosnippet>767</a>    /// On success, returns the number of bytes written. Note that the operating
+<a href=#768 id=768 data-nosnippet>768</a>    /// system may refuse buffers larger than 65507. However, partial writes are
+<a href=#769 id=769 data-nosnippet>769</a>    /// not possible until buffer sizes above `i32::MAX`.
 <a href=#770 id=770 data-nosnippet>770</a>    ///
-<a href=#771 id=771 data-nosnippet>771</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
-<a href=#772 id=772 data-nosnippet>772</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
-<a href=#773 id=773 data-nosnippet>773</a>    /// let mut buf = [0; 10];
-<a href=#774 id=774 data-nosnippet>774</a>    /// match socket.peek(&amp;mut buf) {
-<a href=#775 id=775 data-nosnippet>775</a>    ///     Ok(received) =&gt; println!("received {received} bytes"),
-<a href=#776 id=776 data-nosnippet>776</a>    ///     Err(e) =&gt; println!("peek function failed: {e:?}"),
-<a href=#777 id=777 data-nosnippet>777</a>    /// }
-<a href=#778 id=778 data-nosnippet>778</a>    /// ```
-<a href=#779 id=779 data-nosnippet>779</a>    </span><span class="attr">#[stable(feature = <span class="string">"peek"</span>, since = <span class="string">"1.18.0"</span>)]
-<a href=#780 id=780 data-nosnippet>780</a>    </span><span class="kw">pub fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#781 id=781 data-nosnippet>781</a>        <span class="self">self</span>.<span class="number">0</span>.peek(buf)
-<a href=#782 id=782 data-nosnippet>782</a>    }
-<a href=#783 id=783 data-nosnippet>783</a>
-<a href=#784 id=784 data-nosnippet>784</a>    <span class="doccomment">/// Moves this UDP socket into or out of nonblocking mode.
-<a href=#785 id=785 data-nosnippet>785</a>    ///
-<a href=#786 id=786 data-nosnippet>786</a>    /// This will result in `recv`, `recv_from`, `send`, and `send_to` system
-<a href=#787 id=787 data-nosnippet>787</a>    /// operations becoming nonblocking, i.e., immediately returning from their
-<a href=#788 id=788 data-nosnippet>788</a>    /// calls. If the IO operation is successful, `Ok` is returned and no
-<a href=#789 id=789 data-nosnippet>789</a>    /// further action is required. If the IO operation could not be completed
-<a href=#790 id=790 data-nosnippet>790</a>    /// and needs to be retried, an error with kind
-<a href=#791 id=791 data-nosnippet>791</a>    /// [`io::ErrorKind::WouldBlock`] is returned.
-<a href=#792 id=792 data-nosnippet>792</a>    ///
-<a href=#793 id=793 data-nosnippet>793</a>    /// On most Unix platforms, calling this method corresponds to calling `ioctl`
-<a href=#794 id=794 data-nosnippet>794</a>    /// `FIONBIO`. On Windows, calling this method corresponds to calling
-<a href=#795 id=795 data-nosnippet>795</a>    /// `ioctlsocket` `FIONBIO`.
-<a href=#796 id=796 data-nosnippet>796</a>    ///
-<a href=#797 id=797 data-nosnippet>797</a>    /// # Examples
-<a href=#798 id=798 data-nosnippet>798</a>    ///
-<a href=#799 id=799 data-nosnippet>799</a>    /// Creates a UDP socket bound to `127.0.0.1:7878` and read bytes in
-<a href=#800 id=800 data-nosnippet>800</a>    /// nonblocking mode:
+<a href=#771 id=771 data-nosnippet>771</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
+<a href=#772 id=772 data-nosnippet>772</a>    /// method will fail if the socket is not connected.
+<a href=#773 id=773 data-nosnippet>773</a>    ///
+<a href=#774 id=774 data-nosnippet>774</a>    /// # Examples
+<a href=#775 id=775 data-nosnippet>775</a>    ///
+<a href=#776 id=776 data-nosnippet>776</a>    /// ```no_run
+<a href=#777 id=777 data-nosnippet>777</a>    /// use std::net::UdpSocket;
+<a href=#778 id=778 data-nosnippet>778</a>    ///
+<a href=#779 id=779 data-nosnippet>779</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
+<a href=#780 id=780 data-nosnippet>780</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
+<a href=#781 id=781 data-nosnippet>781</a>    /// socket.send(&amp;[0, 1, 2]).expect("send should succeed");
+<a href=#782 id=782 data-nosnippet>782</a>    /// ```
+<a href=#783 id=783 data-nosnippet>783</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#784 id=784 data-nosnippet>784</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
+<a href=#785 id=785 data-nosnippet>785</a>        <span class="self">self</span>.<span class="number">0</span>.send(buf)
+<a href=#786 id=786 data-nosnippet>786</a>    }
+<a href=#787 id=787 data-nosnippet>787</a>
+<a href=#788 id=788 data-nosnippet>788</a>    <span class="doccomment">/// Receives a single datagram message on the socket from the remote address to
+<a href=#789 id=789 data-nosnippet>789</a>    /// which it is connected. On success, returns the number of bytes read.
+<a href=#790 id=790 data-nosnippet>790</a>    ///
+<a href=#791 id=791 data-nosnippet>791</a>    /// The function must be called with valid byte array `buf` of sufficient size to
+<a href=#792 id=792 data-nosnippet>792</a>    /// hold the message bytes. If a message is too long to fit in the supplied buffer,
+<a href=#793 id=793 data-nosnippet>793</a>    /// excess bytes may be discarded.
+<a href=#794 id=794 data-nosnippet>794</a>    ///
+<a href=#795 id=795 data-nosnippet>795</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
+<a href=#796 id=796 data-nosnippet>796</a>    /// method will fail if the socket is not connected.
+<a href=#797 id=797 data-nosnippet>797</a>    ///
+<a href=#798 id=798 data-nosnippet>798</a>    /// Refer to the platform-specific documentation on this function; it is considered
+<a href=#799 id=799 data-nosnippet>799</a>    /// correct for its behavior to differ from [`UdpSocket::recv_from`] if the underlying
+<a href=#800 id=800 data-nosnippet>800</a>    /// system call does so.
 <a href=#801 id=801 data-nosnippet>801</a>    ///
-<a href=#802 id=802 data-nosnippet>802</a>    /// ```no_run
-<a href=#803 id=803 data-nosnippet>803</a>    /// use std::io;
-<a href=#804 id=804 data-nosnippet>804</a>    /// use std::net::UdpSocket;
-<a href=#805 id=805 data-nosnippet>805</a>    ///
-<a href=#806 id=806 data-nosnippet>806</a>    /// let socket = UdpSocket::bind("127.0.0.1:7878").unwrap();
-<a href=#807 id=807 data-nosnippet>807</a>    /// socket.set_nonblocking(true).unwrap();
-<a href=#808 id=808 data-nosnippet>808</a>    ///
-<a href=#809 id=809 data-nosnippet>809</a>    /// # fn wait_for_fd() { unimplemented!() }
-<a href=#810 id=810 data-nosnippet>810</a>    /// let mut buf = [0; 10];
-<a href=#811 id=811 data-nosnippet>811</a>    /// let (num_bytes_read, _) = loop {
-<a href=#812 id=812 data-nosnippet>812</a>    ///     match socket.recv_from(&amp;mut buf) {
-<a href=#813 id=813 data-nosnippet>813</a>    ///         Ok(n) =&gt; break n,
-<a href=#814 id=814 data-nosnippet>814</a>    ///         Err(ref e) if e.kind() == io::ErrorKind::WouldBlock =&gt; {
-<a href=#815 id=815 data-nosnippet>815</a>    ///             // wait until network socket is ready, typically implemented
-<a href=#816 id=816 data-nosnippet>816</a>    ///             // via platform-specific APIs such as epoll or IOCP
-<a href=#817 id=817 data-nosnippet>817</a>    ///             wait_for_fd();
-<a href=#818 id=818 data-nosnippet>818</a>    ///         }
-<a href=#819 id=819 data-nosnippet>819</a>    ///         Err(e) =&gt; panic!("encountered IO error: {e}"),
-<a href=#820 id=820 data-nosnippet>820</a>    ///     }
-<a href=#821 id=821 data-nosnippet>821</a>    /// };
-<a href=#822 id=822 data-nosnippet>822</a>    /// println!("bytes: {:?}", &amp;buf[..num_bytes_read]);
-<a href=#823 id=823 data-nosnippet>823</a>    /// ```
-<a href=#824 id=824 data-nosnippet>824</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#825 id=825 data-nosnippet>825</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: bool) -&gt; io::Result&lt;()&gt; {
-<a href=#826 id=826 data-nosnippet>826</a>        <span class="self">self</span>.<span class="number">0</span>.set_nonblocking(nonblocking)
-<a href=#827 id=827 data-nosnippet>827</a>    }
-<a href=#828 id=828 data-nosnippet>828</a>}
-<a href=#829 id=829 data-nosnippet>829</a>
-<a href=#830 id=830 data-nosnippet>830</a><span class="comment">// In addition to the `impl`s here, `UdpSocket` also has `impl`s for
-<a href=#831 id=831 data-nosnippet>831</a>// `AsFd`/`From&lt;OwnedFd&gt;`/`Into&lt;OwnedFd&gt;` and
-<a href=#832 id=832 data-nosnippet>832</a>// `AsRawFd`/`IntoRawFd`/`FromRawFd`, on Unix and WASI, and
-<a href=#833 id=833 data-nosnippet>833</a>// `AsSocket`/`From&lt;OwnedSocket&gt;`/`Into&lt;OwnedSocket&gt;` and
-<a href=#834 id=834 data-nosnippet>834</a>// `AsRawSocket`/`IntoRawSocket`/`FromRawSocket` on Windows.
-<a href=#835 id=835 data-nosnippet>835</a>
-<a href=#836 id=836 data-nosnippet>836</a></span><span class="kw">impl </span>AsInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
-<a href=#837 id=837 data-nosnippet>837</a>    <span class="attr">#[inline]
-<a href=#838 id=838 data-nosnippet>838</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>net_imp::UdpSocket {
-<a href=#839 id=839 data-nosnippet>839</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
-<a href=#840 id=840 data-nosnippet>840</a>    </span>}
-<a href=#841 id=841 data-nosnippet>841</a>}
-<a href=#842 id=842 data-nosnippet>842</a>
-<a href=#843 id=843 data-nosnippet>843</a><span class="kw">impl </span>FromInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
-<a href=#844 id=844 data-nosnippet>844</a>    <span class="kw">fn </span>from_inner(inner: net_imp::UdpSocket) -&gt; UdpSocket {
-<a href=#845 id=845 data-nosnippet>845</a>        UdpSocket(inner)
-<a href=#846 id=846 data-nosnippet>846</a>    }
-<a href=#847 id=847 data-nosnippet>847</a>}
-<a href=#848 id=848 data-nosnippet>848</a>
-<a href=#849 id=849 data-nosnippet>849</a><span class="kw">impl </span>IntoInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
-<a href=#850 id=850 data-nosnippet>850</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; net_imp::UdpSocket {
-<a href=#851 id=851 data-nosnippet>851</a>        <span class="self">self</span>.<span class="number">0
-<a href=#852 id=852 data-nosnippet>852</a>    </span>}
-<a href=#853 id=853 data-nosnippet>853</a>}
-<a href=#854 id=854 data-nosnippet>854</a>
-<a href=#855 id=855 data-nosnippet>855</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#856 id=856 data-nosnippet>856</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>UdpSocket {
-<a href=#857 id=857 data-nosnippet>857</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#858 id=858 data-nosnippet>858</a>        <span class="self">self</span>.<span class="number">0</span>.fmt(f)
-<a href=#859 id=859 data-nosnippet>859</a>    }
-<a href=#860 id=860 data-nosnippet>860</a>}
+<a href=#802 id=802 data-nosnippet>802</a>    /// # Examples
+<a href=#803 id=803 data-nosnippet>803</a>    ///
+<a href=#804 id=804 data-nosnippet>804</a>    /// ```no_run
+<a href=#805 id=805 data-nosnippet>805</a>    /// use std::net::UdpSocket;
+<a href=#806 id=806 data-nosnippet>806</a>    ///
+<a href=#807 id=807 data-nosnippet>807</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
+<a href=#808 id=808 data-nosnippet>808</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
+<a href=#809 id=809 data-nosnippet>809</a>    /// let mut buf = [0; 10];
+<a href=#810 id=810 data-nosnippet>810</a>    /// match socket.recv(&amp;mut buf) {
+<a href=#811 id=811 data-nosnippet>811</a>    ///     Ok(received) =&gt; println!("received {received} bytes {:?}", &amp;buf[..received]),
+<a href=#812 id=812 data-nosnippet>812</a>    ///     Err(e) =&gt; println!("recv function failed: {e:?}"),
+<a href=#813 id=813 data-nosnippet>813</a>    /// }
+<a href=#814 id=814 data-nosnippet>814</a>    /// ```
+<a href=#815 id=815 data-nosnippet>815</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#816 id=816 data-nosnippet>816</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
+<a href=#817 id=817 data-nosnippet>817</a>        <span class="self">self</span>.<span class="number">0</span>.recv(buf)
+<a href=#818 id=818 data-nosnippet>818</a>    }
+<a href=#819 id=819 data-nosnippet>819</a>
+<a href=#820 id=820 data-nosnippet>820</a>    <span class="doccomment">/// Receives single datagram on the socket from the remote address to which it is
+<a href=#821 id=821 data-nosnippet>821</a>    /// connected, without removing the message from input queue. On success, returns
+<a href=#822 id=822 data-nosnippet>822</a>    /// the number of bytes peeked.
+<a href=#823 id=823 data-nosnippet>823</a>    ///
+<a href=#824 id=824 data-nosnippet>824</a>    /// The function must be called with valid byte array `buf` of sufficient size to
+<a href=#825 id=825 data-nosnippet>825</a>    /// hold the message bytes. If a message is too long to fit in the supplied buffer,
+<a href=#826 id=826 data-nosnippet>826</a>    /// excess bytes may be discarded.
+<a href=#827 id=827 data-nosnippet>827</a>    ///
+<a href=#828 id=828 data-nosnippet>828</a>    /// Successive calls return the same data. This is accomplished by passing
+<a href=#829 id=829 data-nosnippet>829</a>    /// `MSG_PEEK` as a flag to the underlying `recv` system call.
+<a href=#830 id=830 data-nosnippet>830</a>    ///
+<a href=#831 id=831 data-nosnippet>831</a>    /// Do not use this function to implement busy waiting, instead use `libc::poll` to
+<a href=#832 id=832 data-nosnippet>832</a>    /// synchronize IO events on one or more sockets.
+<a href=#833 id=833 data-nosnippet>833</a>    ///
+<a href=#834 id=834 data-nosnippet>834</a>    /// [`UdpSocket::connect`] will connect this socket to a remote address. This
+<a href=#835 id=835 data-nosnippet>835</a>    /// method will fail if the socket is not connected.
+<a href=#836 id=836 data-nosnippet>836</a>    ///
+<a href=#837 id=837 data-nosnippet>837</a>    /// # Errors
+<a href=#838 id=838 data-nosnippet>838</a>    ///
+<a href=#839 id=839 data-nosnippet>839</a>    /// This method will fail if the socket is not connected. The `connect` method
+<a href=#840 id=840 data-nosnippet>840</a>    /// will connect this socket to a remote address.
+<a href=#841 id=841 data-nosnippet>841</a>    ///
+<a href=#842 id=842 data-nosnippet>842</a>    /// # Examples
+<a href=#843 id=843 data-nosnippet>843</a>    ///
+<a href=#844 id=844 data-nosnippet>844</a>    /// ```no_run
+<a href=#845 id=845 data-nosnippet>845</a>    /// use std::net::UdpSocket;
+<a href=#846 id=846 data-nosnippet>846</a>    ///
+<a href=#847 id=847 data-nosnippet>847</a>    /// let socket = UdpSocket::bind("127.0.0.1:34254").expect("bind should succeed");
+<a href=#848 id=848 data-nosnippet>848</a>    /// socket.connect("127.0.0.1:8080").expect("connect should succeed");
+<a href=#849 id=849 data-nosnippet>849</a>    /// let mut buf = [0; 10];
+<a href=#850 id=850 data-nosnippet>850</a>    /// match socket.peek(&amp;mut buf) {
+<a href=#851 id=851 data-nosnippet>851</a>    ///     Ok(received) =&gt; println!("received {received} bytes"),
+<a href=#852 id=852 data-nosnippet>852</a>    ///     Err(e) =&gt; println!("peek function failed: {e:?}"),
+<a href=#853 id=853 data-nosnippet>853</a>    /// }
+<a href=#854 id=854 data-nosnippet>854</a>    /// ```
+<a href=#855 id=855 data-nosnippet>855</a>    </span><span class="attr">#[stable(feature = <span class="string">"peek"</span>, since = <span class="string">"1.18.0"</span>)]
+<a href=#856 id=856 data-nosnippet>856</a>    </span><span class="kw">pub fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
+<a href=#857 id=857 data-nosnippet>857</a>        <span class="self">self</span>.<span class="number">0</span>.peek(buf)
+<a href=#858 id=858 data-nosnippet>858</a>    }
+<a href=#859 id=859 data-nosnippet>859</a>
+<a href=#860 id=860 data-nosnippet>860</a>    <span class="doccomment">/// Moves this UDP socket into or out of nonblocking mode.
+<a href=#861 id=861 data-nosnippet>861</a>    ///
+<a href=#862 id=862 data-nosnippet>862</a>    /// This will result in `recv`, `recv_from`, `send`, and `send_to` system
+<a href=#863 id=863 data-nosnippet>863</a>    /// operations becoming nonblocking, i.e., immediately returning from their
+<a href=#864 id=864 data-nosnippet>864</a>    /// calls. If the IO operation is successful, `Ok` is returned and no
+<a href=#865 id=865 data-nosnippet>865</a>    /// further action is required. If the IO operation could not be completed
+<a href=#866 id=866 data-nosnippet>866</a>    /// and needs to be retried, an error with kind
+<a href=#867 id=867 data-nosnippet>867</a>    /// [`io::ErrorKind::WouldBlock`] is returned.
+<a href=#868 id=868 data-nosnippet>868</a>    ///
+<a href=#869 id=869 data-nosnippet>869</a>    /// On most Unix platforms, calling this method corresponds to calling `ioctl`
+<a href=#870 id=870 data-nosnippet>870</a>    /// `FIONBIO`. On Windows, calling this method corresponds to calling
+<a href=#871 id=871 data-nosnippet>871</a>    /// `ioctlsocket` `FIONBIO`.
+<a href=#872 id=872 data-nosnippet>872</a>    ///
+<a href=#873 id=873 data-nosnippet>873</a>    /// # Examples
+<a href=#874 id=874 data-nosnippet>874</a>    ///
+<a href=#875 id=875 data-nosnippet>875</a>    /// Creates a UDP socket bound to `127.0.0.1:7878` and read bytes in
+<a href=#876 id=876 data-nosnippet>876</a>    /// nonblocking mode:
+<a href=#877 id=877 data-nosnippet>877</a>    ///
+<a href=#878 id=878 data-nosnippet>878</a>    /// ```no_run
+<a href=#879 id=879 data-nosnippet>879</a>    /// use std::io;
+<a href=#880 id=880 data-nosnippet>880</a>    /// use std::net::UdpSocket;
+<a href=#881 id=881 data-nosnippet>881</a>    ///
+<a href=#882 id=882 data-nosnippet>882</a>    /// let socket = UdpSocket::bind("127.0.0.1:7878").unwrap();
+<a href=#883 id=883 data-nosnippet>883</a>    /// socket.set_nonblocking(true).unwrap();
+<a href=#884 id=884 data-nosnippet>884</a>    ///
+<a href=#885 id=885 data-nosnippet>885</a>    /// # fn wait_for_fd() { unimplemented!() }
+<a href=#886 id=886 data-nosnippet>886</a>    /// let mut buf = [0; 10];
+<a href=#887 id=887 data-nosnippet>887</a>    /// let (num_bytes_read, _) = loop {
+<a href=#888 id=888 data-nosnippet>888</a>    ///     match socket.recv_from(&amp;mut buf) {
+<a href=#889 id=889 data-nosnippet>889</a>    ///         Ok(n) =&gt; break n,
+<a href=#890 id=890 data-nosnippet>890</a>    ///         Err(ref e) if e.kind() == io::ErrorKind::WouldBlock =&gt; {
+<a href=#891 id=891 data-nosnippet>891</a>    ///             // wait until network socket is ready, typically implemented
+<a href=#892 id=892 data-nosnippet>892</a>    ///             // via platform-specific APIs such as epoll or IOCP
+<a href=#893 id=893 data-nosnippet>893</a>    ///             wait_for_fd();
+<a href=#894 id=894 data-nosnippet>894</a>    ///         }
+<a href=#895 id=895 data-nosnippet>895</a>    ///         Err(e) =&gt; panic!("encountered IO error: {e}"),
+<a href=#896 id=896 data-nosnippet>896</a>    ///     }
+<a href=#897 id=897 data-nosnippet>897</a>    /// };
+<a href=#898 id=898 data-nosnippet>898</a>    /// println!("bytes: {:?}", &amp;buf[..num_bytes_read]);
+<a href=#899 id=899 data-nosnippet>899</a>    /// ```
+<a href=#900 id=900 data-nosnippet>900</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
+<a href=#901 id=901 data-nosnippet>901</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: bool) -&gt; io::Result&lt;()&gt; {
+<a href=#902 id=902 data-nosnippet>902</a>        <span class="self">self</span>.<span class="number">0</span>.set_nonblocking(nonblocking)
+<a href=#903 id=903 data-nosnippet>903</a>    }
+<a href=#904 id=904 data-nosnippet>904</a>}
+<a href=#905 id=905 data-nosnippet>905</a>
+<a href=#906 id=906 data-nosnippet>906</a><span class="comment">// In addition to the `impl`s here, `UdpSocket` also has `impl`s for
+<a href=#907 id=907 data-nosnippet>907</a>// `AsFd`/`From&lt;OwnedFd&gt;`/`Into&lt;OwnedFd&gt;` and
+<a href=#908 id=908 data-nosnippet>908</a>// `AsRawFd`/`IntoRawFd`/`FromRawFd`, on Unix and WASI, and
+<a href=#909 id=909 data-nosnippet>909</a>// `AsSocket`/`From&lt;OwnedSocket&gt;`/`Into&lt;OwnedSocket&gt;` and
+<a href=#910 id=910 data-nosnippet>910</a>// `AsRawSocket`/`IntoRawSocket`/`FromRawSocket` on Windows.
+<a href=#911 id=911 data-nosnippet>911</a>
+<a href=#912 id=912 data-nosnippet>912</a></span><span class="kw">impl </span>AsInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
+<a href=#913 id=913 data-nosnippet>913</a>    <span class="attr">#[inline]
+<a href=#914 id=914 data-nosnippet>914</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>net_imp::UdpSocket {
+<a href=#915 id=915 data-nosnippet>915</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#916 id=916 data-nosnippet>916</a>    </span>}
+<a href=#917 id=917 data-nosnippet>917</a>}
+<a href=#918 id=918 data-nosnippet>918</a>
+<a href=#919 id=919 data-nosnippet>919</a><span class="kw">impl </span>FromInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
+<a href=#920 id=920 data-nosnippet>920</a>    <span class="kw">fn </span>from_inner(inner: net_imp::UdpSocket) -&gt; UdpSocket {
+<a href=#921 id=921 data-nosnippet>921</a>        UdpSocket(inner)
+<a href=#922 id=922 data-nosnippet>922</a>    }
+<a href=#923 id=923 data-nosnippet>923</a>}
+<a href=#924 id=924 data-nosnippet>924</a>
+<a href=#925 id=925 data-nosnippet>925</a><span class="kw">impl </span>IntoInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
+<a href=#926 id=926 data-nosnippet>926</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; net_imp::UdpSocket {
+<a href=#927 id=927 data-nosnippet>927</a>        <span class="self">self</span>.<span class="number">0
+<a href=#928 id=928 data-nosnippet>928</a>    </span>}
+<a href=#929 id=929 data-nosnippet>929</a>}
+<a href=#930 id=930 data-nosnippet>930</a>
+<a href=#931 id=931 data-nosnippet>931</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#932 id=932 data-nosnippet>932</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>UdpSocket {
+<a href=#933 id=933 data-nosnippet>933</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#934 id=934 data-nosnippet>934</a>        <span class="self">self</span>.<span class="number">0</span>.fmt(f)
+<a href=#935 id=935 data-nosnippet>935</a>    }
+<a href=#936 id=936 data-nosnippet>936</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["darwin"]};
+window.SIDEBAR_ITEMS = {"mod":["darwin","windows"]};
