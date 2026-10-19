@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["abort_immediate"]};
+window.SIDEBAR_ITEMS = {"fn":["abort_immediate","resumable_breakpoint"]};
