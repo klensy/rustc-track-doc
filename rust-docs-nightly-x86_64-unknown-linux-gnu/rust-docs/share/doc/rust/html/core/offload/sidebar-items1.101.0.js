@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"attr":["offload_kernel"],"macro":[["offload",1]]};
+window.SIDEBAR_ITEMS = {"attr":["offload_kernel"],"macro":[["offload",1]],"struct":["LaunchError","RawRegion","Region"],"trait":["PartitioningStrategy"]};

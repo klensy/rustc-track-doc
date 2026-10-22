@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/string.rs`."><title>string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (19833af72 2026-10-20)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A UTF-8–encoded, growable string.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/string.rs`."><title>string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (1a2c4797e 2026-10-21)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A UTF-8–encoded, growable string.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module contains the [`String`] type, the [`ToString`] trait for
 <a href=#4 id=4 data-nosnippet>4</a>//! converting to strings, and several error types that may result from
@@ -3418,270 +3418,274 @@
 <a href=#3418 id=3418 data-nosnippet>3418</a>    }
 <a href=#3419 id=3419 data-nosnippet>3419</a>}
 <a href=#3420 id=3420 data-nosnippet>3420</a>
-<a href=#3421 id=3421 data-nosnippet>3421</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#3422 id=3422 data-nosnippet>3422</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#3423 id=3423 data-nosnippet>3423</a></span><span class="kw">impl </span>fmt::Write <span class="kw">for </span>String {
-<a href=#3424 id=3424 data-nosnippet>3424</a>    <span class="attr">#[inline]
-<a href=#3425 id=3425 data-nosnippet>3425</a>    </span><span class="kw">fn </span>write_str(<span class="kw-2">&amp;mut </span><span class="self">self</span>, s: <span class="kw-2">&amp;</span>str) -&gt; fmt::Result {
-<a href=#3426 id=3426 data-nosnippet>3426</a>        <span class="self">self</span>.push_str(s);
-<a href=#3427 id=3427 data-nosnippet>3427</a>        <span class="prelude-val">Ok</span>(())
-<a href=#3428 id=3428 data-nosnippet>3428</a>    }
-<a href=#3429 id=3429 data-nosnippet>3429</a>
-<a href=#3430 id=3430 data-nosnippet>3430</a>    <span class="attr">#[inline]
-<a href=#3431 id=3431 data-nosnippet>3431</a>    </span><span class="kw">fn </span>write_char(<span class="kw-2">&amp;mut </span><span class="self">self</span>, c: char) -&gt; fmt::Result {
-<a href=#3432 id=3432 data-nosnippet>3432</a>        <span class="self">self</span>.push(c);
-<a href=#3433 id=3433 data-nosnippet>3433</a>        <span class="prelude-val">Ok</span>(())
-<a href=#3434 id=3434 data-nosnippet>3434</a>    }
-<a href=#3435 id=3435 data-nosnippet>3435</a>}
-<a href=#3436 id=3436 data-nosnippet>3436</a>
-<a href=#3437 id=3437 data-nosnippet>3437</a><span class="doccomment">/// An iterator over the [`char`]s of a string.
-<a href=#3438 id=3438 data-nosnippet>3438</a>///
-<a href=#3439 id=3439 data-nosnippet>3439</a>/// This struct is created by the [`into_chars`] method on [`String`].
-<a href=#3440 id=3440 data-nosnippet>3440</a>/// See its documentation for more.
-<a href=#3441 id=3441 data-nosnippet>3441</a>///
-<a href=#3442 id=3442 data-nosnippet>3442</a>/// [`char`]: prim@char
-<a href=#3443 id=3443 data-nosnippet>3443</a>/// [`into_chars`]: String::into_chars
-<a href=#3444 id=3444 data-nosnippet>3444</a></span><span class="attr">#[cfg_attr(not(no_global_oom_handling), derive(Clone))]
-<a href=#3445 id=3445 data-nosnippet>3445</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
-<a href=#3446 id=3446 data-nosnippet>3446</a>#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3447 id=3447 data-nosnippet>3447</a></span><span class="kw">pub struct </span>IntoChars {
-<a href=#3448 id=3448 data-nosnippet>3448</a>    bytes: vec::IntoIter&lt;u8&gt;,
-<a href=#3449 id=3449 data-nosnippet>3449</a>}
-<a href=#3450 id=3450 data-nosnippet>3450</a>
-<a href=#3451 id=3451 data-nosnippet>3451</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3452 id=3452 data-nosnippet>3452</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>IntoChars {
-<a href=#3453 id=3453 data-nosnippet>3453</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#3454 id=3454 data-nosnippet>3454</a>        f.debug_tuple(<span class="string">"IntoChars"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.as_str()).finish()
-<a href=#3455 id=3455 data-nosnippet>3455</a>    }
-<a href=#3456 id=3456 data-nosnippet>3456</a>}
-<a href=#3457 id=3457 data-nosnippet>3457</a>
-<a href=#3458 id=3458 data-nosnippet>3458</a><span class="kw">impl </span>IntoChars {
-<a href=#3459 id=3459 data-nosnippet>3459</a>    <span class="doccomment">/// Views the underlying data as a subslice of the original data.
-<a href=#3460 id=3460 data-nosnippet>3460</a>    ///
-<a href=#3461 id=3461 data-nosnippet>3461</a>    /// # Examples
-<a href=#3462 id=3462 data-nosnippet>3462</a>    ///
-<a href=#3463 id=3463 data-nosnippet>3463</a>    /// ```
-<a href=#3464 id=3464 data-nosnippet>3464</a>    /// #![feature(string_into_chars)]
-<a href=#3465 id=3465 data-nosnippet>3465</a>    ///
-<a href=#3466 id=3466 data-nosnippet>3466</a>    /// let mut chars = String::from("abc").into_chars();
-<a href=#3467 id=3467 data-nosnippet>3467</a>    ///
-<a href=#3468 id=3468 data-nosnippet>3468</a>    /// assert_eq!(chars.as_str(), "abc");
-<a href=#3469 id=3469 data-nosnippet>3469</a>    /// chars.next();
-<a href=#3470 id=3470 data-nosnippet>3470</a>    /// assert_eq!(chars.as_str(), "bc");
-<a href=#3471 id=3471 data-nosnippet>3471</a>    /// chars.next();
-<a href=#3472 id=3472 data-nosnippet>3472</a>    /// chars.next();
-<a href=#3473 id=3473 data-nosnippet>3473</a>    /// assert_eq!(chars.as_str(), "");
-<a href=#3474 id=3474 data-nosnippet>3474</a>    /// ```
-<a href=#3475 id=3475 data-nosnippet>3475</a>    </span><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3476 id=3476 data-nosnippet>3476</a>    #[must_use]
-<a href=#3477 id=3477 data-nosnippet>3477</a>    #[inline]
-<a href=#3478 id=3478 data-nosnippet>3478</a>    </span><span class="kw">pub fn </span>as_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-<a href=#3479 id=3479 data-nosnippet>3479</a>        <span class="comment">// SAFETY: `bytes` is a valid UTF-8 string.
-<a href=#3480 id=3480 data-nosnippet>3480</a>        </span><span class="kw">unsafe </span>{ str::from_utf8_unchecked(<span class="self">self</span>.bytes.as_slice()) }
-<a href=#3481 id=3481 data-nosnippet>3481</a>    }
-<a href=#3482 id=3482 data-nosnippet>3482</a>
-<a href=#3483 id=3483 data-nosnippet>3483</a>    <span class="doccomment">/// Consumes the `IntoChars`, returning the remaining string.
-<a href=#3484 id=3484 data-nosnippet>3484</a>    ///
-<a href=#3485 id=3485 data-nosnippet>3485</a>    /// # Examples
-<a href=#3486 id=3486 data-nosnippet>3486</a>    ///
-<a href=#3487 id=3487 data-nosnippet>3487</a>    /// ```
-<a href=#3488 id=3488 data-nosnippet>3488</a>    /// #![feature(string_into_chars)]
-<a href=#3489 id=3489 data-nosnippet>3489</a>    ///
-<a href=#3490 id=3490 data-nosnippet>3490</a>    /// let chars = String::from("abc").into_chars();
-<a href=#3491 id=3491 data-nosnippet>3491</a>    /// assert_eq!(chars.into_string(), "abc");
-<a href=#3492 id=3492 data-nosnippet>3492</a>    ///
-<a href=#3493 id=3493 data-nosnippet>3493</a>    /// let mut chars = String::from("def").into_chars();
-<a href=#3494 id=3494 data-nosnippet>3494</a>    /// chars.next();
-<a href=#3495 id=3495 data-nosnippet>3495</a>    /// assert_eq!(chars.into_string(), "ef");
-<a href=#3496 id=3496 data-nosnippet>3496</a>    /// ```
-<a href=#3497 id=3497 data-nosnippet>3497</a>    </span><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#3498 id=3498 data-nosnippet>3498</a>    #[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3499 id=3499 data-nosnippet>3499</a>    #[inline]
-<a href=#3500 id=3500 data-nosnippet>3500</a>    </span><span class="kw">pub fn </span>into_string(<span class="self">self</span>) -&gt; String {
-<a href=#3501 id=3501 data-nosnippet>3501</a>        <span class="comment">// SAFETY: `bytes` are kept in UTF-8 form, only removing whole `char`s at a time.
-<a href=#3502 id=3502 data-nosnippet>3502</a>        </span><span class="kw">unsafe </span>{ String::from_utf8_unchecked(<span class="self">self</span>.bytes.collect()) }
-<a href=#3503 id=3503 data-nosnippet>3503</a>    }
-<a href=#3504 id=3504 data-nosnippet>3504</a>
-<a href=#3505 id=3505 data-nosnippet>3505</a>    <span class="attr">#[inline]
-<a href=#3506 id=3506 data-nosnippet>3506</a>    </span><span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CharIndices&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#3507 id=3507 data-nosnippet>3507</a>        <span class="self">self</span>.as_str().char_indices()
-<a href=#3508 id=3508 data-nosnippet>3508</a>    }
-<a href=#3509 id=3509 data-nosnippet>3509</a>}
-<a href=#3510 id=3510 data-nosnippet>3510</a>
-<a href=#3511 id=3511 data-nosnippet>3511</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3512 id=3512 data-nosnippet>3512</a></span><span class="kw">impl </span>Iterator <span class="kw">for </span>IntoChars {
-<a href=#3513 id=3513 data-nosnippet>3513</a>    <span class="kw">type </span>Item = char;
+<a href=#3421 id=3421 data-nosnippet>3421</a><span class="doccomment">/// Note that all methods of this trait append to the `String`'s existing
+<a href=#3422 id=3422 data-nosnippet>3422</a>/// contents; they never truncate or replace what is already there. In
+<a href=#3423 id=3423 data-nosnippet>3423</a>/// particular, [`fmt::Write::write_str`] uses [`push_str`][String::push_str]
+<a href=#3424 id=3424 data-nosnippet>3424</a>/// and [`fmt::Write::write_char`] uses [`push`][String::push].
+<a href=#3425 id=3425 data-nosnippet>3425</a></span><span class="attr">#[cfg(not(no_global_oom_handling))]
+<a href=#3426 id=3426 data-nosnippet>3426</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#3427 id=3427 data-nosnippet>3427</a></span><span class="kw">impl </span>fmt::Write <span class="kw">for </span>String {
+<a href=#3428 id=3428 data-nosnippet>3428</a>    <span class="attr">#[inline]
+<a href=#3429 id=3429 data-nosnippet>3429</a>    </span><span class="kw">fn </span>write_str(<span class="kw-2">&amp;mut </span><span class="self">self</span>, s: <span class="kw-2">&amp;</span>str) -&gt; fmt::Result {
+<a href=#3430 id=3430 data-nosnippet>3430</a>        <span class="self">self</span>.push_str(s);
+<a href=#3431 id=3431 data-nosnippet>3431</a>        <span class="prelude-val">Ok</span>(())
+<a href=#3432 id=3432 data-nosnippet>3432</a>    }
+<a href=#3433 id=3433 data-nosnippet>3433</a>
+<a href=#3434 id=3434 data-nosnippet>3434</a>    <span class="attr">#[inline]
+<a href=#3435 id=3435 data-nosnippet>3435</a>    </span><span class="kw">fn </span>write_char(<span class="kw-2">&amp;mut </span><span class="self">self</span>, c: char) -&gt; fmt::Result {
+<a href=#3436 id=3436 data-nosnippet>3436</a>        <span class="self">self</span>.push(c);
+<a href=#3437 id=3437 data-nosnippet>3437</a>        <span class="prelude-val">Ok</span>(())
+<a href=#3438 id=3438 data-nosnippet>3438</a>    }
+<a href=#3439 id=3439 data-nosnippet>3439</a>}
+<a href=#3440 id=3440 data-nosnippet>3440</a>
+<a href=#3441 id=3441 data-nosnippet>3441</a><span class="doccomment">/// An iterator over the [`char`]s of a string.
+<a href=#3442 id=3442 data-nosnippet>3442</a>///
+<a href=#3443 id=3443 data-nosnippet>3443</a>/// This struct is created by the [`into_chars`] method on [`String`].
+<a href=#3444 id=3444 data-nosnippet>3444</a>/// See its documentation for more.
+<a href=#3445 id=3445 data-nosnippet>3445</a>///
+<a href=#3446 id=3446 data-nosnippet>3446</a>/// [`char`]: prim@char
+<a href=#3447 id=3447 data-nosnippet>3447</a>/// [`into_chars`]: String::into_chars
+<a href=#3448 id=3448 data-nosnippet>3448</a></span><span class="attr">#[cfg_attr(not(no_global_oom_handling), derive(Clone))]
+<a href=#3449 id=3449 data-nosnippet>3449</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
+<a href=#3450 id=3450 data-nosnippet>3450</a>#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3451 id=3451 data-nosnippet>3451</a></span><span class="kw">pub struct </span>IntoChars {
+<a href=#3452 id=3452 data-nosnippet>3452</a>    bytes: vec::IntoIter&lt;u8&gt;,
+<a href=#3453 id=3453 data-nosnippet>3453</a>}
+<a href=#3454 id=3454 data-nosnippet>3454</a>
+<a href=#3455 id=3455 data-nosnippet>3455</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3456 id=3456 data-nosnippet>3456</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>IntoChars {
+<a href=#3457 id=3457 data-nosnippet>3457</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#3458 id=3458 data-nosnippet>3458</a>        f.debug_tuple(<span class="string">"IntoChars"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.as_str()).finish()
+<a href=#3459 id=3459 data-nosnippet>3459</a>    }
+<a href=#3460 id=3460 data-nosnippet>3460</a>}
+<a href=#3461 id=3461 data-nosnippet>3461</a>
+<a href=#3462 id=3462 data-nosnippet>3462</a><span class="kw">impl </span>IntoChars {
+<a href=#3463 id=3463 data-nosnippet>3463</a>    <span class="doccomment">/// Views the underlying data as a subslice of the original data.
+<a href=#3464 id=3464 data-nosnippet>3464</a>    ///
+<a href=#3465 id=3465 data-nosnippet>3465</a>    /// # Examples
+<a href=#3466 id=3466 data-nosnippet>3466</a>    ///
+<a href=#3467 id=3467 data-nosnippet>3467</a>    /// ```
+<a href=#3468 id=3468 data-nosnippet>3468</a>    /// #![feature(string_into_chars)]
+<a href=#3469 id=3469 data-nosnippet>3469</a>    ///
+<a href=#3470 id=3470 data-nosnippet>3470</a>    /// let mut chars = String::from("abc").into_chars();
+<a href=#3471 id=3471 data-nosnippet>3471</a>    ///
+<a href=#3472 id=3472 data-nosnippet>3472</a>    /// assert_eq!(chars.as_str(), "abc");
+<a href=#3473 id=3473 data-nosnippet>3473</a>    /// chars.next();
+<a href=#3474 id=3474 data-nosnippet>3474</a>    /// assert_eq!(chars.as_str(), "bc");
+<a href=#3475 id=3475 data-nosnippet>3475</a>    /// chars.next();
+<a href=#3476 id=3476 data-nosnippet>3476</a>    /// chars.next();
+<a href=#3477 id=3477 data-nosnippet>3477</a>    /// assert_eq!(chars.as_str(), "");
+<a href=#3478 id=3478 data-nosnippet>3478</a>    /// ```
+<a href=#3479 id=3479 data-nosnippet>3479</a>    </span><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3480 id=3480 data-nosnippet>3480</a>    #[must_use]
+<a href=#3481 id=3481 data-nosnippet>3481</a>    #[inline]
+<a href=#3482 id=3482 data-nosnippet>3482</a>    </span><span class="kw">pub fn </span>as_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+<a href=#3483 id=3483 data-nosnippet>3483</a>        <span class="comment">// SAFETY: `bytes` is a valid UTF-8 string.
+<a href=#3484 id=3484 data-nosnippet>3484</a>        </span><span class="kw">unsafe </span>{ str::from_utf8_unchecked(<span class="self">self</span>.bytes.as_slice()) }
+<a href=#3485 id=3485 data-nosnippet>3485</a>    }
+<a href=#3486 id=3486 data-nosnippet>3486</a>
+<a href=#3487 id=3487 data-nosnippet>3487</a>    <span class="doccomment">/// Consumes the `IntoChars`, returning the remaining string.
+<a href=#3488 id=3488 data-nosnippet>3488</a>    ///
+<a href=#3489 id=3489 data-nosnippet>3489</a>    /// # Examples
+<a href=#3490 id=3490 data-nosnippet>3490</a>    ///
+<a href=#3491 id=3491 data-nosnippet>3491</a>    /// ```
+<a href=#3492 id=3492 data-nosnippet>3492</a>    /// #![feature(string_into_chars)]
+<a href=#3493 id=3493 data-nosnippet>3493</a>    ///
+<a href=#3494 id=3494 data-nosnippet>3494</a>    /// let chars = String::from("abc").into_chars();
+<a href=#3495 id=3495 data-nosnippet>3495</a>    /// assert_eq!(chars.into_string(), "abc");
+<a href=#3496 id=3496 data-nosnippet>3496</a>    ///
+<a href=#3497 id=3497 data-nosnippet>3497</a>    /// let mut chars = String::from("def").into_chars();
+<a href=#3498 id=3498 data-nosnippet>3498</a>    /// chars.next();
+<a href=#3499 id=3499 data-nosnippet>3499</a>    /// assert_eq!(chars.into_string(), "ef");
+<a href=#3500 id=3500 data-nosnippet>3500</a>    /// ```
+<a href=#3501 id=3501 data-nosnippet>3501</a>    </span><span class="attr">#[cfg(not(no_global_oom_handling))]
+<a href=#3502 id=3502 data-nosnippet>3502</a>    #[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3503 id=3503 data-nosnippet>3503</a>    #[inline]
+<a href=#3504 id=3504 data-nosnippet>3504</a>    </span><span class="kw">pub fn </span>into_string(<span class="self">self</span>) -&gt; String {
+<a href=#3505 id=3505 data-nosnippet>3505</a>        <span class="comment">// SAFETY: `bytes` are kept in UTF-8 form, only removing whole `char`s at a time.
+<a href=#3506 id=3506 data-nosnippet>3506</a>        </span><span class="kw">unsafe </span>{ String::from_utf8_unchecked(<span class="self">self</span>.bytes.collect()) }
+<a href=#3507 id=3507 data-nosnippet>3507</a>    }
+<a href=#3508 id=3508 data-nosnippet>3508</a>
+<a href=#3509 id=3509 data-nosnippet>3509</a>    <span class="attr">#[inline]
+<a href=#3510 id=3510 data-nosnippet>3510</a>    </span><span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CharIndices&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#3511 id=3511 data-nosnippet>3511</a>        <span class="self">self</span>.as_str().char_indices()
+<a href=#3512 id=3512 data-nosnippet>3512</a>    }
+<a href=#3513 id=3513 data-nosnippet>3513</a>}
 <a href=#3514 id=3514 data-nosnippet>3514</a>
-<a href=#3515 id=3515 data-nosnippet>3515</a>    <span class="attr">#[inline]
-<a href=#3516 id=3516 data-nosnippet>3516</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3517 id=3517 data-nosnippet>3517</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.iter();
-<a href=#3518 id=3518 data-nosnippet>3518</a>        <span class="kw">match </span>iter.next() {
-<a href=#3519 id=3519 data-nosnippet>3519</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#3520 id=3520 data-nosnippet>3520</a>            <span class="prelude-val">Some</span>((<span class="kw">_</span>, ch)) =&gt; {
-<a href=#3521 id=3521 data-nosnippet>3521</a>                <span class="kw">let </span>offset = iter.offset();
-<a href=#3522 id=3522 data-nosnippet>3522</a>                <span class="comment">// `offset` is a valid index.
-<a href=#3523 id=3523 data-nosnippet>3523</a>                </span><span class="kw">let _ </span>= <span class="self">self</span>.bytes.advance_by(offset);
-<a href=#3524 id=3524 data-nosnippet>3524</a>                <span class="prelude-val">Some</span>(ch)
-<a href=#3525 id=3525 data-nosnippet>3525</a>            }
-<a href=#3526 id=3526 data-nosnippet>3526</a>        }
-<a href=#3527 id=3527 data-nosnippet>3527</a>    }
-<a href=#3528 id=3528 data-nosnippet>3528</a>
-<a href=#3529 id=3529 data-nosnippet>3529</a>    <span class="attr">#[inline]
-<a href=#3530 id=3530 data-nosnippet>3530</a>    </span><span class="kw">fn </span>count(<span class="self">self</span>) -&gt; usize {
-<a href=#3531 id=3531 data-nosnippet>3531</a>        <span class="self">self</span>.iter().count()
-<a href=#3532 id=3532 data-nosnippet>3532</a>    }
-<a href=#3533 id=3533 data-nosnippet>3533</a>
-<a href=#3534 id=3534 data-nosnippet>3534</a>    <span class="attr">#[inline]
-<a href=#3535 id=3535 data-nosnippet>3535</a>    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
-<a href=#3536 id=3536 data-nosnippet>3536</a>        <span class="self">self</span>.iter().size_hint()
-<a href=#3537 id=3537 data-nosnippet>3537</a>    }
-<a href=#3538 id=3538 data-nosnippet>3538</a>
-<a href=#3539 id=3539 data-nosnippet>3539</a>    <span class="attr">#[inline]
-<a href=#3540 id=3540 data-nosnippet>3540</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3541 id=3541 data-nosnippet>3541</a>        <span class="self">self</span>.next_back()
-<a href=#3542 id=3542 data-nosnippet>3542</a>    }
-<a href=#3543 id=3543 data-nosnippet>3543</a>}
-<a href=#3544 id=3544 data-nosnippet>3544</a>
-<a href=#3545 id=3545 data-nosnippet>3545</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3546 id=3546 data-nosnippet>3546</a></span><span class="kw">impl </span>DoubleEndedIterator <span class="kw">for </span>IntoChars {
-<a href=#3547 id=3547 data-nosnippet>3547</a>    <span class="attr">#[inline]
-<a href=#3548 id=3548 data-nosnippet>3548</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3549 id=3549 data-nosnippet>3549</a>        <span class="kw">let </span>len = <span class="self">self</span>.as_str().len();
-<a href=#3550 id=3550 data-nosnippet>3550</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.iter();
-<a href=#3551 id=3551 data-nosnippet>3551</a>        <span class="kw">match </span>iter.next_back() {
-<a href=#3552 id=3552 data-nosnippet>3552</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#3553 id=3553 data-nosnippet>3553</a>            <span class="prelude-val">Some</span>((idx, ch)) =&gt; {
-<a href=#3554 id=3554 data-nosnippet>3554</a>                <span class="comment">// `idx` is a valid index.
-<a href=#3555 id=3555 data-nosnippet>3555</a>                </span><span class="kw">let _ </span>= <span class="self">self</span>.bytes.advance_back_by(len - idx);
-<a href=#3556 id=3556 data-nosnippet>3556</a>                <span class="prelude-val">Some</span>(ch)
-<a href=#3557 id=3557 data-nosnippet>3557</a>            }
-<a href=#3558 id=3558 data-nosnippet>3558</a>        }
-<a href=#3559 id=3559 data-nosnippet>3559</a>    }
-<a href=#3560 id=3560 data-nosnippet>3560</a>}
-<a href=#3561 id=3561 data-nosnippet>3561</a>
-<a href=#3562 id=3562 data-nosnippet>3562</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
-<a href=#3563 id=3563 data-nosnippet>3563</a></span><span class="kw">impl </span>FusedIterator <span class="kw">for </span>IntoChars {}
-<a href=#3564 id=3564 data-nosnippet>3564</a>
-<a href=#3565 id=3565 data-nosnippet>3565</a><span class="doccomment">/// A draining iterator for `String`.
-<a href=#3566 id=3566 data-nosnippet>3566</a>///
-<a href=#3567 id=3567 data-nosnippet>3567</a>/// This struct is created by the [`drain`] method on [`String`]. See its
-<a href=#3568 id=3568 data-nosnippet>3568</a>/// documentation for more.
-<a href=#3569 id=3569 data-nosnippet>3569</a>///
-<a href=#3570 id=3570 data-nosnippet>3570</a>/// [`drain`]: String::drain
-<a href=#3571 id=3571 data-nosnippet>3571</a></span><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3572 id=3572 data-nosnippet>3572</a></span><span class="kw">pub struct </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#3573 id=3573 data-nosnippet>3573</a>    <span class="doccomment">/// Will be used as &amp;'a mut String in the destructor
-<a href=#3574 id=3574 data-nosnippet>3574</a>    </span>string: <span class="kw-2">*mut </span>String,
-<a href=#3575 id=3575 data-nosnippet>3575</a>    <span class="doccomment">/// Start of part to remove
-<a href=#3576 id=3576 data-nosnippet>3576</a>    </span>start: usize,
-<a href=#3577 id=3577 data-nosnippet>3577</a>    <span class="doccomment">/// End of part to remove
-<a href=#3578 id=3578 data-nosnippet>3578</a>    </span>end: usize,
-<a href=#3579 id=3579 data-nosnippet>3579</a>    <span class="doccomment">/// Current remaining range to remove
-<a href=#3580 id=3580 data-nosnippet>3580</a>    </span>iter: Chars&lt;<span class="lifetime">'a</span>&gt;,
-<a href=#3581 id=3581 data-nosnippet>3581</a>}
-<a href=#3582 id=3582 data-nosnippet>3582</a>
-<a href=#3583 id=3583 data-nosnippet>3583</a><span class="attr">#[stable(feature = <span class="string">"collection_debug"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#3584 id=3584 data-nosnippet>3584</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#3585 id=3585 data-nosnippet>3585</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#3586 id=3586 data-nosnippet>3586</a>        f.debug_tuple(<span class="string">"Drain"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.as_str()).finish()
-<a href=#3587 id=3587 data-nosnippet>3587</a>    }
-<a href=#3588 id=3588 data-nosnippet>3588</a>}
-<a href=#3589 id=3589 data-nosnippet>3589</a>
-<a href=#3590 id=3590 data-nosnippet>3590</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3591 id=3591 data-nosnippet>3591</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
-<a href=#3592 id=3592 data-nosnippet>3592</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3593 id=3593 data-nosnippet>3593</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
-<a href=#3594 id=3594 data-nosnippet>3594</a>
-<a href=#3595 id=3595 data-nosnippet>3595</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3596 id=3596 data-nosnippet>3596</a></span><span class="kw">impl </span>Drop <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#3597 id=3597 data-nosnippet>3597</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#3598 id=3598 data-nosnippet>3598</a>        <span class="comment">// Use Vec::drain. "Reaffirm" the bounds checks to avoid
-<a href=#3599 id=3599 data-nosnippet>3599</a>        // panic code being inserted again.
-<a href=#3600 id=3600 data-nosnippet>3600</a>        // SAFETY: We only use the returned Vec to call drain.
-<a href=#3601 id=3601 data-nosnippet>3601</a>        </span><span class="kw">let </span>self_vec = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(<span class="kw-2">*</span><span class="self">self</span>.string).as_mut_vec() };
-<a href=#3602 id=3602 data-nosnippet>3602</a>        <span class="kw">if </span><span class="self">self</span>.start &lt;= <span class="self">self</span>.end &amp;&amp; <span class="self">self</span>.end &lt;= self_vec.len() {
-<a href=#3603 id=3603 data-nosnippet>3603</a>            self_vec.drain(<span class="self">self</span>.start..<span class="self">self</span>.end);
-<a href=#3604 id=3604 data-nosnippet>3604</a>        }
-<a href=#3605 id=3605 data-nosnippet>3605</a>    }
-<a href=#3606 id=3606 data-nosnippet>3606</a>}
-<a href=#3607 id=3607 data-nosnippet>3607</a>
-<a href=#3608 id=3608 data-nosnippet>3608</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drain&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#3609 id=3609 data-nosnippet>3609</a>    <span class="doccomment">/// Returns the remaining (sub)string of this iterator as a slice.
-<a href=#3610 id=3610 data-nosnippet>3610</a>    ///
-<a href=#3611 id=3611 data-nosnippet>3611</a>    /// # Examples
-<a href=#3612 id=3612 data-nosnippet>3612</a>    ///
-<a href=#3613 id=3613 data-nosnippet>3613</a>    /// ```
-<a href=#3614 id=3614 data-nosnippet>3614</a>    /// let mut s = String::from("abc");
-<a href=#3615 id=3615 data-nosnippet>3615</a>    /// let mut drain = s.drain(..);
-<a href=#3616 id=3616 data-nosnippet>3616</a>    /// assert_eq!(drain.as_str(), "abc");
-<a href=#3617 id=3617 data-nosnippet>3617</a>    /// let _ = drain.next().unwrap();
-<a href=#3618 id=3618 data-nosnippet>3618</a>    /// assert_eq!(drain.as_str(), "bc");
-<a href=#3619 id=3619 data-nosnippet>3619</a>    /// ```
-<a href=#3620 id=3620 data-nosnippet>3620</a>    </span><span class="attr">#[must_use]
-<a href=#3621 id=3621 data-nosnippet>3621</a>    #[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
-<a href=#3622 id=3622 data-nosnippet>3622</a>    </span><span class="kw">pub fn </span>as_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-<a href=#3623 id=3623 data-nosnippet>3623</a>        <span class="self">self</span>.iter.as_str()
-<a href=#3624 id=3624 data-nosnippet>3624</a>    }
-<a href=#3625 id=3625 data-nosnippet>3625</a>}
-<a href=#3626 id=3626 data-nosnippet>3626</a>
-<a href=#3627 id=3627 data-nosnippet>3627</a><span class="attr">#[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
-<a href=#3628 id=3628 data-nosnippet>3628</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsRef&lt;str&gt; <span class="kw">for </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#3629 id=3629 data-nosnippet>3629</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-<a href=#3630 id=3630 data-nosnippet>3630</a>        <span class="self">self</span>.as_str()
-<a href=#3631 id=3631 data-nosnippet>3631</a>    }
-<a href=#3632 id=3632 data-nosnippet>3632</a>}
-<a href=#3633 id=3633 data-nosnippet>3633</a>
-<a href=#3634 id=3634 data-nosnippet>3634</a><span class="attr">#[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
-<a href=#3635 id=3635 data-nosnippet>3635</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsRef&lt;[u8]&gt; <span class="kw">for </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#3636 id=3636 data-nosnippet>3636</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
-<a href=#3637 id=3637 data-nosnippet>3637</a>        <span class="self">self</span>.as_str().as_bytes()
-<a href=#3638 id=3638 data-nosnippet>3638</a>    }
-<a href=#3639 id=3639 data-nosnippet>3639</a>}
-<a href=#3640 id=3640 data-nosnippet>3640</a>
-<a href=#3641 id=3641 data-nosnippet>3641</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3642 id=3642 data-nosnippet>3642</a></span><span class="kw">impl </span>Iterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#3643 id=3643 data-nosnippet>3643</a>    <span class="kw">type </span>Item = char;
+<a href=#3515 id=3515 data-nosnippet>3515</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3516 id=3516 data-nosnippet>3516</a></span><span class="kw">impl </span>Iterator <span class="kw">for </span>IntoChars {
+<a href=#3517 id=3517 data-nosnippet>3517</a>    <span class="kw">type </span>Item = char;
+<a href=#3518 id=3518 data-nosnippet>3518</a>
+<a href=#3519 id=3519 data-nosnippet>3519</a>    <span class="attr">#[inline]
+<a href=#3520 id=3520 data-nosnippet>3520</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3521 id=3521 data-nosnippet>3521</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.iter();
+<a href=#3522 id=3522 data-nosnippet>3522</a>        <span class="kw">match </span>iter.next() {
+<a href=#3523 id=3523 data-nosnippet>3523</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#3524 id=3524 data-nosnippet>3524</a>            <span class="prelude-val">Some</span>((<span class="kw">_</span>, ch)) =&gt; {
+<a href=#3525 id=3525 data-nosnippet>3525</a>                <span class="kw">let </span>offset = iter.offset();
+<a href=#3526 id=3526 data-nosnippet>3526</a>                <span class="comment">// `offset` is a valid index.
+<a href=#3527 id=3527 data-nosnippet>3527</a>                </span><span class="kw">let _ </span>= <span class="self">self</span>.bytes.advance_by(offset);
+<a href=#3528 id=3528 data-nosnippet>3528</a>                <span class="prelude-val">Some</span>(ch)
+<a href=#3529 id=3529 data-nosnippet>3529</a>            }
+<a href=#3530 id=3530 data-nosnippet>3530</a>        }
+<a href=#3531 id=3531 data-nosnippet>3531</a>    }
+<a href=#3532 id=3532 data-nosnippet>3532</a>
+<a href=#3533 id=3533 data-nosnippet>3533</a>    <span class="attr">#[inline]
+<a href=#3534 id=3534 data-nosnippet>3534</a>    </span><span class="kw">fn </span>count(<span class="self">self</span>) -&gt; usize {
+<a href=#3535 id=3535 data-nosnippet>3535</a>        <span class="self">self</span>.iter().count()
+<a href=#3536 id=3536 data-nosnippet>3536</a>    }
+<a href=#3537 id=3537 data-nosnippet>3537</a>
+<a href=#3538 id=3538 data-nosnippet>3538</a>    <span class="attr">#[inline]
+<a href=#3539 id=3539 data-nosnippet>3539</a>    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+<a href=#3540 id=3540 data-nosnippet>3540</a>        <span class="self">self</span>.iter().size_hint()
+<a href=#3541 id=3541 data-nosnippet>3541</a>    }
+<a href=#3542 id=3542 data-nosnippet>3542</a>
+<a href=#3543 id=3543 data-nosnippet>3543</a>    <span class="attr">#[inline]
+<a href=#3544 id=3544 data-nosnippet>3544</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3545 id=3545 data-nosnippet>3545</a>        <span class="self">self</span>.next_back()
+<a href=#3546 id=3546 data-nosnippet>3546</a>    }
+<a href=#3547 id=3547 data-nosnippet>3547</a>}
+<a href=#3548 id=3548 data-nosnippet>3548</a>
+<a href=#3549 id=3549 data-nosnippet>3549</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3550 id=3550 data-nosnippet>3550</a></span><span class="kw">impl </span>DoubleEndedIterator <span class="kw">for </span>IntoChars {
+<a href=#3551 id=3551 data-nosnippet>3551</a>    <span class="attr">#[inline]
+<a href=#3552 id=3552 data-nosnippet>3552</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3553 id=3553 data-nosnippet>3553</a>        <span class="kw">let </span>len = <span class="self">self</span>.as_str().len();
+<a href=#3554 id=3554 data-nosnippet>3554</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.iter();
+<a href=#3555 id=3555 data-nosnippet>3555</a>        <span class="kw">match </span>iter.next_back() {
+<a href=#3556 id=3556 data-nosnippet>3556</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#3557 id=3557 data-nosnippet>3557</a>            <span class="prelude-val">Some</span>((idx, ch)) =&gt; {
+<a href=#3558 id=3558 data-nosnippet>3558</a>                <span class="comment">// `idx` is a valid index.
+<a href=#3559 id=3559 data-nosnippet>3559</a>                </span><span class="kw">let _ </span>= <span class="self">self</span>.bytes.advance_back_by(len - idx);
+<a href=#3560 id=3560 data-nosnippet>3560</a>                <span class="prelude-val">Some</span>(ch)
+<a href=#3561 id=3561 data-nosnippet>3561</a>            }
+<a href=#3562 id=3562 data-nosnippet>3562</a>        }
+<a href=#3563 id=3563 data-nosnippet>3563</a>    }
+<a href=#3564 id=3564 data-nosnippet>3564</a>}
+<a href=#3565 id=3565 data-nosnippet>3565</a>
+<a href=#3566 id=3566 data-nosnippet>3566</a><span class="attr">#[unstable(feature = <span class="string">"string_into_chars"</span>, issue = <span class="string">"133125"</span>)]
+<a href=#3567 id=3567 data-nosnippet>3567</a></span><span class="kw">impl </span>FusedIterator <span class="kw">for </span>IntoChars {}
+<a href=#3568 id=3568 data-nosnippet>3568</a>
+<a href=#3569 id=3569 data-nosnippet>3569</a><span class="doccomment">/// A draining iterator for `String`.
+<a href=#3570 id=3570 data-nosnippet>3570</a>///
+<a href=#3571 id=3571 data-nosnippet>3571</a>/// This struct is created by the [`drain`] method on [`String`]. See its
+<a href=#3572 id=3572 data-nosnippet>3572</a>/// documentation for more.
+<a href=#3573 id=3573 data-nosnippet>3573</a>///
+<a href=#3574 id=3574 data-nosnippet>3574</a>/// [`drain`]: String::drain
+<a href=#3575 id=3575 data-nosnippet>3575</a></span><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3576 id=3576 data-nosnippet>3576</a></span><span class="kw">pub struct </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#3577 id=3577 data-nosnippet>3577</a>    <span class="doccomment">/// Will be used as &amp;'a mut String in the destructor
+<a href=#3578 id=3578 data-nosnippet>3578</a>    </span>string: <span class="kw-2">*mut </span>String,
+<a href=#3579 id=3579 data-nosnippet>3579</a>    <span class="doccomment">/// Start of part to remove
+<a href=#3580 id=3580 data-nosnippet>3580</a>    </span>start: usize,
+<a href=#3581 id=3581 data-nosnippet>3581</a>    <span class="doccomment">/// End of part to remove
+<a href=#3582 id=3582 data-nosnippet>3582</a>    </span>end: usize,
+<a href=#3583 id=3583 data-nosnippet>3583</a>    <span class="doccomment">/// Current remaining range to remove
+<a href=#3584 id=3584 data-nosnippet>3584</a>    </span>iter: Chars&lt;<span class="lifetime">'a</span>&gt;,
+<a href=#3585 id=3585 data-nosnippet>3585</a>}
+<a href=#3586 id=3586 data-nosnippet>3586</a>
+<a href=#3587 id=3587 data-nosnippet>3587</a><span class="attr">#[stable(feature = <span class="string">"collection_debug"</span>, since = <span class="string">"1.17.0"</span>)]
+<a href=#3588 id=3588 data-nosnippet>3588</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#3589 id=3589 data-nosnippet>3589</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#3590 id=3590 data-nosnippet>3590</a>        f.debug_tuple(<span class="string">"Drain"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.as_str()).finish()
+<a href=#3591 id=3591 data-nosnippet>3591</a>    }
+<a href=#3592 id=3592 data-nosnippet>3592</a>}
+<a href=#3593 id=3593 data-nosnippet>3593</a>
+<a href=#3594 id=3594 data-nosnippet>3594</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3595 id=3595 data-nosnippet>3595</a></span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
+<a href=#3596 id=3596 data-nosnippet>3596</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3597 id=3597 data-nosnippet>3597</a></span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
+<a href=#3598 id=3598 data-nosnippet>3598</a>
+<a href=#3599 id=3599 data-nosnippet>3599</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3600 id=3600 data-nosnippet>3600</a></span><span class="kw">impl </span>Drop <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#3601 id=3601 data-nosnippet>3601</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#3602 id=3602 data-nosnippet>3602</a>        <span class="comment">// Use Vec::drain. "Reaffirm" the bounds checks to avoid
+<a href=#3603 id=3603 data-nosnippet>3603</a>        // panic code being inserted again.
+<a href=#3604 id=3604 data-nosnippet>3604</a>        // SAFETY: We only use the returned Vec to call drain.
+<a href=#3605 id=3605 data-nosnippet>3605</a>        </span><span class="kw">let </span>self_vec = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(<span class="kw-2">*</span><span class="self">self</span>.string).as_mut_vec() };
+<a href=#3606 id=3606 data-nosnippet>3606</a>        <span class="kw">if </span><span class="self">self</span>.start &lt;= <span class="self">self</span>.end &amp;&amp; <span class="self">self</span>.end &lt;= self_vec.len() {
+<a href=#3607 id=3607 data-nosnippet>3607</a>            self_vec.drain(<span class="self">self</span>.start..<span class="self">self</span>.end);
+<a href=#3608 id=3608 data-nosnippet>3608</a>        }
+<a href=#3609 id=3609 data-nosnippet>3609</a>    }
+<a href=#3610 id=3610 data-nosnippet>3610</a>}
+<a href=#3611 id=3611 data-nosnippet>3611</a>
+<a href=#3612 id=3612 data-nosnippet>3612</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drain&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#3613 id=3613 data-nosnippet>3613</a>    <span class="doccomment">/// Returns the remaining (sub)string of this iterator as a slice.
+<a href=#3614 id=3614 data-nosnippet>3614</a>    ///
+<a href=#3615 id=3615 data-nosnippet>3615</a>    /// # Examples
+<a href=#3616 id=3616 data-nosnippet>3616</a>    ///
+<a href=#3617 id=3617 data-nosnippet>3617</a>    /// ```
+<a href=#3618 id=3618 data-nosnippet>3618</a>    /// let mut s = String::from("abc");
+<a href=#3619 id=3619 data-nosnippet>3619</a>    /// let mut drain = s.drain(..);
+<a href=#3620 id=3620 data-nosnippet>3620</a>    /// assert_eq!(drain.as_str(), "abc");
+<a href=#3621 id=3621 data-nosnippet>3621</a>    /// let _ = drain.next().unwrap();
+<a href=#3622 id=3622 data-nosnippet>3622</a>    /// assert_eq!(drain.as_str(), "bc");
+<a href=#3623 id=3623 data-nosnippet>3623</a>    /// ```
+<a href=#3624 id=3624 data-nosnippet>3624</a>    </span><span class="attr">#[must_use]
+<a href=#3625 id=3625 data-nosnippet>3625</a>    #[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
+<a href=#3626 id=3626 data-nosnippet>3626</a>    </span><span class="kw">pub fn </span>as_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+<a href=#3627 id=3627 data-nosnippet>3627</a>        <span class="self">self</span>.iter.as_str()
+<a href=#3628 id=3628 data-nosnippet>3628</a>    }
+<a href=#3629 id=3629 data-nosnippet>3629</a>}
+<a href=#3630 id=3630 data-nosnippet>3630</a>
+<a href=#3631 id=3631 data-nosnippet>3631</a><span class="attr">#[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
+<a href=#3632 id=3632 data-nosnippet>3632</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsRef&lt;str&gt; <span class="kw">for </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#3633 id=3633 data-nosnippet>3633</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+<a href=#3634 id=3634 data-nosnippet>3634</a>        <span class="self">self</span>.as_str()
+<a href=#3635 id=3635 data-nosnippet>3635</a>    }
+<a href=#3636 id=3636 data-nosnippet>3636</a>}
+<a href=#3637 id=3637 data-nosnippet>3637</a>
+<a href=#3638 id=3638 data-nosnippet>3638</a><span class="attr">#[stable(feature = <span class="string">"string_drain_as_str"</span>, since = <span class="string">"1.55.0"</span>)]
+<a href=#3639 id=3639 data-nosnippet>3639</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AsRef&lt;[u8]&gt; <span class="kw">for </span>Drain&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#3640 id=3640 data-nosnippet>3640</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+<a href=#3641 id=3641 data-nosnippet>3641</a>        <span class="self">self</span>.as_str().as_bytes()
+<a href=#3642 id=3642 data-nosnippet>3642</a>    }
+<a href=#3643 id=3643 data-nosnippet>3643</a>}
 <a href=#3644 id=3644 data-nosnippet>3644</a>
-<a href=#3645 id=3645 data-nosnippet>3645</a>    <span class="attr">#[inline]
-<a href=#3646 id=3646 data-nosnippet>3646</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3647 id=3647 data-nosnippet>3647</a>        <span class="self">self</span>.iter.next()
-<a href=#3648 id=3648 data-nosnippet>3648</a>    }
-<a href=#3649 id=3649 data-nosnippet>3649</a>
-<a href=#3650 id=3650 data-nosnippet>3650</a>    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
-<a href=#3651 id=3651 data-nosnippet>3651</a>        <span class="self">self</span>.iter.size_hint()
+<a href=#3645 id=3645 data-nosnippet>3645</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3646 id=3646 data-nosnippet>3646</a></span><span class="kw">impl </span>Iterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#3647 id=3647 data-nosnippet>3647</a>    <span class="kw">type </span>Item = char;
+<a href=#3648 id=3648 data-nosnippet>3648</a>
+<a href=#3649 id=3649 data-nosnippet>3649</a>    <span class="attr">#[inline]
+<a href=#3650 id=3650 data-nosnippet>3650</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3651 id=3651 data-nosnippet>3651</a>        <span class="self">self</span>.iter.next()
 <a href=#3652 id=3652 data-nosnippet>3652</a>    }
 <a href=#3653 id=3653 data-nosnippet>3653</a>
-<a href=#3654 id=3654 data-nosnippet>3654</a>    <span class="attr">#[inline]
-<a href=#3655 id=3655 data-nosnippet>3655</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3656 id=3656 data-nosnippet>3656</a>        <span class="self">self</span>.next_back()
-<a href=#3657 id=3657 data-nosnippet>3657</a>    }
-<a href=#3658 id=3658 data-nosnippet>3658</a>}
-<a href=#3659 id=3659 data-nosnippet>3659</a>
-<a href=#3660 id=3660 data-nosnippet>3660</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#3661 id=3661 data-nosnippet>3661</a></span><span class="kw">impl </span>DoubleEndedIterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#3662 id=3662 data-nosnippet>3662</a>    <span class="attr">#[inline]
-<a href=#3663 id=3663 data-nosnippet>3663</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
-<a href=#3664 id=3664 data-nosnippet>3664</a>        <span class="self">self</span>.iter.next_back()
-<a href=#3665 id=3665 data-nosnippet>3665</a>    }
-<a href=#3666 id=3666 data-nosnippet>3666</a>}
-<a href=#3667 id=3667 data-nosnippet>3667</a>
-<a href=#3668 id=3668 data-nosnippet>3668</a><span class="attr">#[stable(feature = <span class="string">"fused"</span>, since = <span class="string">"1.26.0"</span>)]
-<a href=#3669 id=3669 data-nosnippet>3669</a></span><span class="kw">impl </span>FusedIterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
-<a href=#3670 id=3670 data-nosnippet>3670</a>
-<a href=#3671 id=3671 data-nosnippet>3671</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#3672 id=3672 data-nosnippet>3672</a>#[stable(feature = <span class="string">"from_char_for_string"</span>, since = <span class="string">"1.46.0"</span>)]
-<a href=#3673 id=3673 data-nosnippet>3673</a></span><span class="kw">impl </span>From&lt;char&gt; <span class="kw">for </span>String {
-<a href=#3674 id=3674 data-nosnippet>3674</a>    <span class="doccomment">/// Allocates an owned [`String`] from a single character.
-<a href=#3675 id=3675 data-nosnippet>3675</a>    ///
-<a href=#3676 id=3676 data-nosnippet>3676</a>    /// # Example
-<a href=#3677 id=3677 data-nosnippet>3677</a>    /// ```rust
-<a href=#3678 id=3678 data-nosnippet>3678</a>    /// let c: char = 'a';
-<a href=#3679 id=3679 data-nosnippet>3679</a>    /// let s: String = String::from(c);
-<a href=#3680 id=3680 data-nosnippet>3680</a>    /// assert_eq!("a", &amp;s[..]);
-<a href=#3681 id=3681 data-nosnippet>3681</a>    /// ```
-<a href=#3682 id=3682 data-nosnippet>3682</a>    </span><span class="attr">#[inline]
-<a href=#3683 id=3683 data-nosnippet>3683</a>    </span><span class="kw">fn </span>from(c: char) -&gt; <span class="self">Self </span>{
-<a href=#3684 id=3684 data-nosnippet>3684</a>        c.to_string()
-<a href=#3685 id=3685 data-nosnippet>3685</a>    }
-<a href=#3686 id=3686 data-nosnippet>3686</a>}
+<a href=#3654 id=3654 data-nosnippet>3654</a>    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+<a href=#3655 id=3655 data-nosnippet>3655</a>        <span class="self">self</span>.iter.size_hint()
+<a href=#3656 id=3656 data-nosnippet>3656</a>    }
+<a href=#3657 id=3657 data-nosnippet>3657</a>
+<a href=#3658 id=3658 data-nosnippet>3658</a>    <span class="attr">#[inline]
+<a href=#3659 id=3659 data-nosnippet>3659</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3660 id=3660 data-nosnippet>3660</a>        <span class="self">self</span>.next_back()
+<a href=#3661 id=3661 data-nosnippet>3661</a>    }
+<a href=#3662 id=3662 data-nosnippet>3662</a>}
+<a href=#3663 id=3663 data-nosnippet>3663</a>
+<a href=#3664 id=3664 data-nosnippet>3664</a><span class="attr">#[stable(feature = <span class="string">"drain"</span>, since = <span class="string">"1.6.0"</span>)]
+<a href=#3665 id=3665 data-nosnippet>3665</a></span><span class="kw">impl </span>DoubleEndedIterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#3666 id=3666 data-nosnippet>3666</a>    <span class="attr">#[inline]
+<a href=#3667 id=3667 data-nosnippet>3667</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+<a href=#3668 id=3668 data-nosnippet>3668</a>        <span class="self">self</span>.iter.next_back()
+<a href=#3669 id=3669 data-nosnippet>3669</a>    }
+<a href=#3670 id=3670 data-nosnippet>3670</a>}
+<a href=#3671 id=3671 data-nosnippet>3671</a>
+<a href=#3672 id=3672 data-nosnippet>3672</a><span class="attr">#[stable(feature = <span class="string">"fused"</span>, since = <span class="string">"1.26.0"</span>)]
+<a href=#3673 id=3673 data-nosnippet>3673</a></span><span class="kw">impl </span>FusedIterator <span class="kw">for </span>Drain&lt;<span class="lifetime">'_</span>&gt; {}
+<a href=#3674 id=3674 data-nosnippet>3674</a>
+<a href=#3675 id=3675 data-nosnippet>3675</a><span class="attr">#[cfg(not(no_global_oom_handling))]
+<a href=#3676 id=3676 data-nosnippet>3676</a>#[stable(feature = <span class="string">"from_char_for_string"</span>, since = <span class="string">"1.46.0"</span>)]
+<a href=#3677 id=3677 data-nosnippet>3677</a></span><span class="kw">impl </span>From&lt;char&gt; <span class="kw">for </span>String {
+<a href=#3678 id=3678 data-nosnippet>3678</a>    <span class="doccomment">/// Allocates an owned [`String`] from a single character.
+<a href=#3679 id=3679 data-nosnippet>3679</a>    ///
+<a href=#3680 id=3680 data-nosnippet>3680</a>    /// # Example
+<a href=#3681 id=3681 data-nosnippet>3681</a>    /// ```rust
+<a href=#3682 id=3682 data-nosnippet>3682</a>    /// let c: char = 'a';
+<a href=#3683 id=3683 data-nosnippet>3683</a>    /// let s: String = String::from(c);
+<a href=#3684 id=3684 data-nosnippet>3684</a>    /// assert_eq!("a", &amp;s[..]);
+<a href=#3685 id=3685 data-nosnippet>3685</a>    /// ```
+<a href=#3686 id=3686 data-nosnippet>3686</a>    </span><span class="attr">#[inline]
+<a href=#3687 id=3687 data-nosnippet>3687</a>    </span><span class="kw">fn </span>from(c: char) -&gt; <span class="self">Self </span>{
+<a href=#3688 id=3688 data-nosnippet>3688</a>        c.to_string()
+<a href=#3689 id=3689 data-nosnippet>3689</a>    }
+<a href=#3690 id=3690 data-nosnippet>3690</a>}
 </code></pre></div></section></main></body></html>
