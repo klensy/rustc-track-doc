@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["const_panic_fmt","panic","panic_display","panic_fmt","panic_nounwind","panic_nounwind_fmt","panic_nounwind_nobacktrace","panic_str_2015","unreachable_display"],"mod":["panic_const"]};
+window.SIDEBAR_ITEMS = {"fn":["const_panic_fmt","panic","panic_default_msg","panic_display","panic_fmt","panic_nounwind","panic_nounwind_fmt","panic_nounwind_nobacktrace","panic_str_2015","todo_default_msg","unimplemented_default_msg","unreachable_default_msg","unreachable_display"],"mod":["panic_const"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed.rs`."><title>boxed.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (48f4b0553 2026-10-23)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>boxed.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `Box&lt;T&gt;` type for heap allocation.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed.rs`."><title>boxed.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (12433c307 2026-10-24)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>boxed.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `Box&lt;T&gt;` type for heap allocation.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! [`Box&lt;T&gt;`], casually referred to as a 'box', provides the simplest form of
 <a href=#4 id=4 data-nosnippet>4</a>//! heap allocation in Rust. Boxes provide ownership for this allocation, and
@@ -2431,279 +2431,277 @@
 <a href=#2431 id=2431 data-nosnippet>2431</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#2432 id=2432 data-nosnippet>2432</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; fmt::Pointer <span class="kw">for </span>Box&lt;T, A&gt; {
 <a href=#2433 id=2433 data-nosnippet>2433</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#2434 id=2434 data-nosnippet>2434</a>        <span class="comment">// It's not possible to extract the inner Uniq directly from the Box,
-<a href=#2435 id=2435 data-nosnippet>2435</a>        // instead we cast it to a *const which aliases the Unique
-<a href=#2436 id=2436 data-nosnippet>2436</a>        </span><span class="kw">let </span>ptr: <span class="kw-2">*const </span>T = <span class="kw-2">&amp;**</span><span class="self">self</span>;
-<a href=#2437 id=2437 data-nosnippet>2437</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>ptr, f)
-<a href=#2438 id=2438 data-nosnippet>2438</a>    }
-<a href=#2439 id=2439 data-nosnippet>2439</a>}
-<a href=#2440 id=2440 data-nosnippet>2440</a>
-<a href=#2441 id=2441 data-nosnippet>2441</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2442 id=2442 data-nosnippet>2442</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Deref <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2443 id=2443 data-nosnippet>2443</a>    <span class="kw">type </span>Target = T;
-<a href=#2444 id=2444 data-nosnippet>2444</a>
-<a href=#2445 id=2445 data-nosnippet>2445</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#2446 id=2446 data-nosnippet>2446</a>        <span class="self">self
-<a href=#2447 id=2447 data-nosnippet>2447</a>    </span>}
-<a href=#2448 id=2448 data-nosnippet>2448</a>}
-<a href=#2449 id=2449 data-nosnippet>2449</a>
-<a href=#2450 id=2450 data-nosnippet>2450</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2451 id=2451 data-nosnippet>2451</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; DerefMut <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2452 id=2452 data-nosnippet>2452</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#2453 id=2453 data-nosnippet>2453</a>        <span class="self">self
-<a href=#2454 id=2454 data-nosnippet>2454</a>    </span>}
-<a href=#2455 id=2455 data-nosnippet>2455</a>}
-<a href=#2456 id=2456 data-nosnippet>2456</a>
-<a href=#2457 id=2457 data-nosnippet>2457</a><span class="attr">#[unstable(feature = <span class="string">"deref_pure_trait"</span>, issue = <span class="string">"87121"</span>)]
-<a href=#2458 id=2458 data-nosnippet>2458</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; DerefPure <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2459 id=2459 data-nosnippet>2459</a>
-<a href=#2460 id=2460 data-nosnippet>2460</a><span class="attr">#[unstable(feature = <span class="string">"legacy_receiver_trait"</span>, issue = <span class="string">"none"</span>)]
-<a href=#2461 id=2461 data-nosnippet>2461</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; LegacyReceiver <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2462 id=2462 data-nosnippet>2462</a>
-<a href=#2463 id=2463 data-nosnippet>2463</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
-<a href=#2464 id=2464 data-nosnippet>2464</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: FnOnce&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; FnOnce&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2465 id=2465 data-nosnippet>2465</a>    <span class="kw">type </span>Output = &lt;F <span class="kw">as </span>FnOnce&lt;Args&gt;&gt;::Output;
-<a href=#2466 id=2466 data-nosnippet>2466</a>
-<a href=#2467 id=2467 data-nosnippet>2467</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_once(<span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
-<a href=#2468 id=2468 data-nosnippet>2468</a>        &lt;F <span class="kw">as </span>FnOnce&lt;Args&gt;&gt;::call_once(<span class="kw-2">*</span><span class="self">self</span>, args)
-<a href=#2469 id=2469 data-nosnippet>2469</a>    }
-<a href=#2470 id=2470 data-nosnippet>2470</a>}
-<a href=#2471 id=2471 data-nosnippet>2471</a>
-<a href=#2472 id=2472 data-nosnippet>2472</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
-<a href=#2473 id=2473 data-nosnippet>2473</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: FnMut&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; FnMut&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2474 id=2474 data-nosnippet>2474</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
-<a href=#2475 id=2475 data-nosnippet>2475</a>        &lt;F <span class="kw">as </span>FnMut&lt;Args&gt;&gt;::call_mut(<span class="self">self</span>, args)
-<a href=#2476 id=2476 data-nosnippet>2476</a>    }
-<a href=#2477 id=2477 data-nosnippet>2477</a>}
-<a href=#2478 id=2478 data-nosnippet>2478</a>
-<a href=#2479 id=2479 data-nosnippet>2479</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
-<a href=#2480 id=2480 data-nosnippet>2480</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: Fn&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; Fn&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2481 id=2481 data-nosnippet>2481</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
-<a href=#2482 id=2482 data-nosnippet>2482</a>        &lt;F <span class="kw">as </span>Fn&lt;Args&gt;&gt;::call(<span class="self">self</span>, args)
-<a href=#2483 id=2483 data-nosnippet>2483</a>    }
-<a href=#2484 id=2484 data-nosnippet>2484</a>}
-<a href=#2485 id=2485 data-nosnippet>2485</a>
-<a href=#2486 id=2486 data-nosnippet>2486</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
-<a href=#2487 id=2487 data-nosnippet>2487</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFnOnce&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFnOnce&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2488 id=2488 data-nosnippet>2488</a>    <span class="kw">type </span>Output = F::Output;
-<a href=#2489 id=2489 data-nosnippet>2489</a>    <span class="kw">type </span>CallOnceFuture = F::CallOnceFuture;
-<a href=#2490 id=2490 data-nosnippet>2490</a>
-<a href=#2491 id=2491 data-nosnippet>2491</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call_once(<span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallOnceFuture {
-<a href=#2492 id=2492 data-nosnippet>2492</a>        F::async_call_once(<span class="kw-2">*</span><span class="self">self</span>, args)
-<a href=#2493 id=2493 data-nosnippet>2493</a>    }
-<a href=#2494 id=2494 data-nosnippet>2494</a>}
-<a href=#2495 id=2495 data-nosnippet>2495</a>
-<a href=#2496 id=2496 data-nosnippet>2496</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
-<a href=#2497 id=2497 data-nosnippet>2497</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFnMut&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFnMut&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2498 id=2498 data-nosnippet>2498</a>    <span class="kw">type </span>CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
-<a href=#2499 id=2499 data-nosnippet>2499</a>        = F::CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
-<a href=#2500 id=2500 data-nosnippet>2500</a>    <span class="kw">where
-<a href=#2501 id=2501 data-nosnippet>2501</a>        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
-<a href=#2502 id=2502 data-nosnippet>2502</a>
-<a href=#2503 id=2503 data-nosnippet>2503</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallRefFuture&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#2504 id=2504 data-nosnippet>2504</a>        F::async_call_mut(<span class="self">self</span>, args)
-<a href=#2505 id=2505 data-nosnippet>2505</a>    }
-<a href=#2506 id=2506 data-nosnippet>2506</a>}
-<a href=#2507 id=2507 data-nosnippet>2507</a>
-<a href=#2508 id=2508 data-nosnippet>2508</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
-<a href=#2509 id=2509 data-nosnippet>2509</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFn&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFn&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2510 id=2510 data-nosnippet>2510</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallRefFuture&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#2511 id=2511 data-nosnippet>2511</a>        F::async_call(<span class="self">self</span>, args)
-<a href=#2512 id=2512 data-nosnippet>2512</a>    }
-<a href=#2513 id=2513 data-nosnippet>2513</a>}
-<a href=#2514 id=2514 data-nosnippet>2514</a>
-<a href=#2515 id=2515 data-nosnippet>2515</a><span class="attr">#[unstable(feature = <span class="string">"coerce_unsized"</span>, issue = <span class="string">"18598"</span>)]
-<a href=#2516 id=2516 data-nosnippet>2516</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Unsize&lt;U&gt;, U: <span class="question-mark">?</span>Sized, A: Allocator&gt; CoerceUnsized&lt;Box&lt;U, A&gt;&gt; <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2517 id=2517 data-nosnippet>2517</a>
-<a href=#2518 id=2518 data-nosnippet>2518</a><span class="comment">// A pointer can only be pin safe if it does not implement certain safe traits
-<a href=#2519 id=2519 data-nosnippet>2519</a>// maliciously. Since `Box` is fundamental, downstream crates may be able to
-<a href=#2520 id=2520 data-nosnippet>2520</a>// implement those traits for `Box&lt;LocalType&gt;`, so we must carefully check that
-<a href=#2521 id=2521 data-nosnippet>2521</a>// this is not a problem for each trait.
-<a href=#2522 id=2522 data-nosnippet>2522</a>//
-<a href=#2523 id=2523 data-nosnippet>2523</a>// The `Box` type always implements `Deref` and `DerefMut`, so despite being
-<a href=#2524 id=2524 data-nosnippet>2524</a>// fundamental, downstream crates cannot implement these traits for
-<a href=#2525 id=2525 data-nosnippet>2525</a>// `Box&lt;LocalType&gt;`.
-<a href=#2526 id=2526 data-nosnippet>2526</a>//
-<a href=#2527 id=2527 data-nosnippet>2527</a>// Conversely, downstream crates are able to implement `Clone`, `Debug`, and
-<a href=#2528 id=2528 data-nosnippet>2528</a>// `Display` for `Box&lt;LocalType&gt;` as long as `LocalType` does not implement
-<a href=#2529 id=2529 data-nosnippet>2529</a>// said trait. However, the `Box&lt;T&gt;` type does not treat the existence of an
-<a href=#2530 id=2530 data-nosnippet>2530</a>// `&amp;Box&lt;T&gt;` as evidence that the `T` is not pinned, so this is not
-<a href=#2531 id=2531 data-nosnippet>2531</a>// problematic.
-<a href=#2532 id=2532 data-nosnippet>2532</a>//
-<a href=#2533 id=2533 data-nosnippet>2533</a>// Finally, even if downstream crates provide their own implementation of
-<a href=#2534 id=2534 data-nosnippet>2534</a>// `Clone` for `Box&lt;LocalType&gt;`, it is not problematic for the cloned box to be
-<a href=#2535 id=2535 data-nosnippet>2535</a>// wrapped in `Pin`, since the same conversion could have been carried out
-<a href=#2536 id=2536 data-nosnippet>2536</a>// safely as `Box::pin((*p).clone())`.
-<a href=#2537 id=2537 data-nosnippet>2537</a></span><span class="attr">#[unstable(feature = <span class="string">"pin_coerce_unsized_trait"</span>, issue = <span class="string">"150112"</span>)]
-<a href=#2538 id=2538 data-nosnippet>2538</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: StaticAllocator&gt; PinSafePointer <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2539 id=2539 data-nosnippet>2539</a>
-<a href=#2540 id=2540 data-nosnippet>2540</a><span class="comment">// It is quite crucial that we only allow the `Global` allocator here.
-<a href=#2541 id=2541 data-nosnippet>2541</a>// Handling arbitrary custom allocators (which can affect the `Box` layout heavily!)
-<a href=#2542 id=2542 data-nosnippet>2542</a>// would need a lot of codegen and interpreter adjustments.
-<a href=#2543 id=2543 data-nosnippet>2543</a></span><span class="attr">#[unstable(feature = <span class="string">"dispatch_from_dyn"</span>, issue = <span class="string">"none"</span>)]
-<a href=#2544 id=2544 data-nosnippet>2544</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Unsize&lt;U&gt;, U: <span class="question-mark">?</span>Sized&gt; DispatchFromDyn&lt;Box&lt;U&gt;&gt; <span class="kw">for </span>Box&lt;T, Global&gt; {}
-<a href=#2545 id=2545 data-nosnippet>2545</a>
-<a href=#2546 id=2546 data-nosnippet>2546</a><span class="attr">#[stable(feature = <span class="string">"box_borrow"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#2547 id=2547 data-nosnippet>2547</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Borrow&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2548 id=2548 data-nosnippet>2548</a>    <span class="kw">fn </span>borrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#2549 id=2549 data-nosnippet>2549</a>        <span class="self">self
-<a href=#2550 id=2550 data-nosnippet>2550</a>    </span>}
-<a href=#2551 id=2551 data-nosnippet>2551</a>}
-<a href=#2552 id=2552 data-nosnippet>2552</a>
-<a href=#2553 id=2553 data-nosnippet>2553</a><span class="attr">#[stable(feature = <span class="string">"box_borrow"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#2554 id=2554 data-nosnippet>2554</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; BorrowMut&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2555 id=2555 data-nosnippet>2555</a>    <span class="kw">fn </span>borrow_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#2556 id=2556 data-nosnippet>2556</a>        <span class="self">self
-<a href=#2557 id=2557 data-nosnippet>2557</a>    </span>}
-<a href=#2558 id=2558 data-nosnippet>2558</a>}
-<a href=#2559 id=2559 data-nosnippet>2559</a>
-<a href=#2560 id=2560 data-nosnippet>2560</a><span class="attr">#[stable(since = <span class="string">"1.5.0"</span>, feature = <span class="string">"smart_ptr_as_ref"</span>)]
-<a href=#2561 id=2561 data-nosnippet>2561</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; AsRef&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2562 id=2562 data-nosnippet>2562</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#2563 id=2563 data-nosnippet>2563</a>        <span class="self">self
-<a href=#2564 id=2564 data-nosnippet>2564</a>    </span>}
-<a href=#2565 id=2565 data-nosnippet>2565</a>}
-<a href=#2566 id=2566 data-nosnippet>2566</a>
-<a href=#2567 id=2567 data-nosnippet>2567</a><span class="attr">#[stable(since = <span class="string">"1.5.0"</span>, feature = <span class="string">"smart_ptr_as_ref"</span>)]
-<a href=#2568 id=2568 data-nosnippet>2568</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; AsMut&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2569 id=2569 data-nosnippet>2569</a>    <span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#2570 id=2570 data-nosnippet>2570</a>        <span class="self">self
-<a href=#2571 id=2571 data-nosnippet>2571</a>    </span>}
-<a href=#2572 id=2572 data-nosnippet>2572</a>}
-<a href=#2573 id=2573 data-nosnippet>2573</a>
-<a href=#2574 id=2574 data-nosnippet>2574</a><span class="comment">/* Nota bene
-<a href=#2575 id=2575 data-nosnippet>2575</a> *
-<a href=#2576 id=2576 data-nosnippet>2576</a> *  We could have chosen not to add this impl, and instead have written a
-<a href=#2577 id=2577 data-nosnippet>2577</a> *  function of Pin&lt;Box&lt;T&gt;&gt; to Pin&lt;T&gt;. Such a function would not be sound,
-<a href=#2578 id=2578 data-nosnippet>2578</a> *  because Box&lt;T&gt; implements Unpin even when T does not, as a result of
-<a href=#2579 id=2579 data-nosnippet>2579</a> *  this impl.
-<a href=#2580 id=2580 data-nosnippet>2580</a> *
-<a href=#2581 id=2581 data-nosnippet>2581</a> *  We chose this API instead of the alternative for a few reasons:
-<a href=#2582 id=2582 data-nosnippet>2582</a> *      - Logically, it is helpful to understand pinning in regard to the
-<a href=#2583 id=2583 data-nosnippet>2583</a> *        memory region being pointed to. For this reason none of the
-<a href=#2584 id=2584 data-nosnippet>2584</a> *        standard library pointer types support projecting through a pin
-<a href=#2585 id=2585 data-nosnippet>2585</a> *        (Box&lt;T&gt; is the only pointer type in std for which this would be
-<a href=#2586 id=2586 data-nosnippet>2586</a> *        safe.)
-<a href=#2587 id=2587 data-nosnippet>2587</a> *      - It is in practice very useful to have Box&lt;T&gt; be unconditionally
-<a href=#2588 id=2588 data-nosnippet>2588</a> *        Unpin because of trait objects, for which the structural auto
-<a href=#2589 id=2589 data-nosnippet>2589</a> *        trait functionality does not apply (e.g., Box&lt;dyn Foo&gt; would
-<a href=#2590 id=2590 data-nosnippet>2590</a> *        otherwise not be Unpin).
-<a href=#2591 id=2591 data-nosnippet>2591</a> *
-<a href=#2592 id=2592 data-nosnippet>2592</a> *  Another type with the same semantics as Box but only a conditional
-<a href=#2593 id=2593 data-nosnippet>2593</a> *  implementation of `Unpin` (where `T: Unpin`) would be valid/safe, and
-<a href=#2594 id=2594 data-nosnippet>2594</a> *  could have a method to project a Pin&lt;T&gt; from it.
-<a href=#2595 id=2595 data-nosnippet>2595</a> */
-<a href=#2596 id=2596 data-nosnippet>2596</a></span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#2597 id=2597 data-nosnippet>2597</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Unpin <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2598 id=2598 data-nosnippet>2598</a>
-<a href=#2599 id=2599 data-nosnippet>2599</a><span class="attr">#[unstable(feature = <span class="string">"coroutine_trait"</span>, issue = <span class="string">"43122"</span>)]
-<a href=#2600 id=2600 data-nosnippet>2600</a></span><span class="kw">impl</span>&lt;G: <span class="question-mark">?</span>Sized + Coroutine&lt;R&gt; + Unpin, R, A: Allocator&gt; Coroutine&lt;R&gt; <span class="kw">for </span>Box&lt;G, A&gt; {
-<a href=#2601 id=2601 data-nosnippet>2601</a>    <span class="kw">type </span>Yield = G::Yield;
-<a href=#2602 id=2602 data-nosnippet>2602</a>    <span class="kw">type </span>Return = G::Return;
-<a href=#2603 id=2603 data-nosnippet>2603</a>
-<a href=#2604 id=2604 data-nosnippet>2604</a>    <span class="kw">fn </span>resume(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, arg: R) -&gt; CoroutineState&lt;<span class="self">Self</span>::Yield, <span class="self">Self</span>::Return&gt; {
-<a href=#2605 id=2605 data-nosnippet>2605</a>        G::resume(Pin::new(<span class="kw-2">&amp;mut *</span><span class="self">self</span>), arg)
-<a href=#2606 id=2606 data-nosnippet>2606</a>    }
-<a href=#2607 id=2607 data-nosnippet>2607</a>}
-<a href=#2608 id=2608 data-nosnippet>2608</a>
-<a href=#2609 id=2609 data-nosnippet>2609</a><span class="attr">#[unstable(feature = <span class="string">"coroutine_trait"</span>, issue = <span class="string">"43122"</span>)]
-<a href=#2610 id=2610 data-nosnippet>2610</a></span><span class="kw">impl</span>&lt;G: <span class="question-mark">?</span>Sized + Coroutine&lt;R&gt;, R, A: Allocator&gt; Coroutine&lt;R&gt; <span class="kw">for </span>Pin&lt;Box&lt;G, A&gt;&gt;
-<a href=#2611 id=2611 data-nosnippet>2611</a><span class="kw">where
-<a href=#2612 id=2612 data-nosnippet>2612</a>    </span>A: StaticAllocator,
-<a href=#2613 id=2613 data-nosnippet>2613</a>{
-<a href=#2614 id=2614 data-nosnippet>2614</a>    <span class="kw">type </span>Yield = G::Yield;
-<a href=#2615 id=2615 data-nosnippet>2615</a>    <span class="kw">type </span>Return = G::Return;
-<a href=#2616 id=2616 data-nosnippet>2616</a>
-<a href=#2617 id=2617 data-nosnippet>2617</a>    <span class="kw">fn </span>resume(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, arg: R) -&gt; CoroutineState&lt;<span class="self">Self</span>::Yield, <span class="self">Self</span>::Return&gt; {
-<a href=#2618 id=2618 data-nosnippet>2618</a>        G::resume((<span class="kw-2">*</span><span class="self">self</span>).as_mut(), arg)
-<a href=#2619 id=2619 data-nosnippet>2619</a>    }
-<a href=#2620 id=2620 data-nosnippet>2620</a>}
-<a href=#2621 id=2621 data-nosnippet>2621</a>
-<a href=#2622 id=2622 data-nosnippet>2622</a><span class="attr">#[stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#2623 id=2623 data-nosnippet>2623</a></span><span class="kw">impl</span>&lt;F: <span class="question-mark">?</span>Sized + Future + Unpin, A: Allocator&gt; Future <span class="kw">for </span>Box&lt;F, A&gt; {
-<a href=#2624 id=2624 data-nosnippet>2624</a>    <span class="kw">type </span>Output = F::Output;
-<a href=#2625 id=2625 data-nosnippet>2625</a>
-<a href=#2626 id=2626 data-nosnippet>2626</a>    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-<a href=#2627 id=2627 data-nosnippet>2627</a>        F::poll(Pin::new(<span class="kw-2">&amp;mut *</span><span class="self">self</span>), cx)
-<a href=#2628 id=2628 data-nosnippet>2628</a>    }
-<a href=#2629 id=2629 data-nosnippet>2629</a>}
-<a href=#2630 id=2630 data-nosnippet>2630</a>
-<a href=#2631 id=2631 data-nosnippet>2631</a><span class="attr">#[stable(feature = <span class="string">"box_error"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#2632 id=2632 data-nosnippet>2632</a></span><span class="kw">impl</span>&lt;E: Error, A: Allocator&gt; Error <span class="kw">for </span>Box&lt;E, A&gt; {
-<a href=#2633 id=2633 data-nosnippet>2633</a>    <span class="attr">#[allow(deprecated)]
-<a href=#2634 id=2634 data-nosnippet>2634</a>    </span><span class="kw">fn </span>cause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Error&gt; {
-<a href=#2635 id=2635 data-nosnippet>2635</a>        Error::cause(<span class="kw-2">&amp;**</span><span class="self">self</span>)
-<a href=#2636 id=2636 data-nosnippet>2636</a>    }
-<a href=#2637 id=2637 data-nosnippet>2637</a>
-<a href=#2638 id=2638 data-nosnippet>2638</a>    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">'static</span>)&gt; {
-<a href=#2639 id=2639 data-nosnippet>2639</a>        Error::source(<span class="kw-2">&amp;**</span><span class="self">self</span>)
-<a href=#2640 id=2640 data-nosnippet>2640</a>    }
-<a href=#2641 id=2641 data-nosnippet>2641</a>
-<a href=#2642 id=2642 data-nosnippet>2642</a>    <span class="kw">fn </span>provide&lt;<span class="lifetime">'b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="self">self</span>, request: <span class="kw-2">&amp;mut </span>error::Request&lt;<span class="lifetime">'b</span>&gt;) {
-<a href=#2643 id=2643 data-nosnippet>2643</a>        Error::provide(<span class="kw-2">&amp;**</span><span class="self">self</span>, request);
-<a href=#2644 id=2644 data-nosnippet>2644</a>    }
-<a href=#2645 id=2645 data-nosnippet>2645</a>}
-<a href=#2646 id=2646 data-nosnippet>2646</a>
-<a href=#2647 id=2647 data-nosnippet>2647</a><span class="attr">#[stable(feature = <span class="string">"allocator_api"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#2648 id=2648 data-nosnippet>2648</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; Allocator <span class="kw">for </span>Box&lt;T, A&gt; {
-<a href=#2649 id=2649 data-nosnippet>2649</a>    <span class="attr">#[inline]
-<a href=#2650 id=2650 data-nosnippet>2650</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#2651 id=2651 data-nosnippet>2651</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate(layout)
-<a href=#2652 id=2652 data-nosnippet>2652</a>    }
-<a href=#2653 id=2653 data-nosnippet>2653</a>
-<a href=#2654 id=2654 data-nosnippet>2654</a>    <span class="attr">#[inline]
-<a href=#2655 id=2655 data-nosnippet>2655</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#2656 id=2656 data-nosnippet>2656</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate_zeroed(layout)
-<a href=#2657 id=2657 data-nosnippet>2657</a>    }
-<a href=#2658 id=2658 data-nosnippet>2658</a>
-<a href=#2659 id=2659 data-nosnippet>2659</a>    <span class="attr">#[inline]
-<a href=#2660 id=2660 data-nosnippet>2660</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
-<a href=#2661 id=2661 data-nosnippet>2661</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
-<a href=#2662 id=2662 data-nosnippet>2662</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).deallocate(ptr, layout) }
-<a href=#2663 id=2663 data-nosnippet>2663</a>    }
-<a href=#2664 id=2664 data-nosnippet>2664</a>
-<a href=#2665 id=2665 data-nosnippet>2665</a>    <span class="attr">#[inline]
-<a href=#2666 id=2666 data-nosnippet>2666</a>    </span><span class="kw">unsafe fn </span>grow(
-<a href=#2667 id=2667 data-nosnippet>2667</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#2668 id=2668 data-nosnippet>2668</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#2669 id=2669 data-nosnippet>2669</a>        old_layout: Layout,
-<a href=#2670 id=2670 data-nosnippet>2670</a>        new_layout: Layout,
-<a href=#2671 id=2671 data-nosnippet>2671</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#2672 id=2672 data-nosnippet>2672</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
-<a href=#2673 id=2673 data-nosnippet>2673</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow(ptr, old_layout, new_layout) }
-<a href=#2674 id=2674 data-nosnippet>2674</a>    }
-<a href=#2675 id=2675 data-nosnippet>2675</a>
-<a href=#2676 id=2676 data-nosnippet>2676</a>    <span class="attr">#[inline]
-<a href=#2677 id=2677 data-nosnippet>2677</a>    </span><span class="kw">unsafe fn </span>grow_zeroed(
-<a href=#2678 id=2678 data-nosnippet>2678</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#2679 id=2679 data-nosnippet>2679</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#2680 id=2680 data-nosnippet>2680</a>        old_layout: Layout,
-<a href=#2681 id=2681 data-nosnippet>2681</a>        new_layout: Layout,
-<a href=#2682 id=2682 data-nosnippet>2682</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#2683 id=2683 data-nosnippet>2683</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
-<a href=#2684 id=2684 data-nosnippet>2684</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow_zeroed(ptr, old_layout, new_layout) }
-<a href=#2685 id=2685 data-nosnippet>2685</a>    }
-<a href=#2686 id=2686 data-nosnippet>2686</a>
-<a href=#2687 id=2687 data-nosnippet>2687</a>    <span class="attr">#[inline]
-<a href=#2688 id=2688 data-nosnippet>2688</a>    </span><span class="kw">unsafe fn </span>shrink(
-<a href=#2689 id=2689 data-nosnippet>2689</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#2690 id=2690 data-nosnippet>2690</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#2691 id=2691 data-nosnippet>2691</a>        old_layout: Layout,
-<a href=#2692 id=2692 data-nosnippet>2692</a>        new_layout: Layout,
-<a href=#2693 id=2693 data-nosnippet>2693</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#2694 id=2694 data-nosnippet>2694</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
-<a href=#2695 id=2695 data-nosnippet>2695</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).shrink(ptr, old_layout, new_layout) }
-<a href=#2696 id=2696 data-nosnippet>2696</a>    }
-<a href=#2697 id=2697 data-nosnippet>2697</a>}
-<a href=#2698 id=2698 data-nosnippet>2698</a><span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
-<a href=#2699 id=2699 data-nosnippet>2699</a>#[unstable_feature_bound(allocator_ext)]
-<a href=#2700 id=2700 data-nosnippet>2700</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; AllocatorNightly <span class="kw">for </span>Box&lt;T, A&gt; {}
-<a href=#2701 id=2701 data-nosnippet>2701</a>
-<a href=#2702 id=2702 data-nosnippet>2702</a><span class="attr">#[unstable(feature = <span class="string">"random"</span>, issue = <span class="string">"130703"</span>)]
-<a href=#2703 id=2703 data-nosnippet>2703</a></span><span class="kw">impl</span>&lt;R: core::random::Rng + <span class="question-mark">?</span>Sized, A: Allocator&gt; core::random::Rng <span class="kw">for </span>Box&lt;R, A&gt; {
-<a href=#2704 id=2704 data-nosnippet>2704</a>    <span class="attr">#[inline]
-<a href=#2705 id=2705 data-nosnippet>2705</a>    </span><span class="kw">fn </span>fill_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytes: <span class="kw-2">&amp;mut </span>[u8]) {
-<a href=#2706 id=2706 data-nosnippet>2706</a>        (<span class="kw-2">**</span><span class="self">self</span>).fill_bytes(bytes)
-<a href=#2707 id=2707 data-nosnippet>2707</a>    }
-<a href=#2708 id=2708 data-nosnippet>2708</a>}
+<a href=#2434 id=2434 data-nosnippet>2434</a>        <span class="kw">let </span>ptr: <span class="kw-2">*const </span>T = <span class="kw-2">&amp;**</span><span class="self">self</span>;
+<a href=#2435 id=2435 data-nosnippet>2435</a>        fmt::Pointer::fmt(<span class="kw-2">&amp;</span>ptr, f)
+<a href=#2436 id=2436 data-nosnippet>2436</a>    }
+<a href=#2437 id=2437 data-nosnippet>2437</a>}
+<a href=#2438 id=2438 data-nosnippet>2438</a>
+<a href=#2439 id=2439 data-nosnippet>2439</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2440 id=2440 data-nosnippet>2440</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Deref <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2441 id=2441 data-nosnippet>2441</a>    <span class="kw">type </span>Target = T;
+<a href=#2442 id=2442 data-nosnippet>2442</a>
+<a href=#2443 id=2443 data-nosnippet>2443</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#2444 id=2444 data-nosnippet>2444</a>        <span class="self">self
+<a href=#2445 id=2445 data-nosnippet>2445</a>    </span>}
+<a href=#2446 id=2446 data-nosnippet>2446</a>}
+<a href=#2447 id=2447 data-nosnippet>2447</a>
+<a href=#2448 id=2448 data-nosnippet>2448</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#2449 id=2449 data-nosnippet>2449</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; DerefMut <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2450 id=2450 data-nosnippet>2450</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#2451 id=2451 data-nosnippet>2451</a>        <span class="self">self
+<a href=#2452 id=2452 data-nosnippet>2452</a>    </span>}
+<a href=#2453 id=2453 data-nosnippet>2453</a>}
+<a href=#2454 id=2454 data-nosnippet>2454</a>
+<a href=#2455 id=2455 data-nosnippet>2455</a><span class="attr">#[unstable(feature = <span class="string">"deref_pure_trait"</span>, issue = <span class="string">"87121"</span>)]
+<a href=#2456 id=2456 data-nosnippet>2456</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; DerefPure <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2457 id=2457 data-nosnippet>2457</a>
+<a href=#2458 id=2458 data-nosnippet>2458</a><span class="attr">#[unstable(feature = <span class="string">"legacy_receiver_trait"</span>, issue = <span class="string">"none"</span>)]
+<a href=#2459 id=2459 data-nosnippet>2459</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; LegacyReceiver <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2460 id=2460 data-nosnippet>2460</a>
+<a href=#2461 id=2461 data-nosnippet>2461</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
+<a href=#2462 id=2462 data-nosnippet>2462</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: FnOnce&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; FnOnce&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2463 id=2463 data-nosnippet>2463</a>    <span class="kw">type </span>Output = &lt;F <span class="kw">as </span>FnOnce&lt;Args&gt;&gt;::Output;
+<a href=#2464 id=2464 data-nosnippet>2464</a>
+<a href=#2465 id=2465 data-nosnippet>2465</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_once(<span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
+<a href=#2466 id=2466 data-nosnippet>2466</a>        &lt;F <span class="kw">as </span>FnOnce&lt;Args&gt;&gt;::call_once(<span class="kw-2">*</span><span class="self">self</span>, args)
+<a href=#2467 id=2467 data-nosnippet>2467</a>    }
+<a href=#2468 id=2468 data-nosnippet>2468</a>}
+<a href=#2469 id=2469 data-nosnippet>2469</a>
+<a href=#2470 id=2470 data-nosnippet>2470</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
+<a href=#2471 id=2471 data-nosnippet>2471</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: FnMut&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; FnMut&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2472 id=2472 data-nosnippet>2472</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
+<a href=#2473 id=2473 data-nosnippet>2473</a>        &lt;F <span class="kw">as </span>FnMut&lt;Args&gt;&gt;::call_mut(<span class="self">self</span>, args)
+<a href=#2474 id=2474 data-nosnippet>2474</a>    }
+<a href=#2475 id=2475 data-nosnippet>2475</a>}
+<a href=#2476 id=2476 data-nosnippet>2476</a>
+<a href=#2477 id=2477 data-nosnippet>2477</a><span class="attr">#[stable(feature = <span class="string">"boxed_closure_impls"</span>, since = <span class="string">"1.35.0"</span>)]
+<a href=#2478 id=2478 data-nosnippet>2478</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: Fn&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; Fn&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2479 id=2479 data-nosnippet>2479</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
+<a href=#2480 id=2480 data-nosnippet>2480</a>        &lt;F <span class="kw">as </span>Fn&lt;Args&gt;&gt;::call(<span class="self">self</span>, args)
+<a href=#2481 id=2481 data-nosnippet>2481</a>    }
+<a href=#2482 id=2482 data-nosnippet>2482</a>}
+<a href=#2483 id=2483 data-nosnippet>2483</a>
+<a href=#2484 id=2484 data-nosnippet>2484</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
+<a href=#2485 id=2485 data-nosnippet>2485</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFnOnce&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFnOnce&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2486 id=2486 data-nosnippet>2486</a>    <span class="kw">type </span>Output = F::Output;
+<a href=#2487 id=2487 data-nosnippet>2487</a>    <span class="kw">type </span>CallOnceFuture = F::CallOnceFuture;
+<a href=#2488 id=2488 data-nosnippet>2488</a>
+<a href=#2489 id=2489 data-nosnippet>2489</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call_once(<span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallOnceFuture {
+<a href=#2490 id=2490 data-nosnippet>2490</a>        F::async_call_once(<span class="kw-2">*</span><span class="self">self</span>, args)
+<a href=#2491 id=2491 data-nosnippet>2491</a>    }
+<a href=#2492 id=2492 data-nosnippet>2492</a>}
+<a href=#2493 id=2493 data-nosnippet>2493</a>
+<a href=#2494 id=2494 data-nosnippet>2494</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
+<a href=#2495 id=2495 data-nosnippet>2495</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFnMut&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFnMut&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2496 id=2496 data-nosnippet>2496</a>    <span class="kw">type </span>CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
+<a href=#2497 id=2497 data-nosnippet>2497</a>        = F::CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
+<a href=#2498 id=2498 data-nosnippet>2498</a>    <span class="kw">where
+<a href=#2499 id=2499 data-nosnippet>2499</a>        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+<a href=#2500 id=2500 data-nosnippet>2500</a>
+<a href=#2501 id=2501 data-nosnippet>2501</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallRefFuture&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#2502 id=2502 data-nosnippet>2502</a>        F::async_call_mut(<span class="self">self</span>, args)
+<a href=#2503 id=2503 data-nosnippet>2503</a>    }
+<a href=#2504 id=2504 data-nosnippet>2504</a>}
+<a href=#2505 id=2505 data-nosnippet>2505</a>
+<a href=#2506 id=2506 data-nosnippet>2506</a><span class="attr">#[stable(feature = <span class="string">"async_closure"</span>, since = <span class="string">"1.85.0"</span>)]
+<a href=#2507 id=2507 data-nosnippet>2507</a></span><span class="kw">impl</span>&lt;Args: Tuple, F: AsyncFn&lt;Args&gt; + <span class="question-mark">?</span>Sized, A: Allocator&gt; AsyncFn&lt;Args&gt; <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2508 id=2508 data-nosnippet>2508</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallRefFuture&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#2509 id=2509 data-nosnippet>2509</a>        F::async_call(<span class="self">self</span>, args)
+<a href=#2510 id=2510 data-nosnippet>2510</a>    }
+<a href=#2511 id=2511 data-nosnippet>2511</a>}
+<a href=#2512 id=2512 data-nosnippet>2512</a>
+<a href=#2513 id=2513 data-nosnippet>2513</a><span class="attr">#[unstable(feature = <span class="string">"coerce_unsized"</span>, issue = <span class="string">"18598"</span>)]
+<a href=#2514 id=2514 data-nosnippet>2514</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Unsize&lt;U&gt;, U: <span class="question-mark">?</span>Sized, A: Allocator&gt; CoerceUnsized&lt;Box&lt;U, A&gt;&gt; <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2515 id=2515 data-nosnippet>2515</a>
+<a href=#2516 id=2516 data-nosnippet>2516</a><span class="comment">// A pointer can only be pin safe if it does not implement certain safe traits
+<a href=#2517 id=2517 data-nosnippet>2517</a>// maliciously. Since `Box` is fundamental, downstream crates may be able to
+<a href=#2518 id=2518 data-nosnippet>2518</a>// implement those traits for `Box&lt;LocalType&gt;`, so we must carefully check that
+<a href=#2519 id=2519 data-nosnippet>2519</a>// this is not a problem for each trait.
+<a href=#2520 id=2520 data-nosnippet>2520</a>//
+<a href=#2521 id=2521 data-nosnippet>2521</a>// The `Box` type always implements `Deref` and `DerefMut`, so despite being
+<a href=#2522 id=2522 data-nosnippet>2522</a>// fundamental, downstream crates cannot implement these traits for
+<a href=#2523 id=2523 data-nosnippet>2523</a>// `Box&lt;LocalType&gt;`.
+<a href=#2524 id=2524 data-nosnippet>2524</a>//
+<a href=#2525 id=2525 data-nosnippet>2525</a>// Conversely, downstream crates are able to implement `Clone`, `Debug`, and
+<a href=#2526 id=2526 data-nosnippet>2526</a>// `Display` for `Box&lt;LocalType&gt;` as long as `LocalType` does not implement
+<a href=#2527 id=2527 data-nosnippet>2527</a>// said trait. However, the `Box&lt;T&gt;` type does not treat the existence of an
+<a href=#2528 id=2528 data-nosnippet>2528</a>// `&amp;Box&lt;T&gt;` as evidence that the `T` is not pinned, so this is not
+<a href=#2529 id=2529 data-nosnippet>2529</a>// problematic.
+<a href=#2530 id=2530 data-nosnippet>2530</a>//
+<a href=#2531 id=2531 data-nosnippet>2531</a>// Finally, even if downstream crates provide their own implementation of
+<a href=#2532 id=2532 data-nosnippet>2532</a>// `Clone` for `Box&lt;LocalType&gt;`, it is not problematic for the cloned box to be
+<a href=#2533 id=2533 data-nosnippet>2533</a>// wrapped in `Pin`, since the same conversion could have been carried out
+<a href=#2534 id=2534 data-nosnippet>2534</a>// safely as `Box::pin((*p).clone())`.
+<a href=#2535 id=2535 data-nosnippet>2535</a></span><span class="attr">#[unstable(feature = <span class="string">"pin_coerce_unsized_trait"</span>, issue = <span class="string">"150112"</span>)]
+<a href=#2536 id=2536 data-nosnippet>2536</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: StaticAllocator&gt; PinSafePointer <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2537 id=2537 data-nosnippet>2537</a>
+<a href=#2538 id=2538 data-nosnippet>2538</a><span class="comment">// It is quite crucial that we only allow the `Global` allocator here.
+<a href=#2539 id=2539 data-nosnippet>2539</a>// Handling arbitrary custom allocators (which can affect the `Box` layout heavily!)
+<a href=#2540 id=2540 data-nosnippet>2540</a>// would need a lot of codegen and interpreter adjustments.
+<a href=#2541 id=2541 data-nosnippet>2541</a></span><span class="attr">#[unstable(feature = <span class="string">"dispatch_from_dyn"</span>, issue = <span class="string">"none"</span>)]
+<a href=#2542 id=2542 data-nosnippet>2542</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Unsize&lt;U&gt;, U: <span class="question-mark">?</span>Sized&gt; DispatchFromDyn&lt;Box&lt;U&gt;&gt; <span class="kw">for </span>Box&lt;T, Global&gt; {}
+<a href=#2543 id=2543 data-nosnippet>2543</a>
+<a href=#2544 id=2544 data-nosnippet>2544</a><span class="attr">#[stable(feature = <span class="string">"box_borrow"</span>, since = <span class="string">"1.1.0"</span>)]
+<a href=#2545 id=2545 data-nosnippet>2545</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Borrow&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2546 id=2546 data-nosnippet>2546</a>    <span class="kw">fn </span>borrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#2547 id=2547 data-nosnippet>2547</a>        <span class="self">self
+<a href=#2548 id=2548 data-nosnippet>2548</a>    </span>}
+<a href=#2549 id=2549 data-nosnippet>2549</a>}
+<a href=#2550 id=2550 data-nosnippet>2550</a>
+<a href=#2551 id=2551 data-nosnippet>2551</a><span class="attr">#[stable(feature = <span class="string">"box_borrow"</span>, since = <span class="string">"1.1.0"</span>)]
+<a href=#2552 id=2552 data-nosnippet>2552</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; BorrowMut&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2553 id=2553 data-nosnippet>2553</a>    <span class="kw">fn </span>borrow_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#2554 id=2554 data-nosnippet>2554</a>        <span class="self">self
+<a href=#2555 id=2555 data-nosnippet>2555</a>    </span>}
+<a href=#2556 id=2556 data-nosnippet>2556</a>}
+<a href=#2557 id=2557 data-nosnippet>2557</a>
+<a href=#2558 id=2558 data-nosnippet>2558</a><span class="attr">#[stable(since = <span class="string">"1.5.0"</span>, feature = <span class="string">"smart_ptr_as_ref"</span>)]
+<a href=#2559 id=2559 data-nosnippet>2559</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; AsRef&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2560 id=2560 data-nosnippet>2560</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#2561 id=2561 data-nosnippet>2561</a>        <span class="self">self
+<a href=#2562 id=2562 data-nosnippet>2562</a>    </span>}
+<a href=#2563 id=2563 data-nosnippet>2563</a>}
+<a href=#2564 id=2564 data-nosnippet>2564</a>
+<a href=#2565 id=2565 data-nosnippet>2565</a><span class="attr">#[stable(since = <span class="string">"1.5.0"</span>, feature = <span class="string">"smart_ptr_as_ref"</span>)]
+<a href=#2566 id=2566 data-nosnippet>2566</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; AsMut&lt;T&gt; <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2567 id=2567 data-nosnippet>2567</a>    <span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#2568 id=2568 data-nosnippet>2568</a>        <span class="self">self
+<a href=#2569 id=2569 data-nosnippet>2569</a>    </span>}
+<a href=#2570 id=2570 data-nosnippet>2570</a>}
+<a href=#2571 id=2571 data-nosnippet>2571</a>
+<a href=#2572 id=2572 data-nosnippet>2572</a><span class="comment">/* Nota bene
+<a href=#2573 id=2573 data-nosnippet>2573</a> *
+<a href=#2574 id=2574 data-nosnippet>2574</a> *  We could have chosen not to add this impl, and instead have written a
+<a href=#2575 id=2575 data-nosnippet>2575</a> *  function of Pin&lt;Box&lt;T&gt;&gt; to Pin&lt;T&gt;. Such a function would not be sound,
+<a href=#2576 id=2576 data-nosnippet>2576</a> *  because Box&lt;T&gt; implements Unpin even when T does not, as a result of
+<a href=#2577 id=2577 data-nosnippet>2577</a> *  this impl.
+<a href=#2578 id=2578 data-nosnippet>2578</a> *
+<a href=#2579 id=2579 data-nosnippet>2579</a> *  We chose this API instead of the alternative for a few reasons:
+<a href=#2580 id=2580 data-nosnippet>2580</a> *      - Logically, it is helpful to understand pinning in regard to the
+<a href=#2581 id=2581 data-nosnippet>2581</a> *        memory region being pointed to. For this reason none of the
+<a href=#2582 id=2582 data-nosnippet>2582</a> *        standard library pointer types support projecting through a pin
+<a href=#2583 id=2583 data-nosnippet>2583</a> *        (Box&lt;T&gt; is the only pointer type in std for which this would be
+<a href=#2584 id=2584 data-nosnippet>2584</a> *        safe.)
+<a href=#2585 id=2585 data-nosnippet>2585</a> *      - It is in practice very useful to have Box&lt;T&gt; be unconditionally
+<a href=#2586 id=2586 data-nosnippet>2586</a> *        Unpin because of trait objects, for which the structural auto
+<a href=#2587 id=2587 data-nosnippet>2587</a> *        trait functionality does not apply (e.g., Box&lt;dyn Foo&gt; would
+<a href=#2588 id=2588 data-nosnippet>2588</a> *        otherwise not be Unpin).
+<a href=#2589 id=2589 data-nosnippet>2589</a> *
+<a href=#2590 id=2590 data-nosnippet>2590</a> *  Another type with the same semantics as Box but only a conditional
+<a href=#2591 id=2591 data-nosnippet>2591</a> *  implementation of `Unpin` (where `T: Unpin`) would be valid/safe, and
+<a href=#2592 id=2592 data-nosnippet>2592</a> *  could have a method to project a Pin&lt;T&gt; from it.
+<a href=#2593 id=2593 data-nosnippet>2593</a> */
+<a href=#2594 id=2594 data-nosnippet>2594</a></span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
+<a href=#2595 id=2595 data-nosnippet>2595</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; Unpin <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2596 id=2596 data-nosnippet>2596</a>
+<a href=#2597 id=2597 data-nosnippet>2597</a><span class="attr">#[unstable(feature = <span class="string">"coroutine_trait"</span>, issue = <span class="string">"43122"</span>)]
+<a href=#2598 id=2598 data-nosnippet>2598</a></span><span class="kw">impl</span>&lt;G: <span class="question-mark">?</span>Sized + Coroutine&lt;R&gt; + Unpin, R, A: Allocator&gt; Coroutine&lt;R&gt; <span class="kw">for </span>Box&lt;G, A&gt; {
+<a href=#2599 id=2599 data-nosnippet>2599</a>    <span class="kw">type </span>Yield = G::Yield;
+<a href=#2600 id=2600 data-nosnippet>2600</a>    <span class="kw">type </span>Return = G::Return;
+<a href=#2601 id=2601 data-nosnippet>2601</a>
+<a href=#2602 id=2602 data-nosnippet>2602</a>    <span class="kw">fn </span>resume(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, arg: R) -&gt; CoroutineState&lt;<span class="self">Self</span>::Yield, <span class="self">Self</span>::Return&gt; {
+<a href=#2603 id=2603 data-nosnippet>2603</a>        G::resume(Pin::new(<span class="kw-2">&amp;mut *</span><span class="self">self</span>), arg)
+<a href=#2604 id=2604 data-nosnippet>2604</a>    }
+<a href=#2605 id=2605 data-nosnippet>2605</a>}
+<a href=#2606 id=2606 data-nosnippet>2606</a>
+<a href=#2607 id=2607 data-nosnippet>2607</a><span class="attr">#[unstable(feature = <span class="string">"coroutine_trait"</span>, issue = <span class="string">"43122"</span>)]
+<a href=#2608 id=2608 data-nosnippet>2608</a></span><span class="kw">impl</span>&lt;G: <span class="question-mark">?</span>Sized + Coroutine&lt;R&gt;, R, A: Allocator&gt; Coroutine&lt;R&gt; <span class="kw">for </span>Pin&lt;Box&lt;G, A&gt;&gt;
+<a href=#2609 id=2609 data-nosnippet>2609</a><span class="kw">where
+<a href=#2610 id=2610 data-nosnippet>2610</a>    </span>A: StaticAllocator,
+<a href=#2611 id=2611 data-nosnippet>2611</a>{
+<a href=#2612 id=2612 data-nosnippet>2612</a>    <span class="kw">type </span>Yield = G::Yield;
+<a href=#2613 id=2613 data-nosnippet>2613</a>    <span class="kw">type </span>Return = G::Return;
+<a href=#2614 id=2614 data-nosnippet>2614</a>
+<a href=#2615 id=2615 data-nosnippet>2615</a>    <span class="kw">fn </span>resume(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, arg: R) -&gt; CoroutineState&lt;<span class="self">Self</span>::Yield, <span class="self">Self</span>::Return&gt; {
+<a href=#2616 id=2616 data-nosnippet>2616</a>        G::resume((<span class="kw-2">*</span><span class="self">self</span>).as_mut(), arg)
+<a href=#2617 id=2617 data-nosnippet>2617</a>    }
+<a href=#2618 id=2618 data-nosnippet>2618</a>}
+<a href=#2619 id=2619 data-nosnippet>2619</a>
+<a href=#2620 id=2620 data-nosnippet>2620</a><span class="attr">#[stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
+<a href=#2621 id=2621 data-nosnippet>2621</a></span><span class="kw">impl</span>&lt;F: <span class="question-mark">?</span>Sized + Future + Unpin, A: Allocator&gt; Future <span class="kw">for </span>Box&lt;F, A&gt; {
+<a href=#2622 id=2622 data-nosnippet>2622</a>    <span class="kw">type </span>Output = F::Output;
+<a href=#2623 id=2623 data-nosnippet>2623</a>
+<a href=#2624 id=2624 data-nosnippet>2624</a>    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+<a href=#2625 id=2625 data-nosnippet>2625</a>        F::poll(Pin::new(<span class="kw-2">&amp;mut *</span><span class="self">self</span>), cx)
+<a href=#2626 id=2626 data-nosnippet>2626</a>    }
+<a href=#2627 id=2627 data-nosnippet>2627</a>}
+<a href=#2628 id=2628 data-nosnippet>2628</a>
+<a href=#2629 id=2629 data-nosnippet>2629</a><span class="attr">#[stable(feature = <span class="string">"box_error"</span>, since = <span class="string">"1.8.0"</span>)]
+<a href=#2630 id=2630 data-nosnippet>2630</a></span><span class="kw">impl</span>&lt;E: Error, A: Allocator&gt; Error <span class="kw">for </span>Box&lt;E, A&gt; {
+<a href=#2631 id=2631 data-nosnippet>2631</a>    <span class="attr">#[allow(deprecated)]
+<a href=#2632 id=2632 data-nosnippet>2632</a>    </span><span class="kw">fn </span>cause(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Error&gt; {
+<a href=#2633 id=2633 data-nosnippet>2633</a>        Error::cause(<span class="kw-2">&amp;**</span><span class="self">self</span>)
+<a href=#2634 id=2634 data-nosnippet>2634</a>    }
+<a href=#2635 id=2635 data-nosnippet>2635</a>
+<a href=#2636 id=2636 data-nosnippet>2636</a>    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">'static</span>)&gt; {
+<a href=#2637 id=2637 data-nosnippet>2637</a>        Error::source(<span class="kw-2">&amp;**</span><span class="self">self</span>)
+<a href=#2638 id=2638 data-nosnippet>2638</a>    }
+<a href=#2639 id=2639 data-nosnippet>2639</a>
+<a href=#2640 id=2640 data-nosnippet>2640</a>    <span class="kw">fn </span>provide&lt;<span class="lifetime">'b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="self">self</span>, request: <span class="kw-2">&amp;mut </span>error::Request&lt;<span class="lifetime">'b</span>&gt;) {
+<a href=#2641 id=2641 data-nosnippet>2641</a>        Error::provide(<span class="kw-2">&amp;**</span><span class="self">self</span>, request);
+<a href=#2642 id=2642 data-nosnippet>2642</a>    }
+<a href=#2643 id=2643 data-nosnippet>2643</a>}
+<a href=#2644 id=2644 data-nosnippet>2644</a>
+<a href=#2645 id=2645 data-nosnippet>2645</a><span class="attr">#[stable(feature = <span class="string">"allocator_api"</span>, since = <span class="string">"1.100.0"</span>)]
+<a href=#2646 id=2646 data-nosnippet>2646</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; Allocator <span class="kw">for </span>Box&lt;T, A&gt; {
+<a href=#2647 id=2647 data-nosnippet>2647</a>    <span class="attr">#[inline]
+<a href=#2648 id=2648 data-nosnippet>2648</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2649 id=2649 data-nosnippet>2649</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate(layout)
+<a href=#2650 id=2650 data-nosnippet>2650</a>    }
+<a href=#2651 id=2651 data-nosnippet>2651</a>
+<a href=#2652 id=2652 data-nosnippet>2652</a>    <span class="attr">#[inline]
+<a href=#2653 id=2653 data-nosnippet>2653</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2654 id=2654 data-nosnippet>2654</a>        (<span class="kw-2">**</span><span class="self">self</span>).allocate_zeroed(layout)
+<a href=#2655 id=2655 data-nosnippet>2655</a>    }
+<a href=#2656 id=2656 data-nosnippet>2656</a>
+<a href=#2657 id=2657 data-nosnippet>2657</a>    <span class="attr">#[inline]
+<a href=#2658 id=2658 data-nosnippet>2658</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
+<a href=#2659 id=2659 data-nosnippet>2659</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2660 id=2660 data-nosnippet>2660</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).deallocate(ptr, layout) }
+<a href=#2661 id=2661 data-nosnippet>2661</a>    }
+<a href=#2662 id=2662 data-nosnippet>2662</a>
+<a href=#2663 id=2663 data-nosnippet>2663</a>    <span class="attr">#[inline]
+<a href=#2664 id=2664 data-nosnippet>2664</a>    </span><span class="kw">unsafe fn </span>grow(
+<a href=#2665 id=2665 data-nosnippet>2665</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2666 id=2666 data-nosnippet>2666</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2667 id=2667 data-nosnippet>2667</a>        old_layout: Layout,
+<a href=#2668 id=2668 data-nosnippet>2668</a>        new_layout: Layout,
+<a href=#2669 id=2669 data-nosnippet>2669</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2670 id=2670 data-nosnippet>2670</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2671 id=2671 data-nosnippet>2671</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow(ptr, old_layout, new_layout) }
+<a href=#2672 id=2672 data-nosnippet>2672</a>    }
+<a href=#2673 id=2673 data-nosnippet>2673</a>
+<a href=#2674 id=2674 data-nosnippet>2674</a>    <span class="attr">#[inline]
+<a href=#2675 id=2675 data-nosnippet>2675</a>    </span><span class="kw">unsafe fn </span>grow_zeroed(
+<a href=#2676 id=2676 data-nosnippet>2676</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2677 id=2677 data-nosnippet>2677</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2678 id=2678 data-nosnippet>2678</a>        old_layout: Layout,
+<a href=#2679 id=2679 data-nosnippet>2679</a>        new_layout: Layout,
+<a href=#2680 id=2680 data-nosnippet>2680</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2681 id=2681 data-nosnippet>2681</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2682 id=2682 data-nosnippet>2682</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).grow_zeroed(ptr, old_layout, new_layout) }
+<a href=#2683 id=2683 data-nosnippet>2683</a>    }
+<a href=#2684 id=2684 data-nosnippet>2684</a>
+<a href=#2685 id=2685 data-nosnippet>2685</a>    <span class="attr">#[inline]
+<a href=#2686 id=2686 data-nosnippet>2686</a>    </span><span class="kw">unsafe fn </span>shrink(
+<a href=#2687 id=2687 data-nosnippet>2687</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#2688 id=2688 data-nosnippet>2688</a>        ptr: NonNull&lt;u8&gt;,
+<a href=#2689 id=2689 data-nosnippet>2689</a>        old_layout: Layout,
+<a href=#2690 id=2690 data-nosnippet>2690</a>        new_layout: Layout,
+<a href=#2691 id=2691 data-nosnippet>2691</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#2692 id=2692 data-nosnippet>2692</a>        <span class="comment">// SAFETY: the safety contract must be upheld by the caller
+<a href=#2693 id=2693 data-nosnippet>2693</a>        </span><span class="kw">unsafe </span>{ (<span class="kw-2">**</span><span class="self">self</span>).shrink(ptr, old_layout, new_layout) }
+<a href=#2694 id=2694 data-nosnippet>2694</a>    }
+<a href=#2695 id=2695 data-nosnippet>2695</a>}
+<a href=#2696 id=2696 data-nosnippet>2696</a><span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
+<a href=#2697 id=2697 data-nosnippet>2697</a>#[unstable_feature_bound(allocator_ext)]
+<a href=#2698 id=2698 data-nosnippet>2698</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Allocator, A: Allocator&gt; AllocatorNightly <span class="kw">for </span>Box&lt;T, A&gt; {}
+<a href=#2699 id=2699 data-nosnippet>2699</a>
+<a href=#2700 id=2700 data-nosnippet>2700</a><span class="attr">#[unstable(feature = <span class="string">"random"</span>, issue = <span class="string">"130703"</span>)]
+<a href=#2701 id=2701 data-nosnippet>2701</a></span><span class="kw">impl</span>&lt;R: core::random::Rng + <span class="question-mark">?</span>Sized, A: Allocator&gt; core::random::Rng <span class="kw">for </span>Box&lt;R, A&gt; {
+<a href=#2702 id=2702 data-nosnippet>2702</a>    <span class="attr">#[inline]
+<a href=#2703 id=2703 data-nosnippet>2703</a>    </span><span class="kw">fn </span>fill_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytes: <span class="kw-2">&amp;mut </span>[u8]) {
+<a href=#2704 id=2704 data-nosnippet>2704</a>        (<span class="kw-2">**</span><span class="self">self</span>).fill_bytes(bytes)
+<a href=#2705 id=2705 data-nosnippet>2705</a>    }
+<a href=#2706 id=2706 data-nosnippet>2706</a>}
 </code></pre></div></section></main></body></html>
