@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/num/imp/dec2flt/decimal_seq.rs`."><title>decimal_seq.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/num/imp/dec2flt/</div>decimal_seq.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Arbitrary-precision decimal type used by fallback algorithms.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/num/imp/dec2flt/decimal_seq.rs`."><title>decimal_seq.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/num/imp/dec2flt/</div>decimal_seq.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Arbitrary-precision decimal type used by fallback algorithms.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This is only used if the fast-path (native floats) and
 <a href=#4 id=4 data-nosnippet>4</a>//! the Eisel-Lemire algorithm are unable to unambiguously
@@ -9,30 +9,30 @@
 <a href=#9 id=9 data-nosnippet>9</a>//! algorithm can be found in "ParseNumberF64 by Simple Decimal Conversion",
 <a href=#10 id=10 data-nosnippet>10</a>//! available online: &lt;https://nigeltao.github.io/blog/2020/parse-number-f64-simple.html&gt;.
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span>dec2flt::common::{ByteSlice, is_8digits};
+<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span>dec2flt::common::{<a href="common.rs.html#4-18">ByteSlice</a>, <a href="common.rs.html#60-64">is_8digits</a>};
 <a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::num::imp::dec2flt;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><a href="../mod.rs.html#7"><span class="kw">crate</span>::num::imp::dec2flt</a>;
 <a href=#15 id=15 data-nosnippet>15</a>
 <a href=#16 id=16 data-nosnippet>16</a><span class="doccomment">/// A decimal floating-point number, represented as a sequence of decimal digits.
-<a href=#17 id=17 data-nosnippet>17</a></span><span class="attr">#[derive(Clone, Debug, PartialEq)]
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="attr">#[derive(<a href="../../../clone.rs.html#289-291">Clone</a>, <a href="../../../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../../../cmp.rs.html#288-290">PartialEq</a>)]
 <a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub struct </span>DecimalSeq {
 <a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// The number of significant digits in the decimal.
-<a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>num_digits: usize,
+<a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>num_digits: <a href="../../../../../core/primitive.usize.html">usize</a>,
 <a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// The offset of the decimal point in the significant digits.
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>decimal_point: i32,
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub </span>decimal_point: <a href="../../../../../core/primitive.i32.html">i32</a>,
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// If the number of significant digits stored in the decimal is truncated.
-<a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">pub </span>truncated: bool,
+<a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">pub </span>truncated: <a href="../../../../../core/primitive.bool.html">bool</a>,
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// Buffer of the raw digits, in the range [0, 9].
-<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub </span>digits: [u8; <span class="self">Self</span>::MAX_DIGITS],
+<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub </span>digits: [<a href="../../../../../core/primitive.u8.html">u8</a>; <span class="self">Self</span>::MAX_DIGITS],
 <a href=#27 id=27 data-nosnippet>27</a>}
 <a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">impl </span>Default <span class="kw">for </span>DecimalSeq {
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">impl </span><a href="../../../default.rs.html#107-140">Default</a> <span class="kw">for </span><a href="#18-27">DecimalSeq</a> {
 <a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="self">Self </span>{ num_digits: <span class="number">0</span>, decimal_point: <span class="number">0</span>, truncated: <span class="bool-val">false</span>, digits: [<span class="number">0</span>; <span class="self">Self</span>::MAX_DIGITS] }
 <a href=#32 id=32 data-nosnippet>32</a>    }
 <a href=#33 id=33 data-nosnippet>33</a>}
 <a href=#34 id=34 data-nosnippet>34</a>
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">impl </span>DecimalSeq {
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">impl </span><a href="#18-27">DecimalSeq</a> {
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="doccomment">/// The maximum number of digits required to unambiguously round up to a 64-bit float.
 <a href=#37 id=37 data-nosnippet>37</a>    ///
 <a href=#38 id=38 data-nosnippet>38</a>    /// For an IEEE 754 binary64 float, this required 767 digits. So we store the max digits + 1.
@@ -57,21 +57,21 @@
 <a href=#57 id=57 data-nosnippet>57</a>    ///
 <a href=#58 id=58 data-nosnippet>58</a>    /// In Python:
 <a href=#59 id=59 data-nosnippet>59</a>    ///     `-emin + p2 + math.floor((emin+ 1)*math.log(2, b)-math.log(1-2**(-p2), b))`
-<a href=#60 id=60 data-nosnippet>60</a>    </span><span class="kw">pub const </span>MAX_DIGITS: usize = <span class="number">768</span>;
+<a href=#60 id=60 data-nosnippet>60</a>    </span><span class="kw">pub const </span>MAX_DIGITS: <a href="../../../../../core/primitive.usize.html">usize</a> = <span class="number">768</span>;
 <a href=#61 id=61 data-nosnippet>61</a>
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// The max decimal digits that can be exactly represented in a 64-bit integer.
-<a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>MAX_DIGITS_WITHOUT_OVERFLOW: usize = <span class="number">19</span>;
-<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>DECIMAL_POINT_RANGE: i32 = <span class="number">2047</span>;
+<a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>MAX_DIGITS_WITHOUT_OVERFLOW: <a href="../../../../../core/primitive.usize.html">usize</a> = <span class="number">19</span>;
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>DECIMAL_POINT_RANGE: <a href="../../../../../core/primitive.i32.html">i32</a> = <span class="number">2047</span>;
 <a href=#65 id=65 data-nosnippet>65</a>
 <a href=#66 id=66 data-nosnippet>66</a>    <span class="doccomment">/// Append a digit to the buffer if it fits.
 <a href=#67 id=67 data-nosnippet>67</a>    </span><span class="comment">// FIXME(tgross35): it may be better for this to return an option
 <a href=#68 id=68 data-nosnippet>68</a>    // FIXME(tgross35): incrementing the digit counter even if we don't push anything
 <a href=#69 id=69 data-nosnippet>69</a>    // seems incorrect.
-<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>try_add_digit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, digit: u8) {
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">if </span><span class="self">self</span>.num_digits &lt; <span class="self">Self</span>::MAX_DIGITS {
-<a href=#72 id=72 data-nosnippet>72</a>            <span class="self">self</span>.digits[<span class="self">self</span>.num_digits] = digit;
+<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>try_add_digit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, digit: <a href="../../../../../core/primitive.u8.html">u8</a>) {
+<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">if </span><a class="self" href="#70">self</a>.num_digits &lt; <span class="self">Self</span>::<a href="#60">MAX_DIGITS</a> {
+<a href=#72 id=72 data-nosnippet>72</a>            <a class="self" href="#70">self</a>.digits[<a class="self" href="#70">self</a>.num_digits] = <a href="#70">digit</a>;
 <a href=#73 id=73 data-nosnippet>73</a>        }
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="self">self</span>.num_digits += <span class="number">1</span>;
+<a href=#74 id=74 data-nosnippet>74</a>        <a class="self" href="#70">self</a>.num_digits += <span class="number">1</span>;
 <a href=#75 id=75 data-nosnippet>75</a>    }
 <a href=#76 id=76 data-nosnippet>76</a>
 <a href=#77 id=77 data-nosnippet>77</a>    <span class="doccomment">/// Trim trailing zeros from the buffer.
@@ -84,20 +84,20 @@
 <a href=#84 id=84 data-nosnippet>84</a>        //  3. `left_shift` `num_digits` to a max of `DecimalSeq::MAX_DIGITS`.
 <a href=#85 id=85 data-nosnippet>85</a>        //
 <a href=#86 id=86 data-nosnippet>86</a>        // Trim is only called in `right_shift` and `left_shift`.
-<a href=#87 id=87 data-nosnippet>87</a>        </span><span class="macro">debug_assert!</span>(<span class="self">self</span>.num_digits &lt;= <span class="self">Self</span>::MAX_DIGITS);
+<a href=#87 id=87 data-nosnippet>87</a>        </span><a href="../../../macros/mod.rs.html#290-296">debug_assert!</a>(<span class="self">self</span>.num_digits &lt;= <span class="self">Self</span>::MAX_DIGITS);
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">while </span><span class="self">self</span>.num_digits != <span class="number">0 </span>&amp;&amp; <span class="self">self</span>.digits[<span class="self">self</span>.num_digits - <span class="number">1</span>] == <span class="number">0 </span>{
 <a href=#89 id=89 data-nosnippet>89</a>            <span class="self">self</span>.num_digits -= <span class="number">1</span>;
 <a href=#90 id=90 data-nosnippet>90</a>        }
 <a href=#91 id=91 data-nosnippet>91</a>    }
 <a href=#92 id=92 data-nosnippet>92</a>
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>round(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
-<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">if </span><span class="self">self</span>.num_digits == <span class="number">0 </span>|| <span class="self">self</span>.decimal_point &lt; <span class="number">0 </span>{
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>round(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../../core/primitive.u64.html">u64</a> {
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">if </span><a class="self" href="#93">self</a>.num_digits == <span class="number">0 </span>|| <a class="self" href="#93">self</a>.decimal_point &lt; <span class="number">0 </span>{
 <a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">return </span><span class="number">0</span>;
-<a href=#96 id=96 data-nosnippet>96</a>        } <span class="kw">else if </span><span class="self">self</span>.decimal_point &gt;= <span class="self">Self</span>::MAX_DIGITS_WITHOUT_OVERFLOW <span class="kw">as </span>i32 {
+<a href=#96 id=96 data-nosnippet>96</a>        } <span class="kw">else if </span><a class="self" href="#93">self</a>.decimal_point &gt;= <span class="self">Self</span>::<a href="#63">MAX_DIGITS_WITHOUT_OVERFLOW</a> <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a> {
 <a href=#97 id=97 data-nosnippet>97</a>            <span class="kw">return </span><span class="number">0xFFFF_FFFF_FFFF_FFFF_u64</span>;
 <a href=#98 id=98 data-nosnippet>98</a>        }
 <a href=#99 id=99 data-nosnippet>99</a>
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>dp = <span class="self">self</span>.decimal_point <span class="kw">as </span>usize;
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>dp = <a class="self" href="#93">self</a>.decimal_point <span class="kw">as </span><a href="../../../../../core/primitive.usize.html">usize</a>;
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span><span class="kw-2">mut </span>n = <span class="number">0_u64</span>;
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..dp {
@@ -109,27 +109,27 @@
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">let </span><span class="kw-2">mut </span>round_up = <span class="bool-val">false</span>;
 <a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">if </span>dp &lt; <span class="self">self</span>.num_digits {
-<a href=#113 id=113 data-nosnippet>113</a>            round_up = <span class="self">self</span>.digits[dp] &gt;= <span class="number">5</span>;
-<a href=#114 id=114 data-nosnippet>114</a>            <span class="kw">if </span><span class="self">self</span>.digits[dp] == <span class="number">5 </span>&amp;&amp; dp + <span class="number">1 </span>== <span class="self">self</span>.num_digits {
-<a href=#115 id=115 data-nosnippet>115</a>                round_up = <span class="self">self</span>.truncated || ((dp != <span class="number">0</span>) &amp;&amp; (<span class="number">1 </span>&amp; <span class="self">self</span>.digits[dp - <span class="number">1</span>] != <span class="number">0</span>))
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">if </span><a href="#100">dp</a> &lt; <a class="self" href="#93">self</a>.num_digits {
+<a href=#113 id=113 data-nosnippet>113</a>            <a href="#110">round_up</a> = <a class="self" href="#93">self</a>.digits[<a href="#100">dp</a>] &gt;= <span class="number">5</span>;
+<a href=#114 id=114 data-nosnippet>114</a>            <span class="kw">if </span><a class="self" href="#93">self</a>.digits[<a href="#100">dp</a>] == <span class="number">5 </span>&amp;&amp; <a href="#100">dp</a> + <span class="number">1 </span>== <a class="self" href="#93">self</a>.num_digits {
+<a href=#115 id=115 data-nosnippet>115</a>                <a href="#110">round_up</a> = <a class="self" href="#93">self</a>.truncated || ((<a href="#100">dp</a> != <span class="number">0</span>) &amp;&amp; (<span class="number">1 </span>&amp; <a class="self" href="#93">self</a>.digits[<a href="#100">dp</a> - <span class="number">1</span>] != <span class="number">0</span>))
 <a href=#116 id=116 data-nosnippet>116</a>            }
 <a href=#117 id=117 data-nosnippet>117</a>        }
 <a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">if </span>round_up {
-<a href=#120 id=120 data-nosnippet>120</a>            n += <span class="number">1</span>;
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">if </span><a href="#110">round_up</a> {
+<a href=#120 id=120 data-nosnippet>120</a>            <a href="#101">n</a> += <span class="number">1</span>;
 <a href=#121 id=121 data-nosnippet>121</a>        }
-<a href=#122 id=122 data-nosnippet>122</a>        n
+<a href=#122 id=122 data-nosnippet>122</a>        <a href="#101">n</a>
 <a href=#123 id=123 data-nosnippet>123</a>    }
 <a href=#124 id=124 data-nosnippet>124</a>
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="doccomment">/// Computes decimal * 2^shift.
-<a href=#126 id=126 data-nosnippet>126</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_shift(<span class="kw-2">&amp;mut </span><span class="self">self</span>, shift: usize) {
-<a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">if </span><span class="self">self</span>.num_digits == <span class="number">0 </span>{
+<a href=#126 id=126 data-nosnippet>126</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_shift(<span class="kw-2">&amp;mut </span><span class="self">self</span>, shift: <a href="../../../../../core/primitive.usize.html">usize</a>) {
+<a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">if </span><a class="self" href="#126">self</a>.num_digits == <span class="number">0 </span>{
 <a href=#128 id=128 data-nosnippet>128</a>            <span class="kw">return</span>;
 <a href=#129 id=129 data-nosnippet>129</a>        }
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>num_new_digits = number_of_digits_decimal_left_shift(<span class="self">self</span>, shift);
-<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span><span class="kw-2">mut </span>read_index = <span class="self">self</span>.num_digits;
-<a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">let </span><span class="kw-2">mut </span>write_index = <span class="self">self</span>.num_digits + num_new_digits;
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>num_new_digits = <a href="#302-381">number_of_digits_decimal_left_shift</a>(<a class="self" href="#126">self</a>, <a href="#126">shift</a>);
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span><span class="kw-2">mut </span>read_index = <a class="self" href="#126">self</a>.num_digits;
+<a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">let </span><span class="kw-2">mut </span>write_index = <a class="self" href="#126">self</a>.num_digits + <a href="#130">num_new_digits</a>;
 <a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span><span class="kw-2">mut </span>n = <span class="number">0_u64</span>;
 <a href=#134 id=134 data-nosnippet>134</a>
 <a href=#135 id=135 data-nosnippet>135</a>        <span class="kw">while </span>read_index != <span class="number">0 </span>{
@@ -158,18 +158,18 @@
 <a href=#158 id=158 data-nosnippet>158</a>            n = quotient;
 <a href=#159 id=159 data-nosnippet>159</a>        }
 <a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>        <span class="self">self</span>.num_digits += num_new_digits;
+<a href=#161 id=161 data-nosnippet>161</a>        <a class="self" href="#126">self</a>.num_digits += <a href="#130">num_new_digits</a>;
 <a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">if </span><span class="self">self</span>.num_digits &gt; <span class="self">Self</span>::MAX_DIGITS {
-<a href=#164 id=164 data-nosnippet>164</a>            <span class="self">self</span>.num_digits = <span class="self">Self</span>::MAX_DIGITS;
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">if </span><a class="self" href="#126">self</a>.num_digits &gt; <span class="self">Self</span>::<a href="#60">MAX_DIGITS</a> {
+<a href=#164 id=164 data-nosnippet>164</a>            <a class="self" href="#126">self</a>.num_digits = <span class="self">Self</span>::<a href="#60">MAX_DIGITS</a>;
 <a href=#165 id=165 data-nosnippet>165</a>        }
 <a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a>        <span class="self">self</span>.decimal_point += num_new_digits <span class="kw">as </span>i32;
-<a href=#168 id=168 data-nosnippet>168</a>        <span class="self">self</span>.trim();
+<a href=#167 id=167 data-nosnippet>167</a>        <a class="self" href="#126">self</a>.decimal_point += <a href="#130">num_new_digits</a> <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a>;
+<a href=#168 id=168 data-nosnippet>168</a>        <a class="self" href="#126">self</a>.<a href="#79-91">trim</a>();
 <a href=#169 id=169 data-nosnippet>169</a>    }
 <a href=#170 id=170 data-nosnippet>170</a>
 <a href=#171 id=171 data-nosnippet>171</a>    <span class="doccomment">/// Computes decimal * 2^-shift.
-<a href=#172 id=172 data-nosnippet>172</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>right_shift(<span class="kw-2">&amp;mut </span><span class="self">self</span>, shift: usize) {
+<a href=#172 id=172 data-nosnippet>172</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>right_shift(<span class="kw-2">&amp;mut </span><span class="self">self</span>, shift: <a href="../../../../../core/primitive.usize.html">usize</a>) {
 <a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">let </span><span class="kw-2">mut </span>read_index = <span class="number">0</span>;
 <a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span><span class="kw-2">mut </span>write_index = <span class="number">0</span>;
 <a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span><span class="kw-2">mut </span>n = <span class="number">0_u64</span>;
@@ -187,15 +187,15 @@
 <a href=#187 id=187 data-nosnippet>187</a>                <span class="kw">break</span>;
 <a href=#188 id=188 data-nosnippet>188</a>            }
 <a href=#189 id=189 data-nosnippet>189</a>        }
-<a href=#190 id=190 data-nosnippet>190</a>        <span class="self">self</span>.decimal_point -= read_index <span class="kw">as </span>i32 - <span class="number">1</span>;
-<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">if </span><span class="self">self</span>.decimal_point &lt; -<span class="self">Self</span>::DECIMAL_POINT_RANGE {
+<a href=#190 id=190 data-nosnippet>190</a>        <a class="self" href="#172">self</a>.decimal_point -= <a href="#173">read_index</a> <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a> - <span class="number">1</span>;
+<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">if </span><a class="self" href="#172">self</a>.decimal_point &lt; -<span class="self">Self</span>::<a href="#64">DECIMAL_POINT_RANGE</a> {
 <a href=#192 id=192 data-nosnippet>192</a>            <span class="comment">// `self = Self::Default()`, but without the overhead of clearing `digits`.
-<a href=#193 id=193 data-nosnippet>193</a>            </span><span class="self">self</span>.num_digits = <span class="number">0</span>;
-<a href=#194 id=194 data-nosnippet>194</a>            <span class="self">self</span>.decimal_point = <span class="number">0</span>;
-<a href=#195 id=195 data-nosnippet>195</a>            <span class="self">self</span>.truncated = <span class="bool-val">false</span>;
+<a href=#193 id=193 data-nosnippet>193</a>            </span><a class="self" href="#172">self</a>.num_digits = <span class="number">0</span>;
+<a href=#194 id=194 data-nosnippet>194</a>            <a class="self" href="#172">self</a>.decimal_point = <span class="number">0</span>;
+<a href=#195 id=195 data-nosnippet>195</a>            <a class="self" href="#172">self</a>.truncated = <span class="bool-val">false</span>;
 <a href=#196 id=196 data-nosnippet>196</a>            <span class="kw">return</span>;
 <a href=#197 id=197 data-nosnippet>197</a>        }
-<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">let </span>mask = (<span class="number">1_u64 </span>&lt;&lt; shift) - <span class="number">1</span>;
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">let </span>mask = (<span class="number">1_u64 </span>&lt;&lt; <a href="#172">shift</a>) - <span class="number">1</span>;
 <a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">while </span>read_index &lt; <span class="self">self</span>.num_digits {
 <a href=#200 id=200 data-nosnippet>200</a>            <span class="kw">let </span>new_digit = (n &gt;&gt; shift) <span class="kw">as </span>u8;
 <a href=#201 id=201 data-nosnippet>201</a>            n = (<span class="number">10 </span>* (n &amp; mask)) + <span class="self">self</span>.digits[read_index] <span class="kw">as </span>u64;
@@ -213,27 +213,27 @@
 <a href=#213 id=213 data-nosnippet>213</a>                <span class="self">self</span>.truncated = <span class="bool-val">true</span>;
 <a href=#214 id=214 data-nosnippet>214</a>            }
 <a href=#215 id=215 data-nosnippet>215</a>        }
-<a href=#216 id=216 data-nosnippet>216</a>        <span class="self">self</span>.num_digits = write_index;
-<a href=#217 id=217 data-nosnippet>217</a>        <span class="self">self</span>.trim();
+<a href=#216 id=216 data-nosnippet>216</a>        <a class="self" href="#172">self</a>.num_digits = <a href="#174">write_index</a>;
+<a href=#217 id=217 data-nosnippet>217</a>        <a class="self" href="#172">self</a>.<a href="#79-91">trim</a>();
 <a href=#218 id=218 data-nosnippet>218</a>    }
 <a href=#219 id=219 data-nosnippet>219</a>}
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a><span class="doccomment">/// Parse a big integer representation of the float as a decimal.
-<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub fn </span>parse_decimal_seq(<span class="kw-2">mut </span>s: <span class="kw-2">&amp;</span>[u8]) -&gt; DecimalSeq {
-<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">let </span><span class="kw-2">mut </span>d = DecimalSeq::default();
-<a href=#224 id=224 data-nosnippet>224</a>    <span class="kw">let </span>start = s;
+<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub fn </span>parse_decimal_seq(<span class="kw-2">mut </span>s: <span class="kw-2">&amp;</span>[<a href="../../../../../core/primitive.u8.html">u8</a>]) -&gt; <a href="#18-27">DecimalSeq</a> {
+<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">let </span><span class="kw-2">mut </span>d = <a href="#18-27">DecimalSeq</a>::<a href="../../../default.rs.html#139">default</a>();
+<a href=#224 id=224 data-nosnippet>224</a>    <span class="kw">let </span>start = <a href="#222">s</a>;
 <a href=#225 id=225 data-nosnippet>225</a>
 <a href=#226 id=226 data-nosnippet>226</a>    <span class="kw">while let </span><span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="string">b'0'</span>, s_next)) = s.split_first() {
 <a href=#227 id=227 data-nosnippet>227</a>        s = s_next;
 <a href=#228 id=228 data-nosnippet>228</a>    }
 <a href=#229 id=229 data-nosnippet>229</a>
-<a href=#230 id=230 data-nosnippet>230</a>    s = s.parse_digits(|digit| d.try_add_digit(digit));
+<a href=#230 id=230 data-nosnippet>230</a>    <a href="#222">s</a> = <a href="#222">s</a>.<a href="common.rs.html#17">parse_digits</a>(|digit| <a href="#223">d</a>.<a href="#70-75">try_add_digit</a>(<a href="#230">digit</a>));
 <a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="string">b'.'</span>, s_next)) = s.split_first() {
-<a href=#233 id=233 data-nosnippet>233</a>        s = s_next;
-<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">let </span>first = s;
+<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">if let </span><a class="prelude-val" href="../../../option.rs.html#606">Some</a>((<span class="string">b'.'</span>, s_next)) = <a href="#222">s</a>.<a href="../../../slice/mod.rs.html#200-202">split_first</a>() {
+<a href=#233 id=233 data-nosnippet>233</a>        <a href="#222">s</a> = <a href="#232">s_next</a>;
+<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">let </span>first = <a href="#222">s</a>;
 <a href=#235 id=235 data-nosnippet>235</a>        <span class="comment">// Skip leading zeros.
-<a href=#236 id=236 data-nosnippet>236</a>        </span><span class="kw">if </span>d.num_digits == <span class="number">0 </span>{
+<a href=#236 id=236 data-nosnippet>236</a>        </span><span class="kw">if </span><a href="#223">d</a>.num_digits == <span class="number">0 </span>{
 <a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">while let </span><span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="string">b'0'</span>, s_next)) = s.split_first() {
 <a href=#238 id=238 data-nosnippet>238</a>                s = s_next;
 <a href=#239 id=239 data-nosnippet>239</a>            }
@@ -247,11 +247,11 @@
 <a href=#247 id=247 data-nosnippet>247</a>            d.num_digits += <span class="number">8</span>;
 <a href=#248 id=248 data-nosnippet>248</a>            s = <span class="kw-2">&amp;</span>s[<span class="number">8</span>..];
 <a href=#249 id=249 data-nosnippet>249</a>        }
-<a href=#250 id=250 data-nosnippet>250</a>        s = s.parse_digits(|digit| d.try_add_digit(digit));
-<a href=#251 id=251 data-nosnippet>251</a>        d.decimal_point = s.len() <span class="kw">as </span>i32 - first.len() <span class="kw">as </span>i32;
+<a href=#250 id=250 data-nosnippet>250</a>        <a href="#222">s</a> = <a href="#222">s</a>.<a href="common.rs.html#17">parse_digits</a>(|digit| <a href="#223">d</a>.<a href="#70-75">try_add_digit</a>(<a href="#250">digit</a>));
+<a href=#251 id=251 data-nosnippet>251</a>        <a href="#223">d</a>.decimal_point = <a href="#222">s</a>.<a href="../../../slice/mod.rs.html#118-120">len</a>() <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a> - <a href="#234">first</a>.<a href="../../../slice/mod.rs.html#118-120">len</a>() <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a>;
 <a href=#252 id=252 data-nosnippet>252</a>    }
 <a href=#253 id=253 data-nosnippet>253</a>
-<a href=#254 id=254 data-nosnippet>254</a>    <span class="kw">if </span>d.num_digits != <span class="number">0 </span>{
+<a href=#254 id=254 data-nosnippet>254</a>    <span class="kw">if </span><a href="#223">d</a>.num_digits != <span class="number">0 </span>{
 <a href=#255 id=255 data-nosnippet>255</a>        <span class="comment">// Ignore the trailing zeros if there are any
 <a href=#256 id=256 data-nosnippet>256</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>n_trailing_zeros = <span class="number">0</span>;
 <a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">for </span><span class="kw-2">&amp;</span>c <span class="kw">in </span>start[..(start.len() - s.len())].iter().rev() {
@@ -261,34 +261,34 @@
 <a href=#261 id=261 data-nosnippet>261</a>                <span class="kw">break</span>;
 <a href=#262 id=262 data-nosnippet>262</a>            }
 <a href=#263 id=263 data-nosnippet>263</a>        }
-<a href=#264 id=264 data-nosnippet>264</a>        d.decimal_point += n_trailing_zeros <span class="kw">as </span>i32;
-<a href=#265 id=265 data-nosnippet>265</a>        d.num_digits -= n_trailing_zeros;
-<a href=#266 id=266 data-nosnippet>266</a>        d.decimal_point += d.num_digits <span class="kw">as </span>i32;
-<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">if </span>d.num_digits &gt; DecimalSeq::MAX_DIGITS {
-<a href=#268 id=268 data-nosnippet>268</a>            d.truncated = <span class="bool-val">true</span>;
-<a href=#269 id=269 data-nosnippet>269</a>            d.num_digits = DecimalSeq::MAX_DIGITS;
+<a href=#264 id=264 data-nosnippet>264</a>        <a href="#223">d</a>.decimal_point += <a href="#256">n_trailing_zeros</a> <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a>;
+<a href=#265 id=265 data-nosnippet>265</a>        <a href="#223">d</a>.num_digits -= <a href="#256">n_trailing_zeros</a>;
+<a href=#266 id=266 data-nosnippet>266</a>        <a href="#223">d</a>.decimal_point += <a href="#223">d</a>.num_digits <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a>;
+<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">if </span><a href="#223">d</a>.num_digits &gt; <a href="#18-27">DecimalSeq</a>::<a href="#60">MAX_DIGITS</a> {
+<a href=#268 id=268 data-nosnippet>268</a>            <a href="#223">d</a>.truncated = <span class="bool-val">true</span>;
+<a href=#269 id=269 data-nosnippet>269</a>            <a href="#223">d</a>.num_digits = <a href="#18-27">DecimalSeq</a>::<a href="#60">MAX_DIGITS</a>;
 <a href=#270 id=270 data-nosnippet>270</a>        }
 <a href=#271 id=271 data-nosnippet>271</a>    }
 <a href=#272 id=272 data-nosnippet>272</a>
-<a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>ch, s_next)) = s.split_first() {
-<a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">if </span>ch == <span class="string">b'e' </span>|| ch == <span class="string">b'E' </span>{
-<a href=#275 id=275 data-nosnippet>275</a>            s = s_next;
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">if let </span><a class="prelude-val" href="../../../option.rs.html#606">Some</a>((<span class="kw-2">&amp;</span>ch, s_next)) = <a href="#222">s</a>.<a href="../../../slice/mod.rs.html#200-202">split_first</a>() {
+<a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">if </span><a href="#273">ch</a> == <span class="string">b'e' </span>|| <a href="#273">ch</a> == <span class="string">b'E' </span>{
+<a href=#275 id=275 data-nosnippet>275</a>            <a href="#222">s</a> = <a href="#273">s_next</a>;
 <a href=#276 id=276 data-nosnippet>276</a>            <span class="kw">let </span><span class="kw-2">mut </span>neg_exp = <span class="bool-val">false</span>;
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>ch, s_next)) = s.split_first() {
-<a href=#278 id=278 data-nosnippet>278</a>                neg_exp = ch == <span class="string">b'-'</span>;
-<a href=#279 id=279 data-nosnippet>279</a>                <span class="kw">if </span>ch == <span class="string">b'-' </span>|| ch == <span class="string">b'+' </span>{
-<a href=#280 id=280 data-nosnippet>280</a>                    s = s_next;
+<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">if let </span><a class="prelude-val" href="../../../option.rs.html#606">Some</a>((<span class="kw-2">&amp;</span>ch, s_next)) = <a href="#222">s</a>.<a href="../../../slice/mod.rs.html#200-202">split_first</a>() {
+<a href=#278 id=278 data-nosnippet>278</a>                <a href="#276">neg_exp</a> = <a href="#277">ch</a> == <span class="string">b'-'</span>;
+<a href=#279 id=279 data-nosnippet>279</a>                <span class="kw">if </span><a href="#277">ch</a> == <span class="string">b'-' </span>|| <a href="#277">ch</a> == <span class="string">b'+' </span>{
+<a href=#280 id=280 data-nosnippet>280</a>                    <a href="#222">s</a> = <a href="#277">s_next</a>;
 <a href=#281 id=281 data-nosnippet>281</a>                }
 <a href=#282 id=282 data-nosnippet>282</a>            }
 <a href=#283 id=283 data-nosnippet>283</a>            <span class="kw">let </span><span class="kw-2">mut </span>exp_num = <span class="number">0_i32</span>;
 <a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>            s.parse_digits(|digit| {
-<a href=#286 id=286 data-nosnippet>286</a>                <span class="kw">if </span>exp_num &lt; <span class="number">0x10000 </span>{
-<a href=#287 id=287 data-nosnippet>287</a>                    exp_num = <span class="number">10 </span>* exp_num + digit <span class="kw">as </span>i32;
+<a href=#285 id=285 data-nosnippet>285</a>            <a href="#222">s</a>.<a href="common.rs.html#17">parse_digits</a>(|digit| {
+<a href=#286 id=286 data-nosnippet>286</a>                <span class="kw">if </span><a href="#283">exp_num</a> &lt; <span class="number">0x10000 </span>{
+<a href=#287 id=287 data-nosnippet>287</a>                    <a href="#283">exp_num</a> = <span class="number">10 </span>* <a href="#283">exp_num</a> + <a href="#285">digit</a> <span class="kw">as </span><a href="../../../../../core/primitive.i32.html">i32</a>;
 <a href=#288 id=288 data-nosnippet>288</a>                }
 <a href=#289 id=289 data-nosnippet>289</a>            });
 <a href=#290 id=290 data-nosnippet>290</a>
-<a href=#291 id=291 data-nosnippet>291</a>            d.decimal_point += <span class="kw">if </span>neg_exp { -exp_num } <span class="kw">else </span>{ exp_num };
+<a href=#291 id=291 data-nosnippet>291</a>            <a href="#223">d</a>.decimal_point += <span class="kw">if </span><a href="#276">neg_exp</a> { -<a href="#283">exp_num</a> } <span class="kw">else </span>{ <a href="#283">exp_num</a> };
 <a href=#292 id=292 data-nosnippet>292</a>        }
 <a href=#293 id=293 data-nosnippet>293</a>    }
 <a href=#294 id=294 data-nosnippet>294</a>
@@ -296,12 +296,12 @@
 <a href=#296 id=296 data-nosnippet>296</a>        d.digits[i] = <span class="number">0</span>;
 <a href=#297 id=297 data-nosnippet>297</a>    }
 <a href=#298 id=298 data-nosnippet>298</a>
-<a href=#299 id=299 data-nosnippet>299</a>    d
+<a href=#299 id=299 data-nosnippet>299</a>    <a href="#223">d</a>
 <a href=#300 id=300 data-nosnippet>300</a>}
 <a href=#301 id=301 data-nosnippet>301</a>
-<a href=#302 id=302 data-nosnippet>302</a><span class="kw">fn </span>number_of_digits_decimal_left_shift(d: <span class="kw-2">&amp;</span>DecimalSeq, <span class="kw-2">mut </span>shift: usize) -&gt; usize {
+<a href=#302 id=302 data-nosnippet>302</a><span class="kw">fn </span>number_of_digits_decimal_left_shift(d: <span class="kw-2">&amp;</span><a href="#18-27">DecimalSeq</a>, <span class="kw-2">mut </span>shift: <a href="../../../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../../../core/primitive.usize.html">usize</a> {
 <a href=#303 id=303 data-nosnippet>303</a>    <span class="attr">#[rustfmt::skip]
-<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">const </span>TABLE: [u16; <span class="number">65</span>] = [
+<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">const </span>TABLE: [<a href="../../../../../core/primitive.u16.html">u16</a>; <span class="number">65</span>] = [
 <a href=#305 id=305 data-nosnippet>305</a>        <span class="number">0x0000</span>, <span class="number">0x0800</span>, <span class="number">0x0801</span>, <span class="number">0x0803</span>, <span class="number">0x1006</span>, <span class="number">0x1009</span>, <span class="number">0x100D</span>, <span class="number">0x1812</span>, <span class="number">0x1817</span>, <span class="number">0x181D</span>, <span class="number">0x2024</span>,
 <a href=#306 id=306 data-nosnippet>306</a>        <span class="number">0x202B</span>, <span class="number">0x2033</span>, <span class="number">0x203C</span>, <span class="number">0x2846</span>, <span class="number">0x2850</span>, <span class="number">0x285B</span>, <span class="number">0x3067</span>, <span class="number">0x3073</span>, <span class="number">0x3080</span>, <span class="number">0x388E</span>, <span class="number">0x389C</span>,
 <a href=#307 id=307 data-nosnippet>307</a>        <span class="number">0x38AB</span>, <span class="number">0x38BB</span>, <span class="number">0x40CC</span>, <span class="number">0x40DD</span>, <span class="number">0x40EF</span>, <span class="number">0x4902</span>, <span class="number">0x4915</span>, <span class="number">0x4929</span>, <span class="number">0x513E</span>, <span class="number">0x5153</span>, <span class="number">0x5169</span>,
@@ -310,7 +310,7 @@
 <a href=#310 id=310 data-nosnippet>310</a>        <span class="number">0x8C28</span>, <span class="number">0x8C4F</span>, <span class="number">0x9477</span>, <span class="number">0x949F</span>, <span class="number">0x94C8</span>, <span class="number">0x9CF2</span>, <span class="number">0x051C</span>, <span class="number">0x051C</span>, <span class="number">0x051C</span>, <span class="number">0x051C</span>,
 <a href=#311 id=311 data-nosnippet>311</a>    ];
 <a href=#312 id=312 data-nosnippet>312</a>    <span class="attr">#[rustfmt::skip]
-<a href=#313 id=313 data-nosnippet>313</a>    </span><span class="kw">const </span>TABLE_POW5: [u8; <span class="number">0x051C</span>] = [
+<a href=#313 id=313 data-nosnippet>313</a>    </span><span class="kw">const </span>TABLE_POW5: [<a href="../../../../../core/primitive.u8.html">u8</a>; <span class="number">0x051C</span>] = [
 <a href=#314 id=314 data-nosnippet>314</a>        <span class="number">5</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">3</span>, <span class="number">9</span>, <span class="number">0</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">1</span>,
 <a href=#315 id=315 data-nosnippet>315</a>        <span class="number">9</span>, <span class="number">5</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">9</span>, <span class="number">7</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">8</span>, <span class="number">8</span>, <span class="number">2</span>, <span class="number">8</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">4</span>, <span class="number">0</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>,
 <a href=#316 id=316 data-nosnippet>316</a>        <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">7</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">7</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">1</span>, <span class="number">2</span>,
@@ -357,13 +357,13 @@
 <a href=#357 id=357 data-nosnippet>357</a>        <span class="number">2</span>, <span class="number">4</span>, <span class="number">0</span>, <span class="number">6</span>, <span class="number">9</span>, <span class="number">5</span>, <span class="number">9</span>, <span class="number">5</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">6</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">4</span>, <span class="number">0</span>, <span class="number">6</span>, <span class="number">2</span>, <span class="number">5</span>,
 <a href=#358 id=358 data-nosnippet>358</a>    ];
 <a href=#359 id=359 data-nosnippet>359</a>
-<a href=#360 id=360 data-nosnippet>360</a>    shift &amp;= <span class="number">63</span>;
-<a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">let </span>x_a = TABLE[shift];
-<a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">let </span>x_b = TABLE[shift + <span class="number">1</span>];
-<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">let </span>num_new_digits = (x_a &gt;&gt; <span class="number">11</span>) <span class="kw">as _</span>;
-<a href=#364 id=364 data-nosnippet>364</a>    <span class="kw">let </span>pow5_a = (<span class="number">0x7FF </span>&amp; x_a) <span class="kw">as </span>usize;
-<a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">let </span>pow5_b = (<span class="number">0x7FF </span>&amp; x_b) <span class="kw">as </span>usize;
-<a href=#366 id=366 data-nosnippet>366</a>    <span class="kw">let </span>pow5 = <span class="kw-2">&amp;</span>TABLE_POW5[pow5_a..];
+<a href=#360 id=360 data-nosnippet>360</a>    <a href="#302">shift</a> &amp;= <span class="number">63</span>;
+<a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">let </span>x_a = <a href="#304-311">TABLE</a>[<a href="#302">shift</a>];
+<a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">let </span>x_b = <a href="#304-311">TABLE</a>[<a href="#302">shift</a> + <span class="number">1</span>];
+<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">let </span>num_new_digits = (<a href="#361">x_a</a> &gt;&gt; <span class="number">11</span>) <span class="kw">as _</span>;
+<a href=#364 id=364 data-nosnippet>364</a>    <span class="kw">let </span>pow5_a = (<span class="number">0x7FF </span>&amp; <a href="#361">x_a</a>) <span class="kw">as </span><a href="../../../../../core/primitive.usize.html">usize</a>;
+<a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">let </span>pow5_b = (<span class="number">0x7FF </span>&amp; <a href="#362">x_b</a>) <span class="kw">as </span><a href="../../../../../core/primitive.usize.html">usize</a>;
+<a href=#366 id=366 data-nosnippet>366</a>    <span class="kw">let </span>pow5 = <span class="kw-2">&amp;</span><a href="#313-358">TABLE_POW5</a>[pow5_a..];
 <a href=#367 id=367 data-nosnippet>367</a>
 <a href=#368 id=368 data-nosnippet>368</a>    <span class="kw">for </span>(i, <span class="kw-2">&amp;</span>p5) <span class="kw">in </span>pow5.iter().enumerate().take(pow5_b - pow5_a) {
 <a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">if </span>i &gt;= d.num_digits {
@@ -377,6 +377,6 @@
 <a href=#377 id=377 data-nosnippet>377</a>        }
 <a href=#378 id=378 data-nosnippet>378</a>    }
 <a href=#379 id=379 data-nosnippet>379</a>
-<a href=#380 id=380 data-nosnippet>380</a>    num_new_digits
+<a href=#380 id=380 data-nosnippet>380</a>    <a href="#363">num_new_digits</a>
 <a href=#381 id=381 data-nosnippet>381</a>}
 </code></pre></div></section></main></body></html>

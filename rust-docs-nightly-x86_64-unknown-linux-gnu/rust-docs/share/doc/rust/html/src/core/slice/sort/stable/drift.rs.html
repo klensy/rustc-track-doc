@@ -1,12 +1,12 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/stable/drift.rs`."><title>drift.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/stable/</div>drift.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains the hybrid top-level loop combining bottom-up Mergesort with top-down
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/stable/drift.rs`."><title>drift.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/stable/</div>drift.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains the hybrid top-level loop combining bottom-up Mergesort with top-down
 <a href=#2 id=2 data-nosnippet>2</a>//! Quicksort.
 <a href=#3 id=3 data-nosnippet>3</a>
-<a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span><span class="kw">crate</span>::mem::MaybeUninit;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::slice::sort::shared::find_existing_run;
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::slice::sort::shared::smallsort::StableSmallSortTypeImpl;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::slice::sort::stable::merge::merge;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::slice::sort::stable::quicksort::quicksort;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{cmp, intrinsics};
+<a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span><a href="../../../mem/maybe_uninit.rs.html#355-358"><span class="kw">crate</span>::mem::MaybeUninit</a>;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../shared/mod.rs.html#20-47"><span class="kw">crate</span>::slice::sort::shared::find_existing_run</a>;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../shared/smallsort.rs.html#18-28"><span class="kw">crate</span>::slice::sort::shared::smallsort::StableSmallSortTypeImpl</a>;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="merge.rs.html#8-63"><span class="kw">crate</span>::slice::sort::stable::merge::merge</a>;
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="quicksort.rs.html#16-81"><span class="kw">crate</span>::slice::sort::stable::quicksort::quicksort</a>;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{<a href="../../../lib.rs.html#280">cmp</a>, <a href="../../../lib.rs.html#268">intrinsics</a>};
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// Sorts `v` based on comparison function `is_less`. If `eager_sort` is true,
 <a href=#12 id=12 data-nosnippet>12</a>/// it will only do small-sorts and physical merges, ensuring O(N * log(N))
@@ -17,29 +17,29 @@
 <a href=#17 id=17 data-nosnippet>17</a>///
 <a href=#18 id=18 data-nosnippet>18</a>/// This is the main loop for driftsort, which uses powersort's heuristic to
 <a href=#19 id=19 data-nosnippet>19</a>/// determine in which order to merge runs, see below for details.
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub fn </span>sort&lt;T, F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool&gt;(
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub fn </span>sort&lt;T, F: <a href="../../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../../core/primitive.bool.html">bool</a>&gt;(
 <a href=#21 id=21 data-nosnippet>21</a>    v: <span class="kw-2">&amp;mut </span>[T],
-<a href=#22 id=22 data-nosnippet>22</a>    scratch: <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;],
-<a href=#23 id=23 data-nosnippet>23</a>    eager_sort: bool,
+<a href=#22 id=22 data-nosnippet>22</a>    scratch: <span class="kw-2">&amp;mut </span>[<a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;],
+<a href=#23 id=23 data-nosnippet>23</a>    eager_sort: <a href="../../../../../core/primitive.bool.html">bool</a>,
 <a href=#24 id=24 data-nosnippet>24</a>    is_less: <span class="kw-2">&amp;mut </span>F,
 <a href=#25 id=25 data-nosnippet>25</a>) {
-<a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">let </span>len = v.len();
-<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">if </span>len &lt; <span class="number">2 </span>{
+<a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">let </span>len = <a href="#21">v</a>.<a href="../../mod.rs.html#118-120">len</a>();
+<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">if </span><a href="#26">len</a> &lt; <span class="number">2 </span>{
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="kw">return</span>; <span class="comment">// Removing this length check *increases* code size.
 <a href=#29 id=29 data-nosnippet>29</a>    </span>}
-<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">let </span>scale_factor = merge_tree_scale_factor(len);
+<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">let </span>scale_factor = <a href="#156-162">merge_tree_scale_factor</a>(<a href="#26">len</a>);
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a>    <span class="comment">// It's important to have a relatively high entry barrier for pre-sorted
 <a href=#33 id=33 data-nosnippet>33</a>    // runs, as the presence of a single such run will force on average several
 <a href=#34 id=34 data-nosnippet>34</a>    // merge operations and shrink the maximum quicksort size a lot. For that
 <a href=#35 id=35 data-nosnippet>35</a>    // reason we use sqrt(len) as our pre-sorted run threshold.
-<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">const </span>MIN_SQRT_RUN_LEN: usize = <span class="number">64</span>;
-<a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">let </span>min_good_run_len = <span class="kw">if </span>len &lt;= (MIN_SQRT_RUN_LEN * MIN_SQRT_RUN_LEN) {
+<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">const </span>MIN_SQRT_RUN_LEN: <a href="../../../../../core/primitive.usize.html">usize</a> = <span class="number">64</span>;
+<a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">let </span>min_good_run_len = <span class="kw">if </span><a href="#26">len</a> &lt;= (<a href="#36">MIN_SQRT_RUN_LEN</a> * <a href="#36">MIN_SQRT_RUN_LEN</a>) {
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="comment">// For small input length `MIN_SQRT_RUN_LEN` would break pattern
 <a href=#39 id=39 data-nosnippet>39</a>        // detection of full or nearly sorted inputs.
-<a href=#40 id=40 data-nosnippet>40</a>        </span>cmp::min(len - len / <span class="number">2</span>, MIN_SQRT_RUN_LEN)
+<a href=#40 id=40 data-nosnippet>40</a>        </span>cmp::<a href="../../../cmp.rs.html#1652-1654">min</a>(<a href="#26">len</a> - <a href="#26">len</a> / <span class="number">2</span>, <a href="#36">MIN_SQRT_RUN_LEN</a>)
 <a href=#41 id=41 data-nosnippet>41</a>    } <span class="kw">else </span>{
-<a href=#42 id=42 data-nosnippet>42</a>        sqrt_approx(len)
+<a href=#42 id=42 data-nosnippet>42</a>        <a href="#173-187">sqrt_approx</a>(<a href="#26">len</a>)
 <a href=#43 id=43 data-nosnippet>43</a>    };
 <a href=#44 id=44 data-nosnippet>44</a>
 <a href=#45 id=45 data-nosnippet>45</a>    <span class="comment">// (stack_len, runs, desired_depths) together form a stack maintaining run
@@ -47,30 +47,30 @@
 <a href=#47 id=47 data-nosnippet>47</a>    // depth of the merge node that merges runs[i] with the run that comes after
 <a href=#48 id=48 data-nosnippet>48</a>    // it.
 <a href=#49 id=49 data-nosnippet>49</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stack_len = <span class="number">0</span>;
-<a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">let </span><span class="kw-2">mut </span>run_storage = MaybeUninit::&lt;[DriftsortRun; <span class="number">66</span>]&gt;::uninit();
-<a href=#51 id=51 data-nosnippet>51</a>    <span class="kw">let </span>runs: <span class="kw-2">*mut </span>DriftsortRun = run_storage.as_mut_ptr().cast();
-<a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">let </span><span class="kw-2">mut </span>desired_depth_storage = MaybeUninit::&lt;[u8; <span class="number">66</span>]&gt;::uninit();
-<a href=#53 id=53 data-nosnippet>53</a>    <span class="kw">let </span>desired_depths: <span class="kw-2">*mut </span>u8 = desired_depth_storage.as_mut_ptr().cast();
+<a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">let </span><span class="kw-2">mut </span>run_storage = <a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>::&lt;[<a href="#276">DriftsortRun</a>; <span class="number">66</span>]&gt;::<a href="../../../mem/maybe_uninit.rs.html#429-431">uninit</a>();
+<a href=#51 id=51 data-nosnippet>51</a>    <span class="kw">let </span>runs: <span class="kw-2">*mut </span><a href="#276">DriftsortRun</a> = <a href="#50">run_storage</a>.<a href="../../../mem/maybe_uninit.rs.html#659-662">as_mut_ptr</a>().<a href="../../../ptr/mut_ptr.rs.html#31-33">cast</a>();
+<a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">let </span><span class="kw-2">mut </span>desired_depth_storage = <a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>::&lt;[<a href="../../../../../core/primitive.u8.html">u8</a>; <span class="number">66</span>]&gt;::<a href="../../../mem/maybe_uninit.rs.html#429-431">uninit</a>();
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="kw">let </span>desired_depths: <span class="kw-2">*mut </span><a href="../../../../../core/primitive.u8.html">u8</a> = <a href="#52">desired_depth_storage</a>.<a href="../../../mem/maybe_uninit.rs.html#659-662">as_mut_ptr</a>().<a href="../../../ptr/mut_ptr.rs.html#31-33">cast</a>();
 <a href=#54 id=54 data-nosnippet>54</a>
 <a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span><span class="kw-2">mut </span>scan_idx = <span class="number">0</span>;
-<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span><span class="kw-2">mut </span>prev_run = DriftsortRun::new_sorted(<span class="number">0</span>); <span class="comment">// Initial dummy run.
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span><span class="kw-2">mut </span>prev_run = <a href="#276">DriftsortRun</a>::<a href="#280-282">new_sorted</a>(<span class="number">0</span>); <span class="comment">// Initial dummy run.
 <a href=#57 id=57 data-nosnippet>57</a>    </span><span class="kw">loop </span>{
 <a href=#58 id=58 data-nosnippet>58</a>        <span class="comment">// Compute the next run and the desired depth of the merge node between
 <a href=#59 id=59 data-nosnippet>59</a>        // prev_run and next_run. On the last iteration we create a dummy run
 <a href=#60 id=60 data-nosnippet>60</a>        // with root-level desired depth to fully collapse the merge tree.
 <a href=#61 id=61 data-nosnippet>61</a>        </span><span class="kw">let </span>(next_run, desired_depth);
-<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">if </span>scan_idx &lt; len {
-<a href=#63 id=63 data-nosnippet>63</a>            next_run =
-<a href=#64 id=64 data-nosnippet>64</a>                create_run(<span class="kw-2">&amp;mut </span>v[scan_idx..], scratch, min_good_run_len, eager_sort, is_less);
-<a href=#65 id=65 data-nosnippet>65</a>            desired_depth = merge_tree_depth(
-<a href=#66 id=66 data-nosnippet>66</a>                scan_idx - prev_run.len(),
-<a href=#67 id=67 data-nosnippet>67</a>                scan_idx,
-<a href=#68 id=68 data-nosnippet>68</a>                scan_idx + next_run.len(),
-<a href=#69 id=69 data-nosnippet>69</a>                scale_factor,
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">if </span><a href="#55">scan_idx</a> &lt; <a href="#26">len</a> {
+<a href=#63 id=63 data-nosnippet>63</a>            <a href="#61">next_run</a> =
+<a href=#64 id=64 data-nosnippet>64</a>                <a href="#226-260">create_run</a>(<span class="kw-2">&amp;mut </span><a href="#21">v</a>[scan_idx..], <a href="#22">scratch</a>, <a href="#37">min_good_run_len</a>, <a href="#23">eager_sort</a>, <a href="#24">is_less</a>);
+<a href=#65 id=65 data-nosnippet>65</a>            <a href="#61">desired_depth</a> = <a href="#167-171">merge_tree_depth</a>(
+<a href=#66 id=66 data-nosnippet>66</a>                <a href="#55">scan_idx</a> - <a href="#56">prev_run</a>.<a href="#295-297">len</a>(),
+<a href=#67 id=67 data-nosnippet>67</a>                <a href="#55">scan_idx</a>,
+<a href=#68 id=68 data-nosnippet>68</a>                <a href="#55">scan_idx</a> + <a href="#61">next_run</a>.<a href="#295-297">len</a>(),
+<a href=#69 id=69 data-nosnippet>69</a>                <a href="#30">scale_factor</a>,
 <a href=#70 id=70 data-nosnippet>70</a>            );
 <a href=#71 id=71 data-nosnippet>71</a>        } <span class="kw">else </span>{
-<a href=#72 id=72 data-nosnippet>72</a>            next_run = DriftsortRun::new_sorted(<span class="number">0</span>);
-<a href=#73 id=73 data-nosnippet>73</a>            desired_depth = <span class="number">0</span>;
+<a href=#72 id=72 data-nosnippet>72</a>            <a href="#61">next_run</a> = <a href="#276">DriftsortRun</a>::<a href="#280-282">new_sorted</a>(<span class="number">0</span>);
+<a href=#73 id=73 data-nosnippet>73</a>            <a href="#61">desired_depth</a> = <span class="number">0</span>;
 <a href=#74 id=74 data-nosnippet>74</a>        };
 <a href=#75 id=75 data-nosnippet>75</a>
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="comment">// Process the merge nodes between earlier runs[i] that have a desire to
@@ -100,22 +100,22 @@
 <a href=#100 id=100 data-nosnippet>100</a>            // the stack as merge_tree_depth(..) &lt;= 64 and thus we can only have
 <a href=#101 id=101 data-nosnippet>101</a>            // 64 distinct values on the stack before pushing, plus our initial
 <a href=#102 id=102 data-nosnippet>102</a>            // dummy run, while our capacity is 66.
-<a href=#103 id=103 data-nosnippet>103</a>            </span><span class="kw-2">*</span>runs.add(stack_len) = prev_run;
-<a href=#104 id=104 data-nosnippet>104</a>            <span class="kw-2">*</span>desired_depths.add(stack_len) = desired_depth;
-<a href=#105 id=105 data-nosnippet>105</a>            stack_len += <span class="number">1</span>;
+<a href=#103 id=103 data-nosnippet>103</a>            </span><span class="kw-2">*</span><a href="#51">runs</a>.<a href="../../../ptr/mut_ptr.rs.html#935-970">add</a>(<a href="#49">stack_len</a>) = <a href="#56">prev_run</a>;
+<a href=#104 id=104 data-nosnippet>104</a>            <span class="kw-2">*</span><a href="#53">desired_depths</a>.<a href="../../../ptr/mut_ptr.rs.html#935-970">add</a>(<a href="#49">stack_len</a>) = <a href="#61">desired_depth</a>;
+<a href=#105 id=105 data-nosnippet>105</a>            <a href="#49">stack_len</a> += <span class="number">1</span>;
 <a href=#106 id=106 data-nosnippet>106</a>        }
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="comment">// Break before overriding the last run with our dummy run.
-<a href=#109 id=109 data-nosnippet>109</a>        </span><span class="kw">if </span>scan_idx &gt;= len {
+<a href=#109 id=109 data-nosnippet>109</a>        </span><span class="kw">if </span><a href="#55">scan_idx</a> &gt;= <a href="#26">len</a> {
 <a href=#110 id=110 data-nosnippet>110</a>            <span class="kw">break</span>;
 <a href=#111 id=111 data-nosnippet>111</a>        }
 <a href=#112 id=112 data-nosnippet>112</a>
-<a href=#113 id=113 data-nosnippet>113</a>        scan_idx += next_run.len();
-<a href=#114 id=114 data-nosnippet>114</a>        prev_run = next_run;
+<a href=#113 id=113 data-nosnippet>113</a>        <a href="#55">scan_idx</a> += <a href="#61">next_run</a>.<a href="#295-297">len</a>();
+<a href=#114 id=114 data-nosnippet>114</a>        <a href="#56">prev_run</a> = <a href="#61">next_run</a>;
 <a href=#115 id=115 data-nosnippet>115</a>    }
 <a href=#116 id=116 data-nosnippet>116</a>
-<a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">if </span>!prev_run.sorted() {
-<a href=#118 id=118 data-nosnippet>118</a>        stable_quicksort(v, scratch, is_less);
+<a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">if </span>!<a href="#56">prev_run</a>.<a href="#290-292">sorted</a>() {
+<a href=#118 id=118 data-nosnippet>118</a>        <a href="#262-271">stable_quicksort</a>(<a href="#21">v</a>, <a href="#22">scratch</a>, <a href="#24">is_less</a>);
 <a href=#119 id=119 data-nosnippet>119</a>    }
 <a href=#120 id=120 data-nosnippet>120</a>}
 <a href=#121 id=121 data-nosnippet>121</a>
@@ -153,24 +153,24 @@
 <a href=#153 id=153 data-nosnippet>153</a>// So as long as n &lt; 2^62 we find that x &lt; 2^64, meaning our operations do not
 <a href=#154 id=154 data-nosnippet>154</a>// overflow.
 <a href=#155 id=155 data-nosnippet>155</a></span><span class="attr">#[inline(always)]
-<a href=#156 id=156 data-nosnippet>156</a></span><span class="kw">fn </span>merge_tree_scale_factor(n: usize) -&gt; u64 {
-<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">if </span>usize::BITS &gt; u64::BITS {
-<a href=#158 id=158 data-nosnippet>158</a>        <span class="macro">panic!</span>(<span class="string">"Platform not supported"</span>);
+<a href=#156 id=156 data-nosnippet>156</a></span><span class="kw">fn </span>merge_tree_scale_factor(n: <a href="../../../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../../../core/primitive.u64.html">u64</a> {
+<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">if </span><a href="../../../../../core/primitive.usize.html">usize</a>::<a href="../../../num/mod.rs.html#1460-1484">BITS</a> &gt; <a href="../../../../../core/primitive.u64.html">u64</a>::<a href="../../../num/mod.rs.html#1330-1354">BITS</a> {
+<a href=#158 id=158 data-nosnippet>158</a>        <a href="../../../macros/mod.rs.html#7-13">panic!</a>(<span class="string">"Platform not supported"</span>);
 <a href=#159 id=159 data-nosnippet>159</a>    }
 <a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>    (<span class="number">1u64 </span>&lt;&lt; <span class="number">62</span>).div_ceil(n <span class="kw">as </span>u64)
+<a href=#161 id=161 data-nosnippet>161</a>    (<span class="number">1u64 </span>&lt;&lt; <span class="number">62</span>).<a href="../../../num/mod.rs.html#1330-1354">div_ceil</a>(<a href="#156">n</a> <span class="kw">as </span><a href="../../../../../core/primitive.u64.html">u64</a>)
 <a href=#162 id=162 data-nosnippet>162</a>}
 <a href=#163 id=163 data-nosnippet>163</a>
 <a href=#164 id=164 data-nosnippet>164</a><span class="comment">// Note: merge_tree_depth output is &lt; 64 when left &lt; right as f*x and f*y must
 <a href=#165 id=165 data-nosnippet>165</a>// differ in some bit, and is &lt;= 64 always.
 <a href=#166 id=166 data-nosnippet>166</a></span><span class="attr">#[inline(always)]
-<a href=#167 id=167 data-nosnippet>167</a></span><span class="kw">fn </span>merge_tree_depth(left: usize, mid: usize, right: usize, scale_factor: u64) -&gt; u8 {
-<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">let </span>x = left <span class="kw">as </span>u64 + mid <span class="kw">as </span>u64;
-<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>y = mid <span class="kw">as </span>u64 + right <span class="kw">as </span>u64;
-<a href=#170 id=170 data-nosnippet>170</a>    ((scale_factor * x) ^ (scale_factor * y)).leading_zeros() <span class="kw">as </span>u8
+<a href=#167 id=167 data-nosnippet>167</a></span><span class="kw">fn </span>merge_tree_depth(left: <a href="../../../../../core/primitive.usize.html">usize</a>, mid: <a href="../../../../../core/primitive.usize.html">usize</a>, right: <a href="../../../../../core/primitive.usize.html">usize</a>, scale_factor: <a href="../../../../../core/primitive.u64.html">u64</a>) -&gt; <a href="../../../../../core/primitive.u8.html">u8</a> {
+<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">let </span>x = <a href="#167">left</a> <span class="kw">as </span><a href="../../../../../core/primitive.u64.html">u64</a> + <a href="#167">mid</a> <span class="kw">as </span><a href="../../../../../core/primitive.u64.html">u64</a>;
+<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>y = <a href="#167">mid</a> <span class="kw">as </span><a href="../../../../../core/primitive.u64.html">u64</a> + <a href="#167">right</a> <span class="kw">as </span><a href="../../../../../core/primitive.u64.html">u64</a>;
+<a href=#170 id=170 data-nosnippet>170</a>    ((<a href="#167">scale_factor</a> * <a href="#168">x</a>) ^ (<a href="#167">scale_factor</a> * <a href="#169">y</a>)).<a href="../../../num/mod.rs.html#1330-1354">leading_zeros</a>() <span class="kw">as </span><a href="../../../../../core/primitive.u8.html">u8</a>
 <a href=#171 id=171 data-nosnippet>171</a>}
 <a href=#172 id=172 data-nosnippet>172</a>
-<a href=#173 id=173 data-nosnippet>173</a><span class="kw">fn </span>sqrt_approx(n: usize) -&gt; usize {
+<a href=#173 id=173 data-nosnippet>173</a><span class="kw">fn </span>sqrt_approx(n: <a href="../../../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../../../core/primitive.usize.html">usize</a> {
 <a href=#174 id=174 data-nosnippet>174</a>    <span class="comment">// Note that sqrt(n) = n^(1/2), and that 2^log2(n) = n. We combine these
 <a href=#175 id=175 data-nosnippet>175</a>    // two facts to approximate sqrt(n) as 2^(log2(n) / 2). Because our integer
 <a href=#176 id=176 data-nosnippet>176</a>    // log floors we want to add 0.5 to compensate for this on average, so our
@@ -181,38 +181,38 @@
 <a href=#181 id=181 data-nosnippet>181</a>    //
 <a href=#182 id=182 data-nosnippet>182</a>    // Finally we note that the exponentiation / division can be done directly
 <a href=#183 id=183 data-nosnippet>183</a>    // with shifts. We OR with 1 to avoid zero-checks in the integer log.
-<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">let </span>ilog = (n | <span class="number">1</span>).ilog2();
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>shift = ilog.div_ceil(<span class="number">2</span>);
-<a href=#186 id=186 data-nosnippet>186</a>    ((<span class="number">1 </span>&lt;&lt; shift) + (n &gt;&gt; shift)) / <span class="number">2
+<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">let </span>ilog = (<a href="#173">n</a> | <span class="number">1</span>).<a href="../../../num/mod.rs.html#1460-1484">ilog2</a>();
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>shift = <a href="#184">ilog</a>.<a href="../../../num/mod.rs.html#1298-1322">div_ceil</a>(<span class="number">2</span>);
+<a href=#186 id=186 data-nosnippet>186</a>    ((<span class="number">1 </span>&lt;&lt; <a href="#185">shift</a>) + (<a href="#173">n</a> &gt;&gt; <a href="#185">shift</a>)) / <span class="number">2
 <a href=#187 id=187 data-nosnippet>187</a></span>}
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a><span class="comment">// Lazy logical runs as in Glidesort.
 <a href=#190 id=190 data-nosnippet>190</a></span><span class="attr">#[inline(always)]
-<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">fn </span>logical_merge&lt;T, F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool&gt;(
+<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">fn </span>logical_merge&lt;T, F: <a href="../../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../../core/primitive.bool.html">bool</a>&gt;(
 <a href=#192 id=192 data-nosnippet>192</a>    v: <span class="kw-2">&amp;mut </span>[T],
-<a href=#193 id=193 data-nosnippet>193</a>    scratch: <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;],
-<a href=#194 id=194 data-nosnippet>194</a>    left: DriftsortRun,
-<a href=#195 id=195 data-nosnippet>195</a>    right: DriftsortRun,
+<a href=#193 id=193 data-nosnippet>193</a>    scratch: <span class="kw-2">&amp;mut </span>[<a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;],
+<a href=#194 id=194 data-nosnippet>194</a>    left: <a href="#276">DriftsortRun</a>,
+<a href=#195 id=195 data-nosnippet>195</a>    right: <a href="#276">DriftsortRun</a>,
 <a href=#196 id=196 data-nosnippet>196</a>    is_less: <span class="kw-2">&amp;mut </span>F,
-<a href=#197 id=197 data-nosnippet>197</a>) -&gt; DriftsortRun {
+<a href=#197 id=197 data-nosnippet>197</a>) -&gt; <a href="#276">DriftsortRun</a> {
 <a href=#198 id=198 data-nosnippet>198</a>    <span class="comment">// If one or both of the runs are sorted do a physical merge, using
 <a href=#199 id=199 data-nosnippet>199</a>    // quicksort to sort the unsorted run if present. We also *need* to
 <a href=#200 id=200 data-nosnippet>200</a>    // physically merge if the combined runs would not fit in the scratch space
 <a href=#201 id=201 data-nosnippet>201</a>    // anymore (as this would mean we are no longer able to quicksort them).
-<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">let </span>len = v.len();
-<a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">let </span>can_fit_in_scratch = len &lt;= scratch.len();
-<a href=#204 id=204 data-nosnippet>204</a>    <span class="kw">if </span>!can_fit_in_scratch || left.sorted() || right.sorted() {
-<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">if </span>!left.sorted() {
-<a href=#206 id=206 data-nosnippet>206</a>            stable_quicksort(<span class="kw-2">&amp;mut </span>v[..left.len()], scratch, is_less);
+<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">let </span>len = <a href="#192">v</a>.<a href="../../mod.rs.html#118-120">len</a>();
+<a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">let </span>can_fit_in_scratch = <a href="#202">len</a> &lt;= <a href="#193">scratch</a>.<a href="../../mod.rs.html#118-120">len</a>();
+<a href=#204 id=204 data-nosnippet>204</a>    <span class="kw">if </span>!<a href="#203">can_fit_in_scratch</a> || <a href="#194">left</a>.<a href="#290-292">sorted</a>() || <a href="#195">right</a>.<a href="#290-292">sorted</a>() {
+<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">if </span>!<a href="#194">left</a>.<a href="#290-292">sorted</a>() {
+<a href=#206 id=206 data-nosnippet>206</a>            <a href="#262-271">stable_quicksort</a>(<span class="kw-2">&amp;mut </span><a href="#192">v</a>[..left.len()], <a href="#193">scratch</a>, <a href="#196">is_less</a>);
 <a href=#207 id=207 data-nosnippet>207</a>        }
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">if </span>!right.sorted() {
-<a href=#209 id=209 data-nosnippet>209</a>            stable_quicksort(<span class="kw-2">&amp;mut </span>v[left.len()..], scratch, is_less);
+<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">if </span>!<a href="#195">right</a>.<a href="#290-292">sorted</a>() {
+<a href=#209 id=209 data-nosnippet>209</a>            <a href="#262-271">stable_quicksort</a>(<span class="kw-2">&amp;mut </span><a href="#192">v</a>[left.len()..], <a href="#193">scratch</a>, <a href="#196">is_less</a>);
 <a href=#210 id=210 data-nosnippet>210</a>        }
-<a href=#211 id=211 data-nosnippet>211</a>        merge(v, scratch, left.len(), is_less);
+<a href=#211 id=211 data-nosnippet>211</a>        <a href="merge.rs.html#8-63">merge</a>(<a href="#192">v</a>, <a href="#193">scratch</a>, <a href="#194">left</a>.<a href="#295-297">len</a>(), <a href="#196">is_less</a>);
 <a href=#212 id=212 data-nosnippet>212</a>
-<a href=#213 id=213 data-nosnippet>213</a>        DriftsortRun::new_sorted(len)
+<a href=#213 id=213 data-nosnippet>213</a>        <a href="#276">DriftsortRun</a>::<a href="#280-282">new_sorted</a>(<a href="#202">len</a>)
 <a href=#214 id=214 data-nosnippet>214</a>    } <span class="kw">else </span>{
-<a href=#215 id=215 data-nosnippet>215</a>        DriftsortRun::new_unsorted(len)
+<a href=#215 id=215 data-nosnippet>215</a>        <a href="#276">DriftsortRun</a>::<a href="#285-287">new_unsorted</a>(<a href="#202">len</a>)
 <a href=#216 id=216 data-nosnippet>216</a>    }
 <a href=#217 id=217 data-nosnippet>217</a>}
 <a href=#218 id=218 data-nosnippet>218</a>
@@ -223,77 +223,77 @@
 <a href=#223 id=223 data-nosnippet>223</a>/// run. If not, the result depends on the value of `eager_sort`. If it is true,
 <a href=#224 id=224 data-nosnippet>224</a>/// then a sorted run of length `T::SMALL_SORT_THRESHOLD` is returned, and if it
 <a href=#225 id=225 data-nosnippet>225</a>/// is false an unsorted run of length `min_good_run_len` is returned.
-<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">fn </span>create_run&lt;T, F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool&gt;(
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">fn </span>create_run&lt;T, F: <a href="../../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../../core/primitive.bool.html">bool</a>&gt;(
 <a href=#227 id=227 data-nosnippet>227</a>    v: <span class="kw-2">&amp;mut </span>[T],
-<a href=#228 id=228 data-nosnippet>228</a>    scratch: <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;],
-<a href=#229 id=229 data-nosnippet>229</a>    min_good_run_len: usize,
-<a href=#230 id=230 data-nosnippet>230</a>    eager_sort: bool,
+<a href=#228 id=228 data-nosnippet>228</a>    scratch: <span class="kw-2">&amp;mut </span>[<a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;],
+<a href=#229 id=229 data-nosnippet>229</a>    min_good_run_len: <a href="../../../../../core/primitive.usize.html">usize</a>,
+<a href=#230 id=230 data-nosnippet>230</a>    eager_sort: <a href="../../../../../core/primitive.bool.html">bool</a>,
 <a href=#231 id=231 data-nosnippet>231</a>    is_less: <span class="kw-2">&amp;mut </span>F,
-<a href=#232 id=232 data-nosnippet>232</a>) -&gt; DriftsortRun {
-<a href=#233 id=233 data-nosnippet>233</a>    <span class="kw">let </span>len = v.len();
-<a href=#234 id=234 data-nosnippet>234</a>    <span class="kw">if </span>len &gt;= min_good_run_len {
-<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">let </span>(run_len, was_reversed) = find_existing_run(v, is_less);
+<a href=#232 id=232 data-nosnippet>232</a>) -&gt; <a href="#276">DriftsortRun</a> {
+<a href=#233 id=233 data-nosnippet>233</a>    <span class="kw">let </span>len = <a href="#227">v</a>.<a href="../../mod.rs.html#118-120">len</a>();
+<a href=#234 id=234 data-nosnippet>234</a>    <span class="kw">if </span><a href="#233">len</a> &gt;= <a href="#229">min_good_run_len</a> {
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">let </span>(run_len, was_reversed) = <a href="../shared/mod.rs.html#20-47">find_existing_run</a>(<a href="#227">v</a>, <a href="#231">is_less</a>);
 <a href=#236 id=236 data-nosnippet>236</a>
 <a href=#237 id=237 data-nosnippet>237</a>        <span class="comment">// SAFETY: find_existing_run promises to return a valid run_len.
-<a href=#238 id=238 data-nosnippet>238</a>        </span><span class="kw">unsafe </span>{ intrinsics::assume(run_len &lt;= len) };
+<a href=#238 id=238 data-nosnippet>238</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../../../intrinsics/mod.rs.html#664-669">assume</a>(<a href="#235">run_len</a> &lt;= <a href="#233">len</a>) };
 <a href=#239 id=239 data-nosnippet>239</a>
-<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">if </span>run_len &gt;= min_good_run_len {
-<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">if </span>was_reversed {
-<a href=#242 id=242 data-nosnippet>242</a>                v[..run_len].reverse();
+<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">if </span><a href="#235">run_len</a> &gt;= <a href="#229">min_good_run_len</a> {
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">if </span><a href="#235">was_reversed</a> {
+<a href=#242 id=242 data-nosnippet>242</a>                <a href="#227">v</a>[..run_len].<a href="../../mod.rs.html#979-1020">reverse</a>();
 <a href=#243 id=243 data-nosnippet>243</a>            }
 <a href=#244 id=244 data-nosnippet>244</a>
-<a href=#245 id=245 data-nosnippet>245</a>            <span class="kw">return </span>DriftsortRun::new_sorted(run_len);
+<a href=#245 id=245 data-nosnippet>245</a>            <span class="kw">return </span><a href="#276">DriftsortRun</a>::<a href="#280-282">new_sorted</a>(<a href="#235">run_len</a>);
 <a href=#246 id=246 data-nosnippet>246</a>        }
 <a href=#247 id=247 data-nosnippet>247</a>    }
 <a href=#248 id=248 data-nosnippet>248</a>
-<a href=#249 id=249 data-nosnippet>249</a>    <span class="kw">if </span>eager_sort {
+<a href=#249 id=249 data-nosnippet>249</a>    <span class="kw">if </span><a href="#230">eager_sort</a> {
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="comment">// We call quicksort with a len that will immediately call small-sort.
 <a href=#251 id=251 data-nosnippet>251</a>        // By not calling the small-sort directly here it can always be inlined into
 <a href=#252 id=252 data-nosnippet>252</a>        // the quicksort itself, making the recursive base case faster and is generally
 <a href=#253 id=253 data-nosnippet>253</a>        // more binary-size efficient.
-<a href=#254 id=254 data-nosnippet>254</a>        </span><span class="kw">let </span>eager_run_len = cmp::min(T::small_sort_threshold(), len);
-<a href=#255 id=255 data-nosnippet>255</a>        quicksort(<span class="kw-2">&amp;mut </span>v[..eager_run_len], scratch, <span class="number">0</span>, <span class="prelude-val">None</span>, is_less);
-<a href=#256 id=256 data-nosnippet>256</a>        DriftsortRun::new_sorted(eager_run_len)
+<a href=#254 id=254 data-nosnippet>254</a>        </span><span class="kw">let </span>eager_run_len = cmp::<a href="../../../cmp.rs.html#1652-1654">min</a>(T::<a href="../shared/smallsort.rs.html#20">small_sort_threshold</a>(), <a href="#233">len</a>);
+<a href=#255 id=255 data-nosnippet>255</a>        <a href="quicksort.rs.html#16-81">quicksort</a>(<span class="kw-2">&amp;mut </span><a href="#227">v</a>[..eager_run_len], <a href="#228">scratch</a>, <span class="number">0</span>, <a class="prelude-val" href="../../../option.rs.html#602">None</a>, <a href="#231">is_less</a>);
+<a href=#256 id=256 data-nosnippet>256</a>        <a href="#276">DriftsortRun</a>::<a href="#280-282">new_sorted</a>(<a href="#254">eager_run_len</a>)
 <a href=#257 id=257 data-nosnippet>257</a>    } <span class="kw">else </span>{
-<a href=#258 id=258 data-nosnippet>258</a>        DriftsortRun::new_unsorted(cmp::min(min_good_run_len, len))
+<a href=#258 id=258 data-nosnippet>258</a>        <a href="#276">DriftsortRun</a>::<a href="#285-287">new_unsorted</a>(cmp::<a href="../../../cmp.rs.html#1652-1654">min</a>(<a href="#229">min_good_run_len</a>, <a href="#233">len</a>))
 <a href=#259 id=259 data-nosnippet>259</a>    }
 <a href=#260 id=260 data-nosnippet>260</a>}
 <a href=#261 id=261 data-nosnippet>261</a>
-<a href=#262 id=262 data-nosnippet>262</a><span class="kw">fn </span>stable_quicksort&lt;T, F: FnMut(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; bool&gt;(
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">fn </span>stable_quicksort&lt;T, F: <a href="../../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../../core/primitive.bool.html">bool</a>&gt;(
 <a href=#263 id=263 data-nosnippet>263</a>    v: <span class="kw-2">&amp;mut </span>[T],
-<a href=#264 id=264 data-nosnippet>264</a>    scratch: <span class="kw-2">&amp;mut </span>[MaybeUninit&lt;T&gt;],
+<a href=#264 id=264 data-nosnippet>264</a>    scratch: <span class="kw-2">&amp;mut </span>[<a href="../../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;],
 <a href=#265 id=265 data-nosnippet>265</a>    is_less: <span class="kw-2">&amp;mut </span>F,
 <a href=#266 id=266 data-nosnippet>266</a>) {
 <a href=#267 id=267 data-nosnippet>267</a>    <span class="comment">// Limit the number of imbalanced partitions to `2 * floor(log2(len))`.
 <a href=#268 id=268 data-nosnippet>268</a>    // The binary OR by one is used to eliminate the zero-check in the logarithm.
-<a href=#269 id=269 data-nosnippet>269</a>    </span><span class="kw">let </span>limit = <span class="number">2 </span>* (v.len() | <span class="number">1</span>).ilog2();
-<a href=#270 id=270 data-nosnippet>270</a>    quicksort(v, scratch, limit, <span class="prelude-val">None</span>, is_less);
+<a href=#269 id=269 data-nosnippet>269</a>    </span><span class="kw">let </span>limit = <span class="number">2 </span>* (<a href="#263">v</a>.<a href="../../mod.rs.html#118-120">len</a>() | <span class="number">1</span>).<a href="../../../num/mod.rs.html#1460-1484">ilog2</a>();
+<a href=#270 id=270 data-nosnippet>270</a>    <a href="quicksort.rs.html#16-81">quicksort</a>(<a href="#263">v</a>, <a href="#264">scratch</a>, <a href="#269">limit</a>, <a class="prelude-val" href="../../../option.rs.html#602">None</a>, <a href="#265">is_less</a>);
 <a href=#271 id=271 data-nosnippet>271</a>}
 <a href=#272 id=272 data-nosnippet>272</a>
 <a href=#273 id=273 data-nosnippet>273</a><span class="doccomment">/// Compactly stores the length of a run, and whether or not it is sorted. This
 <a href=#274 id=274 data-nosnippet>274</a>/// can always fit in a `usize` because the maximum slice length is [`isize::MAX`].
-<a href=#275 id=275 data-nosnippet>275</a></span><span class="attr">#[derive(Copy, Clone)]
-<a href=#276 id=276 data-nosnippet>276</a></span><span class="kw">struct </span>DriftsortRun(usize);
+<a href=#275 id=275 data-nosnippet>275</a></span><span class="attr">#[derive(<a href="../../../marker.rs.html#462-464">Copy</a>, <a href="../../../clone.rs.html#289-291">Clone</a>)]
+<a href=#276 id=276 data-nosnippet>276</a></span><span class="kw">struct </span>DriftsortRun(<a href="../../../../../core/primitive.usize.html">usize</a>);
 <a href=#277 id=277 data-nosnippet>277</a>
-<a href=#278 id=278 data-nosnippet>278</a><span class="kw">impl </span>DriftsortRun {
+<a href=#278 id=278 data-nosnippet>278</a><span class="kw">impl </span><a href="#276">DriftsortRun</a> {
 <a href=#279 id=279 data-nosnippet>279</a>    <span class="attr">#[inline(always)]
-<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">fn </span>new_sorted(length: usize) -&gt; <span class="self">Self </span>{
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="self">Self</span>((length &lt;&lt; <span class="number">1</span>) | <span class="number">1</span>)
+<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">fn </span>new_sorted(length: <a href="../../../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="self">Self</span>((<a href="#280">length</a> &lt;&lt; <span class="number">1</span>) | <span class="number">1</span>)
 <a href=#282 id=282 data-nosnippet>282</a>    }
 <a href=#283 id=283 data-nosnippet>283</a>
 <a href=#284 id=284 data-nosnippet>284</a>    <span class="attr">#[inline(always)]
-<a href=#285 id=285 data-nosnippet>285</a>    </span><span class="kw">fn </span>new_unsorted(length: usize) -&gt; <span class="self">Self </span>{
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="self">Self</span>(length &lt;&lt; <span class="number">1</span>)
+<a href=#285 id=285 data-nosnippet>285</a>    </span><span class="kw">fn </span>new_unsorted(length: <a href="../../../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#286 id=286 data-nosnippet>286</a>        <span class="self">Self</span>(<a href="#285">length</a> &lt;&lt; <span class="number">1</span>)
 <a href=#287 id=287 data-nosnippet>287</a>    }
 <a href=#288 id=288 data-nosnippet>288</a>
 <a href=#289 id=289 data-nosnippet>289</a>    <span class="attr">#[inline(always)]
-<a href=#290 id=290 data-nosnippet>290</a>    </span><span class="kw">fn </span>sorted(<span class="self">self</span>) -&gt; bool {
-<a href=#291 id=291 data-nosnippet>291</a>        <span class="self">self</span>.<span class="number">0 </span>&amp; <span class="number">1 </span>== <span class="number">1
+<a href=#290 id=290 data-nosnippet>290</a>    </span><span class="kw">fn </span>sorted(<span class="self">self</span>) -&gt; <a href="../../../../../core/primitive.bool.html">bool</a> {
+<a href=#291 id=291 data-nosnippet>291</a>        <a class="self" href="#290">self</a>.<span class="number">0 </span>&amp; <span class="number">1 </span>== <span class="number">1
 <a href=#292 id=292 data-nosnippet>292</a>    </span>}
 <a href=#293 id=293 data-nosnippet>293</a>
 <a href=#294 id=294 data-nosnippet>294</a>    <span class="attr">#[inline(always)]
-<a href=#295 id=295 data-nosnippet>295</a>    </span><span class="kw">fn </span>len(<span class="self">self</span>) -&gt; usize {
-<a href=#296 id=296 data-nosnippet>296</a>        <span class="self">self</span>.<span class="number">0 </span>&gt;&gt; <span class="number">1
+<a href=#295 id=295 data-nosnippet>295</a>    </span><span class="kw">fn </span>len(<span class="self">self</span>) -&gt; <a href="../../../../../core/primitive.usize.html">usize</a> {
+<a href=#296 id=296 data-nosnippet>296</a>        <a class="self" href="#295">self</a>.<span class="number">0 </span>&gt;&gt; <span class="number">1
 <a href=#297 id=297 data-nosnippet>297</a>    </span>}
 <a href=#298 id=298 data-nosnippet>298</a>}
 </code></pre></div></section></main></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/random/linux.rs`."><title>linux.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/random/</div>linux.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Random data generation with the Linux kernel.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/random/linux.rs`."><title>linux.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/random/</div>linux.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Random data generation with the Linux kernel.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! The first interface random data interface to be introduced on Linux were
 <a href=#4 id=4 data-nosnippet>4</a>//! the `/dev/random` and `/dev/urandom` special files. As paths can become
@@ -60,71 +60,71 @@
 <a href=#60 id=60 data-nosnippet>60</a>// `GRND_NONBLOCK` fallback and use `/dev/random` instead of `/dev/urandom`
 <a href=#61 id=61 data-nosnippet>61</a>// when secure data is required.
 <a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a></span><span class="kw">use </span><span class="kw">crate</span>::fs::File;
-<a href=#64 id=64 data-nosnippet>64</a><span class="kw">use </span><span class="kw">crate</span>::io::Read;
-<a href=#65 id=65 data-nosnippet>65</a><span class="kw">use </span><span class="kw">crate</span>::os::fd::AsRawFd;
-<a href=#66 id=66 data-nosnippet>66</a><span class="kw">use </span><span class="kw">crate</span>::sync::OnceLock;
-<a href=#67 id=67 data-nosnippet>67</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::Ordering::{Acquire, Relaxed, Release};
-<a href=#68 id=68 data-nosnippet>68</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{Atomic, AtomicBool};
-<a href=#69 id=69 data-nosnippet>69</a><span class="kw">use </span><span class="kw">crate</span>::sys::io::errno;
-<a href=#70 id=70 data-nosnippet>70</a><span class="kw">use </span><span class="kw">crate</span>::sys::pal::weak::syscall;
+<a href=#63 id=63 data-nosnippet>63</a></span><span class="kw">use </span><a href="../../fs.rs.html#142-144"><span class="kw">crate</span>::fs::File</a>;
+<a href=#64 id=64 data-nosnippet>64</a><span class="kw">use </span><a href="../../../../std/io/trait.Read.html"><span class="kw">crate</span>::io::Read</a>;
+<a href=#65 id=65 data-nosnippet>65</a><span class="kw">use </span><a href="../../os/fd/raw.rs.html#44-72"><span class="kw">crate</span>::os::fd::AsRawFd</a>;
+<a href=#66 id=66 data-nosnippet>66</a><span class="kw">use </span><a href="../../sync/once_lock.rs.html#109-132"><span class="kw">crate</span>::sync::OnceLock</a>;
+<a href=#67 id=67 data-nosnippet>67</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::Ordering::{<a href="../../../../std/sync/atomic/enum.Ordering.html">Acquire</a>, <a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>, <a href="../../../../std/sync/atomic/enum.Ordering.html">Release</a>};
+<a href=#68 id=68 data-nosnippet>68</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{<a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>, <a href="../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>};
+<a href=#69 id=69 data-nosnippet>69</a><span class="kw">use </span><a href="../io/error/unix.rs.html#55-57"><span class="kw">crate</span>::sys::io::errno</a>;
+<a href=#70 id=70 data-nosnippet>70</a><span class="kw">use </span><a href="../pal/unix/weak/syscall.rs.html#3-19"><span class="kw">crate</span>::sys::pal::weak::syscall</a>;
 <a href=#71 id=71 data-nosnippet>71</a>
-<a href=#72 id=72 data-nosnippet>72</a><span class="kw">fn </span>getrandom(<span class="kw-2">mut </span>bytes: <span class="kw-2">&amp;mut </span>[u8], insecure: bool) {
+<a href=#72 id=72 data-nosnippet>72</a><span class="kw">fn </span>getrandom(<span class="kw-2">mut </span>bytes: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/primitive.u8.html">u8</a>], insecure: <a href="../../../../std/primitive.bool.html">bool</a>) {
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="comment">// A weak symbol allows interposition, e.g. for perf measurements that want to
 <a href=#74 id=74 data-nosnippet>74</a>    // disable randomness for consistency. Otherwise, we'll try a raw syscall.
 <a href=#75 id=75 data-nosnippet>75</a>    // (`getrandom` was added in glibc 2.25, musl 1.1.20, android API level 28)
-<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="macro">syscall!</span>(
+<a href=#76 id=76 data-nosnippet>76</a>    </span><a href="../pal/unix/weak/syscall.rs.html#3-19">syscall!</a>(
 <a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">fn </span>getrandom(
-<a href=#78 id=78 data-nosnippet>78</a>            buffer: <span class="kw-2">*mut </span>libc::c_void,
-<a href=#79 id=79 data-nosnippet>79</a>            length: libc::size_t,
-<a href=#80 id=80 data-nosnippet>80</a>            flags: libc::c_uint,
-<a href=#81 id=81 data-nosnippet>81</a>        ) -&gt; libc::ssize_t;
+<a href=#78 id=78 data-nosnippet>78</a>            buffer: <span class="kw-2">*mut </span>libc::<a href="../../../../std/ffi/enum.c_void.html">c_void</a>,
+<a href=#79 id=79 data-nosnippet>79</a>            length: libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.size_t.html">size_t</a>,
+<a href=#80 id=80 data-nosnippet>80</a>            flags: libc::<a href="../../../../std/ffi/type.c_uint.html">c_uint</a>,
+<a href=#81 id=81 data-nosnippet>81</a>        ) -&gt; libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.ssize_t.html">ssize_t</a>;
 <a href=#82 id=82 data-nosnippet>82</a>    );
 <a href=#83 id=83 data-nosnippet>83</a>
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">static </span>GETRANDOM_AVAILABLE: Atomic&lt;bool&gt; = AtomicBool::new(<span class="bool-val">true</span>);
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">static </span>GRND_INSECURE_AVAILABLE: Atomic&lt;bool&gt; = AtomicBool::new(<span class="bool-val">true</span>);
-<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">static </span>URANDOM_READY: Atomic&lt;bool&gt; = AtomicBool::new(<span class="bool-val">false</span>);
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">static </span>DEVICE: OnceLock&lt;File&gt; = OnceLock::new();
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">static </span>GETRANDOM_AVAILABLE: <a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../std/primitive.bool.html">bool</a>&gt; = <a href="../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>::<a href="../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="bool-val">true</span>);
+<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">static </span>GRND_INSECURE_AVAILABLE: <a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../std/primitive.bool.html">bool</a>&gt; = <a href="../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>::<a href="../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="bool-val">true</span>);
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">static </span>URANDOM_READY: <a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../std/primitive.bool.html">bool</a>&gt; = <a href="../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>::<a href="../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="bool-val">false</span>);
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">static </span>DEVICE: <a href="../../sync/once_lock.rs.html#109-132">OnceLock</a>&lt;<a href="../../fs.rs.html#142-144">File</a>&gt; = <a href="../../sync/once_lock.rs.html#109-132">OnceLock</a>::<a href="../../sync/once_lock.rs.html#140-146">new</a>();
 <a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">if </span>GETRANDOM_AVAILABLE.load(Relaxed) {
+<a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">if </span><a href="#84">GETRANDOM_AVAILABLE</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>) {
 <a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">loop </span>{
-<a href=#91 id=91 data-nosnippet>91</a>            <span class="kw">if </span>bytes.is_empty() {
+<a href=#91 id=91 data-nosnippet>91</a>            <span class="kw">if </span><a href="#72">bytes</a>.<a href="../../../../core/primitive.slice.html#method.is_empty">is_empty</a>() {
 <a href=#92 id=92 data-nosnippet>92</a>                <span class="kw">return</span>;
 <a href=#93 id=93 data-nosnippet>93</a>            }
 <a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">let </span>flags = <span class="kw">if </span>insecure {
-<a href=#96 id=96 data-nosnippet>96</a>                <span class="kw">if </span>GRND_INSECURE_AVAILABLE.load(Relaxed) {
-<a href=#97 id=97 data-nosnippet>97</a>                    libc::GRND_INSECURE
+<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">let </span>flags = <span class="kw">if </span><a href="#72">insecure</a> {
+<a href=#96 id=96 data-nosnippet>96</a>                <span class="kw">if </span><a href="#85">GRND_INSECURE_AVAILABLE</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>) {
+<a href=#97 id=97 data-nosnippet>97</a>                    libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/constant.GRND_INSECURE.html">GRND_INSECURE</a>
 <a href=#98 id=98 data-nosnippet>98</a>                } <span class="kw">else </span>{
-<a href=#99 id=99 data-nosnippet>99</a>                    libc::GRND_NONBLOCK
+<a href=#99 id=99 data-nosnippet>99</a>                    libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/constant.GRND_NONBLOCK.html">GRND_NONBLOCK</a>
 <a href=#100 id=100 data-nosnippet>100</a>                }
 <a href=#101 id=101 data-nosnippet>101</a>            } <span class="kw">else </span>{
 <a href=#102 id=102 data-nosnippet>102</a>                <span class="number">0
 <a href=#103 id=103 data-nosnippet>103</a>            </span>};
 <a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>            <span class="kw">let </span>ret = <span class="kw">unsafe </span>{ getrandom(bytes.as_mut_ptr().cast(), bytes.len(), flags) };
-<a href=#106 id=106 data-nosnippet>106</a>            <span class="kw">if </span>ret != -<span class="number">1 </span>{
-<a href=#107 id=107 data-nosnippet>107</a>                bytes = <span class="kw-2">&amp;mut </span>bytes[ret <span class="kw">as </span>usize..];
+<a href=#105 id=105 data-nosnippet>105</a>            <span class="kw">let </span>ret = <span class="kw">unsafe </span>{ <a href="#76-82">getrandom</a>(<a href="#72">bytes</a>.<a href="../../../../core/primitive.slice.html#method.as_mut_ptr">as_mut_ptr</a>().<a href="../../../../core/primitive.pointer.html#method.cast">cast</a>(), <a href="#72">bytes</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>(), <a href="#95">flags</a>) };
+<a href=#106 id=106 data-nosnippet>106</a>            <span class="kw">if </span><a href="#105">ret</a> != -<span class="number">1 </span>{
+<a href=#107 id=107 data-nosnippet>107</a>                <a href="#72">bytes</a> = <span class="kw-2">&amp;mut </span><a href="#72">bytes</a>[ret <span class="kw">as </span>usize..];
 <a href=#108 id=108 data-nosnippet>108</a>            } <span class="kw">else </span>{
-<a href=#109 id=109 data-nosnippet>109</a>                <span class="kw">match </span>errno() {
-<a href=#110 id=110 data-nosnippet>110</a>                    libc::EINTR =&gt; <span class="kw">continue</span>,
+<a href=#109 id=109 data-nosnippet>109</a>                <span class="kw">match </span><a href="../io/error/unix.rs.html#55-57">errno</a>() {
+<a href=#110 id=110 data-nosnippet>110</a>                    libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.EINTR.html">EINTR</a> =&gt; <span class="kw">continue</span>,
 <a href=#111 id=111 data-nosnippet>111</a>                    <span class="comment">// `GRND_INSECURE` is not available, try
 <a href=#112 id=112 data-nosnippet>112</a>                    // `GRND_NONBLOCK`.
-<a href=#113 id=113 data-nosnippet>113</a>                    </span>libc::EINVAL <span class="kw">if </span>flags == libc::GRND_INSECURE =&gt; {
-<a href=#114 id=114 data-nosnippet>114</a>                        GRND_INSECURE_AVAILABLE.store(<span class="bool-val">false</span>, Relaxed);
+<a href=#113 id=113 data-nosnippet>113</a>                    </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.EINVAL.html">EINVAL</a> <span class="kw">if </span><a href="#95">flags</a> == libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/constant.GRND_INSECURE.html">GRND_INSECURE</a> =&gt; {
+<a href=#114 id=114 data-nosnippet>114</a>                        <a href="#85">GRND_INSECURE_AVAILABLE</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.store">store</a>(<span class="bool-val">false</span>, <a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#115 id=115 data-nosnippet>115</a>                        <span class="kw">continue</span>;
 <a href=#116 id=116 data-nosnippet>116</a>                    }
 <a href=#117 id=117 data-nosnippet>117</a>                    <span class="comment">// The pool is not initialized yet, fall back to
 <a href=#118 id=118 data-nosnippet>118</a>                    // /dev/urandom for now.
-<a href=#119 id=119 data-nosnippet>119</a>                    </span>libc::EAGAIN <span class="kw">if </span>flags == libc::GRND_NONBLOCK =&gt; <span class="kw">break</span>,
+<a href=#119 id=119 data-nosnippet>119</a>                    </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.EAGAIN.html">EAGAIN</a> <span class="kw">if </span><a href="#95">flags</a> == libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/constant.GRND_NONBLOCK.html">GRND_NONBLOCK</a> =&gt; <span class="kw">break</span>,
 <a href=#120 id=120 data-nosnippet>120</a>                    <span class="comment">// `getrandom` is unavailable or blocked by seccomp.
 <a href=#121 id=121 data-nosnippet>121</a>                    // Don't try it again and fall back to /dev/urandom.
-<a href=#122 id=122 data-nosnippet>122</a>                    </span>libc::ENOSYS | libc::EPERM =&gt; {
-<a href=#123 id=123 data-nosnippet>123</a>                        GETRANDOM_AVAILABLE.store(<span class="bool-val">false</span>, Relaxed);
+<a href=#122 id=122 data-nosnippet>122</a>                    </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.ENOSYS.html">ENOSYS</a> | libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.EPERM.html">EPERM</a> =&gt; {
+<a href=#123 id=123 data-nosnippet>123</a>                        <a href="#84">GETRANDOM_AVAILABLE</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.store">store</a>(<span class="bool-val">false</span>, <a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#124 id=124 data-nosnippet>124</a>                        <span class="kw">break</span>;
 <a href=#125 id=125 data-nosnippet>125</a>                    }
 <a href=#126 id=126 data-nosnippet>126</a>                    other =&gt; {
-<a href=#127 id=127 data-nosnippet>127</a>                        <span class="macro">panic!</span>(<span class="string">"failed to generate random data: errno={other:?}, flags={flags:?}"</span>)
+<a href=#127 id=127 data-nosnippet>127</a>                        <a href="../../macros.rs.html#17-23">panic!</a>(<span class="string">"failed to generate random data: errno={other:?}, flags={flags:?}"</span>)
 <a href=#128 id=128 data-nosnippet>128</a>                    }
 <a href=#129 id=129 data-nosnippet>129</a>                }
 <a href=#130 id=130 data-nosnippet>130</a>            }
@@ -133,10 +133,10 @@
 <a href=#133 id=133 data-nosnippet>133</a>
 <a href=#134 id=134 data-nosnippet>134</a>    <span class="comment">// When we want cryptographic strength, we need to wait for the CPRNG-pool
 <a href=#135 id=135 data-nosnippet>135</a>    // to become initialized. Do this by polling `/dev/random` until it is ready.
-<a href=#136 id=136 data-nosnippet>136</a>    </span><span class="kw">if </span>!insecure {
-<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">if </span>!URANDOM_READY.load(Acquire) {
-<a href=#138 id=138 data-nosnippet>138</a>            <span class="kw">let </span>random = File::open(<span class="string">"/dev/random"</span>).expect(<span class="string">"failed to open /dev/random"</span>);
-<a href=#139 id=139 data-nosnippet>139</a>            <span class="kw">let </span><span class="kw-2">mut </span>fd = libc::pollfd { fd: random.as_raw_fd(), events: libc::POLLIN, revents: <span class="number">0 </span>};
+<a href=#136 id=136 data-nosnippet>136</a>    </span><span class="kw">if </span>!<a href="#72">insecure</a> {
+<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">if </span>!<a href="#86">URANDOM_READY</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(<a href="../../../../std/sync/atomic/enum.Ordering.html">Acquire</a>) {
+<a href=#138 id=138 data-nosnippet>138</a>            <span class="kw">let </span>random = <a href="../../fs.rs.html#142-144">File</a>::<a href="../../fs.rs.html#584-586">open</a>(<span class="string">"/dev/random"</span>).<a href="../../../../std/result/enum.Result.html#method.expect">expect</a>(<span class="string">"failed to open /dev/random"</span>);
+<a href=#139 id=139 data-nosnippet>139</a>            <span class="kw">let </span><span class="kw-2">mut </span>fd = libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/struct.pollfd.html">pollfd</a> { fd: <a href="#138">random</a>.<a href="../../os/fd/raw.rs.html#71">as_raw_fd</a>(), events: libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.POLLIN.html">POLLIN</a>, revents: <span class="number">0 </span>};
 <a href=#140 id=140 data-nosnippet>140</a>
 <a href=#141 id=141 data-nosnippet>141</a>            <span class="kw">while </span>!URANDOM_READY.load(Acquire) {
 <a href=#142 id=142 data-nosnippet>142</a>                <span class="kw">let </span>ret = <span class="kw">unsafe </span>{ libc::poll(<span class="kw-2">&amp;mut </span>fd, <span class="number">1</span>, -<span class="number">1</span>) };
@@ -153,21 +153,21 @@
 <a href=#153 id=153 data-nosnippet>153</a>        }
 <a href=#154 id=154 data-nosnippet>154</a>    }
 <a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a>    DEVICE
-<a href=#157 id=157 data-nosnippet>157</a>        .get_or_try_init(|| File::open(<span class="string">"/dev/urandom"</span>))
-<a href=#158 id=158 data-nosnippet>158</a>        .and_then(|<span class="kw-2">mut </span>dev| dev.read_exact(bytes))
-<a href=#159 id=159 data-nosnippet>159</a>        .expect(<span class="string">"failed to generate random data"</span>);
+<a href=#156 id=156 data-nosnippet>156</a>    <a href="#87">DEVICE</a>
+<a href=#157 id=157 data-nosnippet>157</a>        .<a href="../../sync/once_lock.rs.html#427-443">get_or_try_init</a>(|| <a href="../../fs.rs.html#142-144">File</a>::<a href="../../fs.rs.html#584-586">open</a>(<span class="string">"/dev/urandom"</span>))
+<a href=#158 id=158 data-nosnippet>158</a>        .<a href="../../../../std/result/enum.Result.html#method.and_then">and_then</a>(|<span class="kw-2">mut </span>dev| <a href="#158">dev</a>.<a href="../../../../std/io/trait.Read.html">read_exact</a>(<a href="#72">bytes</a>))
+<a href=#159 id=159 data-nosnippet>159</a>        .<a href="../../../../std/result/enum.Result.html#method.expect">expect</a>(<span class="string">"failed to generate random data"</span>);
 <a href=#160 id=160 data-nosnippet>160</a>}
 <a href=#161 id=161 data-nosnippet>161</a>
-<a href=#162 id=162 data-nosnippet>162</a><span class="kw">pub fn </span>fill_bytes(bytes: <span class="kw-2">&amp;mut </span>[u8]) {
-<a href=#163 id=163 data-nosnippet>163</a>    getrandom(bytes, <span class="bool-val">false</span>);
+<a href=#162 id=162 data-nosnippet>162</a><span class="kw">pub fn </span>fill_bytes(bytes: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/primitive.u8.html">u8</a>]) {
+<a href=#163 id=163 data-nosnippet>163</a>    <a href="#72-160">getrandom</a>(<a href="#162">bytes</a>, <span class="bool-val">false</span>);
 <a href=#164 id=164 data-nosnippet>164</a>}
 <a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a><span class="kw">pub fn </span>hashmap_random_keys() -&gt; (u64, u64) {
+<a href=#166 id=166 data-nosnippet>166</a><span class="kw">pub fn </span>hashmap_random_keys() -&gt; (<a href="../../../../std/primitive.u64.html">u64</a>, <a href="../../../../std/primitive.u64.html">u64</a>) {
 <a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0</span>; <span class="number">16</span>];
-<a href=#168 id=168 data-nosnippet>168</a>    getrandom(<span class="kw-2">&amp;mut </span>bytes, <span class="bool-val">true</span>);
-<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>k1 = u64::from_ne_bytes(bytes[..<span class="number">8</span>].try_into().unwrap());
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">let </span>k2 = u64::from_ne_bytes(bytes[<span class="number">8</span>..].try_into().unwrap());
-<a href=#171 id=171 data-nosnippet>171</a>    (k1, k2)
+<a href=#168 id=168 data-nosnippet>168</a>    <a href="#72-160">getrandom</a>(<span class="kw-2">&amp;mut </span><a href="#167">bytes</a>, <span class="bool-val">true</span>);
+<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>k1 = <a href="../../../../std/primitive.u64.html">u64</a>::<a href="../../../../core/primitive.u64.html#method.from_ne_bytes">from_ne_bytes</a>(<a href="#167">bytes</a>[..<span class="number">8</span>].<a href="../../../../std/convert/trait.TryInto.html">try_into</a>().<a href="../../../../std/result/enum.Result.html#method.unwrap">unwrap</a>());
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">let </span>k2 = <a href="../../../../std/primitive.u64.html">u64</a>::<a href="../../../../core/primitive.u64.html#method.from_ne_bytes">from_ne_bytes</a>(<a href="#167">bytes</a>[<span class="number">8</span>..].<a href="../../../../std/convert/trait.TryInto.html">try_into</a>().<a href="../../../../std/result/enum.Result.html#method.unwrap">unwrap</a>());
+<a href=#171 id=171 data-nosnippet>171</a>    (<a href="#169">k1</a>, <a href="#170">k2</a>)
 <a href=#172 id=172 data-nosnippet>172</a>}
 </code></pre></div></section></main></body></html>

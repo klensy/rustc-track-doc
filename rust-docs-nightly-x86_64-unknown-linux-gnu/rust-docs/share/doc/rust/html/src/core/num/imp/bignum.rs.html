@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/num/imp/bignum.rs`."><title>bignum.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/num/imp/</div>bignum.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Custom arbitrary-precision number (bignum) implementation.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/num/imp/bignum.rs`."><title>bignum.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/num/imp/</div>bignum.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Custom arbitrary-precision number (bignum) implementation.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This is designed to avoid the heap allocation at expense of stack memory.
 <a href=#4 id=4 data-nosnippet>4</a>//! The most used bignum type, `Big32x40` and  `Big64x20` you can choose, is limited by 32 × 40 = 1,280 bits
@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a>#![macro_use]
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="doccomment">/// Arithmetic operations required by bignums.
-<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub trait </span>FullOps: Sized {
+<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub trait </span>FullOps: <a href="../../marker.rs.html#158-160">Sized</a> {
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="doccomment">/// Returns `(carry', v')` such that `carry' * 2^W + v' = self * other + other2 + carry`,
 <a href=#25 id=25 data-nosnippet>25</a>    /// where `W` is the number of bits in `Self`.
 <a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">fn </span>full_mul_add(<span class="self">self</span>, other: <span class="self">Self</span>, other2: <span class="self">Self</span>, carry: <span class="self">Self</span>) -&gt; (<span class="self">Self </span><span class="comment">/* carry */</span>, <span class="self">Self</span>);
@@ -54,16 +54,16 @@
 <a href=#54 id=54 data-nosnippet>54</a>    )
 <a href=#55 id=55 data-nosnippet>55</a>}
 <a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a><span class="macro">impl_full_ops!</span> {
-<a href=#58 id=58 data-nosnippet>58</a>    u8:  add(intrinsics::u8_add_with_overflow),  mul/div(u16);
-<a href=#59 id=59 data-nosnippet>59</a>    u16: add(intrinsics::u16_add_with_overflow), mul/div(u32);
-<a href=#60 id=60 data-nosnippet>60</a>    u32: add(intrinsics::u32_add_with_overflow), mul/div(u64);
-<a href=#61 id=61 data-nosnippet>61</a>    u64: add(intrinsics::u64_add_with_overflow), mul/div(u128);
+<a href=#57 id=57 data-nosnippet>57</a><a href="#34-55">impl_full_ops!</a> {
+<a href=#58 id=58 data-nosnippet>58</a>    <a href="../../../../core/primitive.u8.html">u8</a>:  add(intrinsics::u8_add_with_overflow),  mul/div(u16);
+<a href=#59 id=59 data-nosnippet>59</a>    <a href="../../../../core/primitive.u16.html">u16</a>: add(intrinsics::u16_add_with_overflow), mul/div(u32);
+<a href=#60 id=60 data-nosnippet>60</a>    <a href="../../../../core/primitive.u32.html">u32</a>: add(intrinsics::u32_add_with_overflow), mul/div(u64);
+<a href=#61 id=61 data-nosnippet>61</a>    <a href="../../../../core/primitive.u64.html">u64</a>: add(intrinsics::u64_add_with_overflow), mul/div(u128);
 <a href=#62 id=62 data-nosnippet>62</a>}
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a><span class="doccomment">/// Table of powers of 5 representable in digits. Specifically, the largest {u8, u16, u32, u64} value
 <a href=#65 id=65 data-nosnippet>65</a>/// that's a power of five, plus the corresponding exponent. Used in `mul_pow5`.
-<a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">const </span>SMALL_POW5: [(u64, usize); <span class="number">4</span>] =
+<a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">const </span>SMALL_POW5: [(<a href="../../../../core/primitive.u64.html">u64</a>, <a href="../../../../core/primitive.usize.html">usize</a>); <span class="number">4</span>] =
 <a href=#67 id=67 data-nosnippet>67</a>    [(<span class="number">125</span>, <span class="number">3</span>), (<span class="number">15625</span>, <span class="number">6</span>), (<span class="number">1_220_703_125</span>, <span class="number">13</span>), (<span class="number">7_450_580_596_923_828_125</span>, <span class="number">27</span>)];
 <a href=#68 id=68 data-nosnippet>68</a>
 <a href=#69 id=69 data-nosnippet>69</a><span class="macro">macro_rules!</span> define_bignum {
@@ -81,7 +81,7 @@
 <a href=#81 id=81 data-nosnippet>81</a>            <span class="doccomment">/// One plus the offset to the maximum "digit" in use.
 <a href=#82 id=82 data-nosnippet>82</a>            /// This does not decrease, so be aware of the computation order.
 <a href=#83 id=83 data-nosnippet>83</a>            /// `base[size..]` should be zero.
-<a href=#84 id=84 data-nosnippet>84</a>            </span>size: usize,
+<a href=#84 id=84 data-nosnippet>84</a>            </span>size: <a href="../../../../core/primitive.usize.html">usize</a>,
 <a href=#85 id=85 data-nosnippet>85</a>            <span class="doccomment">/// Digits. `[a, b, c, ...]` represents `a + b*2^W + c*2^(2W) + ...`
 <a href=#86 id=86 data-nosnippet>86</a>            /// where `W` is the number of bits in the digit type.
 <a href=#87 id=87 data-nosnippet>87</a>            </span>base: [<span class="macro-nonterminal">$ty</span>; <span class="macro-nonterminal">$n</span>],
@@ -96,7 +96,7 @@
 <a href=#96 id=96 data-nosnippet>96</a>            }
 <a href=#97 id=97 data-nosnippet>97</a>
 <a href=#98 id=98 data-nosnippet>98</a>            <span class="doccomment">/// Makes a bignum from `u64` value.
-<a href=#99 id=99 data-nosnippet>99</a>            </span><span class="kw">pub fn </span>from_u64(<span class="kw-2">mut </span>v: u64) -&gt; <span class="macro-nonterminal">$name </span>{
+<a href=#99 id=99 data-nosnippet>99</a>            </span><span class="kw">pub fn </span>from_u64(<span class="kw-2">mut </span>v: <a href="../../../../core/primitive.u64.html">u64</a>) -&gt; <span class="macro-nonterminal">$name </span>{
 <a href=#100 id=100 data-nosnippet>100</a>                <span class="kw">let </span><span class="kw-2">mut </span>base = [<span class="number">0</span>; <span class="macro-nonterminal">$n</span>];
 <a href=#101 id=101 data-nosnippet>101</a>                <span class="kw">let </span><span class="kw-2">mut </span>sz = <span class="number">0</span>;
 <a href=#102 id=102 data-nosnippet>102</a>                <span class="kw">while </span>v &gt; <span class="number">0 </span>{
@@ -116,7 +116,7 @@
 <a href=#116 id=116 data-nosnippet>116</a>
 <a href=#117 id=117 data-nosnippet>117</a>            <span class="doccomment">/// Returns the `i`-th bit where bit 0 is the least significant one.
 <a href=#118 id=118 data-nosnippet>118</a>            /// In other words, the bit with weight `2^i`.
-<a href=#119 id=119 data-nosnippet>119</a>            </span><span class="kw">pub fn </span>get_bit(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; u8 {
+<a href=#119 id=119 data-nosnippet>119</a>            </span><span class="kw">pub fn </span>get_bit(<span class="kw-2">&amp;</span><span class="self">self</span>, i: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../../core/primitive.u8.html">u8</a> {
 <a href=#120 id=120 data-nosnippet>120</a>                <span class="kw">let </span>digitbits = &lt;<span class="macro-nonterminal">$ty</span>&gt;::BITS <span class="kw">as </span>usize;
 <a href=#121 id=121 data-nosnippet>121</a>                <span class="kw">let </span>d = i / digitbits;
 <a href=#122 id=122 data-nosnippet>122</a>                <span class="kw">let </span>b = i % digitbits;
@@ -124,13 +124,13 @@
 <a href=#124 id=124 data-nosnippet>124</a>            }
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>            <span class="doccomment">/// Returns `true` if the bignum is zero.
-<a href=#127 id=127 data-nosnippet>127</a>            </span><span class="kw">pub fn </span>is_zero(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#127 id=127 data-nosnippet>127</a>            </span><span class="kw">pub fn </span>is_zero(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.bool.html">bool</a> {
 <a href=#128 id=128 data-nosnippet>128</a>                <span class="self">self</span>.digits().iter().all(|<span class="kw-2">&amp;</span>v| v == <span class="number">0</span>)
 <a href=#129 id=129 data-nosnippet>129</a>            }
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a>            <span class="doccomment">/// Returns the number of bits necessary to represent this value. Note that zero
 <a href=#132 id=132 data-nosnippet>132</a>            /// is considered to need 0 bits.
-<a href=#133 id=133 data-nosnippet>133</a>            </span><span class="kw">pub fn </span>bit_length(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+<a href=#133 id=133 data-nosnippet>133</a>            </span><span class="kw">pub fn </span>bit_length(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.usize.html">usize</a> {
 <a href=#134 id=134 data-nosnippet>134</a>                <span class="kw">let </span>digitbits = &lt;<span class="macro-nonterminal">$ty</span>&gt;::BITS <span class="kw">as </span>usize;
 <a href=#135 id=135 data-nosnippet>135</a>                <span class="kw">let </span>digits = <span class="self">self</span>.digits();
 <a href=#136 id=136 data-nosnippet>136</a>                <span class="comment">// Find the most significant non-zero digit.
@@ -212,7 +212,7 @@
 <a href=#212 id=212 data-nosnippet>212</a>            </span>}
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a>            <span class="doccomment">/// Multiplies itself by `2^bits` and returns its own mutable reference.
-<a href=#215 id=215 data-nosnippet>215</a>            </span><span class="kw">pub fn </span>mul_pow2(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bits: usize) -&gt; <span class="kw-2">&amp;mut </span><span class="macro-nonterminal">$name </span>{
+<a href=#215 id=215 data-nosnippet>215</a>            </span><span class="kw">pub fn </span>mul_pow2(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bits: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">&amp;mut </span><span class="macro-nonterminal">$name </span>{
 <a href=#216 id=216 data-nosnippet>216</a>                <span class="kw">let </span>digitbits = &lt;<span class="macro-nonterminal">$ty</span>&gt;::BITS <span class="kw">as </span>usize;
 <a href=#217 id=217 data-nosnippet>217</a>                <span class="kw">let </span>digits = bits / digitbits;
 <a href=#218 id=218 data-nosnippet>218</a>                <span class="kw">let </span>bits = bits % digitbits;
@@ -251,7 +251,7 @@
 <a href=#251 id=251 data-nosnippet>251</a>            </span>}
 <a href=#252 id=252 data-nosnippet>252</a>
 <a href=#253 id=253 data-nosnippet>253</a>            <span class="doccomment">/// Multiplies itself by `5^e` and returns its own mutable reference.
-<a href=#254 id=254 data-nosnippet>254</a>            </span><span class="kw">pub fn </span>mul_pow5(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>e: usize) -&gt; <span class="kw-2">&amp;mut </span><span class="macro-nonterminal">$name </span>{
+<a href=#254 id=254 data-nosnippet>254</a>            </span><span class="kw">pub fn </span>mul_pow5(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>e: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">&amp;mut </span><span class="macro-nonterminal">$name </span>{
 <a href=#255 id=255 data-nosnippet>255</a>                <span class="kw">use </span><span class="kw">crate</span>::num::imp::bignum::SMALL_POW5;
 <a href=#256 id=256 data-nosnippet>256</a>
 <a href=#257 id=257 data-nosnippet>257</a>                <span class="comment">// There are exactly n trailing zeros on 2^n, and the only relevant digit sizes
@@ -337,7 +337,7 @@
 <a href=#337 id=337 data-nosnippet>337</a>        }
 <a href=#338 id=338 data-nosnippet>338</a>
 <a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">impl </span><span class="kw">crate</span>::cmp::PartialEq <span class="kw">for </span><span class="macro-nonterminal">$name </span>{
-<a href=#340 id=340 data-nosnippet>340</a>            <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$name</span>) -&gt; bool {
+<a href=#340 id=340 data-nosnippet>340</a>            <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$name</span>) -&gt; <a href="../../../../core/primitive.bool.html">bool</a> {
 <a href=#341 id=341 data-nosnippet>341</a>                <span class="self">self</span>.base[..] == other.base[..]
 <a href=#342 id=342 data-nosnippet>342</a>            }
 <a href=#343 id=343 data-nosnippet>343</a>        }
@@ -384,30 +384,30 @@
 <a href=#384 id=384 data-nosnippet>384</a>}
 <a href=#385 id=385 data-nosnippet>385</a>
 <a href=#386 id=386 data-nosnippet>386</a><span class="doccomment">/// the digit type for `Big32x40`
-<a href=#387 id=387 data-nosnippet>387</a></span><span class="kw">pub type </span>Digit32 = u32;
+<a href=#387 id=387 data-nosnippet>387</a></span><span class="kw">pub type </span>Digit32 = <a href="../../../../core/primitive.u32.html">u32</a>;
 <a href=#388 id=388 data-nosnippet>388</a>
 <a href=#389 id=389 data-nosnippet>389</a><span class="attr">#[cfg(any(target_pointer_width = <span class="string">"16"</span>, target_pointer_width = <span class="string">"32"</span>))]
 <a href=#390 id=390 data-nosnippet>390</a></span><span class="macro">define_bignum!</span>(Big32x40: <span class="kw">type</span>=Digit32, n=<span class="number">40</span>);
 <a href=#391 id=391 data-nosnippet>391</a>
 <a href=#392 id=392 data-nosnippet>392</a><span class="doccomment">/// The digit type for `Big64x20`.
-<a href=#393 id=393 data-nosnippet>393</a></span><span class="kw">pub type </span>Digit64 = u64;
+<a href=#393 id=393 data-nosnippet>393</a></span><span class="kw">pub type </span>Digit64 = <a href="../../../../core/primitive.u64.html">u64</a>;
 <a href=#394 id=394 data-nosnippet>394</a>
 <a href=#395 id=395 data-nosnippet>395</a><span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
-<a href=#396 id=396 data-nosnippet>396</a></span><span class="macro">define_bignum!</span>(Big64x20: <span class="kw">type</span>=Digit64, n=<span class="number">20</span>);
+<a href=#396 id=396 data-nosnippet>396</a></span><a href="#69-384">define_bignum!</a>(Big64x20: <span class="kw">type</span>=<a href="#393">Digit64</a>, n=<span class="number">20</span>);
 <a href=#397 id=397 data-nosnippet>397</a>
 <a href=#398 id=398 data-nosnippet>398</a><span class="attr">#[cfg(any(target_pointer_width = <span class="string">"16"</span>, target_pointer_width = <span class="string">"32"</span>))]
 <a href=#399 id=399 data-nosnippet>399</a></span><span class="kw">pub type </span>Big = Big32x40;
 <a href=#400 id=400 data-nosnippet>400</a><span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
-<a href=#401 id=401 data-nosnippet>401</a></span><span class="kw">pub type </span>Big = Big64x20;
+<a href=#401 id=401 data-nosnippet>401</a></span><span class="kw">pub type </span>Big = <a href="#396">Big64x20</a>;
 <a href=#402 id=402 data-nosnippet>402</a>
 <a href=#403 id=403 data-nosnippet>403</a><span class="attr">#[cfg(any(target_pointer_width = <span class="string">"16"</span>, target_pointer_width = <span class="string">"32"</span>))]
 <a href=#404 id=404 data-nosnippet>404</a></span><span class="kw">pub type </span>Digit = Digit32;
 <a href=#405 id=405 data-nosnippet>405</a><span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
-<a href=#406 id=406 data-nosnippet>406</a></span><span class="kw">pub type </span>Digit = Digit64;
+<a href=#406 id=406 data-nosnippet>406</a></span><span class="kw">pub type </span>Digit = <a href="#393">Digit64</a>;
 <a href=#407 id=407 data-nosnippet>407</a>
 <a href=#408 id=408 data-nosnippet>408</a><span class="comment">// this one is used for testing only.
 <a href=#409 id=409 data-nosnippet>409</a></span><span class="attr">#[doc(hidden)]
 <a href=#410 id=410 data-nosnippet>410</a></span><span class="kw">pub mod </span>tests {
-<a href=#411 id=411 data-nosnippet>411</a>    <span class="macro">define_bignum!</span>(Big8x3: <span class="kw">type</span>=u8, n=<span class="number">3</span>);
+<a href=#411 id=411 data-nosnippet>411</a>    <a href="#69-384">define_bignum!</a>(Big8x3: <span class="kw">type</span>=<a href="../../../../core/primitive.u8.html">u8</a>, n=<span class="number">3</span>);
 <a href=#412 id=412 data-nosnippet>412</a>}
 </code></pre></div></section></main></body></html>

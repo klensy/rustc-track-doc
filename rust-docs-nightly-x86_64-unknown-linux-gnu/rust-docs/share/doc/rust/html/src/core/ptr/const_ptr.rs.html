@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/const_ptr.rs`."><title>const_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>const_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{Equal, Greater, Less};
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::const_eval_select;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<span class="self">self</span>, SizedTypeProperties};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<span class="self">self</span>, SliceIndex};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/const_ptr.rs`."><title>const_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>const_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{<a href="../cmp.rs.html#426">Equal</a>, <a href="../cmp.rs.html#429">Greater</a>, <a href="../cmp.rs.html#423">Less</a>};
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#2528-2570"><span class="kw">crate</span>::intrinsics::const_eval_select</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../lib.rs.html#269">self</a>, <a href="../mem/mod.rs.html#1468-1534">SizedTypeProperties</a>};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#327">self</a>, <a href="../slice/index.rs.html#124-174">SliceIndex</a>};
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">impl</span>&lt;T: PointeeSized&gt; <span class="kw-2">*const </span>T {
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <span class="kw-2">*const </span>T {
 <a href=#8 id=8 data-nosnippet>8</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"docs/is_null.md"</span>)]
 <a href=#9 id=9 data-nosnippet>9</a>    </span><span class="doccomment">///
 <a href=#10 id=10 data-nosnippet>10</a>    /// # Examples
@@ -19,11 +19,11 @@
 <a href=#19 id=19 data-nosnippet>19</a>    #[rustc_diagnostic_item = <span class="string">"ptr_const_is_null"</span>]
 <a href=#20 id=20 data-nosnippet>20</a>    #[inline]
 <a href=#21 id=21 data-nosnippet>21</a>    #[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub const fn </span>is_null(<span class="self">self</span>) -&gt; bool {
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub const fn </span>is_null(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#23 id=23 data-nosnippet>23</a>        <span class="comment">// Compare via a cast to a thin pointer, so fat pointers are only
 <a href=#24 id=24 data-nosnippet>24</a>        // considering their "data" part for null-ness.
-<a href=#25 id=25 data-nosnippet>25</a>        </span><span class="kw">let </span>ptr = <span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>u8;
-<a href=#26 id=26 data-nosnippet>26</a>        <span class="macro">const_eval_select!</span>(
+<a href=#25 id=25 data-nosnippet>25</a>        </span><span class="kw">let </span>ptr = <a class="self" href="#22">self</a> <span class="kw">as </span><span class="kw-2">*const </span><a href="../../../core/primitive.u8.html">u8</a>;
+<a href=#26 id=26 data-nosnippet>26</a>        <a href="../intrinsics/mod.rs.html#2528-2570">const_eval_select!</a>(
 <a href=#27 id=27 data-nosnippet>27</a>            @capture { ptr: <span class="kw-2">*const </span>u8 } -&gt; bool:
 <a href=#28 id=28 data-nosnippet>28</a>            <span class="comment">// This use of `const_raw_ptr_comparison` has been explicitly blessed by t-lang.
 <a href=#29 id=29 data-nosnippet>29</a>            </span><span class="kw">if const </span><span class="attr">#[rustc_allow_const_fn_unstable(const_raw_ptr_comparison)] </span>{
@@ -46,7 +46,7 @@
 <a href=#46 id=46 data-nosnippet>46</a>    #[rustc_diagnostic_item = <span class="string">"const_ptr_cast"</span>]
 <a href=#47 id=47 data-nosnippet>47</a>    #[inline(always)]
 <a href=#48 id=48 data-nosnippet>48</a>    </span><span class="kw">pub const fn </span>cast&lt;U&gt;(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>U {
-<a href=#49 id=49 data-nosnippet>49</a>        <span class="self">self </span><span class="kw">as _
+<a href=#49 id=49 data-nosnippet>49</a>        <a class="self" href="#48">self</a> <span class="kw">as _
 <a href=#50 id=50 data-nosnippet>50</a>    </span>}
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="doccomment">/// Try to cast to a pointer of another type by checking alignment.
@@ -69,8 +69,8 @@
 <a href=#69 id=69 data-nosnippet>69</a>    #[must_use = <span class="string">"this returns the result of the operation, \
 <a href=#70 id=70 data-nosnippet>70</a>                  without modifying the original"</span>]
 <a href=#71 id=71 data-nosnippet>71</a>    #[inline]
-<a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">pub fn </span>try_cast_aligned&lt;U&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>U&gt; {
-<a href=#73 id=73 data-nosnippet>73</a>        <span class="kw">if </span><span class="self">self</span>.is_aligned_to(align_of::&lt;U&gt;()) { <span class="prelude-val">Some</span>(<span class="self">self</span>.cast()) } <span class="kw">else </span>{ <span class="prelude-val">None </span>}
+<a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">pub fn </span>try_cast_aligned&lt;U&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">*const </span>U&gt; {
+<a href=#73 id=73 data-nosnippet>73</a>        <span class="kw">if </span><a class="self" href="#72">self</a>.<a href="#1354-1360">is_aligned_to</a>(<a href="../mem/mod.rs.html#543-545">align_of</a>::&lt;U&gt;()) { <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a class="self" href="#72">self</a>.<a href="#48-50">cast</a>()) } <span class="kw">else </span>{ <a class="prelude-val" href="../option.rs.html#602">None</a> }
 <a href=#74 id=74 data-nosnippet>74</a>    }
 <a href=#75 id=75 data-nosnippet>75</a>
 <a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// Uses the address value in a new pointer of another type.
@@ -127,9 +127,9 @@
 <a href=#127 id=127 data-nosnippet>127</a>    #[inline]
 <a href=#128 id=128 data-nosnippet>128</a>    </span><span class="kw">pub const fn </span>with_metadata_of&lt;U&gt;(<span class="self">self</span>, meta: <span class="kw-2">*const </span>U) -&gt; <span class="kw-2">*const </span>U
 <a href=#129 id=129 data-nosnippet>129</a>    <span class="kw">where
-<a href=#130 id=130 data-nosnippet>130</a>        </span>U: PointeeSized,
+<a href=#130 id=130 data-nosnippet>130</a>        </span>U: <a href="../marker.rs.html#190-192">PointeeSized</a>,
 <a href=#131 id=131 data-nosnippet>131</a>    {
-<a href=#132 id=132 data-nosnippet>132</a>        from_raw_parts::&lt;U&gt;(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>(), metadata(meta))
+<a href=#132 id=132 data-nosnippet>132</a>        <a href="metadata.rs.html#116-121">from_raw_parts</a>::&lt;U&gt;(<a class="self" href="#128">self</a> <span class="kw">as </span><span class="kw-2">*const </span>(), <a href="metadata.rs.html#100-102">metadata</a>(<a href="#128">meta</a>))
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
 <a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Changes constness without changing the type.
@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a>    #[rustc_diagnostic_item = <span class="string">"ptr_cast_mut"</span>]
 <a href=#142 id=142 data-nosnippet>142</a>    #[inline(always)]
 <a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub const fn </span>cast_mut(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
-<a href=#144 id=144 data-nosnippet>144</a>        <span class="self">self </span><span class="kw">as _
+<a href=#144 id=144 data-nosnippet>144</a>        <a class="self" href="#143">self</a> <span class="kw">as _
 <a href=#145 id=145 data-nosnippet>145</a>    </span>}
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/addr.md"</span>)]
@@ -149,13 +149,13 @@
 <a href=#149 id=149 data-nosnippet>149</a>    #[inline(always)]
 <a href=#150 id=150 data-nosnippet>150</a>    #[expect(clippy::transmutes_expressible_as_ptr_casts, reason = <span class="string">"implements pointer cast"</span>)]
 <a href=#151 id=151 data-nosnippet>151</a>    #[stable(feature = <span class="string">"strict_provenance"</span>, since = <span class="string">"1.84.0"</span>)]
-<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub fn </span>addr(<span class="self">self</span>) -&gt; usize {
+<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub fn </span>addr(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
 <a href=#153 id=153 data-nosnippet>153</a>        <span class="comment">// A pointer-to-integer transmute currently has exactly the right semantics: it returns the
 <a href=#154 id=154 data-nosnippet>154</a>        // address without exposing the provenance. Note that this is *not* a stable guarantee about
 <a href=#155 id=155 data-nosnippet>155</a>        // transmute semantics, it relies on sysroot crates having special status.
 <a href=#156 id=156 data-nosnippet>156</a>        // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
 <a href=#157 id=157 data-nosnippet>157</a>        // provenance).
-<a href=#158 id=158 data-nosnippet>158</a>        </span><span class="kw">unsafe </span>{ mem::transmute(<span class="self">self</span>.cast::&lt;()&gt;()) }
+<a href=#158 id=158 data-nosnippet>158</a>        </span><span class="kw">unsafe </span>{ mem::<a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#152">self</a>.<a href="#48-50">cast</a>::&lt;()&gt;()) }
 <a href=#159 id=159 data-nosnippet>159</a>    }
 <a href=#160 id=160 data-nosnippet>160</a>
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="doccomment">/// Exposes the ["provenance"][crate::ptr#provenance] part of the pointer for future use in
@@ -183,8 +183,8 @@
 <a href=#183 id=183 data-nosnippet>183</a>    </span><span class="attr">#[inline(always)]
 <a href=#184 id=184 data-nosnippet>184</a>    #[stable(feature = <span class="string">"exposed_provenance"</span>, since = <span class="string">"1.84.0"</span>)]
 <a href=#185 id=185 data-nosnippet>185</a>    #[expect(implicit_provenance_casts, reason = <span class="string">"this *is* the replacement"</span>)]
-<a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">pub fn </span>expose_provenance(<span class="self">self</span>) -&gt; usize {
-<a href=#187 id=187 data-nosnippet>187</a>        <span class="self">self</span>.cast::&lt;()&gt;() <span class="kw">as </span>usize
+<a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">pub fn </span>expose_provenance(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
+<a href=#187 id=187 data-nosnippet>187</a>        <a class="self" href="#186">self</a>.<a href="#48-50">cast</a>::&lt;()&gt;() <span class="kw">as </span><a href="../../../core/primitive.usize.html">usize</a>
 <a href=#188 id=188 data-nosnippet>188</a>    }
 <a href=#189 id=189 data-nosnippet>189</a>
 <a href=#190 id=190 data-nosnippet>190</a>    <span class="doccomment">/// Creates a new pointer with the given address and the [provenance][crate::ptr#provenance] of
@@ -201,14 +201,14 @@
 <a href=#201 id=201 data-nosnippet>201</a>    </span><span class="attr">#[must_use]
 <a href=#202 id=202 data-nosnippet>202</a>    #[inline]
 <a href=#203 id=203 data-nosnippet>203</a>    #[stable(feature = <span class="string">"strict_provenance"</span>, since = <span class="string">"1.84.0"</span>)]
-<a href=#204 id=204 data-nosnippet>204</a>    </span><span class="kw">pub fn </span>with_addr(<span class="self">self</span>, addr: usize) -&gt; <span class="self">Self </span>{
+<a href=#204 id=204 data-nosnippet>204</a>    </span><span class="kw">pub fn </span>with_addr(<span class="self">self</span>, addr: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="comment">// This should probably be an intrinsic to avoid doing any sort of arithmetic, but
 <a href=#206 id=206 data-nosnippet>206</a>        // meanwhile, we can implement it with `wrapping_offset`, which preserves the pointer's
 <a href=#207 id=207 data-nosnippet>207</a>        // provenance.
-<a href=#208 id=208 data-nosnippet>208</a>        </span><span class="kw">let </span>self_addr = <span class="self">self</span>.addr() <span class="kw">as </span>isize;
-<a href=#209 id=209 data-nosnippet>209</a>        <span class="kw">let </span>dest_addr = addr <span class="kw">as </span>isize;
-<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">let </span>offset = dest_addr.wrapping_sub(self_addr);
-<a href=#211 id=211 data-nosnippet>211</a>        <span class="self">self</span>.wrapping_byte_offset(offset)
+<a href=#208 id=208 data-nosnippet>208</a>        </span><span class="kw">let </span>self_addr = <a class="self" href="#204">self</a>.<a href="#152-159">addr</a>() <span class="kw">as </span><a href="../../../core/primitive.isize.html">isize</a>;
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="kw">let </span>dest_addr = <a href="#204">addr</a> <span class="kw">as </span><a href="../../../core/primitive.isize.html">isize</a>;
+<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">let </span>offset = <a href="#209">dest_addr</a>.<a href="../num/mod.rs.html#566-585">wrapping_sub</a>(<a href="#208">self_addr</a>);
+<a href=#211 id=211 data-nosnippet>211</a>        <a class="self" href="#204">self</a>.<a href="#489-491">wrapping_byte_offset</a>(<a href="#210">offset</a>)
 <a href=#212 id=212 data-nosnippet>212</a>    }
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a>    <span class="doccomment">/// Creates a new pointer by mapping `self`'s address to a new one, preserving the
@@ -220,8 +220,8 @@
 <a href=#220 id=220 data-nosnippet>220</a>    </span><span class="attr">#[must_use]
 <a href=#221 id=221 data-nosnippet>221</a>    #[inline]
 <a href=#222 id=222 data-nosnippet>222</a>    #[stable(feature = <span class="string">"strict_provenance"</span>, since = <span class="string">"1.84.0"</span>)]
-<a href=#223 id=223 data-nosnippet>223</a>    </span><span class="kw">pub fn </span>map_addr(<span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(usize) -&gt; usize) -&gt; <span class="self">Self </span>{
-<a href=#224 id=224 data-nosnippet>224</a>        <span class="self">self</span>.with_addr(f(<span class="self">self</span>.addr()))
+<a href=#223 id=223 data-nosnippet>223</a>    </span><span class="kw">pub fn </span>map_addr(<span class="self">self</span>, f: <span class="kw">impl </span><a href="../ops/function.rs.html#242-251">FnOnce</a>(<a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#224 id=224 data-nosnippet>224</a>        <a class="self" href="#223">self</a>.<a href="#204-212">with_addr</a>(<a href="#223">f</a>(<a class="self" href="#223">self</a>.<a href="#152-159">addr</a>()))
 <a href=#225 id=225 data-nosnippet>225</a>    }
 <a href=#226 id=226 data-nosnippet>226</a>
 <a href=#227 id=227 data-nosnippet>227</a>    <span class="doccomment">/// Decompose a (possibly wide) pointer into its data pointer and metadata components.
@@ -229,8 +229,8 @@
 <a href=#229 id=229 data-nosnippet>229</a>    /// The pointer can be later reconstructed with [`from_raw_parts`].
 <a href=#230 id=230 data-nosnippet>230</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ptr_metadata"</span>, issue = <span class="string">"81513"</span>)]
 <a href=#231 id=231 data-nosnippet>231</a>    #[inline]
-<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">pub const fn </span>to_raw_parts(<span class="self">self</span>) -&gt; (<span class="kw-2">*const </span>(), &lt;T <span class="kw">as </span><span class="kw">super</span>::Pointee&gt;::Metadata) {
-<a href=#233 id=233 data-nosnippet>233</a>        (<span class="self">self</span>.cast(), metadata(<span class="self">self</span>))
+<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">pub const fn </span>to_raw_parts(<span class="self">self</span>) -&gt; (<span class="kw-2">*const </span>(), &lt;T <span class="kw">as </span><span class="kw">super</span>::Pointee&gt;::<a href="metadata.rs.html#67">Metadata</a>) {
+<a href=#233 id=233 data-nosnippet>233</a>        (<a class="self" href="#232">self</a>.<a href="#48-50">cast</a>(), <a href="metadata.rs.html#100-102">metadata</a>(<a class="self" href="#232">self</a>))
 <a href=#234 id=234 data-nosnippet>234</a>    }
 <a href=#235 id=235 data-nosnippet>235</a>
 <a href=#236 id=236 data-nosnippet>236</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/as_ref.md"</span>)]
@@ -263,10 +263,10 @@
 <a href=#263 id=263 data-nosnippet>263</a>    </span><span class="attr">#[stable(feature = <span class="string">"ptr_as_ref"</span>, since = <span class="string">"1.9.0"</span>)]
 <a href=#264 id=264 data-nosnippet>264</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_is_null"</span>, since = <span class="string">"1.84.0"</span>)]
 <a href=#265 id=265 data-nosnippet>265</a>    #[inline]
-<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub const unsafe fn </span>as_ref&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt; {
+<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub const unsafe fn </span>as_ref&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt; {
 <a href=#267 id=267 data-nosnippet>267</a>        <span class="comment">// SAFETY: the caller must guarantee that `self` is valid
 <a href=#268 id=268 data-nosnippet>268</a>        // for a reference if it isn't null.
-<a href=#269 id=269 data-nosnippet>269</a>        </span><span class="kw">if </span><span class="self">self</span>.is_null() { <span class="prelude-val">None </span>} <span class="kw">else </span>{ <span class="kw">unsafe </span>{ <span class="prelude-val">Some</span>(<span class="kw-2">&amp;*</span><span class="self">self</span>) } }
+<a href=#269 id=269 data-nosnippet>269</a>        </span><span class="kw">if </span><a class="self" href="#266">self</a>.<a href="#22-41">is_null</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <span class="kw">unsafe </span>{ <a class="prelude-val" href="../option.rs.html#606">Some</a>(<span class="kw-2">&amp;*</span><a class="self" href="#266">self</a>) } }
 <a href=#270 id=270 data-nosnippet>270</a>    }
 <a href=#271 id=271 data-nosnippet>271</a>
 <a href=#272 id=272 data-nosnippet>272</a>    <span class="doccomment">/// Returns a shared reference to the value behind the pointer.
@@ -296,7 +296,7 @@
 <a href=#296 id=296 data-nosnippet>296</a>    #[must_use]
 <a href=#297 id=297 data-nosnippet>297</a>    </span><span class="kw">pub const unsafe fn </span>as_ref_unchecked&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {
 <a href=#298 id=298 data-nosnippet>298</a>        <span class="comment">// SAFETY: the caller must guarantee that `self` is valid for a reference
-<a href=#299 id=299 data-nosnippet>299</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><span class="self">self </span>}
+<a href=#299 id=299 data-nosnippet>299</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a class="self" href="#297">self</a> }
 <a href=#300 id=300 data-nosnippet>300</a>    }
 <a href=#301 id=301 data-nosnippet>301</a>
 <a href=#302 id=302 data-nosnippet>302</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/as_uninit_ref.md"</span>)]
@@ -319,13 +319,13 @@
 <a href=#319 id=319 data-nosnippet>319</a>    /// ```
 <a href=#320 id=320 data-nosnippet>320</a>    </span><span class="attr">#[inline]
 <a href=#321 id=321 data-nosnippet>321</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
-<a href=#322 id=322 data-nosnippet>322</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_ref&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>MaybeUninit&lt;T&gt;&gt;
+<a href=#322 id=322 data-nosnippet>322</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_ref&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;&gt;
 <a href=#323 id=323 data-nosnippet>323</a>    <span class="kw">where
-<a href=#324 id=324 data-nosnippet>324</a>        </span>T: Sized,
+<a href=#324 id=324 data-nosnippet>324</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#325 id=325 data-nosnippet>325</a>    {
 <a href=#326 id=326 data-nosnippet>326</a>        <span class="comment">// SAFETY: the caller must guarantee that `self` meets all the
 <a href=#327 id=327 data-nosnippet>327</a>        // requirements for a reference.
-<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">if </span><span class="self">self</span>.is_null() { <span class="prelude-val">None </span>} <span class="kw">else </span>{ <span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>MaybeUninit&lt;T&gt;) }) }
+<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">if </span><a class="self" href="#322">self</a>.<a href="#22-41">is_null</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <a class="prelude-val" href="../option.rs.html#606">Some</a>(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(<a class="self" href="#322">self</a> <span class="kw">as </span><span class="kw-2">*const </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;) }) }
 <a href=#329 id=329 data-nosnippet>329</a>    }
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/offset.md"</span>)]
@@ -350,15 +350,15 @@
 <a href=#350 id=350 data-nosnippet>350</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#351 id=351 data-nosnippet>351</a>    #[inline(always)]
 <a href=#352 id=352 data-nosnippet>352</a>    #[track_caller]
-<a href=#353 id=353 data-nosnippet>353</a>    </span><span class="kw">pub const unsafe fn </span>offset(<span class="self">self</span>, count: isize) -&gt; <span class="kw-2">*const </span>T
+<a href=#353 id=353 data-nosnippet>353</a>    </span><span class="kw">pub const unsafe fn </span>offset(<span class="self">self</span>, count: <a href="../../../core/primitive.isize.html">isize</a>) -&gt; <span class="kw-2">*const </span>T
 <a href=#354 id=354 data-nosnippet>354</a>    <span class="kw">where
-<a href=#355 id=355 data-nosnippet>355</a>        </span>T: Sized,
+<a href=#355 id=355 data-nosnippet>355</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#356 id=356 data-nosnippet>356</a>    {
 <a href=#357 id=357 data-nosnippet>357</a>        <span class="attr">#[inline]
 <a href=#358 id=358 data-nosnippet>358</a>        #[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">const fn </span>runtime_offset_nowrap(this: <span class="kw-2">*const </span>(), count: isize, size: usize) -&gt; bool {
+<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">const fn </span>runtime_offset_nowrap(this: <span class="kw-2">*const </span>(), count: <a href="../../../core/primitive.isize.html">isize</a>, size: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#360 id=360 data-nosnippet>360</a>            <span class="comment">// We can use const_eval_select here because this is only for UB checks.
-<a href=#361 id=361 data-nosnippet>361</a>            </span><span class="macro">const_eval_select!</span>(
+<a href=#361 id=361 data-nosnippet>361</a>            </span><a href="../intrinsics/mod.rs.html#2528-2570">const_eval_select!</a>(
 <a href=#362 id=362 data-nosnippet>362</a>                @capture { this: <span class="kw-2">*const </span>(), count: isize, size: usize } -&gt; bool:
 <a href=#363 id=363 data-nosnippet>363</a>                <span class="kw">if const </span>{
 <a href=#364 id=364 data-nosnippet>364</a>                    <span class="bool-val">true
@@ -374,7 +374,7 @@
 <a href=#374 id=374 data-nosnippet>374</a>            )
 <a href=#375 id=375 data-nosnippet>375</a>        }
 <a href=#376 id=376 data-nosnippet>376</a>
-<a href=#377 id=377 data-nosnippet>377</a>        <span class="macro">ub_checks::assert_unsafe_precondition!</span>(
+<a href=#377 id=377 data-nosnippet>377</a>        <a href="../ub_checks.rs.html#53-82">ub_checks::assert_unsafe_precondition!</a>(
 <a href=#378 id=378 data-nosnippet>378</a>            check_language_ub,
 <a href=#379 id=379 data-nosnippet>379</a>            <span class="string">"ptr::offset requires the address calculation to not overflow"</span>,
 <a href=#380 id=380 data-nosnippet>380</a>            (
@@ -385,7 +385,7 @@
 <a href=#385 id=385 data-nosnippet>385</a>        );
 <a href=#386 id=386 data-nosnippet>386</a>
 <a href=#387 id=387 data-nosnippet>387</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset`.
-<a href=#388 id=388 data-nosnippet>388</a>        </span><span class="kw">unsafe </span>{ intrinsics::offset(<span class="self">self</span>, count) }
+<a href=#388 id=388 data-nosnippet>388</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#1165">offset</a>(<a class="self" href="#353">self</a>, <a href="#353">count</a>) }
 <a href=#389 id=389 data-nosnippet>389</a>    }
 <a href=#390 id=390 data-nosnippet>390</a>
 <a href=#391 id=391 data-nosnippet>391</a>    <span class="doccomment">/// Adds a signed offset in bytes to a pointer.
@@ -403,9 +403,9 @@
 <a href=#403 id=403 data-nosnippet>403</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#404 id=404 data-nosnippet>404</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#405 id=405 data-nosnippet>405</a>    #[track_caller]
-<a href=#406 id=406 data-nosnippet>406</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset(<span class="self">self</span>, count: isize) -&gt; <span class="self">Self </span>{
+<a href=#406 id=406 data-nosnippet>406</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset(<span class="self">self</span>, count: <a href="../../../core/primitive.isize.html">isize</a>) -&gt; <span class="self">Self </span>{
 <a href=#407 id=407 data-nosnippet>407</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset`.
-<a href=#408 id=408 data-nosnippet>408</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.cast::&lt;u8&gt;().offset(count).with_metadata_of(<span class="self">self</span>) }
+<a href=#408 id=408 data-nosnippet>408</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#406">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#353-389">offset</a>(<a href="#406">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#406">self</a>) }
 <a href=#409 id=409 data-nosnippet>409</a>    }
 <a href=#410 id=410 data-nosnippet>410</a>
 <a href=#411 id=411 data-nosnippet>411</a>    <span class="doccomment">/// Adds a signed offset to a pointer using wrapping arithmetic.
@@ -464,12 +464,12 @@
 <a href=#464 id=464 data-nosnippet>464</a>    #[must_use = <span class="string">"returns a new pointer rather than modifying its argument"</span>]
 <a href=#465 id=465 data-nosnippet>465</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#466 id=466 data-nosnippet>466</a>    #[inline(always)]
-<a href=#467 id=467 data-nosnippet>467</a>    </span><span class="kw">pub const fn </span>wrapping_offset(<span class="self">self</span>, count: isize) -&gt; <span class="kw-2">*const </span>T
+<a href=#467 id=467 data-nosnippet>467</a>    </span><span class="kw">pub const fn </span>wrapping_offset(<span class="self">self</span>, count: <a href="../../../core/primitive.isize.html">isize</a>) -&gt; <span class="kw-2">*const </span>T
 <a href=#468 id=468 data-nosnippet>468</a>    <span class="kw">where
-<a href=#469 id=469 data-nosnippet>469</a>        </span>T: Sized,
+<a href=#469 id=469 data-nosnippet>469</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#470 id=470 data-nosnippet>470</a>    {
 <a href=#471 id=471 data-nosnippet>471</a>        <span class="comment">// SAFETY: the `arith_offset` intrinsic has no prerequisites to be called.
-<a href=#472 id=472 data-nosnippet>472</a>        </span><span class="kw">unsafe </span>{ intrinsics::arith_offset(<span class="self">self</span>, count) }
+<a href=#472 id=472 data-nosnippet>472</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#1184">arith_offset</a>(<a class="self" href="#467">self</a>, <a href="#467">count</a>) }
 <a href=#473 id=473 data-nosnippet>473</a>    }
 <a href=#474 id=474 data-nosnippet>474</a>
 <a href=#475 id=475 data-nosnippet>475</a>    <span class="doccomment">/// Adds a signed offset in bytes to a pointer using wrapping arithmetic.
@@ -486,8 +486,8 @@
 <a href=#486 id=486 data-nosnippet>486</a>    #[inline(always)]
 <a href=#487 id=487 data-nosnippet>487</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#488 id=488 data-nosnippet>488</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
-<a href=#489 id=489 data-nosnippet>489</a>    </span><span class="kw">pub const fn </span>wrapping_byte_offset(<span class="self">self</span>, count: isize) -&gt; <span class="self">Self </span>{
-<a href=#490 id=490 data-nosnippet>490</a>        <span class="self">self</span>.cast::&lt;u8&gt;().wrapping_offset(count).with_metadata_of(<span class="self">self</span>)
+<a href=#489 id=489 data-nosnippet>489</a>    </span><span class="kw">pub const fn </span>wrapping_byte_offset(<span class="self">self</span>, count: <a href="../../../core/primitive.isize.html">isize</a>) -&gt; <span class="self">Self </span>{
+<a href=#490 id=490 data-nosnippet>490</a>        <a class="self" href="#489">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#467-473">wrapping_offset</a>(<a href="#489">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#489">self</a>)
 <a href=#491 id=491 data-nosnippet>491</a>    }
 <a href=#492 id=492 data-nosnippet>492</a>
 <a href=#493 id=493 data-nosnippet>493</a>    <span class="doccomment">/// Masks out bits of the pointer according to a mask.
@@ -524,8 +524,8 @@
 <a href=#524 id=524 data-nosnippet>524</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ptr_mask"</span>, issue = <span class="string">"98290"</span>)]
 <a href=#525 id=525 data-nosnippet>525</a>    #[must_use = <span class="string">"returns a new pointer rather than modifying its argument"</span>]
 <a href=#526 id=526 data-nosnippet>526</a>    #[inline(always)]
-<a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">pub fn </span>mask(<span class="self">self</span>, mask: usize) -&gt; <span class="kw-2">*const </span>T {
-<a href=#528 id=528 data-nosnippet>528</a>        intrinsics::ptr_mask(<span class="self">self</span>.cast::&lt;()&gt;(), mask).with_metadata_of(<span class="self">self</span>)
+<a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">pub fn </span>mask(<span class="self">self</span>, mask: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">*const </span>T {
+<a href=#528 id=528 data-nosnippet>528</a>        intrinsics::<a href="../intrinsics/mod.rs.html#1222">ptr_mask</a>(<a class="self" href="#527">self</a>.<a href="#48-50">cast</a>::&lt;()&gt;(), <a href="#527">mask</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#527">self</a>)
 <a href=#529 id=529 data-nosnippet>529</a>    }
 <a href=#530 id=530 data-nosnippet>530</a>
 <a href=#531 id=531 data-nosnippet>531</a>    <span class="doccomment">/// Calculates the distance between two pointers within the same allocation. The returned value is in
@@ -612,14 +612,14 @@
 <a href=#612 id=612 data-nosnippet>612</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset_from"</span>, since = <span class="string">"1.65.0"</span>)]
 <a href=#613 id=613 data-nosnippet>613</a>    #[inline(always)]
 <a href=#614 id=614 data-nosnippet>614</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#615 id=615 data-nosnippet>615</a>    </span><span class="kw">pub const unsafe fn </span>offset_from(<span class="self">self</span>, origin: <span class="kw-2">*const </span>T) -&gt; isize
+<a href=#615 id=615 data-nosnippet>615</a>    </span><span class="kw">pub const unsafe fn </span>offset_from(<span class="self">self</span>, origin: <span class="kw-2">*const </span>T) -&gt; <a href="../../../core/primitive.isize.html">isize</a>
 <a href=#616 id=616 data-nosnippet>616</a>    <span class="kw">where
-<a href=#617 id=617 data-nosnippet>617</a>        </span>T: Sized,
+<a href=#617 id=617 data-nosnippet>617</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#618 id=618 data-nosnippet>618</a>    {
-<a href=#619 id=619 data-nosnippet>619</a>        <span class="kw">let </span>pointee_size = size_of::&lt;T&gt;();
-<a href=#620 id=620 data-nosnippet>620</a>        <span class="macro">assert!</span>(<span class="number">0 </span>&lt; pointee_size &amp;&amp; pointee_size &lt;= isize::MAX <span class="kw">as </span>usize);
+<a href=#619 id=619 data-nosnippet>619</a>        <span class="kw">let </span>pointee_size = <a href="../mem/mod.rs.html#375-384">size_of</a>::&lt;T&gt;();
+<a href=#620 id=620 data-nosnippet>620</a>        <a href="../macros/mod.rs.html#1738-1741">assert!</a>(<span class="number">0 </span>&lt; pointee_size &amp;&amp; pointee_size &lt;= isize::MAX <span class="kw">as </span>usize);
 <a href=#621 id=621 data-nosnippet>621</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `ptr_offset_from`.
-<a href=#622 id=622 data-nosnippet>622</a>        </span><span class="kw">unsafe </span>{ intrinsics::ptr_offset_from(<span class="self">self</span>, origin) }
+<a href=#622 id=622 data-nosnippet>622</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#2373">ptr_offset_from</a>(<a class="self" href="#615">self</a>, <a href="#615">origin</a>) }
 <a href=#623 id=623 data-nosnippet>623</a>    }
 <a href=#624 id=624 data-nosnippet>624</a>
 <a href=#625 id=625 data-nosnippet>625</a>    <span class="doccomment">/// Calculates the distance between two pointers within the same allocation. The returned value is in
@@ -635,9 +635,9 @@
 <a href=#635 id=635 data-nosnippet>635</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#636 id=636 data-nosnippet>636</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#637 id=637 data-nosnippet>637</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#638 id=638 data-nosnippet>638</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset_from&lt;U: <span class="question-mark">?</span>Sized&gt;(<span class="self">self</span>, origin: <span class="kw-2">*const </span>U) -&gt; isize {
+<a href=#638 id=638 data-nosnippet>638</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset_from&lt;U: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt;(<span class="self">self</span>, origin: <span class="kw-2">*const </span>U) -&gt; <a href="../../../core/primitive.isize.html">isize</a> {
 <a href=#639 id=639 data-nosnippet>639</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset_from`.
-<a href=#640 id=640 data-nosnippet>640</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.cast::&lt;u8&gt;().offset_from(origin.cast::&lt;u8&gt;()) }
+<a href=#640 id=640 data-nosnippet>640</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#638">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#615-623">offset_from</a>(<a href="#638">origin</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;()) }
 <a href=#641 id=641 data-nosnippet>641</a>    }
 <a href=#642 id=642 data-nosnippet>642</a>
 <a href=#643 id=643 data-nosnippet>643</a>    <span class="doccomment">/// Calculates the distance between two pointers within the same allocation, *where it's known that
@@ -701,13 +701,13 @@
 <a href=#701 id=701 data-nosnippet>701</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_sub_ptr"</span>, since = <span class="string">"1.87.0"</span>)]
 <a href=#702 id=702 data-nosnippet>702</a>    #[inline]
 <a href=#703 id=703 data-nosnippet>703</a>    #[track_caller]
-<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">pub const unsafe fn </span>offset_from_unsigned(<span class="self">self</span>, origin: <span class="kw-2">*const </span>T) -&gt; usize
+<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">pub const unsafe fn </span>offset_from_unsigned(<span class="self">self</span>, origin: <span class="kw-2">*const </span>T) -&gt; <a href="../../../core/primitive.usize.html">usize</a>
 <a href=#705 id=705 data-nosnippet>705</a>    <span class="kw">where
-<a href=#706 id=706 data-nosnippet>706</a>        </span>T: Sized,
+<a href=#706 id=706 data-nosnippet>706</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#707 id=707 data-nosnippet>707</a>    {
 <a href=#708 id=708 data-nosnippet>708</a>        <span class="attr">#[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#709 id=709 data-nosnippet>709</a>        </span><span class="kw">const fn </span>runtime_ptr_ge(this: <span class="kw-2">*const </span>(), origin: <span class="kw-2">*const </span>()) -&gt; bool {
-<a href=#710 id=710 data-nosnippet>710</a>            <span class="macro">const_eval_select!</span>(
+<a href=#709 id=709 data-nosnippet>709</a>        </span><span class="kw">const fn </span>runtime_ptr_ge(this: <span class="kw-2">*const </span>(), origin: <span class="kw-2">*const </span>()) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#710 id=710 data-nosnippet>710</a>            <a href="../intrinsics/mod.rs.html#2528-2570">const_eval_select!</a>(
 <a href=#711 id=711 data-nosnippet>711</a>                @capture { this: <span class="kw-2">*const </span>(), origin: <span class="kw-2">*const </span>() } -&gt; bool:
 <a href=#712 id=712 data-nosnippet>712</a>                <span class="kw">if const </span>{
 <a href=#713 id=713 data-nosnippet>713</a>                    <span class="bool-val">true
@@ -717,7 +717,7 @@
 <a href=#717 id=717 data-nosnippet>717</a>            )
 <a href=#718 id=718 data-nosnippet>718</a>        }
 <a href=#719 id=719 data-nosnippet>719</a>
-<a href=#720 id=720 data-nosnippet>720</a>        <span class="macro">ub_checks::assert_unsafe_precondition!</span>(
+<a href=#720 id=720 data-nosnippet>720</a>        <a href="../ub_checks.rs.html#53-82">ub_checks::assert_unsafe_precondition!</a>(
 <a href=#721 id=721 data-nosnippet>721</a>            check_language_ub,
 <a href=#722 id=722 data-nosnippet>722</a>            <span class="string">"ptr::offset_from_unsigned requires `self &gt;= origin`"</span>,
 <a href=#723 id=723 data-nosnippet>723</a>            (
@@ -726,10 +726,10 @@
 <a href=#726 id=726 data-nosnippet>726</a>            ) =&gt; runtime_ptr_ge(this, origin)
 <a href=#727 id=727 data-nosnippet>727</a>        );
 <a href=#728 id=728 data-nosnippet>728</a>
-<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>pointee_size = size_of::&lt;T&gt;();
-<a href=#730 id=730 data-nosnippet>730</a>        <span class="macro">assert!</span>(<span class="number">0 </span>&lt; pointee_size &amp;&amp; pointee_size &lt;= isize::MAX <span class="kw">as </span>usize);
+<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>pointee_size = <a href="../mem/mod.rs.html#375-384">size_of</a>::&lt;T&gt;();
+<a href=#730 id=730 data-nosnippet>730</a>        <a href="../macros/mod.rs.html#1738-1741">assert!</a>(<span class="number">0 </span>&lt; pointee_size &amp;&amp; pointee_size &lt;= isize::MAX <span class="kw">as </span>usize);
 <a href=#731 id=731 data-nosnippet>731</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `ptr_offset_from_unsigned`.
-<a href=#732 id=732 data-nosnippet>732</a>        </span><span class="kw">unsafe </span>{ intrinsics::ptr_offset_from_unsigned(<span class="self">self</span>, origin) }
+<a href=#732 id=732 data-nosnippet>732</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#2379">ptr_offset_from_unsigned</a>(<a class="self" href="#704">self</a>, <a href="#704">origin</a>) }
 <a href=#733 id=733 data-nosnippet>733</a>    }
 <a href=#734 id=734 data-nosnippet>734</a>
 <a href=#735 id=735 data-nosnippet>735</a>    <span class="doccomment">/// Calculates the distance between two pointers within the same allocation, *where it's known that
@@ -746,9 +746,9 @@
 <a href=#746 id=746 data-nosnippet>746</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_sub_ptr"</span>, since = <span class="string">"1.87.0"</span>)]
 <a href=#747 id=747 data-nosnippet>747</a>    #[inline]
 <a href=#748 id=748 data-nosnippet>748</a>    #[track_caller]
-<a href=#749 id=749 data-nosnippet>749</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset_from_unsigned&lt;U: <span class="question-mark">?</span>Sized&gt;(<span class="self">self</span>, origin: <span class="kw-2">*const </span>U) -&gt; usize {
+<a href=#749 id=749 data-nosnippet>749</a>    </span><span class="kw">pub const unsafe fn </span>byte_offset_from_unsigned&lt;U: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt;(<span class="self">self</span>, origin: <span class="kw-2">*const </span>U) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
 <a href=#750 id=750 data-nosnippet>750</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset_from_unsigned`.
-<a href=#751 id=751 data-nosnippet>751</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.cast::&lt;u8&gt;().offset_from_unsigned(origin.cast::&lt;u8&gt;()) }
+<a href=#751 id=751 data-nosnippet>751</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#749">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#704-733">offset_from_unsigned</a>(<a href="#749">origin</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;()) }
 <a href=#752 id=752 data-nosnippet>752</a>    }
 <a href=#753 id=753 data-nosnippet>753</a>
 <a href=#754 id=754 data-nosnippet>754</a>    <span class="doccomment">/// Returns whether two pointers are guaranteed to be equal.
@@ -771,13 +771,13 @@
 <a href=#771 id=771 data-nosnippet>771</a>    </span><span class="attr">#[unstable(feature = <span class="string">"const_raw_ptr_comparison"</span>, issue = <span class="string">"53020"</span>)]
 <a href=#772 id=772 data-nosnippet>772</a>    #[rustc_const_unstable(feature = <span class="string">"const_raw_ptr_comparison"</span>, issue = <span class="string">"53020"</span>)]
 <a href=#773 id=773 data-nosnippet>773</a>    #[inline]
-<a href=#774 id=774 data-nosnippet>774</a>    </span><span class="kw">pub const fn </span>guaranteed_eq(<span class="self">self</span>, other: <span class="kw-2">*const </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt;
+<a href=#774 id=774 data-nosnippet>774</a>    </span><span class="kw">pub const fn </span>guaranteed_eq(<span class="self">self</span>, other: <span class="kw-2">*const </span>T) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.bool.html">bool</a>&gt;
 <a href=#775 id=775 data-nosnippet>775</a>    <span class="kw">where
-<a href=#776 id=776 data-nosnippet>776</a>        </span>T: Sized,
+<a href=#776 id=776 data-nosnippet>776</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#777 id=777 data-nosnippet>777</a>    {
-<a href=#778 id=778 data-nosnippet>778</a>        <span class="kw">match </span>intrinsics::ptr_guaranteed_cmp(<span class="self">self</span>, other) {
-<a href=#779 id=779 data-nosnippet>779</a>            <span class="number">2 </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#780 id=780 data-nosnippet>780</a>            other =&gt; <span class="prelude-val">Some</span>(other == <span class="number">1</span>),
+<a href=#778 id=778 data-nosnippet>778</a>        <span class="kw">match </span>intrinsics::<a href="../intrinsics/mod.rs.html#2390-2392">ptr_guaranteed_cmp</a>(<a class="self" href="#774">self</a>, <a href="#774">other</a>) {
+<a href=#779 id=779 data-nosnippet>779</a>            <span class="number">2 </span>=&gt; <a class="prelude-val" href="../option.rs.html#602">None</a>,
+<a href=#780 id=780 data-nosnippet>780</a>            other =&gt; <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#780">other</a> == <span class="number">1</span>),
 <a href=#781 id=781 data-nosnippet>781</a>        }
 <a href=#782 id=782 data-nosnippet>782</a>    }
 <a href=#783 id=783 data-nosnippet>783</a>
@@ -801,13 +801,13 @@
 <a href=#801 id=801 data-nosnippet>801</a>    </span><span class="attr">#[unstable(feature = <span class="string">"const_raw_ptr_comparison"</span>, issue = <span class="string">"53020"</span>)]
 <a href=#802 id=802 data-nosnippet>802</a>    #[rustc_const_unstable(feature = <span class="string">"const_raw_ptr_comparison"</span>, issue = <span class="string">"53020"</span>)]
 <a href=#803 id=803 data-nosnippet>803</a>    #[inline]
-<a href=#804 id=804 data-nosnippet>804</a>    </span><span class="kw">pub const fn </span>guaranteed_ne(<span class="self">self</span>, other: <span class="kw-2">*const </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt;
+<a href=#804 id=804 data-nosnippet>804</a>    </span><span class="kw">pub const fn </span>guaranteed_ne(<span class="self">self</span>, other: <span class="kw-2">*const </span>T) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.bool.html">bool</a>&gt;
 <a href=#805 id=805 data-nosnippet>805</a>    <span class="kw">where
-<a href=#806 id=806 data-nosnippet>806</a>        </span>T: Sized,
+<a href=#806 id=806 data-nosnippet>806</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#807 id=807 data-nosnippet>807</a>    {
-<a href=#808 id=808 data-nosnippet>808</a>        <span class="kw">match </span><span class="self">self</span>.guaranteed_eq(other) {
-<a href=#809 id=809 data-nosnippet>809</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#810 id=810 data-nosnippet>810</a>            <span class="prelude-val">Some</span>(eq) =&gt; <span class="prelude-val">Some</span>(!eq),
+<a href=#808 id=808 data-nosnippet>808</a>        <span class="kw">match </span><a class="self" href="#804">self</a>.<a href="#774-782">guaranteed_eq</a>(<a href="#804">other</a>) {
+<a href=#809 id=809 data-nosnippet>809</a>            <a class="prelude-val" href="../option.rs.html#602">None</a> =&gt; <a class="prelude-val" href="../option.rs.html#602">None</a>,
+<a href=#810 id=810 data-nosnippet>810</a>            <a class="prelude-val" href="../option.rs.html#606">Some</a>(eq) =&gt; <a class="prelude-val" href="../option.rs.html#606">Some</a>(!<a href="#810">eq</a>),
 <a href=#811 id=811 data-nosnippet>811</a>        }
 <a href=#812 id=812 data-nosnippet>812</a>    }
 <a href=#813 id=813 data-nosnippet>813</a>
@@ -833,15 +833,15 @@
 <a href=#833 id=833 data-nosnippet>833</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#834 id=834 data-nosnippet>834</a>    #[inline(always)]
 <a href=#835 id=835 data-nosnippet>835</a>    #[track_caller]
-<a href=#836 id=836 data-nosnippet>836</a>    </span><span class="kw">pub const unsafe fn </span>add(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self
+<a href=#836 id=836 data-nosnippet>836</a>    </span><span class="kw">pub const unsafe fn </span>add(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self
 <a href=#837 id=837 data-nosnippet>837</a>    </span><span class="kw">where
-<a href=#838 id=838 data-nosnippet>838</a>        </span>T: Sized,
+<a href=#838 id=838 data-nosnippet>838</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#839 id=839 data-nosnippet>839</a>    {
 <a href=#840 id=840 data-nosnippet>840</a>        <span class="attr">#[cfg(debug_assertions)]
 <a href=#841 id=841 data-nosnippet>841</a>        #[inline]
 <a href=#842 id=842 data-nosnippet>842</a>        #[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#843 id=843 data-nosnippet>843</a>        </span><span class="kw">const fn </span>runtime_add_nowrap(this: <span class="kw-2">*const </span>(), count: usize, size: usize) -&gt; bool {
-<a href=#844 id=844 data-nosnippet>844</a>            <span class="macro">const_eval_select!</span>(
+<a href=#843 id=843 data-nosnippet>843</a>        </span><span class="kw">const fn </span>runtime_add_nowrap(this: <span class="kw-2">*const </span>(), count: <a href="../../../core/primitive.usize.html">usize</a>, size: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#844 id=844 data-nosnippet>844</a>            <a href="../intrinsics/mod.rs.html#2528-2570">const_eval_select!</a>(
 <a href=#845 id=845 data-nosnippet>845</a>                @capture { this: <span class="kw-2">*const </span>(), count: usize, size: usize } -&gt; bool:
 <a href=#846 id=846 data-nosnippet>846</a>                <span class="kw">if const </span>{
 <a href=#847 id=847 data-nosnippet>847</a>                    <span class="bool-val">true
@@ -856,7 +856,7 @@
 <a href=#856 id=856 data-nosnippet>856</a>        }
 <a href=#857 id=857 data-nosnippet>857</a>
 <a href=#858 id=858 data-nosnippet>858</a>        <span class="attr">#[cfg(debug_assertions)] </span><span class="comment">// Expensive, and doesn't catch much in the wild.
-<a href=#859 id=859 data-nosnippet>859</a>        </span><span class="macro">ub_checks::assert_unsafe_precondition!</span>(
+<a href=#859 id=859 data-nosnippet>859</a>        </span><a href="../ub_checks.rs.html#53-82">ub_checks::assert_unsafe_precondition!</a>(
 <a href=#860 id=860 data-nosnippet>860</a>            check_language_ub,
 <a href=#861 id=861 data-nosnippet>861</a>            <span class="string">"ptr::add requires that the address calculation does not overflow"</span>,
 <a href=#862 id=862 data-nosnippet>862</a>            (
@@ -867,7 +867,7 @@
 <a href=#867 id=867 data-nosnippet>867</a>        );
 <a href=#868 id=868 data-nosnippet>868</a>
 <a href=#869 id=869 data-nosnippet>869</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset`.
-<a href=#870 id=870 data-nosnippet>870</a>        </span><span class="kw">unsafe </span>{ intrinsics::offset(<span class="self">self</span>, count) }
+<a href=#870 id=870 data-nosnippet>870</a>        </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#1165">offset</a>(<a class="self" href="#836">self</a>, <a href="#836">count</a>) }
 <a href=#871 id=871 data-nosnippet>871</a>    }
 <a href=#872 id=872 data-nosnippet>872</a>
 <a href=#873 id=873 data-nosnippet>873</a>    <span class="doccomment">/// Adds an unsigned offset in bytes to a pointer.
@@ -885,9 +885,9 @@
 <a href=#885 id=885 data-nosnippet>885</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#886 id=886 data-nosnippet>886</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#887 id=887 data-nosnippet>887</a>    #[track_caller]
-<a href=#888 id=888 data-nosnippet>888</a>    </span><span class="kw">pub const unsafe fn </span>byte_add(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self </span>{
+<a href=#888 id=888 data-nosnippet>888</a>    </span><span class="kw">pub const unsafe fn </span>byte_add(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
 <a href=#889 id=889 data-nosnippet>889</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `add`.
-<a href=#890 id=890 data-nosnippet>890</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.cast::&lt;u8&gt;().add(count).with_metadata_of(<span class="self">self</span>) }
+<a href=#890 id=890 data-nosnippet>890</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#888">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#836-871">add</a>(<a href="#888">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#888">self</a>) }
 <a href=#891 id=891 data-nosnippet>891</a>    }
 <a href=#892 id=892 data-nosnippet>892</a>
 <a href=#893 id=893 data-nosnippet>893</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/sub.md"</span>)]
@@ -912,15 +912,15 @@
 <a href=#912 id=912 data-nosnippet>912</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#913 id=913 data-nosnippet>913</a>    #[inline(always)]
 <a href=#914 id=914 data-nosnippet>914</a>    #[track_caller]
-<a href=#915 id=915 data-nosnippet>915</a>    </span><span class="kw">pub const unsafe fn </span>sub(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self
+<a href=#915 id=915 data-nosnippet>915</a>    </span><span class="kw">pub const unsafe fn </span>sub(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self
 <a href=#916 id=916 data-nosnippet>916</a>    </span><span class="kw">where
-<a href=#917 id=917 data-nosnippet>917</a>        </span>T: Sized,
+<a href=#917 id=917 data-nosnippet>917</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#918 id=918 data-nosnippet>918</a>    {
 <a href=#919 id=919 data-nosnippet>919</a>        <span class="attr">#[cfg(debug_assertions)]
 <a href=#920 id=920 data-nosnippet>920</a>        #[inline]
 <a href=#921 id=921 data-nosnippet>921</a>        #[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#922 id=922 data-nosnippet>922</a>        </span><span class="kw">const fn </span>runtime_sub_nowrap(this: <span class="kw-2">*const </span>(), count: usize, size: usize) -&gt; bool {
-<a href=#923 id=923 data-nosnippet>923</a>            <span class="macro">const_eval_select!</span>(
+<a href=#922 id=922 data-nosnippet>922</a>        </span><span class="kw">const fn </span>runtime_sub_nowrap(this: <span class="kw-2">*const </span>(), count: <a href="../../../core/primitive.usize.html">usize</a>, size: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#923 id=923 data-nosnippet>923</a>            <a href="../intrinsics/mod.rs.html#2528-2570">const_eval_select!</a>(
 <a href=#924 id=924 data-nosnippet>924</a>                @capture { this: <span class="kw-2">*const </span>(), count: usize, size: usize } -&gt; bool:
 <a href=#925 id=925 data-nosnippet>925</a>                <span class="kw">if const </span>{
 <a href=#926 id=926 data-nosnippet>926</a>                    <span class="bool-val">true
@@ -934,7 +934,7 @@
 <a href=#934 id=934 data-nosnippet>934</a>        }
 <a href=#935 id=935 data-nosnippet>935</a>
 <a href=#936 id=936 data-nosnippet>936</a>        <span class="attr">#[cfg(debug_assertions)] </span><span class="comment">// Expensive, and doesn't catch much in the wild.
-<a href=#937 id=937 data-nosnippet>937</a>        </span><span class="macro">ub_checks::assert_unsafe_precondition!</span>(
+<a href=#937 id=937 data-nosnippet>937</a>        </span><a href="../ub_checks.rs.html#53-82">ub_checks::assert_unsafe_precondition!</a>(
 <a href=#938 id=938 data-nosnippet>938</a>            check_language_ub,
 <a href=#939 id=939 data-nosnippet>939</a>            <span class="string">"ptr::sub requires that the address calculation does not overflow"</span>,
 <a href=#940 id=940 data-nosnippet>940</a>            (
@@ -944,14 +944,14 @@
 <a href=#944 id=944 data-nosnippet>944</a>            ) =&gt; runtime_sub_nowrap(this, count, size)
 <a href=#945 id=945 data-nosnippet>945</a>        );
 <a href=#946 id=946 data-nosnippet>946</a>
-<a href=#947 id=947 data-nosnippet>947</a>        <span class="kw">if </span>T::IS_ZST {
+<a href=#947 id=947 data-nosnippet>947</a>        <span class="kw">if </span>T::<a href="../mem/mod.rs.html#1513">IS_ZST</a> {
 <a href=#948 id=948 data-nosnippet>948</a>            <span class="comment">// Pointer arithmetic does nothing when the pointee is a ZST.
-<a href=#949 id=949 data-nosnippet>949</a>            </span><span class="self">self
-<a href=#950 id=950 data-nosnippet>950</a>        </span>} <span class="kw">else </span>{
+<a href=#949 id=949 data-nosnippet>949</a>            </span><a class="self" href="#915">self</a>
+<a href=#950 id=950 data-nosnippet>950</a>        } <span class="kw">else </span>{
 <a href=#951 id=951 data-nosnippet>951</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `offset`.
 <a href=#952 id=952 data-nosnippet>952</a>            // Because the pointee is *not* a ZST, that means that `count` is
 <a href=#953 id=953 data-nosnippet>953</a>            // at most `isize::MAX`, and thus the negation cannot overflow.
-<a href=#954 id=954 data-nosnippet>954</a>            </span><span class="kw">unsafe </span>{ intrinsics::offset(<span class="self">self</span>, intrinsics::unchecked_sub(<span class="number">0</span>, count <span class="kw">as </span>isize)) }
+<a href=#954 id=954 data-nosnippet>954</a>            </span><span class="kw">unsafe </span>{ intrinsics::<a href="../intrinsics/mod.rs.html#1165">offset</a>(<a class="self" href="#915">self</a>, intrinsics::<a href="../intrinsics/mod.rs.html#2099">unchecked_sub</a>(<span class="number">0</span>, <a href="#915">count</a> <span class="kw">as </span><a href="../../../core/primitive.isize.html">isize</a>)) }
 <a href=#955 id=955 data-nosnippet>955</a>        }
 <a href=#956 id=956 data-nosnippet>956</a>    }
 <a href=#957 id=957 data-nosnippet>957</a>
@@ -970,9 +970,9 @@
 <a href=#970 id=970 data-nosnippet>970</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#971 id=971 data-nosnippet>971</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#972 id=972 data-nosnippet>972</a>    #[track_caller]
-<a href=#973 id=973 data-nosnippet>973</a>    </span><span class="kw">pub const unsafe fn </span>byte_sub(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self </span>{
+<a href=#973 id=973 data-nosnippet>973</a>    </span><span class="kw">pub const unsafe fn </span>byte_sub(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
 <a href=#974 id=974 data-nosnippet>974</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `sub`.
-<a href=#975 id=975 data-nosnippet>975</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.cast::&lt;u8&gt;().sub(count).with_metadata_of(<span class="self">self</span>) }
+<a href=#975 id=975 data-nosnippet>975</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#973">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#915-956">sub</a>(<a href="#973">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#973">self</a>) }
 <a href=#976 id=976 data-nosnippet>976</a>    }
 <a href=#977 id=977 data-nosnippet>977</a>
 <a href=#978 id=978 data-nosnippet>978</a>    <span class="doccomment">/// Adds an unsigned offset to a pointer using wrapping arithmetic.
@@ -1031,11 +1031,11 @@
 <a href=#1031 id=1031 data-nosnippet>1031</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#1032 id=1032 data-nosnippet>1032</a>    #[allow(clippy::ptr_offset_with_cast)]
 <a href=#1033 id=1033 data-nosnippet>1033</a>    #[inline(always)]
-<a href=#1034 id=1034 data-nosnippet>1034</a>    </span><span class="kw">pub const fn </span>wrapping_add(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self
+<a href=#1034 id=1034 data-nosnippet>1034</a>    </span><span class="kw">pub const fn </span>wrapping_add(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self
 <a href=#1035 id=1035 data-nosnippet>1035</a>    </span><span class="kw">where
-<a href=#1036 id=1036 data-nosnippet>1036</a>        </span>T: Sized,
+<a href=#1036 id=1036 data-nosnippet>1036</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1037 id=1037 data-nosnippet>1037</a>    {
-<a href=#1038 id=1038 data-nosnippet>1038</a>        <span class="self">self</span>.wrapping_offset(count <span class="kw">as </span>isize)
+<a href=#1038 id=1038 data-nosnippet>1038</a>        <a class="self" href="#1034">self</a>.<a href="#467-473">wrapping_offset</a>(<a href="#1034">count</a> <span class="kw">as </span><a href="../../../core/primitive.isize.html">isize</a>)
 <a href=#1039 id=1039 data-nosnippet>1039</a>    }
 <a href=#1040 id=1040 data-nosnippet>1040</a>
 <a href=#1041 id=1041 data-nosnippet>1041</a>    <span class="doccomment">/// Adds an unsigned offset in bytes to a pointer using wrapping arithmetic.
@@ -1051,8 +1051,8 @@
 <a href=#1051 id=1051 data-nosnippet>1051</a>    #[inline(always)]
 <a href=#1052 id=1052 data-nosnippet>1052</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#1053 id=1053 data-nosnippet>1053</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
-<a href=#1054 id=1054 data-nosnippet>1054</a>    </span><span class="kw">pub const fn </span>wrapping_byte_add(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self </span>{
-<a href=#1055 id=1055 data-nosnippet>1055</a>        <span class="self">self</span>.cast::&lt;u8&gt;().wrapping_add(count).with_metadata_of(<span class="self">self</span>)
+<a href=#1054 id=1054 data-nosnippet>1054</a>    </span><span class="kw">pub const fn </span>wrapping_byte_add(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#1055 id=1055 data-nosnippet>1055</a>        <a class="self" href="#1054">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#1034-1039">wrapping_add</a>(<a href="#1054">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#1054">self</a>)
 <a href=#1056 id=1056 data-nosnippet>1056</a>    }
 <a href=#1057 id=1057 data-nosnippet>1057</a>
 <a href=#1058 id=1058 data-nosnippet>1058</a>    <span class="doccomment">/// Subtracts an unsigned offset from a pointer using wrapping arithmetic.
@@ -1110,11 +1110,11 @@
 <a href=#1110 id=1110 data-nosnippet>1110</a>    #[must_use = <span class="string">"returns a new pointer rather than modifying its argument"</span>]
 <a href=#1111 id=1111 data-nosnippet>1111</a>    #[rustc_const_stable(feature = <span class="string">"const_ptr_offset"</span>, since = <span class="string">"1.61.0"</span>)]
 <a href=#1112 id=1112 data-nosnippet>1112</a>    #[inline(always)]
-<a href=#1113 id=1113 data-nosnippet>1113</a>    </span><span class="kw">pub const fn </span>wrapping_sub(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self
+<a href=#1113 id=1113 data-nosnippet>1113</a>    </span><span class="kw">pub const fn </span>wrapping_sub(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self
 <a href=#1114 id=1114 data-nosnippet>1114</a>    </span><span class="kw">where
-<a href=#1115 id=1115 data-nosnippet>1115</a>        </span>T: Sized,
+<a href=#1115 id=1115 data-nosnippet>1115</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1116 id=1116 data-nosnippet>1116</a>    {
-<a href=#1117 id=1117 data-nosnippet>1117</a>        <span class="self">self</span>.wrapping_offset((count <span class="kw">as </span>isize).wrapping_neg())
+<a href=#1117 id=1117 data-nosnippet>1117</a>        <a class="self" href="#1113">self</a>.<a href="#467-473">wrapping_offset</a>((<a href="#1113">count</a> <span class="kw">as </span><a href="../../../core/primitive.isize.html">isize</a>).<a href="../num/mod.rs.html#566-585">wrapping_neg</a>())
 <a href=#1118 id=1118 data-nosnippet>1118</a>    }
 <a href=#1119 id=1119 data-nosnippet>1119</a>
 <a href=#1120 id=1120 data-nosnippet>1120</a>    <span class="doccomment">/// Subtracts an unsigned offset in bytes from a pointer using wrapping arithmetic.
@@ -1130,8 +1130,8 @@
 <a href=#1130 id=1130 data-nosnippet>1130</a>    #[inline(always)]
 <a href=#1131 id=1131 data-nosnippet>1131</a>    #[stable(feature = <span class="string">"pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
 <a href=#1132 id=1132 data-nosnippet>1132</a>    #[rustc_const_stable(feature = <span class="string">"const_pointer_byte_offsets"</span>, since = <span class="string">"1.75.0"</span>)]
-<a href=#1133 id=1133 data-nosnippet>1133</a>    </span><span class="kw">pub const fn </span>wrapping_byte_sub(<span class="self">self</span>, count: usize) -&gt; <span class="self">Self </span>{
-<a href=#1134 id=1134 data-nosnippet>1134</a>        <span class="self">self</span>.cast::&lt;u8&gt;().wrapping_sub(count).with_metadata_of(<span class="self">self</span>)
+<a href=#1133 id=1133 data-nosnippet>1133</a>    </span><span class="kw">pub const fn </span>wrapping_byte_sub(<span class="self">self</span>, count: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#1134 id=1134 data-nosnippet>1134</a>        <a class="self" href="#1133">self</a>.<a href="#48-50">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;().<a href="#1113-1118">wrapping_sub</a>(<a href="#1133">count</a>).<a href="#128-133">with_metadata_of</a>(<a class="self" href="#1133">self</a>)
 <a href=#1135 id=1135 data-nosnippet>1135</a>    }
 <a href=#1136 id=1136 data-nosnippet>1136</a>
 <a href=#1137 id=1137 data-nosnippet>1137</a>    <span class="doccomment">/// Reads the value from `self` without moving it. This leaves the
@@ -1146,10 +1146,10 @@
 <a href=#1146 id=1146 data-nosnippet>1146</a>    #[track_caller]
 <a href=#1147 id=1147 data-nosnippet>1147</a>    </span><span class="kw">pub const unsafe fn </span>read(<span class="self">self</span>) -&gt; T
 <a href=#1148 id=1148 data-nosnippet>1148</a>    <span class="kw">where
-<a href=#1149 id=1149 data-nosnippet>1149</a>        </span>T: Sized,
+<a href=#1149 id=1149 data-nosnippet>1149</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1150 id=1150 data-nosnippet>1150</a>    {
 <a href=#1151 id=1151 data-nosnippet>1151</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read`.
-<a href=#1152 id=1152 data-nosnippet>1152</a>        </span><span class="kw">unsafe </span>{ read(<span class="self">self</span>) }
+<a href=#1152 id=1152 data-nosnippet>1152</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1715-1756">read</a>(<a class="self" href="#1147">self</a>) }
 <a href=#1153 id=1153 data-nosnippet>1153</a>    }
 <a href=#1154 id=1154 data-nosnippet>1154</a>
 <a href=#1155 id=1155 data-nosnippet>1155</a>    <span class="doccomment">/// Performs a volatile read of the value from `self` without moving it. This
@@ -1168,10 +1168,10 @@
 <a href=#1168 id=1168 data-nosnippet>1168</a>    #[track_caller]
 <a href=#1169 id=1169 data-nosnippet>1169</a>    </span><span class="kw">pub const unsafe fn </span>read_volatile(<span class="self">self</span>) -&gt; T
 <a href=#1170 id=1170 data-nosnippet>1170</a>    <span class="kw">where
-<a href=#1171 id=1171 data-nosnippet>1171</a>        </span>T: Sized,
+<a href=#1171 id=1171 data-nosnippet>1171</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1172 id=1172 data-nosnippet>1172</a>    {
 <a href=#1173 id=1173 data-nosnippet>1173</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read_volatile`.
-<a href=#1174 id=1174 data-nosnippet>1174</a>        </span><span class="kw">unsafe </span>{ read_volatile(<span class="self">self</span>) }
+<a href=#1174 id=1174 data-nosnippet>1174</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#2148-2161">read_volatile</a>(<a class="self" href="#1169">self</a>) }
 <a href=#1175 id=1175 data-nosnippet>1175</a>    }
 <a href=#1176 id=1176 data-nosnippet>1176</a>
 <a href=#1177 id=1177 data-nosnippet>1177</a>    <span class="doccomment">/// Reads the value from `self` without moving it. This leaves the
@@ -1188,10 +1188,10 @@
 <a href=#1188 id=1188 data-nosnippet>1188</a>    #[track_caller]
 <a href=#1189 id=1189 data-nosnippet>1189</a>    </span><span class="kw">pub const unsafe fn </span>read_unaligned(<span class="self">self</span>) -&gt; T
 <a href=#1190 id=1190 data-nosnippet>1190</a>    <span class="kw">where
-<a href=#1191 id=1191 data-nosnippet>1191</a>        </span>T: Sized,
+<a href=#1191 id=1191 data-nosnippet>1191</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1192 id=1192 data-nosnippet>1192</a>    {
 <a href=#1193 id=1193 data-nosnippet>1193</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read_unaligned`.
-<a href=#1194 id=1194 data-nosnippet>1194</a>        </span><span class="kw">unsafe </span>{ read_unaligned(<span class="self">self</span>) }
+<a href=#1194 id=1194 data-nosnippet>1194</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1833-1853">read_unaligned</a>(<a class="self" href="#1189">self</a>) }
 <a href=#1195 id=1195 data-nosnippet>1195</a>    }
 <a href=#1196 id=1196 data-nosnippet>1196</a>
 <a href=#1197 id=1197 data-nosnippet>1197</a>    <span class="doccomment">/// Copies `count * size_of::&lt;T&gt;()` bytes from `self` to `dest`. The source
@@ -1206,12 +1206,12 @@
 <a href=#1206 id=1206 data-nosnippet>1206</a>    #[stable(feature = <span class="string">"pointer_methods"</span>, since = <span class="string">"1.26.0"</span>)]
 <a href=#1207 id=1207 data-nosnippet>1207</a>    #[inline(always)]
 <a href=#1208 id=1208 data-nosnippet>1208</a>    #[track_caller]
-<a href=#1209 id=1209 data-nosnippet>1209</a>    </span><span class="kw">pub const unsafe fn </span>copy_to(<span class="self">self</span>, dest: <span class="kw-2">*mut </span>T, count: usize)
+<a href=#1209 id=1209 data-nosnippet>1209</a>    </span><span class="kw">pub const unsafe fn </span>copy_to(<span class="self">self</span>, dest: <span class="kw-2">*mut </span>T, count: <a href="../../../core/primitive.usize.html">usize</a>)
 <a href=#1210 id=1210 data-nosnippet>1210</a>    <span class="kw">where
-<a href=#1211 id=1211 data-nosnippet>1211</a>        </span>T: Sized,
+<a href=#1211 id=1211 data-nosnippet>1211</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1212 id=1212 data-nosnippet>1212</a>    {
 <a href=#1213 id=1213 data-nosnippet>1213</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `copy`.
-<a href=#1214 id=1214 data-nosnippet>1214</a>        </span><span class="kw">unsafe </span>{ copy(<span class="self">self</span>, dest, count) }
+<a href=#1214 id=1214 data-nosnippet>1214</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#646-663">copy</a>(<a class="self" href="#1209">self</a>, <a href="#1209">dest</a>, <a href="#1209">count</a>) }
 <a href=#1215 id=1215 data-nosnippet>1215</a>    }
 <a href=#1216 id=1216 data-nosnippet>1216</a>
 <a href=#1217 id=1217 data-nosnippet>1217</a>    <span class="doccomment">/// Copies `count * size_of::&lt;T&gt;()` bytes from `self` to `dest`. The source
@@ -1226,12 +1226,12 @@
 <a href=#1226 id=1226 data-nosnippet>1226</a>    #[stable(feature = <span class="string">"pointer_methods"</span>, since = <span class="string">"1.26.0"</span>)]
 <a href=#1227 id=1227 data-nosnippet>1227</a>    #[inline(always)]
 <a href=#1228 id=1228 data-nosnippet>1228</a>    #[track_caller]
-<a href=#1229 id=1229 data-nosnippet>1229</a>    </span><span class="kw">pub const unsafe fn </span>copy_to_nonoverlapping(<span class="self">self</span>, dest: <span class="kw-2">*mut </span>T, count: usize)
+<a href=#1229 id=1229 data-nosnippet>1229</a>    </span><span class="kw">pub const unsafe fn </span>copy_to_nonoverlapping(<span class="self">self</span>, dest: <span class="kw-2">*mut </span>T, count: <a href="../../../core/primitive.usize.html">usize</a>)
 <a href=#1230 id=1230 data-nosnippet>1230</a>    <span class="kw">where
-<a href=#1231 id=1231 data-nosnippet>1231</a>        </span>T: Sized,
+<a href=#1231 id=1231 data-nosnippet>1231</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1232 id=1232 data-nosnippet>1232</a>    {
 <a href=#1233 id=1233 data-nosnippet>1233</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `copy_nonoverlapping`.
-<a href=#1234 id=1234 data-nosnippet>1234</a>        </span><span class="kw">unsafe </span>{ copy_nonoverlapping(<span class="self">self</span>, dest, count) }
+<a href=#1234 id=1234 data-nosnippet>1234</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#549-571">copy_nonoverlapping</a>(<a class="self" href="#1229">self</a>, <a href="#1229">dest</a>, <a href="#1229">count</a>) }
 <a href=#1235 id=1235 data-nosnippet>1235</a>    }
 <a href=#1236 id=1236 data-nosnippet>1236</a>
 <a href=#1237 id=1237 data-nosnippet>1237</a>    <span class="doccomment">/// Computes the offset that needs to be applied to the pointer in order to make it aligned to
@@ -1273,16 +1273,16 @@
 <a href=#1273 id=1273 data-nosnippet>1273</a>    </span><span class="attr">#[must_use]
 <a href=#1274 id=1274 data-nosnippet>1274</a>    #[inline]
 <a href=#1275 id=1275 data-nosnippet>1275</a>    #[stable(feature = <span class="string">"align_offset"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#1276 id=1276 data-nosnippet>1276</a>    </span><span class="kw">pub fn </span>align_offset(<span class="self">self</span>, align: usize) -&gt; usize
+<a href=#1276 id=1276 data-nosnippet>1276</a>    </span><span class="kw">pub fn </span>align_offset(<span class="self">self</span>, align: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.usize.html">usize</a>
 <a href=#1277 id=1277 data-nosnippet>1277</a>    <span class="kw">where
-<a href=#1278 id=1278 data-nosnippet>1278</a>        </span>T: Sized,
+<a href=#1278 id=1278 data-nosnippet>1278</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1279 id=1279 data-nosnippet>1279</a>    {
-<a href=#1280 id=1280 data-nosnippet>1280</a>        <span class="kw">if </span>!align.is_power_of_two() {
-<a href=#1281 id=1281 data-nosnippet>1281</a>            <span class="macro">panic!</span>(<span class="string">"align_offset: align is not a power-of-two"</span>);
+<a href=#1280 id=1280 data-nosnippet>1280</a>        <span class="kw">if </span>!<a href="#1276">align</a>.<a href="../num/mod.rs.html#1460-1484">is_power_of_two</a>() {
+<a href=#1281 id=1281 data-nosnippet>1281</a>            <a href="../macros/mod.rs.html#7-13">panic!</a>(<span class="string">"align_offset: align is not a power-of-two"</span>);
 <a href=#1282 id=1282 data-nosnippet>1282</a>        }
 <a href=#1283 id=1283 data-nosnippet>1283</a>
 <a href=#1284 id=1284 data-nosnippet>1284</a>        <span class="comment">// SAFETY: `align` has been checked to be a power of 2 above
-<a href=#1285 id=1285 data-nosnippet>1285</a>        </span><span class="kw">let </span>ret = <span class="kw">unsafe </span>{ align_offset(<span class="self">self</span>, align) };
+<a href=#1285 id=1285 data-nosnippet>1285</a>        </span><span class="kw">let </span>ret = <span class="kw">unsafe </span>{ <a href="mod.rs.html#2287-2457">align_offset</a>(<a class="self" href="#1276">self</a>, <a href="#1276">align</a>) };
 <a href=#1286 id=1286 data-nosnippet>1286</a>
 <a href=#1287 id=1287 data-nosnippet>1287</a>        <span class="comment">// Inform Miri that we want to consider the resulting pointer to be suitably aligned.
 <a href=#1288 id=1288 data-nosnippet>1288</a>        </span><span class="attr">#[cfg(miri)]
@@ -1290,7 +1290,7 @@
 <a href=#1290 id=1290 data-nosnippet>1290</a>            intrinsics::miri_promise_symbolic_alignment(<span class="self">self</span>.wrapping_add(ret).cast(), align);
 <a href=#1291 id=1291 data-nosnippet>1291</a>        }
 <a href=#1292 id=1292 data-nosnippet>1292</a>
-<a href=#1293 id=1293 data-nosnippet>1293</a>        ret
+<a href=#1293 id=1293 data-nosnippet>1293</a>        <a href="#1285">ret</a>
 <a href=#1294 id=1294 data-nosnippet>1294</a>    }
 <a href=#1295 id=1295 data-nosnippet>1295</a>
 <a href=#1296 id=1296 data-nosnippet>1296</a>    <span class="doccomment">/// Returns whether the pointer is properly aligned for `T`.
@@ -1311,11 +1311,11 @@
 <a href=#1311 id=1311 data-nosnippet>1311</a>    </span><span class="attr">#[must_use]
 <a href=#1312 id=1312 data-nosnippet>1312</a>    #[inline]
 <a href=#1313 id=1313 data-nosnippet>1313</a>    #[stable(feature = <span class="string">"pointer_is_aligned"</span>, since = <span class="string">"1.79.0"</span>)]
-<a href=#1314 id=1314 data-nosnippet>1314</a>    </span><span class="kw">pub fn </span>is_aligned(<span class="self">self</span>) -&gt; bool
+<a href=#1314 id=1314 data-nosnippet>1314</a>    </span><span class="kw">pub fn </span>is_aligned(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a>
 <a href=#1315 id=1315 data-nosnippet>1315</a>    <span class="kw">where
-<a href=#1316 id=1316 data-nosnippet>1316</a>        </span>T: Sized,
+<a href=#1316 id=1316 data-nosnippet>1316</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1317 id=1317 data-nosnippet>1317</a>    {
-<a href=#1318 id=1318 data-nosnippet>1318</a>        <span class="self">self</span>.is_aligned_to(align_of::&lt;T&gt;())
+<a href=#1318 id=1318 data-nosnippet>1318</a>        <a class="self" href="#1314">self</a>.<a href="#1354-1360">is_aligned_to</a>(<a href="../mem/mod.rs.html#543-545">align_of</a>::&lt;T&gt;())
 <a href=#1319 id=1319 data-nosnippet>1319</a>    }
 <a href=#1320 id=1320 data-nosnippet>1320</a>
 <a href=#1321 id=1321 data-nosnippet>1321</a>    <span class="doccomment">/// Returns whether the pointer is aligned to `align`.
@@ -1351,12 +1351,12 @@
 <a href=#1351 id=1351 data-nosnippet>1351</a>    </span><span class="attr">#[must_use]
 <a href=#1352 id=1352 data-nosnippet>1352</a>    #[inline]
 <a href=#1353 id=1353 data-nosnippet>1353</a>    #[unstable(feature = <span class="string">"pointer_is_aligned_to"</span>, issue = <span class="string">"96284"</span>)]
-<a href=#1354 id=1354 data-nosnippet>1354</a>    </span><span class="kw">pub fn </span>is_aligned_to(<span class="self">self</span>, align: usize) -&gt; bool {
-<a href=#1355 id=1355 data-nosnippet>1355</a>        <span class="kw">if </span>!align.is_power_of_two() {
-<a href=#1356 id=1356 data-nosnippet>1356</a>            <span class="macro">panic!</span>(<span class="string">"is_aligned_to: align is not a power-of-two"</span>);
+<a href=#1354 id=1354 data-nosnippet>1354</a>    </span><span class="kw">pub fn </span>is_aligned_to(<span class="self">self</span>, align: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1355 id=1355 data-nosnippet>1355</a>        <span class="kw">if </span>!<a href="#1354">align</a>.<a href="../num/mod.rs.html#1460-1484">is_power_of_two</a>() {
+<a href=#1356 id=1356 data-nosnippet>1356</a>            <a href="../macros/mod.rs.html#7-13">panic!</a>(<span class="string">"is_aligned_to: align is not a power-of-two"</span>);
 <a href=#1357 id=1357 data-nosnippet>1357</a>        }
 <a href=#1358 id=1358 data-nosnippet>1358</a>
-<a href=#1359 id=1359 data-nosnippet>1359</a>        <span class="self">self</span>.addr() &amp; (align - <span class="number">1</span>) == <span class="number">0
+<a href=#1359 id=1359 data-nosnippet>1359</a>        <a class="self" href="#1354">self</a>.<a href="#152-159">addr</a>() &amp; (<a href="#1354">align</a> - <span class="number">1</span>) == <span class="number">0
 <a href=#1360 id=1360 data-nosnippet>1360</a>    </span>}
 <a href=#1361 id=1361 data-nosnippet>1361</a>}
 <a href=#1362 id=1362 data-nosnippet>1362</a>
@@ -1365,8 +1365,8 @@
 <a href=#1365 id=1365 data-nosnippet>1365</a>    </span><span class="attr">#[must_use]
 <a href=#1366 id=1366 data-nosnippet>1366</a>    #[inline(always)]
 <a href=#1367 id=1367 data-nosnippet>1367</a>    #[unstable(feature = <span class="string">"cast_maybe_uninit"</span>, issue = <span class="string">"145036"</span>)]
-<a href=#1368 id=1368 data-nosnippet>1368</a>    </span><span class="kw">pub const fn </span>cast_uninit(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>MaybeUninit&lt;T&gt; {
-<a href=#1369 id=1369 data-nosnippet>1369</a>        <span class="self">self </span><span class="kw">as _
+<a href=#1368 id=1368 data-nosnippet>1368</a>    </span><span class="kw">pub const fn </span>cast_uninit(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt; {
+<a href=#1369 id=1369 data-nosnippet>1369</a>        <a class="self" href="#1368">self</a> <span class="kw">as _
 <a href=#1370 id=1370 data-nosnippet>1370</a>    </span>}
 <a href=#1371 id=1371 data-nosnippet>1371</a>
 <a href=#1372 id=1372 data-nosnippet>1372</a>    <span class="doccomment">/// Forms a raw slice from a pointer and a length.
@@ -1399,11 +1399,11 @@
 <a href=#1399 id=1399 data-nosnippet>1399</a>    </span><span class="attr">#[inline]
 <a href=#1400 id=1400 data-nosnippet>1400</a>    #[stable(feature = <span class="string">"ptr_cast_slice"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
 <a href=#1401 id=1401 data-nosnippet>1401</a>    #[rustc_const_stable(feature = <span class="string">"ptr_cast_slice"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
-<a href=#1402 id=1402 data-nosnippet>1402</a>    </span><span class="kw">pub const fn </span>cast_slice(<span class="self">self</span>, len: usize) -&gt; <span class="kw-2">*const </span>[T] {
-<a href=#1403 id=1403 data-nosnippet>1403</a>        slice_from_raw_parts(<span class="self">self</span>, len)
+<a href=#1402 id=1402 data-nosnippet>1402</a>    </span><span class="kw">pub const fn </span>cast_slice(<span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">*const </span>[T] {
+<a href=#1403 id=1403 data-nosnippet>1403</a>        <a href="mod.rs.html#1210-1212">slice_from_raw_parts</a>(<a class="self" href="#1402">self</a>, <a href="#1402">len</a>)
 <a href=#1404 id=1404 data-nosnippet>1404</a>    }
 <a href=#1405 id=1405 data-nosnippet>1405</a>}
-<a href=#1406 id=1406 data-nosnippet>1406</a><span class="kw">impl</span>&lt;T&gt; <span class="kw-2">*const </span>MaybeUninit&lt;T&gt; {
+<a href=#1406 id=1406 data-nosnippet>1406</a><span class="kw">impl</span>&lt;T&gt; <span class="kw-2">*const </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt; {
 <a href=#1407 id=1407 data-nosnippet>1407</a>    <span class="doccomment">/// Casts from a maybe-uninitialized type to its initialized version.
 <a href=#1408 id=1408 data-nosnippet>1408</a>    ///
 <a href=#1409 id=1409 data-nosnippet>1409</a>    /// This is always safe, since UB can only occur if the pointer is read
@@ -1412,7 +1412,7 @@
 <a href=#1412 id=1412 data-nosnippet>1412</a>    #[inline(always)]
 <a href=#1413 id=1413 data-nosnippet>1413</a>    #[unstable(feature = <span class="string">"cast_maybe_uninit"</span>, issue = <span class="string">"145036"</span>)]
 <a href=#1414 id=1414 data-nosnippet>1414</a>    </span><span class="kw">pub const fn </span>cast_init(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>T {
-<a href=#1415 id=1415 data-nosnippet>1415</a>        <span class="self">self </span><span class="kw">as _
+<a href=#1415 id=1415 data-nosnippet>1415</a>        <a class="self" href="#1414">self</a> <span class="kw">as _
 <a href=#1416 id=1416 data-nosnippet>1416</a>    </span>}
 <a href=#1417 id=1417 data-nosnippet>1417</a>}
 <a href=#1418 id=1418 data-nosnippet>1418</a>
@@ -1435,8 +1435,8 @@
 <a href=#1435 id=1435 data-nosnippet>1435</a>    </span><span class="attr">#[inline(always)]
 <a href=#1436 id=1436 data-nosnippet>1436</a>    #[stable(feature = <span class="string">"slice_ptr_len"</span>, since = <span class="string">"1.79.0"</span>)]
 <a href=#1437 id=1437 data-nosnippet>1437</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_ptr_len"</span>, since = <span class="string">"1.79.0"</span>)]
-<a href=#1438 id=1438 data-nosnippet>1438</a>    </span><span class="kw">pub const fn </span>len(<span class="self">self</span>) -&gt; usize {
-<a href=#1439 id=1439 data-nosnippet>1439</a>        metadata(<span class="self">self</span>)
+<a href=#1438 id=1438 data-nosnippet>1438</a>    </span><span class="kw">pub const fn </span>len(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
+<a href=#1439 id=1439 data-nosnippet>1439</a>        <a href="metadata.rs.html#100-102">metadata</a>(<a class="self" href="#1438">self</a>)
 <a href=#1440 id=1440 data-nosnippet>1440</a>    }
 <a href=#1441 id=1441 data-nosnippet>1441</a>
 <a href=#1442 id=1442 data-nosnippet>1442</a>    <span class="doccomment">/// Returns `true` if the raw slice has a length of 0.
@@ -1452,8 +1452,8 @@
 <a href=#1452 id=1452 data-nosnippet>1452</a>    </span><span class="attr">#[inline(always)]
 <a href=#1453 id=1453 data-nosnippet>1453</a>    #[stable(feature = <span class="string">"slice_ptr_len"</span>, since = <span class="string">"1.79.0"</span>)]
 <a href=#1454 id=1454 data-nosnippet>1454</a>    #[rustc_const_stable(feature = <span class="string">"const_slice_ptr_len"</span>, since = <span class="string">"1.79.0"</span>)]
-<a href=#1455 id=1455 data-nosnippet>1455</a>    </span><span class="kw">pub const fn </span>is_empty(<span class="self">self</span>) -&gt; bool {
-<a href=#1456 id=1456 data-nosnippet>1456</a>        <span class="self">self</span>.len() == <span class="number">0
+<a href=#1455 id=1455 data-nosnippet>1455</a>    </span><span class="kw">pub const fn </span>is_empty(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1456 id=1456 data-nosnippet>1456</a>        <a class="self" href="#1455">self</a>.<a href="#1438-1440">len</a>() == <span class="number">0
 <a href=#1457 id=1457 data-nosnippet>1457</a>    </span>}
 <a href=#1458 id=1458 data-nosnippet>1458</a>
 <a href=#1459 id=1459 data-nosnippet>1459</a>    <span class="doccomment">/// Returns a raw pointer to the slice's buffer.
@@ -1472,7 +1472,7 @@
 <a href=#1472 id=1472 data-nosnippet>1472</a>    </span><span class="attr">#[inline(always)]
 <a href=#1473 id=1473 data-nosnippet>1473</a>    #[unstable(feature = <span class="string">"slice_ptr_get"</span>, issue = <span class="string">"74265"</span>)]
 <a href=#1474 id=1474 data-nosnippet>1474</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>T {
-<a href=#1475 id=1475 data-nosnippet>1475</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>T
+<a href=#1475 id=1475 data-nosnippet>1475</a>        <a class="self" href="#1474">self</a> <span class="kw">as </span><span class="kw-2">*const </span>T
 <a href=#1476 id=1476 data-nosnippet>1476</a>    }
 <a href=#1477 id=1477 data-nosnippet>1477</a>
 <a href=#1478 id=1478 data-nosnippet>1478</a>    <span class="doccomment">/// Gets a raw pointer to the underlying array.
@@ -1482,13 +1482,13 @@
 <a href=#1482 id=1482 data-nosnippet>1482</a>    #[rustc_const_stable(feature = <span class="string">"core_slice_as_array"</span>, since = <span class="string">"1.93.0"</span>)]
 <a href=#1483 id=1483 data-nosnippet>1483</a>    #[inline]
 <a href=#1484 id=1484 data-nosnippet>1484</a>    #[must_use]
-<a href=#1485 id=1485 data-nosnippet>1485</a>    </span><span class="kw">pub const fn </span>as_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>[T; N]&gt; {
-<a href=#1486 id=1486 data-nosnippet>1486</a>        <span class="kw">if </span><span class="self">self</span>.len() == N {
-<a href=#1487 id=1487 data-nosnippet>1487</a>            <span class="kw">let </span>me = <span class="self">self</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span>[T; N];
-<a href=#1488 id=1488 data-nosnippet>1488</a>            <span class="prelude-val">Some</span>(me)
+<a href=#1485 id=1485 data-nosnippet>1485</a>    </span><span class="kw">pub const fn </span>as_array&lt;<span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">*const </span>[T; <a href="#1485">N</a>]&gt; {
+<a href=#1486 id=1486 data-nosnippet>1486</a>        <span class="kw">if </span><a class="self" href="#1485">self</a>.<a href="#1438-1440">len</a>() == <a href="#1485">N</a> {
+<a href=#1487 id=1487 data-nosnippet>1487</a>            <span class="kw">let </span>me = <a class="self" href="#1485">self</a>.<a href="#1474-1476">as_ptr</a>() <span class="kw">as </span><span class="kw-2">*const </span>[T; <a href="#1485">N</a>];
+<a href=#1488 id=1488 data-nosnippet>1488</a>            <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#1487">me</a>)
 <a href=#1489 id=1489 data-nosnippet>1489</a>        } <span class="kw">else </span>{
-<a href=#1490 id=1490 data-nosnippet>1490</a>            <span class="prelude-val">None
-<a href=#1491 id=1491 data-nosnippet>1491</a>        </span>}
+<a href=#1490 id=1490 data-nosnippet>1490</a>            <a class="prelude-val" href="../option.rs.html#602">None</a>
+<a href=#1491 id=1491 data-nosnippet>1491</a>        }
 <a href=#1492 id=1492 data-nosnippet>1492</a>    }
 <a href=#1493 id=1493 data-nosnippet>1493</a>
 <a href=#1494 id=1494 data-nosnippet>1494</a>    <span class="doccomment">/// Returns a raw pointer to an element or subslice, without doing bounds
@@ -1516,21 +1516,21 @@
 <a href=#1516 id=1516 data-nosnippet>1516</a>    #[inline(always)]
 <a href=#1517 id=1517 data-nosnippet>1517</a>    </span><span class="kw">pub const unsafe fn </span>get_unchecked&lt;I&gt;(<span class="self">self</span>, index: I) -&gt; <span class="kw-2">*const </span>I::Output
 <a href=#1518 id=1518 data-nosnippet>1518</a>    <span class="kw">where
-<a href=#1519 id=1519 data-nosnippet>1519</a>        </span>I: [<span class="kw">const</span>] SliceIndex&lt;[T]&gt;,
+<a href=#1519 id=1519 data-nosnippet>1519</a>        </span>I: [<span class="kw">const</span>] <a href="../slice/index.rs.html#124-174">SliceIndex</a>&lt;[T]&gt;,
 <a href=#1520 id=1520 data-nosnippet>1520</a>    {
 <a href=#1521 id=1521 data-nosnippet>1521</a>        <span class="comment">// SAFETY: the caller ensures that `self` is dereferenceable and `index` in-bounds.
-<a href=#1522 id=1522 data-nosnippet>1522</a>        </span><span class="kw">unsafe </span>{ index.get_unchecked(<span class="self">self</span>) }
+<a href=#1522 id=1522 data-nosnippet>1522</a>        </span><span class="kw">unsafe </span>{ <a href="#1517">index</a>.<a href="../slice/index.rs.html#149">get_unchecked</a>(<a class="self" href="#1517">self</a>) }
 <a href=#1523 id=1523 data-nosnippet>1523</a>    }
 <a href=#1524 id=1524 data-nosnippet>1524</a>
 <a href=#1525 id=1525 data-nosnippet>1525</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"docs/as_uninit_slice.md"</span>)]
 <a href=#1526 id=1526 data-nosnippet>1526</a>    #[inline]
 <a href=#1527 id=1527 data-nosnippet>1527</a>    #[unstable(feature = <span class="string">"ptr_as_uninit"</span>, issue = <span class="string">"75402"</span>)]
-<a href=#1528 id=1528 data-nosnippet>1528</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[MaybeUninit&lt;T&gt;]&gt; {
-<a href=#1529 id=1529 data-nosnippet>1529</a>        <span class="kw">if </span><span class="self">self</span>.is_null() {
-<a href=#1530 id=1530 data-nosnippet>1530</a>            <span class="prelude-val">None
-<a href=#1531 id=1531 data-nosnippet>1531</a>        </span>} <span class="kw">else </span>{
+<a href=#1528 id=1528 data-nosnippet>1528</a>    </span><span class="kw">pub const unsafe fn </span>as_uninit_slice&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;]&gt; {
+<a href=#1529 id=1529 data-nosnippet>1529</a>        <span class="kw">if </span><a class="self" href="#1528">self</a>.<a href="#22-41">is_null</a>() {
+<a href=#1530 id=1530 data-nosnippet>1530</a>            <a class="prelude-val" href="../option.rs.html#602">None</a>
+<a href=#1531 id=1531 data-nosnippet>1531</a>        } <span class="kw">else </span>{
 <a href=#1532 id=1532 data-nosnippet>1532</a>            <span class="comment">// SAFETY: the caller must uphold the safety contract for `as_uninit_slice`.
-<a href=#1533 id=1533 data-nosnippet>1533</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ slice::from_raw_parts(<span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>MaybeUninit&lt;T&gt;, <span class="self">self</span>.len()) })
+<a href=#1533 id=1533 data-nosnippet>1533</a>            </span><a class="prelude-val" href="../option.rs.html#606">Some</a>(<span class="kw">unsafe </span>{ slice::<a href="../slice/raw.rs.html#124-141">from_raw_parts</a>(<a class="self" href="#1528">self</a> <span class="kw">as </span><span class="kw-2">*const </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt;, <a class="self" href="#1528">self</a>.<a href="#1438-1440">len</a>()) })
 <a href=#1534 id=1534 data-nosnippet>1534</a>        }
 <a href=#1535 id=1535 data-nosnippet>1535</a>    }
 <a href=#1536 id=1536 data-nosnippet>1536</a>}
@@ -1539,12 +1539,12 @@
 <a href=#1539 id=1539 data-nosnippet>1539</a>    <span class="doccomment">/// Casts from a pointer-to-`T` to a pointer-to-`[T; N]`.
 <a href=#1540 id=1540 data-nosnippet>1540</a>    </span><span class="attr">#[inline]
 <a href=#1541 id=1541 data-nosnippet>1541</a>    #[unstable(feature = <span class="string">"ptr_cast_array"</span>, issue = <span class="string">"144514"</span>)]
-<a href=#1542 id=1542 data-nosnippet>1542</a>    </span><span class="kw">pub const fn </span>cast_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>[T; N] {
-<a href=#1543 id=1543 data-nosnippet>1543</a>        <span class="self">self</span>.cast()
+<a href=#1542 id=1542 data-nosnippet>1542</a>    </span><span class="kw">pub const fn </span>cast_array&lt;<span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>[T; <a href="#1542">N</a>] {
+<a href=#1543 id=1543 data-nosnippet>1543</a>        <a class="self" href="#1542">self</a>.<a href="#48-50">cast</a>()
 <a href=#1544 id=1544 data-nosnippet>1544</a>    }
 <a href=#1545 id=1545 data-nosnippet>1545</a>}
 <a href=#1546 id=1546 data-nosnippet>1546</a>
-<a href=#1547 id=1547 data-nosnippet>1547</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; <span class="kw-2">*const </span>[T; N] {
+<a href=#1547 id=1547 data-nosnippet>1547</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt; <span class="kw-2">*const </span>[T; <a href="#1547">N</a>] {
 <a href=#1548 id=1548 data-nosnippet>1548</a>    <span class="doccomment">/// Returns a raw pointer to the array's buffer.
 <a href=#1549 id=1549 data-nosnippet>1549</a>    ///
 <a href=#1550 id=1550 data-nosnippet>1550</a>    /// This is equivalent to casting `self` to `*const T`, but more type-safe.
@@ -1561,7 +1561,7 @@
 <a href=#1561 id=1561 data-nosnippet>1561</a>    </span><span class="attr">#[inline(always)]
 <a href=#1562 id=1562 data-nosnippet>1562</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
 <a href=#1563 id=1563 data-nosnippet>1563</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>T {
-<a href=#1564 id=1564 data-nosnippet>1564</a>        <span class="self">self </span><span class="kw">as </span><span class="kw-2">*const </span>T
+<a href=#1564 id=1564 data-nosnippet>1564</a>        <a class="self" href="#1563">self</a> <span class="kw">as </span><span class="kw-2">*const </span>T
 <a href=#1565 id=1565 data-nosnippet>1565</a>    }
 <a href=#1566 id=1566 data-nosnippet>1566</a>
 <a href=#1567 id=1567 data-nosnippet>1567</a>    <span class="doccomment">/// Returns a raw pointer to a slice containing the entire array.
@@ -1578,8 +1578,8 @@
 <a href=#1578 id=1578 data-nosnippet>1578</a>    </span><span class="attr">#[inline]
 <a href=#1579 id=1579 data-nosnippet>1579</a>    #[unstable(feature = <span class="string">"array_ptr_get"</span>, issue = <span class="string">"119834"</span>)]
 <a href=#1580 id=1580 data-nosnippet>1580</a>    </span><span class="kw">pub const fn </span>as_slice(<span class="self">self</span>) -&gt; <span class="kw-2">*const </span>[T] {
-<a href=#1581 id=1581 data-nosnippet>1581</a>        <span class="self">self
-<a href=#1582 id=1582 data-nosnippet>1582</a>    </span>}
+<a href=#1581 id=1581 data-nosnippet>1581</a>        <a class="self" href="#1580">self</a>
+<a href=#1582 id=1582 data-nosnippet>1582</a>    }
 <a href=#1583 id=1583 data-nosnippet>1583</a>}
 <a href=#1584 id=1584 data-nosnippet>1584</a>
 <a href=#1585 id=1585 data-nosnippet>1585</a><span class="doccomment">/// For thin pointers, equality is by address, as produced by the [`&lt;*const T&gt;::addr`](pointer::addr) method.
@@ -1588,11 +1588,11 @@
 <a href=#1588 id=1588 data-nosnippet>1588</a>    message = <span class="string">"pointers cannot be reliably compared during const eval"</span>,
 <a href=#1589 id=1589 data-nosnippet>1589</a>    note = <span class="string">"see issue #53020 &lt;https://github.com/rust-lang/rust/issues/53020&gt; for more information"
 <a href=#1590 id=1590 data-nosnippet>1590</a></span>)]
-<a href=#1591 id=1591 data-nosnippet>1591</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; PartialEq <span class="kw">for </span><span class="kw-2">*const </span>T {
+<a href=#1591 id=1591 data-nosnippet>1591</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../cmp.rs.html#253-281">PartialEq</a> <span class="kw">for </span><span class="kw-2">*const </span>T {
 <a href=#1592 id=1592 data-nosnippet>1592</a>    <span class="attr">#[inline(always)]
 <a href=#1593 id=1593 data-nosnippet>1593</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1594 id=1594 data-nosnippet>1594</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; bool {
-<a href=#1595 id=1595 data-nosnippet>1595</a>        <span class="kw-2">*</span><span class="self">self </span>== <span class="kw-2">*</span>other
+<a href=#1594 id=1594 data-nosnippet>1594</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1595 id=1595 data-nosnippet>1595</a>        <span class="kw-2">*</span><a class="self" href="#1594">self</a> == <span class="kw-2">*</span><a href="#1594">other</a>
 <a href=#1596 id=1596 data-nosnippet>1596</a>    }
 <a href=#1597 id=1597 data-nosnippet>1597</a>}
 <a href=#1598 id=1598 data-nosnippet>1598</a>
@@ -1602,7 +1602,7 @@
 <a href=#1602 id=1602 data-nosnippet>1602</a>    message = <span class="string">"pointers cannot be reliably compared during const eval"</span>,
 <a href=#1603 id=1603 data-nosnippet>1603</a>    note = <span class="string">"see issue #53020 &lt;https://github.com/rust-lang/rust/issues/53020&gt; for more information"
 <a href=#1604 id=1604 data-nosnippet>1604</a></span>)]
-<a href=#1605 id=1605 data-nosnippet>1605</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; Eq <span class="kw">for </span><span class="kw-2">*const </span>T {}
+<a href=#1605 id=1605 data-nosnippet>1605</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../cmp.rs.html#353-372">Eq</a> <span class="kw">for </span><span class="kw-2">*const </span>T {}
 <a href=#1606 id=1606 data-nosnippet>1606</a>
 <a href=#1607 id=1607 data-nosnippet>1607</a><span class="doccomment">/// For thin pointers, comparison is by address, as produced by the [`&lt;*const T&gt;::addr`](pointer::addr) method.
 <a href=#1608 id=1608 data-nosnippet>1608</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
@@ -1610,16 +1610,16 @@
 <a href=#1610 id=1610 data-nosnippet>1610</a>    message = <span class="string">"pointers cannot be reliably compared during const eval"</span>,
 <a href=#1611 id=1611 data-nosnippet>1611</a>    note = <span class="string">"see issue #53020 &lt;https://github.com/rust-lang/rust/issues/53020&gt; for more information"
 <a href=#1612 id=1612 data-nosnippet>1612</a></span>)]
-<a href=#1613 id=1613 data-nosnippet>1613</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; Ord <span class="kw">for </span><span class="kw-2">*const </span>T {
+<a href=#1613 id=1613 data-nosnippet>1613</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../cmp.rs.html#1045-1204">Ord</a> <span class="kw">for </span><span class="kw-2">*const </span>T {
 <a href=#1614 id=1614 data-nosnippet>1614</a>    <span class="attr">#[inline]
 <a href=#1615 id=1615 data-nosnippet>1615</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1616 id=1616 data-nosnippet>1616</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; Ordering {
-<a href=#1617 id=1617 data-nosnippet>1617</a>        <span class="kw">if </span><span class="self">self </span>&lt; other {
-<a href=#1618 id=1618 data-nosnippet>1618</a>            Less
-<a href=#1619 id=1619 data-nosnippet>1619</a>        } <span class="kw">else if </span><span class="self">self </span>== other {
-<a href=#1620 id=1620 data-nosnippet>1620</a>            Equal
+<a href=#1616 id=1616 data-nosnippet>1616</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../cmp.rs.html#420-430">Ordering</a> {
+<a href=#1617 id=1617 data-nosnippet>1617</a>        <span class="kw">if </span><a class="self" href="#1616">self</a> &lt; <a href="#1616">other</a> {
+<a href=#1618 id=1618 data-nosnippet>1618</a>            <a href="../cmp.rs.html#423">Less</a>
+<a href=#1619 id=1619 data-nosnippet>1619</a>        } <span class="kw">else if </span><a class="self" href="#1616">self</a> == <a href="#1616">other</a> {
+<a href=#1620 id=1620 data-nosnippet>1620</a>            <a href="../cmp.rs.html#426">Equal</a>
 <a href=#1621 id=1621 data-nosnippet>1621</a>        } <span class="kw">else </span>{
-<a href=#1622 id=1622 data-nosnippet>1622</a>            Greater
+<a href=#1622 id=1622 data-nosnippet>1622</a>            <a href="../cmp.rs.html#429">Greater</a>
 <a href=#1623 id=1623 data-nosnippet>1623</a>        }
 <a href=#1624 id=1624 data-nosnippet>1624</a>    }
 <a href=#1625 id=1625 data-nosnippet>1625</a>}
@@ -1630,43 +1630,43 @@
 <a href=#1630 id=1630 data-nosnippet>1630</a>    message = <span class="string">"pointers cannot be reliably compared during const eval"</span>,
 <a href=#1631 id=1631 data-nosnippet>1631</a>    note = <span class="string">"see issue #53020 &lt;https://github.com/rust-lang/rust/issues/53020&gt; for more information"
 <a href=#1632 id=1632 data-nosnippet>1632</a></span>)]
-<a href=#1633 id=1633 data-nosnippet>1633</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; PartialOrd <span class="kw">for </span><span class="kw-2">*const </span>T {
+<a href=#1633 id=1633 data-nosnippet>1633</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../cmp.rs.html#1458-1584">PartialOrd</a> <span class="kw">for </span><span class="kw-2">*const </span>T {
 <a href=#1634 id=1634 data-nosnippet>1634</a>    <span class="attr">#[inline(always)]
 <a href=#1635 id=1635 data-nosnippet>1635</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1636 id=1636 data-nosnippet>1636</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
-<a href=#1637 id=1637 data-nosnippet>1637</a>        <span class="prelude-val">Some</span>(<span class="self">self</span>.cmp(other))
+<a href=#1636 id=1636 data-nosnippet>1636</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../cmp.rs.html#420-430">Ordering</a>&gt; {
+<a href=#1637 id=1637 data-nosnippet>1637</a>        <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a class="self" href="#1636">self</a>.<a href="../cmp.rs.html#1063">cmp</a>(<a href="#1636">other</a>))
 <a href=#1638 id=1638 data-nosnippet>1638</a>    }
 <a href=#1639 id=1639 data-nosnippet>1639</a>
 <a href=#1640 id=1640 data-nosnippet>1640</a>    <span class="attr">#[inline(always)]
 <a href=#1641 id=1641 data-nosnippet>1641</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1642 id=1642 data-nosnippet>1642</a>    </span><span class="kw">fn </span>lt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; bool {
-<a href=#1643 id=1643 data-nosnippet>1643</a>        <span class="kw-2">*</span><span class="self">self </span>&lt; <span class="kw-2">*</span>other
+<a href=#1642 id=1642 data-nosnippet>1642</a>    </span><span class="kw">fn </span>lt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1643 id=1643 data-nosnippet>1643</a>        <span class="kw-2">*</span><a class="self" href="#1642">self</a> &lt; <span class="kw-2">*</span><a href="#1642">other</a>
 <a href=#1644 id=1644 data-nosnippet>1644</a>    }
 <a href=#1645 id=1645 data-nosnippet>1645</a>
 <a href=#1646 id=1646 data-nosnippet>1646</a>    <span class="attr">#[inline(always)]
 <a href=#1647 id=1647 data-nosnippet>1647</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1648 id=1648 data-nosnippet>1648</a>    </span><span class="kw">fn </span>le(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; bool {
-<a href=#1649 id=1649 data-nosnippet>1649</a>        <span class="kw-2">*</span><span class="self">self </span>&lt;= <span class="kw-2">*</span>other
+<a href=#1648 id=1648 data-nosnippet>1648</a>    </span><span class="kw">fn </span>le(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1649 id=1649 data-nosnippet>1649</a>        <span class="kw-2">*</span><a class="self" href="#1648">self</a> &lt;= <span class="kw-2">*</span><a href="#1648">other</a>
 <a href=#1650 id=1650 data-nosnippet>1650</a>    }
 <a href=#1651 id=1651 data-nosnippet>1651</a>
 <a href=#1652 id=1652 data-nosnippet>1652</a>    <span class="attr">#[inline(always)]
 <a href=#1653 id=1653 data-nosnippet>1653</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1654 id=1654 data-nosnippet>1654</a>    </span><span class="kw">fn </span>gt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; bool {
-<a href=#1655 id=1655 data-nosnippet>1655</a>        <span class="kw-2">*</span><span class="self">self </span>&gt; <span class="kw-2">*</span>other
+<a href=#1654 id=1654 data-nosnippet>1654</a>    </span><span class="kw">fn </span>gt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1655 id=1655 data-nosnippet>1655</a>        <span class="kw-2">*</span><a class="self" href="#1654">self</a> &gt; <span class="kw-2">*</span><a href="#1654">other</a>
 <a href=#1656 id=1656 data-nosnippet>1656</a>    }
 <a href=#1657 id=1657 data-nosnippet>1657</a>
 <a href=#1658 id=1658 data-nosnippet>1658</a>    <span class="attr">#[inline(always)]
 <a href=#1659 id=1659 data-nosnippet>1659</a>    #[allow(ambiguous_wide_pointer_comparisons)]
-<a href=#1660 id=1660 data-nosnippet>1660</a>    </span><span class="kw">fn </span>ge(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; bool {
-<a href=#1661 id=1661 data-nosnippet>1661</a>        <span class="kw-2">*</span><span class="self">self </span>&gt;= <span class="kw-2">*</span>other
+<a href=#1660 id=1660 data-nosnippet>1660</a>    </span><span class="kw">fn </span>ge(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;*const </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#1661 id=1661 data-nosnippet>1661</a>        <span class="kw-2">*</span><a class="self" href="#1660">self</a> &gt;= <span class="kw-2">*</span><a href="#1660">other</a>
 <a href=#1662 id=1662 data-nosnippet>1662</a>    }
 <a href=#1663 id=1663 data-nosnippet>1663</a>}
 <a href=#1664 id=1664 data-nosnippet>1664</a>
 <a href=#1665 id=1665 data-nosnippet>1665</a><span class="attr">#[stable(feature = <span class="string">"raw_ptr_default"</span>, since = <span class="string">"1.88.0"</span>)]
-<a href=#1666 id=1666 data-nosnippet>1666</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + Thin&gt; Default <span class="kw">for </span><span class="kw-2">*const </span>T {
+<a href=#1666 id=1666 data-nosnippet>1666</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a> + <a href="metadata.rs.html#85">Thin</a>&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">*const </span>T {
 <a href=#1667 id=1667 data-nosnippet>1667</a>    <span class="doccomment">/// Returns the default value of [`null()`][crate::ptr::null].
 <a href=#1668 id=1668 data-nosnippet>1668</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#1669 id=1669 data-nosnippet>1669</a>        <span class="kw">crate</span>::ptr::null()
+<a href=#1669 id=1669 data-nosnippet>1669</a>        <span class="kw">crate</span>::ptr::<a href="mod.rs.html#873-875">null</a>()
 <a href=#1670 id=1670 data-nosnippet>1670</a>    }
 <a href=#1671 id=1671 data-nosnippet>1671</a>}
 </code></pre></div></section></main></body></html>

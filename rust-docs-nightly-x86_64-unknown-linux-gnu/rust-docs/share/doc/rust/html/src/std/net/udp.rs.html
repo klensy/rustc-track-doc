@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/net/udp.rs`."><title>udp.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/net/</div>udp.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/net/udp.rs`."><title>udp.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/net/</div>udp.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(
 <a href=#2 id=2 data-nosnippet>2</a>    test,
 <a href=#3 id=3 data-nosnippet>3</a>    not(any(
 <a href=#4 id=4 data-nosnippet>4</a>        target_os = <span class="string">"emscripten"</span>,
@@ -11,11 +11,11 @@
 <a href=#11 id=11 data-nosnippet>11</a>))]
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">mod </span>tests;
 <a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::io::{<span class="self">self</span>, ErrorKind};
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::net::{Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::sys::{AsInner, FromInner, IntoInner, net <span class="kw">as </span>net_imp};
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::time::Duration;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><a href="../../../std/fmt/index.html"><span class="kw">crate</span>::fmt</a>;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::io::{<a class="self" href="../lib.rs.html#634">self</a>, <a href="../../../std/io/enum.ErrorKind.html">ErrorKind</a>};
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::net::{<a href="../../../std/net/struct.Ipv4Addr.html">Ipv4Addr</a>, <a href="../../../std/net/struct.Ipv6Addr.html">Ipv6Addr</a>, <a href="../../../std/net/enum.SocketAddr.html">SocketAddr</a>, <a href="socket_addr.rs.html#128-143">ToSocketAddrs</a>};
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::sys::{<a href="../sys/mod.rs.html#38-40">AsInner</a>, <a href="../sys/mod.rs.html#54-56">FromInner</a>, <a href="../sys/mod.rs.html#49-51">IntoInner</a>, <a href="../sys/mod.rs.html#18">net</a> <span class="kw">as </span>net_imp};
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><a href="../../../std/time/struct.Duration.html"><span class="kw">crate</span>::time::Duration</a>;
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="doccomment">/// A UDP socket.
 <a href=#21 id=21 data-nosnippet>21</a>///
@@ -64,9 +64,9 @@
 <a href=#64 id=64 data-nosnippet>64</a>/// }
 <a href=#65 id=65 data-nosnippet>65</a>/// ```
 <a href=#66 id=66 data-nosnippet>66</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub struct </span>UdpSocket(net_imp::UdpSocket);
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub struct </span><a href="../../../std/net/struct.UdpSocket.html">UdpSocket</a>(net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>);
 <a href=#68 id=68 data-nosnippet>68</a>
-<a href=#69 id=69 data-nosnippet>69</a><span class="kw">impl </span>UdpSocket {
+<a href=#69 id=69 data-nosnippet>69</a><span class="kw">impl </span><a href="#67">UdpSocket</a> {
 <a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// Creates a UDP socket from the given address.
 <a href=#71 id=71 data-nosnippet>71</a>    ///
 <a href=#72 id=72 data-nosnippet>72</a>    /// The address type can be any implementor of [`ToSocketAddrs`] trait. See
@@ -119,8 +119,8 @@
 <a href=#119 id=119 data-nosnippet>119</a>    /// In order to limit your view of the network the least, `bind` to
 <a href=#120 id=120 data-nosnippet>120</a>    /// [`Ipv4Addr::UNSPECIFIED`] or [`Ipv6Addr::UNSPECIFIED`].
 <a href=#121 id=121 data-nosnippet>121</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">pub fn </span>bind&lt;A: ToSocketAddrs&gt;(addr: A) -&gt; io::Result&lt;UdpSocket&gt; {
-<a href=#123 id=123 data-nosnippet>123</a>        net_imp::UdpSocket::bind(addr).map(UdpSocket)
+<a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">pub fn </span>bind&lt;A: <a href="socket_addr.rs.html#128-143">ToSocketAddrs</a>&gt;(addr: A) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="#67">UdpSocket</a>&gt; {
+<a href=#123 id=123 data-nosnippet>123</a>        net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>::<a href="../sys/net/connection/socket/mod.rs.html#784-794">bind</a>(<a href="#122">addr</a>).<a href="../../../std/result/enum.Result.html#method.map">map</a>(<a href="#67">UdpSocket</a>)
 <a href=#124 id=124 data-nosnippet>124</a>    }
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// Receives a single datagram message on the socket. On success, returns the number
@@ -146,8 +146,8 @@
 <a href=#146 id=146 data-nosnippet>146</a>    /// let filled_buf = &amp;mut buf[..number_of_bytes];
 <a href=#147 id=147 data-nosnippet>147</a>    /// ```
 <a href=#148 id=148 data-nosnippet>148</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">pub fn </span>recv_from(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;(usize, SocketAddr)&gt; {
-<a href=#150 id=150 data-nosnippet>150</a>        <span class="self">self</span>.<span class="number">0</span>.recv_from(buf)
+<a href=#149 id=149 data-nosnippet>149</a>    </span><span class="kw">pub fn </span>recv_from(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;(<a href="../../../std/primitive.usize.html">usize</a>, <a href="../../../std/net/enum.SocketAddr.html">SocketAddr</a>)&gt; {
+<a href=#150 id=150 data-nosnippet>150</a>        <a class="self" href="#149">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#813-815">recv_from</a>(<a href="#149">buf</a>)
 <a href=#151 id=151 data-nosnippet>151</a>    }
 <a href=#152 id=152 data-nosnippet>152</a>
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// Receives a single datagram message on the socket, without removing it from the
@@ -175,8 +175,8 @@
 <a href=#175 id=175 data-nosnippet>175</a>    /// let filled_buf = &amp;mut buf[..number_of_bytes];
 <a href=#176 id=176 data-nosnippet>176</a>    /// ```
 <a href=#177 id=177 data-nosnippet>177</a>    </span><span class="attr">#[stable(feature = <span class="string">"peek"</span>, since = <span class="string">"1.18.0"</span>)]
-<a href=#178 id=178 data-nosnippet>178</a>    </span><span class="kw">pub fn </span>peek_from(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;(usize, SocketAddr)&gt; {
-<a href=#179 id=179 data-nosnippet>179</a>        <span class="self">self</span>.<span class="number">0</span>.peek_from(buf)
+<a href=#178 id=178 data-nosnippet>178</a>    </span><span class="kw">pub fn </span>peek_from(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;(<a href="../../../std/primitive.usize.html">usize</a>, <a href="../../../std/net/enum.SocketAddr.html">SocketAddr</a>)&gt; {
+<a href=#179 id=179 data-nosnippet>179</a>        <a class="self" href="#178">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#817-819">peek_from</a>(<a href="#178">buf</a>)
 <a href=#180 id=180 data-nosnippet>180</a>    }
 <a href=#181 id=181 data-nosnippet>181</a>
 <a href=#182 id=182 data-nosnippet>182</a>    <span class="doccomment">/// Sends data on the socket to the given address. On success, returns the
@@ -206,10 +206,10 @@
 <a href=#206 id=206 data-nosnippet>206</a>    ///
 <a href=#207 id=207 data-nosnippet>207</a>    /// [Issue #34202]: https://github.com/rust-lang/rust/issues/34202
 <a href=#208 id=208 data-nosnippet>208</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#209 id=209 data-nosnippet>209</a>    </span><span class="kw">pub fn </span>send_to&lt;A: ToSocketAddrs&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8], addr: A) -&gt; io::Result&lt;usize&gt; {
-<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">match </span>addr.to_socket_addrs()<span class="question-mark">?</span>.next() {
-<a href=#211 id=211 data-nosnippet>211</a>            <span class="prelude-val">Some</span>(addr) =&gt; <span class="self">self</span>.<span class="number">0</span>.send_to(buf, <span class="kw-2">&amp;</span>addr),
-<a href=#212 id=212 data-nosnippet>212</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">io::const_error!</span>(ErrorKind::InvalidInput, <span class="string">"no addresses to send data to"</span>)),
+<a href=#209 id=209 data-nosnippet>209</a>    </span><span class="kw">pub fn </span>send_to&lt;A: <a href="socket_addr.rs.html#128-143">ToSocketAddrs</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[<a href="../../../std/primitive.u8.html">u8</a>], addr: A) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">match </span>addr.to_socket_addrs()<span class="question-mark">?</span>.<a href="../../../std/iter/trait.Iterator.html">next</a>() {
+<a href=#211 id=211 data-nosnippet>211</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(addr) =&gt; <a class="self" href="#209">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#821-837">send_to</a>(<a href="#209">buf</a>, <span class="kw-2">&amp;</span><a href="#211">addr</a>),
+<a href=#212 id=212 data-nosnippet>212</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a> =&gt; <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(<a href="../../../std/io/macro.const_error.html">io::const_error!</a>(ErrorKind::InvalidInput, <span class="string">"no addresses to send data to"</span>)),
 <a href=#213 id=213 data-nosnippet>213</a>        }
 <a href=#214 id=214 data-nosnippet>214</a>    }
 <a href=#215 id=215 data-nosnippet>215</a>
@@ -238,8 +238,8 @@
 <a href=#238 id=238 data-nosnippet>238</a>    ///            std::io::ErrorKind::NotConnected);
 <a href=#239 id=239 data-nosnippet>239</a>    /// ```
 <a href=#240 id=240 data-nosnippet>240</a>    </span><span class="attr">#[stable(feature = <span class="string">"udp_peer_addr"</span>, since = <span class="string">"1.40.0"</span>)]
-<a href=#241 id=241 data-nosnippet>241</a>    </span><span class="kw">pub fn </span>peer_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;SocketAddr&gt; {
-<a href=#242 id=242 data-nosnippet>242</a>        <span class="self">self</span>.<span class="number">0</span>.peer_addr()
+<a href=#241 id=241 data-nosnippet>241</a>    </span><span class="kw">pub fn </span>peer_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/net/enum.SocketAddr.html">SocketAddr</a>&gt; {
+<a href=#242 id=242 data-nosnippet>242</a>        <a class="self" href="#241">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#805-807">peer_addr</a>()
 <a href=#243 id=243 data-nosnippet>243</a>    }
 <a href=#244 id=244 data-nosnippet>244</a>
 <a href=#245 id=245 data-nosnippet>245</a>    <span class="doccomment">/// Returns the socket address that this socket was created from.
@@ -254,8 +254,8 @@
 <a href=#254 id=254 data-nosnippet>254</a>    ///            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 34254)));
 <a href=#255 id=255 data-nosnippet>255</a>    /// ```
 <a href=#256 id=256 data-nosnippet>256</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">pub fn </span>local_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;SocketAddr&gt; {
-<a href=#258 id=258 data-nosnippet>258</a>        <span class="self">self</span>.<span class="number">0</span>.socket_addr()
+<a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">pub fn </span>local_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/net/enum.SocketAddr.html">SocketAddr</a>&gt; {
+<a href=#258 id=258 data-nosnippet>258</a>        <a class="self" href="#257">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#809-811">socket_addr</a>()
 <a href=#259 id=259 data-nosnippet>259</a>    }
 <a href=#260 id=260 data-nosnippet>260</a>
 <a href=#261 id=261 data-nosnippet>261</a>    <span class="doccomment">/// Creates a new independently owned handle to the underlying socket.
@@ -273,8 +273,8 @@
 <a href=#273 id=273 data-nosnippet>273</a>    /// let socket_clone = socket.try_clone().expect("try_clone should succeed");
 <a href=#274 id=274 data-nosnippet>274</a>    /// ```
 <a href=#275 id=275 data-nosnippet>275</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">pub fn </span>try_clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;UdpSocket&gt; {
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="self">self</span>.<span class="number">0</span>.duplicate().map(UdpSocket)
+<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">pub fn </span>try_clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="#67">UdpSocket</a>&gt; {
+<a href=#277 id=277 data-nosnippet>277</a>        <a class="self" href="#276">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#839-841">duplicate</a>().<a href="../../../std/result/enum.Result.html#method.map">map</a>(<a href="#67">UdpSocket</a>)
 <a href=#278 id=278 data-nosnippet>278</a>    }
 <a href=#279 id=279 data-nosnippet>279</a>
 <a href=#280 id=280 data-nosnippet>280</a>    <span class="doccomment">/// Sets the read timeout to the timeout specified.
@@ -316,8 +316,8 @@
 <a href=#316 id=316 data-nosnippet>316</a>    /// assert_eq!(err.kind(), io::ErrorKind::InvalidInput)
 <a href=#317 id=317 data-nosnippet>317</a>    /// ```
 <a href=#318 id=318 data-nosnippet>318</a>    </span><span class="attr">#[stable(feature = <span class="string">"socket_timeout"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">pub fn </span>set_read_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: <span class="prelude-ty">Option</span>&lt;Duration&gt;) -&gt; io::Result&lt;()&gt; {
-<a href=#320 id=320 data-nosnippet>320</a>        <span class="self">self</span>.<span class="number">0</span>.set_read_timeout(dur)
+<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">pub fn </span>set_read_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../std/time/struct.Duration.html">Duration</a>&gt;) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#320 id=320 data-nosnippet>320</a>        <a class="self" href="#319">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#843-845">set_read_timeout</a>(<a href="#319">dur</a>)
 <a href=#321 id=321 data-nosnippet>321</a>    }
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a>    <span class="doccomment">/// Sets the write timeout to the timeout specified.
@@ -359,8 +359,8 @@
 <a href=#359 id=359 data-nosnippet>359</a>    /// assert_eq!(err.kind(), io::ErrorKind::InvalidInput)
 <a href=#360 id=360 data-nosnippet>360</a>    /// ```
 <a href=#361 id=361 data-nosnippet>361</a>    </span><span class="attr">#[stable(feature = <span class="string">"socket_timeout"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#362 id=362 data-nosnippet>362</a>    </span><span class="kw">pub fn </span>set_write_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: <span class="prelude-ty">Option</span>&lt;Duration&gt;) -&gt; io::Result&lt;()&gt; {
-<a href=#363 id=363 data-nosnippet>363</a>        <span class="self">self</span>.<span class="number">0</span>.set_write_timeout(dur)
+<a href=#362 id=362 data-nosnippet>362</a>    </span><span class="kw">pub fn </span>set_write_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../std/time/struct.Duration.html">Duration</a>&gt;) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#363 id=363 data-nosnippet>363</a>        <a class="self" href="#362">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#847-849">set_write_timeout</a>(<a href="#362">dur</a>)
 <a href=#364 id=364 data-nosnippet>364</a>    }
 <a href=#365 id=365 data-nosnippet>365</a>
 <a href=#366 id=366 data-nosnippet>366</a>    <span class="doccomment">/// Returns the read timeout of this socket.
@@ -379,8 +379,8 @@
 <a href=#379 id=379 data-nosnippet>379</a>    /// assert_eq!(socket.read_timeout().unwrap(), None);
 <a href=#380 id=380 data-nosnippet>380</a>    /// ```
 <a href=#381 id=381 data-nosnippet>381</a>    </span><span class="attr">#[stable(feature = <span class="string">"socket_timeout"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#382 id=382 data-nosnippet>382</a>    </span><span class="kw">pub fn </span>read_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;Duration&gt;&gt; {
-<a href=#383 id=383 data-nosnippet>383</a>        <span class="self">self</span>.<span class="number">0</span>.read_timeout()
+<a href=#382 id=382 data-nosnippet>382</a>    </span><span class="kw">pub fn </span>read_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../std/time/struct.Duration.html">Duration</a>&gt;&gt; {
+<a href=#383 id=383 data-nosnippet>383</a>        <a class="self" href="#382">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#851-853">read_timeout</a>()
 <a href=#384 id=384 data-nosnippet>384</a>    }
 <a href=#385 id=385 data-nosnippet>385</a>
 <a href=#386 id=386 data-nosnippet>386</a>    <span class="doccomment">/// Returns the write timeout of this socket.
@@ -399,8 +399,8 @@
 <a href=#399 id=399 data-nosnippet>399</a>    /// assert_eq!(socket.write_timeout().unwrap(), None);
 <a href=#400 id=400 data-nosnippet>400</a>    /// ```
 <a href=#401 id=401 data-nosnippet>401</a>    </span><span class="attr">#[stable(feature = <span class="string">"socket_timeout"</span>, since = <span class="string">"1.4.0"</span>)]
-<a href=#402 id=402 data-nosnippet>402</a>    </span><span class="kw">pub fn </span>write_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;Duration&gt;&gt; {
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="self">self</span>.<span class="number">0</span>.write_timeout()
+<a href=#402 id=402 data-nosnippet>402</a>    </span><span class="kw">pub fn </span>write_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../std/time/struct.Duration.html">Duration</a>&gt;&gt; {
+<a href=#403 id=403 data-nosnippet>403</a>        <a class="self" href="#402">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#855-857">write_timeout</a>()
 <a href=#404 id=404 data-nosnippet>404</a>    }
 <a href=#405 id=405 data-nosnippet>405</a>
 <a href=#406 id=406 data-nosnippet>406</a>    <span class="doccomment">/// Sets the value of the `SO_BROADCAST` option for this socket.
@@ -417,8 +417,8 @@
 <a href=#417 id=417 data-nosnippet>417</a>    /// socket.set_broadcast(false).expect("set_broadcast should succeed");
 <a href=#418 id=418 data-nosnippet>418</a>    /// ```
 <a href=#419 id=419 data-nosnippet>419</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#420 id=420 data-nosnippet>420</a>    </span><span class="kw">pub fn </span>set_broadcast(<span class="kw-2">&amp;</span><span class="self">self</span>, broadcast: bool) -&gt; io::Result&lt;()&gt; {
-<a href=#421 id=421 data-nosnippet>421</a>        <span class="self">self</span>.<span class="number">0</span>.set_broadcast(broadcast)
+<a href=#420 id=420 data-nosnippet>420</a>    </span><span class="kw">pub fn </span>set_broadcast(<span class="kw-2">&amp;</span><span class="self">self</span>, broadcast: <a href="../../../std/primitive.bool.html">bool</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#421 id=421 data-nosnippet>421</a>        <a class="self" href="#420">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#859-861">set_broadcast</a>(<a href="#420">broadcast</a>)
 <a href=#422 id=422 data-nosnippet>422</a>    }
 <a href=#423 id=423 data-nosnippet>423</a>
 <a href=#424 id=424 data-nosnippet>424</a>    <span class="doccomment">/// Gets the value of the `SO_BROADCAST` option for this socket.
@@ -435,8 +435,8 @@
 <a href=#435 id=435 data-nosnippet>435</a>    /// assert_eq!(socket.broadcast().unwrap(), false);
 <a href=#436 id=436 data-nosnippet>436</a>    /// ```
 <a href=#437 id=437 data-nosnippet>437</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#438 id=438 data-nosnippet>438</a>    </span><span class="kw">pub fn </span>broadcast(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;bool&gt; {
-<a href=#439 id=439 data-nosnippet>439</a>        <span class="self">self</span>.<span class="number">0</span>.broadcast()
+<a href=#438 id=438 data-nosnippet>438</a>    </span><span class="kw">pub fn </span>broadcast(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.bool.html">bool</a>&gt; {
+<a href=#439 id=439 data-nosnippet>439</a>        <a class="self" href="#438">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#863-866">broadcast</a>()
 <a href=#440 id=440 data-nosnippet>440</a>    }
 <a href=#441 id=441 data-nosnippet>441</a>
 <a href=#442 id=442 data-nosnippet>442</a>    <span class="doccomment">/// Sets the value of the `IP_MULTICAST_LOOP` option for this socket.
@@ -453,8 +453,8 @@
 <a href=#453 id=453 data-nosnippet>453</a>    /// socket.set_multicast_loop_v4(false).expect("set_multicast_loop_v4 should succeed");
 <a href=#454 id=454 data-nosnippet>454</a>    /// ```
 <a href=#455 id=455 data-nosnippet>455</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#456 id=456 data-nosnippet>456</a>    </span><span class="kw">pub fn </span>set_multicast_loop_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_loop_v4: bool) -&gt; io::Result&lt;()&gt; {
-<a href=#457 id=457 data-nosnippet>457</a>        <span class="self">self</span>.<span class="number">0</span>.set_multicast_loop_v4(multicast_loop_v4)
+<a href=#456 id=456 data-nosnippet>456</a>    </span><span class="kw">pub fn </span>set_multicast_loop_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_loop_v4: <a href="../../../std/primitive.bool.html">bool</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#457 id=457 data-nosnippet>457</a>        <a class="self" href="#456">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#868-877">set_multicast_loop_v4</a>(<a href="#456">multicast_loop_v4</a>)
 <a href=#458 id=458 data-nosnippet>458</a>    }
 <a href=#459 id=459 data-nosnippet>459</a>
 <a href=#460 id=460 data-nosnippet>460</a>    <span class="doccomment">/// Gets the value of the `IP_MULTICAST_LOOP` option for this socket.
@@ -471,8 +471,8 @@
 <a href=#471 id=471 data-nosnippet>471</a>    /// assert_eq!(socket.multicast_loop_v4().unwrap(), false);
 <a href=#472 id=472 data-nosnippet>472</a>    /// ```
 <a href=#473 id=473 data-nosnippet>473</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#474 id=474 data-nosnippet>474</a>    </span><span class="kw">pub fn </span>multicast_loop_v4(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;bool&gt; {
-<a href=#475 id=475 data-nosnippet>475</a>        <span class="self">self</span>.<span class="number">0</span>.multicast_loop_v4()
+<a href=#474 id=474 data-nosnippet>474</a>    </span><span class="kw">pub fn </span>multicast_loop_v4(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.bool.html">bool</a>&gt; {
+<a href=#475 id=475 data-nosnippet>475</a>        <a class="self" href="#474">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#879-883">multicast_loop_v4</a>()
 <a href=#476 id=476 data-nosnippet>476</a>    }
 <a href=#477 id=477 data-nosnippet>477</a>
 <a href=#478 id=478 data-nosnippet>478</a>    <span class="doccomment">/// Sets the value of the `IP_MULTICAST_TTL` option for this socket.
@@ -495,8 +495,8 @@
 <a href=#495 id=495 data-nosnippet>495</a>    /// socket.set_multicast_ttl_v4(42).expect("set_multicast_ttl_v4 should succeed");
 <a href=#496 id=496 data-nosnippet>496</a>    /// ```
 <a href=#497 id=497 data-nosnippet>497</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#498 id=498 data-nosnippet>498</a>    </span><span class="kw">pub fn </span>set_multicast_ttl_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_ttl_v4: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#499 id=499 data-nosnippet>499</a>        <span class="self">self</span>.<span class="number">0</span>.set_multicast_ttl_v4(multicast_ttl_v4)
+<a href=#498 id=498 data-nosnippet>498</a>    </span><span class="kw">pub fn </span>set_multicast_ttl_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_ttl_v4: <a href="../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#499 id=499 data-nosnippet>499</a>        <a class="self" href="#498">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#885-892">set_multicast_ttl_v4</a>(<a href="#498">multicast_ttl_v4</a>)
 <a href=#500 id=500 data-nosnippet>500</a>    }
 <a href=#501 id=501 data-nosnippet>501</a>
 <a href=#502 id=502 data-nosnippet>502</a>    <span class="doccomment">/// Gets the value of the `IP_MULTICAST_TTL` option for this socket.
@@ -513,8 +513,8 @@
 <a href=#513 id=513 data-nosnippet>513</a>    /// assert_eq!(socket.multicast_ttl_v4().unwrap(), 42);
 <a href=#514 id=514 data-nosnippet>514</a>    /// ```
 <a href=#515 id=515 data-nosnippet>515</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#516 id=516 data-nosnippet>516</a>    </span><span class="kw">pub fn </span>multicast_ttl_v4(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u32&gt; {
-<a href=#517 id=517 data-nosnippet>517</a>        <span class="self">self</span>.<span class="number">0</span>.multicast_ttl_v4()
+<a href=#516 id=516 data-nosnippet>516</a>    </span><span class="kw">pub fn </span>multicast_ttl_v4(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.u32.html">u32</a>&gt; {
+<a href=#517 id=517 data-nosnippet>517</a>        <a class="self" href="#516">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#894-898">multicast_ttl_v4</a>()
 <a href=#518 id=518 data-nosnippet>518</a>    }
 <a href=#519 id=519 data-nosnippet>519</a>
 <a href=#520 id=520 data-nosnippet>520</a>    <span class="doccomment">/// Sets the value of the `IPV6_MULTICAST_LOOP` option for this socket.
@@ -531,8 +531,8 @@
 <a href=#531 id=531 data-nosnippet>531</a>    /// socket.set_multicast_loop_v6(false).expect("set_multicast_loop_v6 should succeed");
 <a href=#532 id=532 data-nosnippet>532</a>    /// ```
 <a href=#533 id=533 data-nosnippet>533</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#534 id=534 data-nosnippet>534</a>    </span><span class="kw">pub fn </span>set_multicast_loop_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_loop_v6: bool) -&gt; io::Result&lt;()&gt; {
-<a href=#535 id=535 data-nosnippet>535</a>        <span class="self">self</span>.<span class="number">0</span>.set_multicast_loop_v6(multicast_loop_v6)
+<a href=#534 id=534 data-nosnippet>534</a>    </span><span class="kw">pub fn </span>set_multicast_loop_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multicast_loop_v6: <a href="../../../std/primitive.bool.html">bool</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#535 id=535 data-nosnippet>535</a>        <a class="self" href="#534">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#900-909">set_multicast_loop_v6</a>(<a href="#534">multicast_loop_v6</a>)
 <a href=#536 id=536 data-nosnippet>536</a>    }
 <a href=#537 id=537 data-nosnippet>537</a>
 <a href=#538 id=538 data-nosnippet>538</a>    <span class="doccomment">/// Gets the value of the `IPV6_MULTICAST_LOOP` option for this socket.
@@ -549,8 +549,8 @@
 <a href=#549 id=549 data-nosnippet>549</a>    /// assert_eq!(socket.multicast_loop_v6().unwrap(), false);
 <a href=#550 id=550 data-nosnippet>550</a>    /// ```
 <a href=#551 id=551 data-nosnippet>551</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#552 id=552 data-nosnippet>552</a>    </span><span class="kw">pub fn </span>multicast_loop_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;bool&gt; {
-<a href=#553 id=553 data-nosnippet>553</a>        <span class="self">self</span>.<span class="number">0</span>.multicast_loop_v6()
+<a href=#552 id=552 data-nosnippet>552</a>    </span><span class="kw">pub fn </span>multicast_loop_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.bool.html">bool</a>&gt; {
+<a href=#553 id=553 data-nosnippet>553</a>        <a class="self" href="#552">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#911-915">multicast_loop_v6</a>()
 <a href=#554 id=554 data-nosnippet>554</a>    }
 <a href=#555 id=555 data-nosnippet>555</a>
 <a href=#556 id=556 data-nosnippet>556</a>    <span class="doccomment">/// Sets the value for the `IP_TTL` option on this socket.
@@ -567,8 +567,8 @@
 <a href=#567 id=567 data-nosnippet>567</a>    /// socket.set_ttl(42).expect("set_ttl should succeed");
 <a href=#568 id=568 data-nosnippet>568</a>    /// ```
 <a href=#569 id=569 data-nosnippet>569</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#570 id=570 data-nosnippet>570</a>    </span><span class="kw">pub fn </span>set_ttl(<span class="kw-2">&amp;</span><span class="self">self</span>, ttl: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#571 id=571 data-nosnippet>571</a>        <span class="self">self</span>.<span class="number">0</span>.set_ttl(ttl)
+<a href=#570 id=570 data-nosnippet>570</a>    </span><span class="kw">pub fn </span>set_ttl(<span class="kw-2">&amp;</span><span class="self">self</span>, ttl: <a href="../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#571 id=571 data-nosnippet>571</a>        <a class="self" href="#570">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#949-951">set_ttl</a>(<a href="#570">ttl</a>)
 <a href=#572 id=572 data-nosnippet>572</a>    }
 <a href=#573 id=573 data-nosnippet>573</a>
 <a href=#574 id=574 data-nosnippet>574</a>    <span class="doccomment">/// Gets the value of the `IP_TTL` option for this socket.
@@ -585,8 +585,8 @@
 <a href=#585 id=585 data-nosnippet>585</a>    /// assert_eq!(socket.ttl().unwrap(), 42);
 <a href=#586 id=586 data-nosnippet>586</a>    /// ```
 <a href=#587 id=587 data-nosnippet>587</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#588 id=588 data-nosnippet>588</a>    </span><span class="kw">pub fn </span>ttl(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u32&gt; {
-<a href=#589 id=589 data-nosnippet>589</a>        <span class="self">self</span>.<span class="number">0</span>.ttl()
+<a href=#588 id=588 data-nosnippet>588</a>    </span><span class="kw">pub fn </span>ttl(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.u32.html">u32</a>&gt; {
+<a href=#589 id=589 data-nosnippet>589</a>        <a class="self" href="#588">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#953-956">ttl</a>()
 <a href=#590 id=590 data-nosnippet>590</a>    }
 <a href=#591 id=591 data-nosnippet>591</a>
 <a href=#592 id=592 data-nosnippet>592</a>    <span class="doccomment">/// Sets the value for the `IPV6_UNICAST_HOPS` option on this socket.
@@ -604,8 +604,8 @@
 <a href=#604 id=604 data-nosnippet>604</a>    /// socket.set_hop_limit_v6(88).expect("set_hop_limit_v6 call failed");
 <a href=#605 id=605 data-nosnippet>605</a>    /// ```
 <a href=#606 id=606 data-nosnippet>606</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
-<a href=#607 id=607 data-nosnippet>607</a>    </span><span class="kw">pub fn </span>set_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u8) -&gt; io::Result&lt;()&gt; {
-<a href=#608 id=608 data-nosnippet>608</a>        <span class="self">self</span>.<span class="number">0</span>.set_hop_limit_v6(limit)
+<a href=#607 id=607 data-nosnippet>607</a>    </span><span class="kw">pub fn </span>set_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: <a href="../../../std/primitive.u8.html">u8</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#608 id=608 data-nosnippet>608</a>        <a class="self" href="#607">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#958-968">set_hop_limit_v6</a>(<a href="#607">limit</a>)
 <a href=#609 id=609 data-nosnippet>609</a>    }
 <a href=#610 id=610 data-nosnippet>610</a>
 <a href=#611 id=611 data-nosnippet>611</a>    <span class="doccomment">/// Gets the value of the `IPV6_UNICAST_HOPS` option on this socket.
@@ -623,8 +623,8 @@
 <a href=#623 id=623 data-nosnippet>623</a>    /// assert_eq!(socket.hop_limit_v6().unwrap(), 88);
 <a href=#624 id=624 data-nosnippet>624</a>    /// ```
 <a href=#625 id=625 data-nosnippet>625</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
-<a href=#626 id=626 data-nosnippet>626</a>    </span><span class="kw">pub fn </span>hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u8&gt; {
-<a href=#627 id=627 data-nosnippet>627</a>        <span class="self">self</span>.<span class="number">0</span>.hop_limit_v6()
+<a href=#626 id=626 data-nosnippet>626</a>    </span><span class="kw">pub fn </span>hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.u8.html">u8</a>&gt; {
+<a href=#627 id=627 data-nosnippet>627</a>        <a class="self" href="#626">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#970-981">hop_limit_v6</a>()
 <a href=#628 id=628 data-nosnippet>628</a>    }
 <a href=#629 id=629 data-nosnippet>629</a>
 <a href=#630 id=630 data-nosnippet>630</a>    <span class="doccomment">/// Sets the value for the `IPV6_MULTICAST_HOPS` option on this socket.
@@ -642,8 +642,8 @@
 <a href=#642 id=642 data-nosnippet>642</a>    /// socket.set_multicast_hop_limit_v6(88).expect("set_multicast_hop_limit_v6 call failed");
 <a href=#643 id=643 data-nosnippet>643</a>    /// ```
 <a href=#644 id=644 data-nosnippet>644</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
-<a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">pub fn </span>set_multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u8) -&gt; io::Result&lt;()&gt; {
-<a href=#646 id=646 data-nosnippet>646</a>        <span class="self">self</span>.<span class="number">0</span>.set_multicast_hop_limit_v6(limit)
+<a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">pub fn </span>set_multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: <a href="../../../std/primitive.u8.html">u8</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#646 id=646 data-nosnippet>646</a>        <a class="self" href="#645">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#983-993">set_multicast_hop_limit_v6</a>(<a href="#645">limit</a>)
 <a href=#647 id=647 data-nosnippet>647</a>    }
 <a href=#648 id=648 data-nosnippet>648</a>
 <a href=#649 id=649 data-nosnippet>649</a>    <span class="doccomment">/// Gets the value of the `IPV6_MULTICAST_HOPS` option on this socket.
@@ -661,8 +661,8 @@
 <a href=#661 id=661 data-nosnippet>661</a>    /// assert_eq!(socket.multicast_hop_limit_v6().unwrap(), 88);
 <a href=#662 id=662 data-nosnippet>662</a>    /// ```
 <a href=#663 id=663 data-nosnippet>663</a>    </span><span class="attr">#[unstable(feature = <span class="string">"ipv6_hop_limit"</span>, issue = <span class="string">"139166"</span>)]
-<a href=#664 id=664 data-nosnippet>664</a>    </span><span class="kw">pub fn </span>multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u8&gt; {
-<a href=#665 id=665 data-nosnippet>665</a>        <span class="self">self</span>.<span class="number">0</span>.multicast_hop_limit_v6()
+<a href=#664 id=664 data-nosnippet>664</a>    </span><span class="kw">pub fn </span>multicast_hop_limit_v6(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.u8.html">u8</a>&gt; {
+<a href=#665 id=665 data-nosnippet>665</a>        <a class="self" href="#664">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#995-1006">multicast_hop_limit_v6</a>()
 <a href=#666 id=666 data-nosnippet>666</a>    }
 <a href=#667 id=667 data-nosnippet>667</a>
 <a href=#668 id=668 data-nosnippet>668</a>    <span class="doccomment">/// Executes an operation of the `IP_ADD_MEMBERSHIP` type.
@@ -673,8 +673,8 @@
 <a href=#673 id=673 data-nosnippet>673</a>    /// multicast group. If it's equal to [`UNSPECIFIED`](Ipv4Addr::UNSPECIFIED)
 <a href=#674 id=674 data-nosnippet>674</a>    /// then an appropriate interface is chosen by the system.
 <a href=#675 id=675 data-nosnippet>675</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#676 id=676 data-nosnippet>676</a>    </span><span class="kw">pub fn </span>join_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
-<a href=#677 id=677 data-nosnippet>677</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v4(multiaddr, interface)
+<a href=#676 id=676 data-nosnippet>676</a>    </span><span class="kw">pub fn </span>join_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv4Addr.html">Ipv4Addr</a>, interface: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv4Addr.html">Ipv4Addr</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#677 id=677 data-nosnippet>677</a>        <a class="self" href="#676">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#917-923">join_multicast_v4</a>(<a href="#676">multiaddr</a>, <a href="#676">interface</a>)
 <a href=#678 id=678 data-nosnippet>678</a>    }
 <a href=#679 id=679 data-nosnippet>679</a>
 <a href=#680 id=680 data-nosnippet>680</a>    <span class="doccomment">/// Executes an operation of the `IPV6_ADD_MEMBERSHIP` type.
@@ -683,24 +683,24 @@
 <a href=#683 id=683 data-nosnippet>683</a>    /// The address must be a valid multicast address, and `interface` is the
 <a href=#684 id=684 data-nosnippet>684</a>    /// index of the interface to join/leave (or 0 to indicate any interface).
 <a href=#685 id=685 data-nosnippet>685</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#686 id=686 data-nosnippet>686</a>    </span><span class="kw">pub fn </span>join_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#687 id=687 data-nosnippet>687</a>        <span class="self">self</span>.<span class="number">0</span>.join_multicast_v6(multiaddr, interface)
+<a href=#686 id=686 data-nosnippet>686</a>    </span><span class="kw">pub fn </span>join_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv6Addr.html">Ipv6Addr</a>, interface: <a href="../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#687 id=687 data-nosnippet>687</a>        <a class="self" href="#686">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#925-931">join_multicast_v6</a>(<a href="#686">multiaddr</a>, <a href="#686">interface</a>)
 <a href=#688 id=688 data-nosnippet>688</a>    }
 <a href=#689 id=689 data-nosnippet>689</a>
 <a href=#690 id=690 data-nosnippet>690</a>    <span class="doccomment">/// Executes an operation of the `IP_DROP_MEMBERSHIP` type.
 <a href=#691 id=691 data-nosnippet>691</a>    ///
 <a href=#692 id=692 data-nosnippet>692</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v4`].
 <a href=#693 id=693 data-nosnippet>693</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#694 id=694 data-nosnippet>694</a>    </span><span class="kw">pub fn </span>leave_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv4Addr, interface: <span class="kw-2">&amp;</span>Ipv4Addr) -&gt; io::Result&lt;()&gt; {
-<a href=#695 id=695 data-nosnippet>695</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v4(multiaddr, interface)
+<a href=#694 id=694 data-nosnippet>694</a>    </span><span class="kw">pub fn </span>leave_multicast_v4(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv4Addr.html">Ipv4Addr</a>, interface: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv4Addr.html">Ipv4Addr</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#695 id=695 data-nosnippet>695</a>        <a class="self" href="#694">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#933-939">leave_multicast_v4</a>(<a href="#694">multiaddr</a>, <a href="#694">interface</a>)
 <a href=#696 id=696 data-nosnippet>696</a>    }
 <a href=#697 id=697 data-nosnippet>697</a>
 <a href=#698 id=698 data-nosnippet>698</a>    <span class="doccomment">/// Executes an operation of the `IPV6_DROP_MEMBERSHIP` type.
 <a href=#699 id=699 data-nosnippet>699</a>    ///
 <a href=#700 id=700 data-nosnippet>700</a>    /// For more information about this option, see [`UdpSocket::join_multicast_v6`].
 <a href=#701 id=701 data-nosnippet>701</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#702 id=702 data-nosnippet>702</a>    </span><span class="kw">pub fn </span>leave_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span>Ipv6Addr, interface: u32) -&gt; io::Result&lt;()&gt; {
-<a href=#703 id=703 data-nosnippet>703</a>        <span class="self">self</span>.<span class="number">0</span>.leave_multicast_v6(multiaddr, interface)
+<a href=#702 id=702 data-nosnippet>702</a>    </span><span class="kw">pub fn </span>leave_multicast_v6(<span class="kw-2">&amp;</span><span class="self">self</span>, multiaddr: <span class="kw-2">&amp;</span><a href="../../../std/net/struct.Ipv6Addr.html">Ipv6Addr</a>, interface: <a href="../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#703 id=703 data-nosnippet>703</a>        <a class="self" href="#702">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#941-947">leave_multicast_v6</a>(<a href="#702">multiaddr</a>, <a href="#702">interface</a>)
 <a href=#704 id=704 data-nosnippet>704</a>    }
 <a href=#705 id=705 data-nosnippet>705</a>
 <a href=#706 id=706 data-nosnippet>706</a>    <span class="doccomment">/// Gets the value of the `SO_ERROR` option on this socket.
@@ -722,8 +722,8 @@
 <a href=#722 id=722 data-nosnippet>722</a>    /// }
 <a href=#723 id=723 data-nosnippet>723</a>    /// ```
 <a href=#724 id=724 data-nosnippet>724</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#725 id=725 data-nosnippet>725</a>    </span><span class="kw">pub fn </span>take_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="prelude-ty">Option</span>&lt;io::Error&gt;&gt; {
-<a href=#726 id=726 data-nosnippet>726</a>        <span class="self">self</span>.<span class="number">0</span>.take_error()
+<a href=#725 id=725 data-nosnippet>725</a>    </span><span class="kw">pub fn </span>take_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;io::<a href="../../../std/io/struct.Error.html">Error</a>&gt;&gt; {
+<a href=#726 id=726 data-nosnippet>726</a>        <a class="self" href="#725">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1008-1010">take_error</a>()
 <a href=#727 id=727 data-nosnippet>727</a>    }
 <a href=#728 id=728 data-nosnippet>728</a>
 <a href=#729 id=729 data-nosnippet>729</a>    <span class="doccomment">/// Connects this UDP socket to a remote address, allowing the `send` and
@@ -759,8 +759,8 @@
 <a href=#759 id=759 data-nosnippet>759</a>    /// `connect`s to non-loopback addresses might fail, depending
 <a href=#760 id=760 data-nosnippet>760</a>    /// on the platform.
 <a href=#761 id=761 data-nosnippet>761</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#762 id=762 data-nosnippet>762</a>    </span><span class="kw">pub fn </span>connect&lt;A: ToSocketAddrs&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: A) -&gt; io::Result&lt;()&gt; {
-<a href=#763 id=763 data-nosnippet>763</a>        <span class="self">self</span>.<span class="number">0</span>.connect(addr)
+<a href=#762 id=762 data-nosnippet>762</a>    </span><span class="kw">pub fn </span>connect&lt;A: <a href="socket_addr.rs.html#128-143">ToSocketAddrs</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: A) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#763 id=763 data-nosnippet>763</a>        <a class="self" href="#762">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1039-1046">connect</a>(<a href="#762">addr</a>)
 <a href=#764 id=764 data-nosnippet>764</a>    }
 <a href=#765 id=765 data-nosnippet>765</a>
 <a href=#766 id=766 data-nosnippet>766</a>    <span class="doccomment">/// Sends data on the socket to the remote address to which it is connected.
@@ -781,8 +781,8 @@
 <a href=#781 id=781 data-nosnippet>781</a>    /// socket.send(&amp;[0, 1, 2]).expect("send should succeed");
 <a href=#782 id=782 data-nosnippet>782</a>    /// ```
 <a href=#783 id=783 data-nosnippet>783</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#784 id=784 data-nosnippet>784</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#785 id=785 data-nosnippet>785</a>        <span class="self">self</span>.<span class="number">0</span>.send(buf)
+<a href=#784 id=784 data-nosnippet>784</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[<a href="../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#785 id=785 data-nosnippet>785</a>        <a class="self" href="#784">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1024-1037">send</a>(<a href="#784">buf</a>)
 <a href=#786 id=786 data-nosnippet>786</a>    }
 <a href=#787 id=787 data-nosnippet>787</a>
 <a href=#788 id=788 data-nosnippet>788</a>    <span class="doccomment">/// Receives a single datagram message on the socket from the remote address to
@@ -813,8 +813,8 @@
 <a href=#813 id=813 data-nosnippet>813</a>    /// }
 <a href=#814 id=814 data-nosnippet>814</a>    /// ```
 <a href=#815 id=815 data-nosnippet>815</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#816 id=816 data-nosnippet>816</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#817 id=817 data-nosnippet>817</a>        <span class="self">self</span>.<span class="number">0</span>.recv(buf)
+<a href=#816 id=816 data-nosnippet>816</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#817 id=817 data-nosnippet>817</a>        <a class="self" href="#816">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1016-1018">recv</a>(<a href="#816">buf</a>)
 <a href=#818 id=818 data-nosnippet>818</a>    }
 <a href=#819 id=819 data-nosnippet>819</a>
 <a href=#820 id=820 data-nosnippet>820</a>    <span class="doccomment">/// Receives single datagram on the socket from the remote address to which it is
@@ -853,8 +853,8 @@
 <a href=#853 id=853 data-nosnippet>853</a>    /// }
 <a href=#854 id=854 data-nosnippet>854</a>    /// ```
 <a href=#855 id=855 data-nosnippet>855</a>    </span><span class="attr">#[stable(feature = <span class="string">"peek"</span>, since = <span class="string">"1.18.0"</span>)]
-<a href=#856 id=856 data-nosnippet>856</a>    </span><span class="kw">pub fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#857 id=857 data-nosnippet>857</a>        <span class="self">self</span>.<span class="number">0</span>.peek(buf)
+<a href=#856 id=856 data-nosnippet>856</a>    </span><span class="kw">pub fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#857 id=857 data-nosnippet>857</a>        <a class="self" href="#856">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1020-1022">peek</a>(<a href="#856">buf</a>)
 <a href=#858 id=858 data-nosnippet>858</a>    }
 <a href=#859 id=859 data-nosnippet>859</a>
 <a href=#860 id=860 data-nosnippet>860</a>    <span class="doccomment">/// Moves this UDP socket into or out of nonblocking mode.
@@ -898,8 +898,8 @@
 <a href=#898 id=898 data-nosnippet>898</a>    /// println!("bytes: {:?}", &amp;buf[..num_bytes_read]);
 <a href=#899 id=899 data-nosnippet>899</a>    /// ```
 <a href=#900 id=900 data-nosnippet>900</a>    </span><span class="attr">#[stable(feature = <span class="string">"net2_mutators"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#901 id=901 data-nosnippet>901</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: bool) -&gt; io::Result&lt;()&gt; {
-<a href=#902 id=902 data-nosnippet>902</a>        <span class="self">self</span>.<span class="number">0</span>.set_nonblocking(nonblocking)
+<a href=#901 id=901 data-nosnippet>901</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: <a href="../../../std/primitive.bool.html">bool</a>) -&gt; io::<a href="../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#902 id=902 data-nosnippet>902</a>        <a class="self" href="#901">self</a>.<span class="number">0</span>.<a href="../sys/net/connection/socket/mod.rs.html#1012-1014">set_nonblocking</a>(<a href="#901">nonblocking</a>)
 <a href=#903 id=903 data-nosnippet>903</a>    }
 <a href=#904 id=904 data-nosnippet>904</a>}
 <a href=#905 id=905 data-nosnippet>905</a>
@@ -909,29 +909,29 @@
 <a href=#909 id=909 data-nosnippet>909</a>// `AsSocket`/`From&lt;OwnedSocket&gt;`/`Into&lt;OwnedSocket&gt;` and
 <a href=#910 id=910 data-nosnippet>910</a>// `AsRawSocket`/`IntoRawSocket`/`FromRawSocket` on Windows.
 <a href=#911 id=911 data-nosnippet>911</a>
-<a href=#912 id=912 data-nosnippet>912</a></span><span class="kw">impl </span>AsInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
+<a href=#912 id=912 data-nosnippet>912</a></span><span class="kw">impl </span><a href="../sys/mod.rs.html#38-40">AsInner</a>&lt;net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>&gt; <span class="kw">for </span><a href="#67">UdpSocket</a> {
 <a href=#913 id=913 data-nosnippet>913</a>    <span class="attr">#[inline]
-<a href=#914 id=914 data-nosnippet>914</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>net_imp::UdpSocket {
-<a href=#915 id=915 data-nosnippet>915</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#914 id=914 data-nosnippet>914</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a> {
+<a href=#915 id=915 data-nosnippet>915</a>        <span class="kw-2">&amp;</span><a class="self" href="#914">self</a>.<span class="number">0
 <a href=#916 id=916 data-nosnippet>916</a>    </span>}
 <a href=#917 id=917 data-nosnippet>917</a>}
 <a href=#918 id=918 data-nosnippet>918</a>
-<a href=#919 id=919 data-nosnippet>919</a><span class="kw">impl </span>FromInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
-<a href=#920 id=920 data-nosnippet>920</a>    <span class="kw">fn </span>from_inner(inner: net_imp::UdpSocket) -&gt; UdpSocket {
-<a href=#921 id=921 data-nosnippet>921</a>        UdpSocket(inner)
+<a href=#919 id=919 data-nosnippet>919</a><span class="kw">impl </span><a href="../sys/mod.rs.html#54-56">FromInner</a>&lt;net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>&gt; <span class="kw">for </span><a href="#67">UdpSocket</a> {
+<a href=#920 id=920 data-nosnippet>920</a>    <span class="kw">fn </span>from_inner(inner: net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>) -&gt; <a href="#67">UdpSocket</a> {
+<a href=#921 id=921 data-nosnippet>921</a>        <a href="#67">UdpSocket</a>(<a href="#920">inner</a>)
 <a href=#922 id=922 data-nosnippet>922</a>    }
 <a href=#923 id=923 data-nosnippet>923</a>}
 <a href=#924 id=924 data-nosnippet>924</a>
-<a href=#925 id=925 data-nosnippet>925</a><span class="kw">impl </span>IntoInner&lt;net_imp::UdpSocket&gt; <span class="kw">for </span>UdpSocket {
-<a href=#926 id=926 data-nosnippet>926</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; net_imp::UdpSocket {
-<a href=#927 id=927 data-nosnippet>927</a>        <span class="self">self</span>.<span class="number">0
+<a href=#925 id=925 data-nosnippet>925</a><span class="kw">impl </span><a href="../sys/mod.rs.html#49-51">IntoInner</a>&lt;net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a>&gt; <span class="kw">for </span><a href="#67">UdpSocket</a> {
+<a href=#926 id=926 data-nosnippet>926</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; net_imp::<a href="../sys/net/connection/socket/mod.rs.html#779-781">UdpSocket</a> {
+<a href=#927 id=927 data-nosnippet>927</a>        <a class="self" href="#926">self</a>.<span class="number">0
 <a href=#928 id=928 data-nosnippet>928</a>    </span>}
 <a href=#929 id=929 data-nosnippet>929</a>}
 <a href=#930 id=930 data-nosnippet>930</a>
 <a href=#931 id=931 data-nosnippet>931</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#932 id=932 data-nosnippet>932</a></span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>UdpSocket {
-<a href=#933 id=933 data-nosnippet>933</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#934 id=934 data-nosnippet>934</a>        <span class="self">self</span>.<span class="number">0</span>.fmt(f)
+<a href=#932 id=932 data-nosnippet>932</a></span><span class="kw">impl </span><a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#67">UdpSocket</a> {
+<a href=#933 id=933 data-nosnippet>933</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#934 id=934 data-nosnippet>934</a>        <a class="self" href="#933">self</a>.<span class="number">0</span>.<a href="../../../std/fmt/trait.Debug.html">fmt</a>(<a href="#933">f</a>)
 <a href=#935 id=935 data-nosnippet>935</a>    }
 <a href=#936 id=936 data-nosnippet>936</a>}
 </code></pre></div></section></main></body></html>

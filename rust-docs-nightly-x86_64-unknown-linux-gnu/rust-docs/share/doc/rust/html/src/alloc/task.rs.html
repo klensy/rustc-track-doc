@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/task.rs`."><title>task.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>task.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/task.rs`."><title>task.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>task.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="doccomment">//! Types and Traits for working with asynchronous tasks.
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -7,14 +7,14 @@
 <a href=#7 id=7 data-nosnippet>7</a>//! This may be detected at compile time using
 <a href=#8 id=8 data-nosnippet>8</a>//! `#[cfg(target_has_atomic = "ptr")]`.
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span>core::mem::ManuallyDrop;
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span><a href="../../core/mem/manually_drop/struct.ManuallyDrop.html">core::mem::ManuallyDrop</a>;
 <a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
-<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span>core::task::Waker;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>core::task::{LocalWaker, RawWaker, RawWakerVTable};
+<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span><a href="../../core/task/wake/struct.Waker.html">core::task::Waker</a>;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>core::task::{<a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a>, <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a>, <a href="../../core/task/wake/struct.RawWakerVTable.html">RawWakerVTable</a>};
 <a href=#14 id=14 data-nosnippet>14</a>
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::rc::Rc;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><a href="rcs/rc.rs.html#325-335"><span class="kw">crate</span>::rc::Rc</a>;
 <a href=#16 id=16 data-nosnippet>16</a><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
-<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">use </span><span class="kw">crate</span>::sync::Arc;
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">use </span><a href="rcs/arc.rs.html#265-275"><span class="kw">crate</span>::sync::Arc</a>;
 <a href=#18 id=18 data-nosnippet>18</a>
 <a href=#19 id=19 data-nosnippet>19</a><span class="doccomment">/// The implementation of waking a task on an executor.
 <a href=#20 id=20 data-nosnippet>20</a>///
@@ -92,10 +92,10 @@
 <a href=#92 id=92 data-nosnippet>92</a></span><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#93 id=93 data-nosnippet>93</a>#[stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
 <a href=#94 id=94 data-nosnippet>94</a>#[rustc_diagnostic_item = <span class="string">"Wake"</span>]
-<a href=#95 id=95 data-nosnippet>95</a></span><span class="kw">pub trait </span>Wake {
+<a href=#95 id=95 data-nosnippet>95</a></span><span class="kw">pub trait </span><a href="../../alloc/task/trait.Wake.html">Wake</a> {
 <a href=#96 id=96 data-nosnippet>96</a>    <span class="doccomment">/// Wake this task.
 <a href=#97 id=97 data-nosnippet>97</a>    </span><span class="attr">#[stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">fn </span>wake(<span class="self">self</span>: Arc&lt;<span class="self">Self</span>&gt;);
+<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">fn </span>wake(<span class="self">self</span>: <a href="rcs/arc.rs.html#265-275">Arc</a>&lt;<span class="self">Self</span>&gt;);
 <a href=#99 id=99 data-nosnippet>99</a>
 <a href=#100 id=100 data-nosnippet>100</a>    <span class="doccomment">/// Wake this task without consuming the waker.
 <a href=#101 id=101 data-nosnippet>101</a>    ///
@@ -105,30 +105,30 @@
 <a href=#105 id=105 data-nosnippet>105</a>    ///
 <a href=#106 id=106 data-nosnippet>106</a>    /// [`wake`]: Wake::wake
 <a href=#107 id=107 data-nosnippet>107</a>    </span><span class="attr">#[stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;) {
-<a href=#109 id=109 data-nosnippet>109</a>        <span class="self">self</span>.clone().wake();
+<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span><a href="rcs/arc.rs.html#265-275">Arc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#109 id=109 data-nosnippet>109</a>        <a class="self" href="#108">self</a>.<a href="../../core/clone/trait.Clone.html#tymethod.clone">clone</a>().<a href="#98">wake</a>();
 <a href=#110 id=110 data-nosnippet>110</a>    }
 <a href=#111 id=111 data-nosnippet>111</a>}
 <a href=#112 id=112 data-nosnippet>112</a><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#113 id=113 data-nosnippet>113</a>#[stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">impl</span>&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt; From&lt;Arc&lt;W&gt;&gt; <span class="kw">for </span>Waker {
+<a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">impl</span>&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt; <a href="../../core/convert/trait.From.html">From</a>&lt;<a href="rcs/arc.rs.html#265-275">Arc</a>&lt;W&gt;&gt; <span class="kw">for </span><a href="../../core/task/wake/struct.Waker.html">Waker</a> {
 <a href=#115 id=115 data-nosnippet>115</a>    <span class="doccomment">/// Use a [`Wake`]-able type as a `Waker`.
 <a href=#116 id=116 data-nosnippet>116</a>    ///
 <a href=#117 id=117 data-nosnippet>117</a>    /// No heap allocations or atomic operations are used for this conversion.
-<a href=#118 id=118 data-nosnippet>118</a>    </span><span class="kw">fn </span>from(waker: Arc&lt;W&gt;) -&gt; Waker {
+<a href=#118 id=118 data-nosnippet>118</a>    </span><span class="kw">fn </span>from(waker: <a href="rcs/arc.rs.html#265-275">Arc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.Waker.html">Waker</a> {
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="comment">// SAFETY: This is safe because raw_waker safely constructs
 <a href=#120 id=120 data-nosnippet>120</a>        // a RawWaker from Arc&lt;W&gt;.
-<a href=#121 id=121 data-nosnippet>121</a>        </span><span class="kw">unsafe </span>{ Waker::from_raw(raw_waker(waker)) }
+<a href=#121 id=121 data-nosnippet>121</a>        </span><span class="kw">unsafe </span>{ <a href="../../core/task/wake/struct.Waker.html">Waker</a>::<a href="../../core/task/wake/struct.Waker.html#method.from_raw">from_raw</a>(<a href="#180-224">raw_waker</a>(<a href="#118">waker</a>)) }
 <a href=#122 id=122 data-nosnippet>122</a>    }
 <a href=#123 id=123 data-nosnippet>123</a>}
 <a href=#124 id=124 data-nosnippet>124</a><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#125 id=125 data-nosnippet>125</a>#[stable(feature = <span class="string">"wake_trait"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#126 id=126 data-nosnippet>126</a></span><span class="kw">impl</span>&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt; From&lt;Arc&lt;W&gt;&gt; <span class="kw">for </span>RawWaker {
+<a href=#126 id=126 data-nosnippet>126</a></span><span class="kw">impl</span>&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt; <a href="../../core/convert/trait.From.html">From</a>&lt;<a href="rcs/arc.rs.html#265-275">Arc</a>&lt;W&gt;&gt; <span class="kw">for </span><a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#127 id=127 data-nosnippet>127</a>    <span class="doccomment">/// Use a `Wake`-able type as a `RawWaker`.
 <a href=#128 id=128 data-nosnippet>128</a>    ///
 <a href=#129 id=129 data-nosnippet>129</a>    /// No heap allocations or atomic operations are used for this conversion.
-<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">fn </span>from(waker: Arc&lt;W&gt;) -&gt; RawWaker {
-<a href=#131 id=131 data-nosnippet>131</a>        raw_waker(waker)
+<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">fn </span>from(waker: <a href="rcs/arc.rs.html#265-275">Arc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
+<a href=#131 id=131 data-nosnippet>131</a>        <a href="#180-224">raw_waker</a>(<a href="#130">waker</a>)
 <a href=#132 id=132 data-nosnippet>132</a>    }
 <a href=#133 id=133 data-nosnippet>133</a>}
 <a href=#134 id=134 data-nosnippet>134</a>
@@ -149,25 +149,25 @@
 <a href=#149 id=149 data-nosnippet>149</a>/// ```
 <a href=#150 id=150 data-nosnippet>150</a></span><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#151 id=151 data-nosnippet>151</a>#[unstable(feature = <span class="string">"waker_fn"</span>, issue = <span class="string">"149580"</span>)]
-<a href=#152 id=152 data-nosnippet>152</a></span><span class="kw">pub fn </span>waker_fn&lt;F: Fn() + Send + Sync + <span class="lifetime">'static</span>&gt;(f: F) -&gt; Waker {
+<a href=#152 id=152 data-nosnippet>152</a></span><span class="kw">pub fn </span><a href="../../alloc/task/fn.waker_fn.html">waker_fn</a>&lt;F: <a href="../../core/ops/function/trait.Fn.html">Fn</a>() + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(f: F) -&gt; <a href="../../core/task/wake/struct.Waker.html">Waker</a> {
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">struct </span>WakeFn&lt;F&gt; {
 <a href=#154 id=154 data-nosnippet>154</a>        f: F,
 <a href=#155 id=155 data-nosnippet>155</a>    }
 <a href=#156 id=156 data-nosnippet>156</a>
-<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">impl</span>&lt;F&gt; Wake <span class="kw">for </span>WakeFn&lt;F&gt;
+<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">impl</span>&lt;F&gt; <a href="#95-111">Wake</a> <span class="kw">for </span><a href="#153-155">WakeFn</a>&lt;F&gt;
 <a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">where
-<a href=#159 id=159 data-nosnippet>159</a>        </span>F: Fn(),
+<a href=#159 id=159 data-nosnippet>159</a>        </span>F: <a href="../../core/ops/function/trait.Fn.html">Fn</a>(),
 <a href=#160 id=160 data-nosnippet>160</a>    {
-<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">fn </span>wake(<span class="self">self</span>: Arc&lt;<span class="self">Self</span>&gt;) {
-<a href=#162 id=162 data-nosnippet>162</a>            (<span class="self">self</span>.f)()
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">fn </span>wake(<span class="self">self</span>: <a href="rcs/arc.rs.html#265-275">Arc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#162 id=162 data-nosnippet>162</a>            (<a class="self" href="#161">self</a>.f)()
 <a href=#163 id=163 data-nosnippet>163</a>        }
 <a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;) {
-<a href=#166 id=166 data-nosnippet>166</a>            (<span class="self">self</span>.f)()
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span><a href="rcs/arc.rs.html#265-275">Arc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#166 id=166 data-nosnippet>166</a>            (<a class="self" href="#165">self</a>.f)()
 <a href=#167 id=167 data-nosnippet>167</a>        }
 <a href=#168 id=168 data-nosnippet>168</a>    }
 <a href=#169 id=169 data-nosnippet>169</a>
-<a href=#170 id=170 data-nosnippet>170</a>    Waker::from(Arc::new(WakeFn { f }))
+<a href=#170 id=170 data-nosnippet>170</a>    <a href="../../core/task/wake/struct.Waker.html">Waker</a>::<a href="../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#438-448">new</a>(<a href="#153-155">WakeFn</a> { <a href="#152">f</a> }))
 <a href=#171 id=171 data-nosnippet>171</a>}
 <a href=#172 id=172 data-nosnippet>172</a>
 <a href=#173 id=173 data-nosnippet>173</a><span class="comment">// NB: This private function for constructing a RawWaker is used, rather than
@@ -177,7 +177,7 @@
 <a href=#177 id=177 data-nosnippet>177</a>// explicitly.
 <a href=#178 id=178 data-nosnippet>178</a></span><span class="attr">#[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#179 id=179 data-nosnippet>179</a>#[inline(always)]
-<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">fn </span>raw_waker&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt;(waker: Arc&lt;W&gt;) -&gt; RawWaker {
+<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">fn </span>raw_waker&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(waker: <a href="rcs/arc.rs.html#265-275">Arc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="comment">// Increment the reference count of the arc to clone it.
 <a href=#182 id=182 data-nosnippet>182</a>    //
 <a href=#183 id=183 data-nosnippet>183</a>    // The #[inline(always)] is to ensure that raw_waker and clone_waker are
@@ -188,38 +188,38 @@
 <a href=#188 id=188 data-nosnippet>188</a>    // the vtable pointers, rather than comparing all four function pointers
 <a href=#189 id=189 data-nosnippet>189</a>    // within the vtables.
 <a href=#190 id=190 data-nosnippet>190</a>    </span><span class="attr">#[inline(always)]
-<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">unsafe fn </span>clone_waker&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) -&gt; RawWaker {
+<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">unsafe fn </span>clone_waker&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#193 id=193 data-nosnippet>193</a>        </span><span class="kw">unsafe </span>{ Arc::increment_strong_count(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
-<a href=#194 id=194 data-nosnippet>194</a>        RawWaker::new(
-<a href=#195 id=195 data-nosnippet>195</a>            waker,
-<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw-2">&amp;</span>RawWakerVTable::new(clone_waker::&lt;W&gt;, wake::&lt;W&gt;, wake_by_ref::&lt;W&gt;, drop_waker::&lt;W&gt;),
+<a href=#193 id=193 data-nosnippet>193</a>        </span><span class="kw">unsafe </span>{ <a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#1770-1773">increment_strong_count</a>(<a href="#191">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#194 id=194 data-nosnippet>194</a>        <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a>::<a href="../../core/task/wake/struct.RawWaker.html#method.new">new</a>(
+<a href=#195 id=195 data-nosnippet>195</a>            <a href="#191">waker</a>,
+<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw-2">&amp;</span><a href="../../core/task/wake/struct.RawWakerVTable.html">RawWakerVTable</a>::<a href="../../core/task/wake/struct.RawWakerVTable.html#method.new">new</a>(<a href="#191-198">clone_waker</a>::&lt;W&gt;, <a href="#201-205">wake</a>::&lt;W&gt;, <a href="#208-212">wake_by_ref</a>::&lt;W&gt;, <a href="#215-218">drop_waker</a>::&lt;W&gt;),
 <a href=#197 id=197 data-nosnippet>197</a>        )
 <a href=#198 id=198 data-nosnippet>198</a>    }
 <a href=#199 id=199 data-nosnippet>199</a>
 <a href=#200 id=200 data-nosnippet>200</a>    <span class="comment">// Wake by value, moving the Arc into the Wake::wake function
-<a href=#201 id=201 data-nosnippet>201</a>    </span><span class="kw">unsafe fn </span>wake&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#201 id=201 data-nosnippet>201</a>    </span><span class="kw">unsafe fn </span>wake&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#202 id=202 data-nosnippet>202</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#203 id=203 data-nosnippet>203</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ Arc::from_raw(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
-<a href=#204 id=204 data-nosnippet>204</a>        &lt;W <span class="kw">as </span>Wake&gt;::wake(waker);
+<a href=#203 id=203 data-nosnippet>203</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ <a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#1707-1710">from_raw</a>(<a href="#201">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#204 id=204 data-nosnippet>204</a>        &lt;W <span class="kw">as </span>Wake&gt;::<a href="#98">wake</a>(<a href="#203">waker</a>);
 <a href=#205 id=205 data-nosnippet>205</a>    }
 <a href=#206 id=206 data-nosnippet>206</a>
 <a href=#207 id=207 data-nosnippet>207</a>    <span class="comment">// Wake by reference, wrap the waker in ManuallyDrop to avoid dropping it
-<a href=#208 id=208 data-nosnippet>208</a>    </span><span class="kw">unsafe fn </span>wake_by_ref&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#208 id=208 data-nosnippet>208</a>    </span><span class="kw">unsafe fn </span>wake_by_ref&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#209 id=209 data-nosnippet>209</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ ManuallyDrop::new(Arc::from_raw(waker <span class="kw">as </span><span class="kw-2">*const </span>W)) };
-<a href=#211 id=211 data-nosnippet>211</a>        &lt;W <span class="kw">as </span>Wake&gt;::wake_by_ref(<span class="kw-2">&amp;</span>waker);
+<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ <a href="../../core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../core/mem/manually_drop/struct.ManuallyDrop.html#method.new">new</a>(<a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#1707-1710">from_raw</a>(<a href="#208">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W)) };
+<a href=#211 id=211 data-nosnippet>211</a>        &lt;W <span class="kw">as </span>Wake&gt;::<a href="#108-110">wake_by_ref</a>(<span class="kw-2">&amp;</span><a href="#210">waker</a>);
 <a href=#212 id=212 data-nosnippet>212</a>    }
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a>    <span class="comment">// Decrement the reference count of the Arc on drop
-<a href=#215 id=215 data-nosnippet>215</a>    </span><span class="kw">unsafe fn </span>drop_waker&lt;W: Wake + Send + Sync + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#215 id=215 data-nosnippet>215</a>    </span><span class="kw">unsafe fn </span>drop_waker&lt;W: <a href="#95-111">Wake</a> + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#216 id=216 data-nosnippet>216</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#217 id=217 data-nosnippet>217</a>        </span><span class="kw">unsafe </span>{ Arc::decrement_strong_count(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#217 id=217 data-nosnippet>217</a>        </span><span class="kw">unsafe </span>{ <a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#1811-1814">decrement_strong_count</a>(<a href="#215">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
 <a href=#218 id=218 data-nosnippet>218</a>    }
 <a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a>    RawWaker::new(
-<a href=#221 id=221 data-nosnippet>221</a>        Arc::into_raw(waker) <span class="kw">as </span><span class="kw-2">*const </span>(),
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw-2">&amp;</span>RawWakerVTable::new(clone_waker::&lt;W&gt;, wake::&lt;W&gt;, wake_by_ref::&lt;W&gt;, drop_waker::&lt;W&gt;),
+<a href=#220 id=220 data-nosnippet>220</a>    <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a>::<a href="../../core/task/wake/struct.RawWaker.html#method.new">new</a>(
+<a href=#221 id=221 data-nosnippet>221</a>        <a href="rcs/arc.rs.html#265-275">Arc</a>::<a href="rcs/arc.rs.html#1731-1734">into_raw</a>(<a href="#180">waker</a>) <span class="kw">as </span><span class="kw-2">*const </span>(),
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw-2">&amp;</span><a href="../../core/task/wake/struct.RawWakerVTable.html">RawWakerVTable</a>::<a href="../../core/task/wake/struct.RawWakerVTable.html#method.new">new</a>(<a href="#191-198">clone_waker</a>::&lt;W&gt;, <a href="#201-205">wake</a>::&lt;W&gt;, <a href="#208-212">wake_by_ref</a>::&lt;W&gt;, <a href="#215-218">drop_waker</a>::&lt;W&gt;),
 <a href=#223 id=223 data-nosnippet>223</a>    )
 <a href=#224 id=224 data-nosnippet>224</a>}
 <a href=#225 id=225 data-nosnippet>225</a>
@@ -313,10 +313,10 @@
 <a href=#313 id=313 data-nosnippet>313</a>/// ```
 <a href=#314 id=314 data-nosnippet>314</a>///
 <a href=#315 id=315 data-nosnippet>315</a></span><span class="attr">#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#316 id=316 data-nosnippet>316</a></span><span class="kw">pub trait </span>LocalWake {
+<a href=#316 id=316 data-nosnippet>316</a></span><span class="kw">pub trait </span><a href="../../alloc/task/trait.LocalWake.html">LocalWake</a> {
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="doccomment">/// Wake this task.
 <a href=#318 id=318 data-nosnippet>318</a>    </span><span class="attr">#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">fn </span>wake(<span class="self">self</span>: Rc&lt;<span class="self">Self</span>&gt;);
+<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">fn </span>wake(<span class="self">self</span>: <a href="rcs/rc.rs.html#325-335">Rc</a>&lt;<span class="self">Self</span>&gt;);
 <a href=#320 id=320 data-nosnippet>320</a>
 <a href=#321 id=321 data-nosnippet>321</a>    <span class="doccomment">/// Wake this task without consuming the local waker.
 <a href=#322 id=322 data-nosnippet>322</a>    ///
@@ -326,30 +326,30 @@
 <a href=#326 id=326 data-nosnippet>326</a>    ///
 <a href=#327 id=327 data-nosnippet>327</a>    /// [`wake`]: LocalWaker::wake
 <a href=#328 id=328 data-nosnippet>328</a>    </span><span class="attr">#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#329 id=329 data-nosnippet>329</a>    </span><span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span>Rc&lt;<span class="self">Self</span>&gt;) {
-<a href=#330 id=330 data-nosnippet>330</a>        <span class="self">self</span>.clone().wake();
+<a href=#329 id=329 data-nosnippet>329</a>    </span><span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span><a href="rcs/rc.rs.html#325-335">Rc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#330 id=330 data-nosnippet>330</a>        <a class="self" href="#329">self</a>.<a href="../../core/clone/trait.Clone.html#tymethod.clone">clone</a>().<a href="#319">wake</a>();
 <a href=#331 id=331 data-nosnippet>331</a>    }
 <a href=#332 id=332 data-nosnippet>332</a>}
 <a href=#333 id=333 data-nosnippet>333</a>
 <a href=#334 id=334 data-nosnippet>334</a><span class="attr">#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#335 id=335 data-nosnippet>335</a></span><span class="kw">impl</span>&lt;W: LocalWake + <span class="lifetime">'static</span>&gt; From&lt;Rc&lt;W&gt;&gt; <span class="kw">for </span>LocalWaker {
+<a href=#335 id=335 data-nosnippet>335</a></span><span class="kw">impl</span>&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt; <a href="../../core/convert/trait.From.html">From</a>&lt;<a href="rcs/rc.rs.html#325-335">Rc</a>&lt;W&gt;&gt; <span class="kw">for </span><a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a> {
 <a href=#336 id=336 data-nosnippet>336</a>    <span class="doccomment">/// Use a `Wake`-able type as a `LocalWaker`.
 <a href=#337 id=337 data-nosnippet>337</a>    ///
 <a href=#338 id=338 data-nosnippet>338</a>    /// No heap allocations or atomic operations are used for this conversion.
-<a href=#339 id=339 data-nosnippet>339</a>    </span><span class="kw">fn </span>from(waker: Rc&lt;W&gt;) -&gt; LocalWaker {
+<a href=#339 id=339 data-nosnippet>339</a>    </span><span class="kw">fn </span>from(waker: <a href="rcs/rc.rs.html#325-335">Rc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a> {
 <a href=#340 id=340 data-nosnippet>340</a>        <span class="comment">// SAFETY: This is safe because raw_waker safely constructs
 <a href=#341 id=341 data-nosnippet>341</a>        // a RawWaker from Rc&lt;W&gt;.
-<a href=#342 id=342 data-nosnippet>342</a>        </span><span class="kw">unsafe </span>{ LocalWaker::from_raw(local_raw_waker(waker)) }
+<a href=#342 id=342 data-nosnippet>342</a>        </span><span class="kw">unsafe </span>{ <a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a>::<a href="../../core/task/wake/struct.LocalWaker.html#method.from_raw">from_raw</a>(<a href="#401-440">local_raw_waker</a>(<a href="#339">waker</a>)) }
 <a href=#343 id=343 data-nosnippet>343</a>    }
 <a href=#344 id=344 data-nosnippet>344</a>}
 <a href=#345 id=345 data-nosnippet>345</a><span class="attr">#[allow(ineffective_unstable_trait_impl)]
 <a href=#346 id=346 data-nosnippet>346</a>#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#347 id=347 data-nosnippet>347</a></span><span class="kw">impl</span>&lt;W: LocalWake + <span class="lifetime">'static</span>&gt; From&lt;Rc&lt;W&gt;&gt; <span class="kw">for </span>RawWaker {
+<a href=#347 id=347 data-nosnippet>347</a></span><span class="kw">impl</span>&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt; <a href="../../core/convert/trait.From.html">From</a>&lt;<a href="rcs/rc.rs.html#325-335">Rc</a>&lt;W&gt;&gt; <span class="kw">for </span><a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#348 id=348 data-nosnippet>348</a>    <span class="doccomment">/// Use a `Wake`-able type as a `RawWaker`.
 <a href=#349 id=349 data-nosnippet>349</a>    ///
 <a href=#350 id=350 data-nosnippet>350</a>    /// No heap allocations or atomic operations are used for this conversion.
-<a href=#351 id=351 data-nosnippet>351</a>    </span><span class="kw">fn </span>from(waker: Rc&lt;W&gt;) -&gt; RawWaker {
-<a href=#352 id=352 data-nosnippet>352</a>        local_raw_waker(waker)
+<a href=#351 id=351 data-nosnippet>351</a>    </span><span class="kw">fn </span>from(waker: <a href="rcs/rc.rs.html#325-335">Rc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
+<a href=#352 id=352 data-nosnippet>352</a>        <a href="#401-440">local_raw_waker</a>(<a href="#351">waker</a>)
 <a href=#353 id=353 data-nosnippet>353</a>    }
 <a href=#354 id=354 data-nosnippet>354</a>}
 <a href=#355 id=355 data-nosnippet>355</a>
@@ -371,25 +371,25 @@
 <a href=#371 id=371 data-nosnippet>371</a>/// ```
 <a href=#372 id=372 data-nosnippet>372</a></span><span class="comment">// #[unstable(feature = "local_waker", issue = "118959")]
 <a href=#373 id=373 data-nosnippet>373</a></span><span class="attr">#[unstable(feature = <span class="string">"waker_fn"</span>, issue = <span class="string">"149580"</span>)]
-<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">pub fn </span>local_waker_fn&lt;F: Fn() + Send + Sync + <span class="lifetime">'static</span>&gt;(f: F) -&gt; LocalWaker {
+<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">pub fn </span><a href="../../alloc/task/fn.local_waker_fn.html">local_waker_fn</a>&lt;F: <a href="../../core/ops/function/trait.Fn.html">Fn</a>() + <a href="../../core/marker/trait.Send.html">Send</a> + <a href="../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'static</span>&gt;(f: F) -&gt; <a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a> {
 <a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">struct </span>LocalWakeFn&lt;F&gt; {
 <a href=#376 id=376 data-nosnippet>376</a>        f: F,
 <a href=#377 id=377 data-nosnippet>377</a>    }
 <a href=#378 id=378 data-nosnippet>378</a>
-<a href=#379 id=379 data-nosnippet>379</a>    <span class="kw">impl</span>&lt;F&gt; LocalWake <span class="kw">for </span>LocalWakeFn&lt;F&gt;
+<a href=#379 id=379 data-nosnippet>379</a>    <span class="kw">impl</span>&lt;F&gt; <a href="#316-332">LocalWake</a> <span class="kw">for </span><a href="#375-377">LocalWakeFn</a>&lt;F&gt;
 <a href=#380 id=380 data-nosnippet>380</a>    <span class="kw">where
-<a href=#381 id=381 data-nosnippet>381</a>        </span>F: Fn(),
+<a href=#381 id=381 data-nosnippet>381</a>        </span>F: <a href="../../core/ops/function/trait.Fn.html">Fn</a>(),
 <a href=#382 id=382 data-nosnippet>382</a>    {
-<a href=#383 id=383 data-nosnippet>383</a>        <span class="kw">fn </span>wake(<span class="self">self</span>: Rc&lt;<span class="self">Self</span>&gt;) {
-<a href=#384 id=384 data-nosnippet>384</a>            (<span class="self">self</span>.f)()
+<a href=#383 id=383 data-nosnippet>383</a>        <span class="kw">fn </span>wake(<span class="self">self</span>: <a href="rcs/rc.rs.html#325-335">Rc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#384 id=384 data-nosnippet>384</a>            (<a class="self" href="#383">self</a>.f)()
 <a href=#385 id=385 data-nosnippet>385</a>        }
 <a href=#386 id=386 data-nosnippet>386</a>
-<a href=#387 id=387 data-nosnippet>387</a>        <span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span>Rc&lt;<span class="self">Self</span>&gt;) {
-<a href=#388 id=388 data-nosnippet>388</a>            (<span class="self">self</span>.f)()
+<a href=#387 id=387 data-nosnippet>387</a>        <span class="kw">fn </span>wake_by_ref(<span class="self">self</span>: <span class="kw-2">&amp;</span><a href="rcs/rc.rs.html#325-335">Rc</a>&lt;<span class="self">Self</span>&gt;) {
+<a href=#388 id=388 data-nosnippet>388</a>            (<a class="self" href="#387">self</a>.f)()
 <a href=#389 id=389 data-nosnippet>389</a>        }
 <a href=#390 id=390 data-nosnippet>390</a>    }
 <a href=#391 id=391 data-nosnippet>391</a>
-<a href=#392 id=392 data-nosnippet>392</a>    LocalWaker::from(Rc::new(LocalWakeFn { f }))
+<a href=#392 id=392 data-nosnippet>392</a>    <a href="../../core/task/wake/struct.LocalWaker.html">LocalWaker</a>::<a href="../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#432-444">new</a>(<a href="#375-377">LocalWakeFn</a> { <a href="#374">f</a> }))
 <a href=#393 id=393 data-nosnippet>393</a>}
 <a href=#394 id=394 data-nosnippet>394</a>
 <a href=#395 id=395 data-nosnippet>395</a><span class="comment">// NB: This private function for constructing a RawWaker is used, rather than
@@ -398,44 +398,44 @@
 <a href=#398 id=398 data-nosnippet>398</a>// trait dispatch - instead both impls call this function directly and
 <a href=#399 id=399 data-nosnippet>399</a>// explicitly.
 <a href=#400 id=400 data-nosnippet>400</a></span><span class="attr">#[inline(always)]
-<a href=#401 id=401 data-nosnippet>401</a></span><span class="kw">fn </span>local_raw_waker&lt;W: LocalWake + <span class="lifetime">'static</span>&gt;(waker: Rc&lt;W&gt;) -&gt; RawWaker {
+<a href=#401 id=401 data-nosnippet>401</a></span><span class="kw">fn </span>local_raw_waker&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt;(waker: <a href="rcs/rc.rs.html#325-335">Rc</a>&lt;W&gt;) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#402 id=402 data-nosnippet>402</a>    <span class="comment">// Increment the reference count of the Rc to clone it.
 <a href=#403 id=403 data-nosnippet>403</a>    //
 <a href=#404 id=404 data-nosnippet>404</a>    // Refer to the comment on raw_waker's clone_waker regarding why this is
 <a href=#405 id=405 data-nosnippet>405</a>    // always inline.
 <a href=#406 id=406 data-nosnippet>406</a>    </span><span class="attr">#[inline(always)]
-<a href=#407 id=407 data-nosnippet>407</a>    </span><span class="kw">unsafe fn </span>clone_waker&lt;W: LocalWake + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) -&gt; RawWaker {
+<a href=#407 id=407 data-nosnippet>407</a>    </span><span class="kw">unsafe fn </span>clone_waker&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) -&gt; <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a> {
 <a href=#408 id=408 data-nosnippet>408</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#409 id=409 data-nosnippet>409</a>        </span><span class="kw">unsafe </span>{ Rc::increment_strong_count(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
-<a href=#410 id=410 data-nosnippet>410</a>        RawWaker::new(
-<a href=#411 id=411 data-nosnippet>411</a>            waker,
-<a href=#412 id=412 data-nosnippet>412</a>            <span class="kw-2">&amp;</span>RawWakerVTable::new(clone_waker::&lt;W&gt;, wake::&lt;W&gt;, wake_by_ref::&lt;W&gt;, drop_waker::&lt;W&gt;),
+<a href=#409 id=409 data-nosnippet>409</a>        </span><span class="kw">unsafe </span>{ <a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#1607-1610">increment_strong_count</a>(<a href="#407">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#410 id=410 data-nosnippet>410</a>        <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a>::<a href="../../core/task/wake/struct.RawWaker.html#method.new">new</a>(
+<a href=#411 id=411 data-nosnippet>411</a>            <a href="#407">waker</a>,
+<a href=#412 id=412 data-nosnippet>412</a>            <span class="kw-2">&amp;</span><a href="../../core/task/wake/struct.RawWakerVTable.html">RawWakerVTable</a>::<a href="../../core/task/wake/struct.RawWakerVTable.html#method.new">new</a>(<a href="#407-414">clone_waker</a>::&lt;W&gt;, <a href="#417-421">wake</a>::&lt;W&gt;, <a href="#424-428">wake_by_ref</a>::&lt;W&gt;, <a href="#431-434">drop_waker</a>::&lt;W&gt;),
 <a href=#413 id=413 data-nosnippet>413</a>        )
 <a href=#414 id=414 data-nosnippet>414</a>    }
 <a href=#415 id=415 data-nosnippet>415</a>
 <a href=#416 id=416 data-nosnippet>416</a>    <span class="comment">// Wake by value, moving the Rc into the LocalWake::wake function
-<a href=#417 id=417 data-nosnippet>417</a>    </span><span class="kw">unsafe fn </span>wake&lt;W: LocalWake + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#417 id=417 data-nosnippet>417</a>    </span><span class="kw">unsafe fn </span>wake&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#418 id=418 data-nosnippet>418</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#419 id=419 data-nosnippet>419</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ Rc::from_raw(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
-<a href=#420 id=420 data-nosnippet>420</a>        &lt;W <span class="kw">as </span>LocalWake&gt;::wake(waker);
+<a href=#419 id=419 data-nosnippet>419</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ <a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#1548-1551">from_raw</a>(<a href="#417">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#420 id=420 data-nosnippet>420</a>        &lt;W <span class="kw">as </span>LocalWake&gt;::<a href="#319">wake</a>(<a href="#419">waker</a>);
 <a href=#421 id=421 data-nosnippet>421</a>    }
 <a href=#422 id=422 data-nosnippet>422</a>
 <a href=#423 id=423 data-nosnippet>423</a>    <span class="comment">// Wake by reference, wrap the waker in ManuallyDrop to avoid dropping it
-<a href=#424 id=424 data-nosnippet>424</a>    </span><span class="kw">unsafe fn </span>wake_by_ref&lt;W: LocalWake + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#424 id=424 data-nosnippet>424</a>    </span><span class="kw">unsafe fn </span>wake_by_ref&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#425 id=425 data-nosnippet>425</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#426 id=426 data-nosnippet>426</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ ManuallyDrop::new(Rc::from_raw(waker <span class="kw">as </span><span class="kw-2">*const </span>W)) };
-<a href=#427 id=427 data-nosnippet>427</a>        &lt;W <span class="kw">as </span>LocalWake&gt;::wake_by_ref(<span class="kw-2">&amp;</span>waker);
+<a href=#426 id=426 data-nosnippet>426</a>        </span><span class="kw">let </span>waker = <span class="kw">unsafe </span>{ <a href="../../core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../core/mem/manually_drop/struct.ManuallyDrop.html#method.new">new</a>(<a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#1548-1551">from_raw</a>(<a href="#424">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W)) };
+<a href=#427 id=427 data-nosnippet>427</a>        &lt;W <span class="kw">as </span>LocalWake&gt;::<a href="#329-331">wake_by_ref</a>(<span class="kw-2">&amp;</span><a href="#426">waker</a>);
 <a href=#428 id=428 data-nosnippet>428</a>    }
 <a href=#429 id=429 data-nosnippet>429</a>
 <a href=#430 id=430 data-nosnippet>430</a>    <span class="comment">// Decrement the reference count of the Rc on drop
-<a href=#431 id=431 data-nosnippet>431</a>    </span><span class="kw">unsafe fn </span>drop_waker&lt;W: LocalWake + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
+<a href=#431 id=431 data-nosnippet>431</a>    </span><span class="kw">unsafe fn </span>drop_waker&lt;W: <a href="#316-332">LocalWake</a> + <span class="lifetime">'static</span>&gt;(waker: <span class="kw-2">*const </span>()) {
 <a href=#432 id=432 data-nosnippet>432</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#433 id=433 data-nosnippet>433</a>        </span><span class="kw">unsafe </span>{ Rc::decrement_strong_count(waker <span class="kw">as </span><span class="kw-2">*const </span>W) };
+<a href=#433 id=433 data-nosnippet>433</a>        </span><span class="kw">unsafe </span>{ <a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#1645-1648">decrement_strong_count</a>(<a href="#431">waker</a> <span class="kw">as </span><span class="kw-2">*const </span>W) };
 <a href=#434 id=434 data-nosnippet>434</a>    }
 <a href=#435 id=435 data-nosnippet>435</a>
-<a href=#436 id=436 data-nosnippet>436</a>    RawWaker::new(
-<a href=#437 id=437 data-nosnippet>437</a>        Rc::into_raw(waker) <span class="kw">as </span><span class="kw-2">*const </span>(),
-<a href=#438 id=438 data-nosnippet>438</a>        <span class="kw-2">&amp;</span>RawWakerVTable::new(clone_waker::&lt;W&gt;, wake::&lt;W&gt;, wake_by_ref::&lt;W&gt;, drop_waker::&lt;W&gt;),
+<a href=#436 id=436 data-nosnippet>436</a>    <a href="../../core/task/wake/struct.RawWaker.html">RawWaker</a>::<a href="../../core/task/wake/struct.RawWaker.html#method.new">new</a>(
+<a href=#437 id=437 data-nosnippet>437</a>        <a href="rcs/rc.rs.html#325-335">Rc</a>::<a href="rcs/rc.rs.html#1572-1575">into_raw</a>(<a href="#401">waker</a>) <span class="kw">as </span><span class="kw-2">*const </span>(),
+<a href=#438 id=438 data-nosnippet>438</a>        <span class="kw-2">&amp;</span><a href="../../core/task/wake/struct.RawWakerVTable.html">RawWakerVTable</a>::<a href="../../core/task/wake/struct.RawWakerVTable.html#method.new">new</a>(<a href="#407-414">clone_waker</a>::&lt;W&gt;, <a href="#417-421">wake</a>::&lt;W&gt;, <a href="#424-428">wake_by_ref</a>::&lt;W&gt;, <a href="#431-434">drop_waker</a>::&lt;W&gt;),
 <a href=#439 id=439 data-nosnippet>439</a>    )
 <a href=#440 id=440 data-nosnippet>440</a>}
 </code></pre></div></section></main></body></html>

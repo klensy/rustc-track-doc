@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::once::OnceExclusiveState;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::marker::PhantomData;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::mem::MaybeUninit;
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::panic::{RefUnwindSafe, UnwindSafe};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::sync::Once;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/once_lock.rs`."><title>once_lock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>once_lock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="once.rs.html#54-58"><span class="kw">super</span>::once::OnceExclusiveState</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../../../std/cell/struct.UnsafeCell.html"><span class="kw">crate</span>::cell::UnsafeCell</a>;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../../../std/fmt/index.html"><span class="kw">crate</span>::fmt</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../../../std/marker/struct.PhantomData.html"><span class="kw">crate</span>::marker::PhantomData</a>;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../../../std/mem/union.MaybeUninit.html"><span class="kw">crate</span>::mem::MaybeUninit</a>;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::panic::{<a href="../../../std/panic/trait.RefUnwindSafe.html">RefUnwindSafe</a>, <a href="../../../std/panic/trait.UnwindSafe.html">UnwindSafe</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="once.rs.html#35-37"><span class="kw">crate</span>::sync::Once</a>;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// A synchronization primitive which can nominally be written to only once.
 <a href=#10 id=10 data-nosnippet>10</a>///
@@ -106,11 +106,11 @@
 <a href=#106 id=106 data-nosnippet>106</a>///
 <a href=#107 id=107 data-nosnippet>107</a>/// ```
 <a href=#108 id=108 data-nosnippet>108</a></span><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#109 id=109 data-nosnippet>109</a></span><span class="kw">pub struct </span>OnceLock&lt;<span class="attr">#[rustc_assert_variance(invariant)] </span>T&gt; {
+<a href=#109 id=109 data-nosnippet>109</a></span><span class="kw">pub struct </span><a href="../../../std/sync/struct.OnceLock.html">OnceLock</a>&lt;<span class="attr">#[rustc_assert_variance(invariant)] </span>T&gt; {
 <a href=#110 id=110 data-nosnippet>110</a>    <span class="comment">// FIXME(nonpoison_once): switch to nonpoison version once it is available
-<a href=#111 id=111 data-nosnippet>111</a>    </span>once: Once,
+<a href=#111 id=111 data-nosnippet>111</a>    </span>once: <a href="once.rs.html#35-37">Once</a>,
 <a href=#112 id=112 data-nosnippet>112</a>    <span class="comment">// Whether or not the value is initialized is tracked by `once.is_completed()`.
-<a href=#113 id=113 data-nosnippet>113</a>    </span>value: UnsafeCell&lt;MaybeUninit&lt;T&gt;&gt;,
+<a href=#113 id=113 data-nosnippet>113</a>    </span>value: <a href="../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>&lt;<a href="../../../std/mem/union.MaybeUninit.html">MaybeUninit</a>&lt;T&gt;&gt;,
 <a href=#114 id=114 data-nosnippet>114</a>    <span class="doccomment">/// `PhantomData` to make sure dropck understands we're dropping T in our Drop impl.
 <a href=#115 id=115 data-nosnippet>115</a>    ///
 <a href=#116 id=116 data-nosnippet>116</a>    /// ```compile_fail,E0597
@@ -128,20 +128,20 @@
 <a href=#128 id=128 data-nosnippet>128</a>    ///     let _ = cell.set(A(&amp;s));
 <a href=#129 id=129 data-nosnippet>129</a>    /// }
 <a href=#130 id=130 data-nosnippet>130</a>    /// ```
-<a href=#131 id=131 data-nosnippet>131</a>    </span>_marker: PhantomData&lt;T&gt;,
+<a href=#131 id=131 data-nosnippet>131</a>    </span>_marker: <a href="../../../std/marker/struct.PhantomData.html">PhantomData</a>&lt;T&gt;,
 <a href=#132 id=132 data-nosnippet>132</a>}
 <a href=#133 id=133 data-nosnippet>133</a>
-<a href=#134 id=134 data-nosnippet>134</a><span class="kw">impl</span>&lt;T&gt; OnceLock&lt;T&gt; {
+<a href=#134 id=134 data-nosnippet>134</a><span class="kw">impl</span>&lt;T&gt; <a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Creates a new uninitialized cell.
 <a href=#136 id=136 data-nosnippet>136</a>    </span><span class="attr">#[inline]
 <a href=#137 id=137 data-nosnippet>137</a>    #[must_use]
 <a href=#138 id=138 data-nosnippet>138</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#139 id=139 data-nosnippet>139</a>    #[rustc_const_stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#140 id=140 data-nosnippet>140</a>    </span><span class="kw">pub const fn </span>new() -&gt; OnceLock&lt;T&gt; {
-<a href=#141 id=141 data-nosnippet>141</a>        OnceLock {
-<a href=#142 id=142 data-nosnippet>142</a>            once: Once::new(),
-<a href=#143 id=143 data-nosnippet>143</a>            value: UnsafeCell::new(MaybeUninit::uninit()),
-<a href=#144 id=144 data-nosnippet>144</a>            _marker: PhantomData,
+<a href=#140 id=140 data-nosnippet>140</a>    </span><span class="kw">pub const fn </span>new() -&gt; <a href="#109-132">OnceLock</a>&lt;T&gt; {
+<a href=#141 id=141 data-nosnippet>141</a>        <a href="#109-132">OnceLock</a> {
+<a href=#142 id=142 data-nosnippet>142</a>            once: <a href="once.rs.html#35-37">Once</a>::<a href="once.rs.html#84-86">new</a>(),
+<a href=#143 id=143 data-nosnippet>143</a>            value: <a href="../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>::<a href="../../../std/cell/struct.UnsafeCell.html#method.new">new</a>(<a href="../../../std/mem/union.MaybeUninit.html">MaybeUninit</a>::<a href="../../../std/mem/union.MaybeUninit.html#method.uninit">uninit</a>()),
+<a href=#144 id=144 data-nosnippet>144</a>            _marker: <a href="../../../std/marker/struct.PhantomData.html">PhantomData</a>,
 <a href=#145 id=145 data-nosnippet>145</a>        }
 <a href=#146 id=146 data-nosnippet>146</a>    }
 <a href=#147 id=147 data-nosnippet>147</a>
@@ -166,11 +166,11 @@
 <a href=#166 id=166 data-nosnippet>166</a>    </span><span class="attr">#[inline]
 <a href=#167 id=167 data-nosnippet>167</a>    #[must_use]
 <a href=#168 id=168 data-nosnippet>168</a>    #[unstable(feature = <span class="string">"once_lock_new_init"</span>, issue = <span class="string">"159860"</span>)]
-<a href=#169 id=169 data-nosnippet>169</a>    </span><span class="kw">pub const fn </span>new_init(init_value: T) -&gt; OnceLock&lt;T&gt; {
-<a href=#170 id=170 data-nosnippet>170</a>        OnceLock {
-<a href=#171 id=171 data-nosnippet>171</a>            once: Once::new_complete(),
-<a href=#172 id=172 data-nosnippet>172</a>            value: UnsafeCell::new(MaybeUninit::new(init_value)),
-<a href=#173 id=173 data-nosnippet>173</a>            _marker: PhantomData,
+<a href=#169 id=169 data-nosnippet>169</a>    </span><span class="kw">pub const fn </span>new_init(init_value: T) -&gt; <a href="#109-132">OnceLock</a>&lt;T&gt; {
+<a href=#170 id=170 data-nosnippet>170</a>        <a href="#109-132">OnceLock</a> {
+<a href=#171 id=171 data-nosnippet>171</a>            once: <a href="once.rs.html#35-37">Once</a>::<a href="once.rs.html#91-93">new_complete</a>(),
+<a href=#172 id=172 data-nosnippet>172</a>            value: <a href="../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>::<a href="../../../std/cell/struct.UnsafeCell.html#method.new">new</a>(<a href="../../../std/mem/union.MaybeUninit.html">MaybeUninit</a>::<a href="../../../std/mem/union.MaybeUninit.html#method.new">new</a>(<a href="#169">init_value</a>)),
+<a href=#173 id=173 data-nosnippet>173</a>            _marker: <a href="../../../std/marker/struct.PhantomData.html">PhantomData</a>,
 <a href=#174 id=174 data-nosnippet>174</a>        }
 <a href=#175 id=175 data-nosnippet>175</a>    }
 <a href=#176 id=176 data-nosnippet>176</a>
@@ -181,13 +181,13 @@
 <a href=#181 id=181 data-nosnippet>181</a>    </span><span class="attr">#[inline]
 <a href=#182 id=182 data-nosnippet>182</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#183 id=183 data-nosnippet>183</a>    #[rustc_should_not_be_called_on_const_items]
-<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt; {
-<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">if </span><span class="self">self</span>.initialized() {
+<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span>T&gt; {
+<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">if </span><a class="self" href="#184">self</a>.<a href="#546-548">initialized</a>() {
 <a href=#186 id=186 data-nosnippet>186</a>            <span class="comment">// Safe b/c checked initialized
-<a href=#187 id=187 data-nosnippet>187</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked() })
+<a href=#187 id=187 data-nosnippet>187</a>            </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<span class="kw">unsafe </span>{ <a class="self" href="#184">self</a>.<a href="#610-613">get_unchecked</a>() })
 <a href=#188 id=188 data-nosnippet>188</a>        } <span class="kw">else </span>{
-<a href=#189 id=189 data-nosnippet>189</a>            <span class="prelude-val">None
-<a href=#190 id=190 data-nosnippet>190</a>        </span>}
+<a href=#189 id=189 data-nosnippet>189</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>
+<a href=#190 id=190 data-nosnippet>190</a>        }
 <a href=#191 id=191 data-nosnippet>191</a>    }
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>    <span class="doccomment">/// Gets the mutable reference to the underlying value.
@@ -199,13 +199,13 @@
 <a href=#199 id=199 data-nosnippet>199</a>    /// exist, including from other threads.
 <a href=#200 id=200 data-nosnippet>200</a>    </span><span class="attr">#[inline]
 <a href=#201 id=201 data-nosnippet>201</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
-<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">if </span><span class="self">self</span>.initialized_mut() {
+<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
+<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">if </span><a class="self" href="#202">self</a>.<a href="#551-558">initialized_mut</a>() {
 <a href=#204 id=204 data-nosnippet>204</a>            <span class="comment">// Safe b/c checked initialized and we have a unique access
-<a href=#205 id=205 data-nosnippet>205</a>            </span><span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked_mut() })
+<a href=#205 id=205 data-nosnippet>205</a>            </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<span class="kw">unsafe </span>{ <a class="self" href="#202">self</a>.<a href="#639-642">get_unchecked_mut</a>() })
 <a href=#206 id=206 data-nosnippet>206</a>        } <span class="kw">else </span>{
-<a href=#207 id=207 data-nosnippet>207</a>            <span class="prelude-val">None
-<a href=#208 id=208 data-nosnippet>208</a>        </span>}
+<a href=#207 id=207 data-nosnippet>207</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>
+<a href=#208 id=208 data-nosnippet>208</a>        }
 <a href=#209 id=209 data-nosnippet>209</a>    }
 <a href=#210 id=210 data-nosnippet>210</a>
 <a href=#211 id=211 data-nosnippet>211</a>    <span class="doccomment">/// Blocks the current thread until the cell is initialized.
@@ -230,9 +230,9 @@
 <a href=#230 id=230 data-nosnippet>230</a>    #[stable(feature = <span class="string">"once_wait"</span>, since = <span class="string">"1.86.0"</span>)]
 <a href=#231 id=231 data-nosnippet>231</a>    #[rustc_should_not_be_called_on_const_items]
 <a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">pub fn </span>wait(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#233 id=233 data-nosnippet>233</a>        <span class="self">self</span>.once.wait_force();
+<a href=#233 id=233 data-nosnippet>233</a>        <a class="self" href="#232">self</a>.once.<a href="once.rs.html#317-321">wait_force</a>();
 <a href=#234 id=234 data-nosnippet>234</a>
-<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked() }
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">unsafe </span>{ <a class="self" href="#232">self</a>.<a href="#610-613">get_unchecked</a>() }
 <a href=#236 id=236 data-nosnippet>236</a>    }
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a>    <span class="doccomment">/// Initializes the contents of the cell to `value`.
@@ -264,10 +264,10 @@
 <a href=#264 id=264 data-nosnippet>264</a>    </span><span class="attr">#[inline]
 <a href=#265 id=265 data-nosnippet>265</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#266 id=266 data-nosnippet>266</a>    #[rustc_should_not_be_called_on_const_items]
-<a href=#267 id=267 data-nosnippet>267</a>    </span><span class="kw">pub fn </span>set(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), T&gt; {
-<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">match </span><span class="self">self</span>.try_insert(value) {
-<a href=#269 id=269 data-nosnippet>269</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-<a href=#270 id=270 data-nosnippet>270</a>            <span class="prelude-val">Err</span>((<span class="kw">_</span>, value)) =&gt; <span class="prelude-val">Err</span>(value),
+<a href=#267 id=267 data-nosnippet>267</a>    </span><span class="kw">pub fn </span>set(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), T&gt; {
+<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">match </span><a class="self" href="#267">self</a>.<a href="#307-314">try_insert</a>(<a href="#267">value</a>) {
+<a href=#269 id=269 data-nosnippet>269</a>            <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(<span class="kw">_</span>) =&gt; <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(()),
+<a href=#270 id=270 data-nosnippet>270</a>            <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>((<span class="kw">_</span>, value)) =&gt; <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(<a href="#270">value</a>),
 <a href=#271 id=271 data-nosnippet>271</a>        }
 <a href=#272 id=272 data-nosnippet>272</a>    }
 <a href=#273 id=273 data-nosnippet>273</a>
@@ -304,12 +304,12 @@
 <a href=#304 id=304 data-nosnippet>304</a>    </span><span class="attr">#[inline]
 <a href=#305 id=305 data-nosnippet>305</a>    #[unstable(feature = <span class="string">"once_cell_try_insert"</span>, issue = <span class="string">"116693"</span>)]
 <a href=#306 id=306 data-nosnippet>306</a>    #[rustc_should_not_be_called_on_const_items]
-<a href=#307 id=307 data-nosnippet>307</a>    </span><span class="kw">pub fn </span>try_insert(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>T, (<span class="kw-2">&amp;</span>T, T)&gt; {
-<a href=#308 id=308 data-nosnippet>308</a>        <span class="kw">let </span><span class="kw-2">mut </span>value = <span class="prelude-val">Some</span>(value);
-<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>res = <span class="self">self</span>.get_or_init(|| value.take().unwrap());
-<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">match </span>value {
-<a href=#311 id=311 data-nosnippet>311</a>            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(res),
-<a href=#312 id=312 data-nosnippet>312</a>            <span class="prelude-val">Some</span>(value) =&gt; <span class="prelude-val">Err</span>((res, value)),
+<a href=#307 id=307 data-nosnippet>307</a>    </span><span class="kw">pub fn </span>try_insert(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;<span class="kw-2">&amp;</span>T, (<span class="kw-2">&amp;</span>T, T)&gt; {
+<a href=#308 id=308 data-nosnippet>308</a>        <span class="kw">let </span><span class="kw-2">mut </span>value = <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<a href="#307">value</a>);
+<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>res = <a class="self" href="#307">self</a>.<a href="#346-353">get_or_init</a>(|| <a href="#308">value</a>.<a href="../../../std/option/enum.Option.html#method.take">take</a>().<a href="../../../std/option/enum.Option.html#method.unwrap">unwrap</a>());
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">match </span><a href="#308">value</a> {
+<a href=#311 id=311 data-nosnippet>311</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a> =&gt; <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(<a href="#309">res</a>),
+<a href=#312 id=312 data-nosnippet>312</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(value) =&gt; <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>((<a href="#309">res</a>, <a href="#312">value</a>)),
 <a href=#313 id=313 data-nosnippet>313</a>        }
 <a href=#314 id=314 data-nosnippet>314</a>    }
 <a href=#315 id=315 data-nosnippet>315</a>
@@ -345,10 +345,10 @@
 <a href=#345 id=345 data-nosnippet>345</a>    #[rustc_should_not_be_called_on_const_items]
 <a href=#346 id=346 data-nosnippet>346</a>    </span><span class="kw">pub fn </span>get_or_init&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <span class="kw-2">&amp;</span>T
 <a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">where
-<a href=#348 id=348 data-nosnippet>348</a>        </span>F: FnOnce() -&gt; T,
+<a href=#348 id=348 data-nosnippet>348</a>        </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>() -&gt; T,
 <a href=#349 id=349 data-nosnippet>349</a>    {
-<a href=#350 id=350 data-nosnippet>350</a>        <span class="kw">match </span><span class="self">self</span>.get_or_try_init(|| <span class="prelude-val">Ok</span>::&lt;T, !&gt;(f())) {
-<a href=#351 id=351 data-nosnippet>351</a>            <span class="prelude-val">Ok</span>(val) =&gt; val,
+<a href=#350 id=350 data-nosnippet>350</a>        <span class="kw">match </span><a class="self" href="#346">self</a>.<a href="#427-443">get_or_try_init</a>(|| <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>::&lt;T, !&gt;(<a href="#346">f</a>())) {
+<a href=#351 id=351 data-nosnippet>351</a>            <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(val) =&gt; <a href="#351">val</a>,
 <a href=#352 id=352 data-nosnippet>352</a>        }
 <a href=#353 id=353 data-nosnippet>353</a>    }
 <a href=#354 id=354 data-nosnippet>354</a>
@@ -385,10 +385,10 @@
 <a href=#385 id=385 data-nosnippet>385</a>    #[unstable(feature = <span class="string">"once_cell_get_mut"</span>, issue = <span class="string">"121641"</span>)]
 <a href=#386 id=386 data-nosnippet>386</a>    </span><span class="kw">pub fn </span>get_mut_or_init&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F) -&gt; <span class="kw-2">&amp;mut </span>T
 <a href=#387 id=387 data-nosnippet>387</a>    <span class="kw">where
-<a href=#388 id=388 data-nosnippet>388</a>        </span>F: FnOnce() -&gt; T,
+<a href=#388 id=388 data-nosnippet>388</a>        </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>() -&gt; T,
 <a href=#389 id=389 data-nosnippet>389</a>    {
-<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">match </span><span class="self">self</span>.get_mut_or_try_init(|| <span class="prelude-val">Ok</span>::&lt;T, !&gt;(f())) {
-<a href=#391 id=391 data-nosnippet>391</a>            <span class="prelude-val">Ok</span>(val) =&gt; val,
+<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">match </span><a class="self" href="#386">self</a>.<a href="#478-488">get_mut_or_try_init</a>(|| <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>::&lt;T, !&gt;(<a href="#386">f</a>())) {
+<a href=#391 id=391 data-nosnippet>391</a>            <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(val) =&gt; <a href="#391">val</a>,
 <a href=#392 id=392 data-nosnippet>392</a>        }
 <a href=#393 id=393 data-nosnippet>393</a>    }
 <a href=#394 id=394 data-nosnippet>394</a>
@@ -424,22 +424,22 @@
 <a href=#424 id=424 data-nosnippet>424</a>    </span><span class="attr">#[inline]
 <a href=#425 id=425 data-nosnippet>425</a>    #[unstable(feature = <span class="string">"once_cell_try"</span>, issue = <span class="string">"109737"</span>)]
 <a href=#426 id=426 data-nosnippet>426</a>    #[rustc_should_not_be_called_on_const_items]
-<a href=#427 id=427 data-nosnippet>427</a>    </span><span class="kw">pub fn </span>get_or_try_init&lt;F, E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>T, E&gt;
+<a href=#427 id=427 data-nosnippet>427</a>    </span><span class="kw">pub fn </span>get_or_try_init&lt;F, E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;<span class="kw-2">&amp;</span>T, E&gt;
 <a href=#428 id=428 data-nosnippet>428</a>    <span class="kw">where
-<a href=#429 id=429 data-nosnippet>429</a>        </span>F: FnOnce() -&gt; <span class="prelude-ty">Result</span>&lt;T, E&gt;,
+<a href=#429 id=429 data-nosnippet>429</a>        </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>() -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, E&gt;,
 <a href=#430 id=430 data-nosnippet>430</a>    {
 <a href=#431 id=431 data-nosnippet>431</a>        <span class="comment">// Fast path check
 <a href=#432 id=432 data-nosnippet>432</a>        // NOTE: We need to perform an acquire on the state in this method
 <a href=#433 id=433 data-nosnippet>433</a>        // in order to correctly synchronize `LazyLock::force`. This is
 <a href=#434 id=434 data-nosnippet>434</a>        // currently done by calling `self.get()`, which in turn calls
 <a href=#435 id=435 data-nosnippet>435</a>        // `self.initialized()`, which in turn performs the acquire.
-<a href=#436 id=436 data-nosnippet>436</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(value) = <span class="self">self</span>.get() {
-<a href=#437 id=437 data-nosnippet>437</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(value);
+<a href=#436 id=436 data-nosnippet>436</a>        </span><span class="kw">if let </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(value) = <a class="self" href="#427">self</a>.<a href="#184-191">get</a>() {
+<a href=#437 id=437 data-nosnippet>437</a>            <span class="kw">return </span><a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(<a href="#436">value</a>);
 <a href=#438 id=438 data-nosnippet>438</a>        }
 <a href=#439 id=439 data-nosnippet>439</a>        <span class="self">self</span>.initialize(f)<span class="question-mark">?</span>;
 <a href=#440 id=440 data-nosnippet>440</a>
 <a href=#441 id=441 data-nosnippet>441</a>        <span class="comment">// SAFETY: The inner value has been initialized
-<a href=#442 id=442 data-nosnippet>442</a>        </span><span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked() })
+<a href=#442 id=442 data-nosnippet>442</a>        </span><a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(<span class="kw">unsafe </span>{ <a class="self" href="#427">self</a>.<a href="#610-613">get_unchecked</a>() })
 <a href=#443 id=443 data-nosnippet>443</a>    }
 <a href=#444 id=444 data-nosnippet>444</a>
 <a href=#445 id=445 data-nosnippet>445</a>    <span class="doccomment">/// Gets the mutable reference of the contents of the cell, initializing
@@ -475,16 +475,16 @@
 <a href=#475 id=475 data-nosnippet>475</a>    /// ```
 <a href=#476 id=476 data-nosnippet>476</a>    </span><span class="attr">#[inline]
 <a href=#477 id=477 data-nosnippet>477</a>    #[unstable(feature = <span class="string">"once_cell_get_mut"</span>, issue = <span class="string">"121641"</span>)]
-<a href=#478 id=478 data-nosnippet>478</a>    </span><span class="kw">pub fn </span>get_mut_or_try_init&lt;F, E&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>T, E&gt;
+<a href=#478 id=478 data-nosnippet>478</a>    </span><span class="kw">pub fn </span>get_mut_or_try_init&lt;F, E&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;<span class="kw-2">&amp;mut </span>T, E&gt;
 <a href=#479 id=479 data-nosnippet>479</a>    <span class="kw">where
-<a href=#480 id=480 data-nosnippet>480</a>        </span>F: FnOnce() -&gt; <span class="prelude-ty">Result</span>&lt;T, E&gt;,
+<a href=#480 id=480 data-nosnippet>480</a>        </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>() -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, E&gt;,
 <a href=#481 id=481 data-nosnippet>481</a>    {
-<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">if </span><span class="self">self</span>.get_mut().is_none() {
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">if </span><a class="self" href="#478">self</a>.<a href="#202-209">get_mut</a>().<a href="../../../std/option/enum.Option.html#method.is_none">is_none</a>() {
 <a href=#483 id=483 data-nosnippet>483</a>            <span class="self">self</span>.initialize(f)<span class="question-mark">?</span>;
 <a href=#484 id=484 data-nosnippet>484</a>        }
 <a href=#485 id=485 data-nosnippet>485</a>
 <a href=#486 id=486 data-nosnippet>486</a>        <span class="comment">// SAFETY: The inner value has been initialized
-<a href=#487 id=487 data-nosnippet>487</a>        </span><span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ <span class="self">self</span>.get_unchecked_mut() })
+<a href=#487 id=487 data-nosnippet>487</a>        </span><a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(<span class="kw">unsafe </span>{ <a class="self" href="#478">self</a>.<a href="#639-642">get_unchecked_mut</a>() })
 <a href=#488 id=488 data-nosnippet>488</a>    }
 <a href=#489 id=489 data-nosnippet>489</a>
 <a href=#490 id=490 data-nosnippet>490</a>    <span class="doccomment">/// Consumes the `OnceLock`, returning the wrapped value. Returns
@@ -504,8 +504,8 @@
 <a href=#504 id=504 data-nosnippet>504</a>    /// ```
 <a href=#505 id=505 data-nosnippet>505</a>    </span><span class="attr">#[inline]
 <a href=#506 id=506 data-nosnippet>506</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#507 id=507 data-nosnippet>507</a>    </span><span class="kw">pub fn </span>into_inner(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
-<a href=#508 id=508 data-nosnippet>508</a>        <span class="self">self</span>.take()
+<a href=#507 id=507 data-nosnippet>507</a>    </span><span class="kw">pub fn </span>into_inner(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;T&gt; {
+<a href=#508 id=508 data-nosnippet>508</a>        <a class="self" href="#507">self</a>.<a href="#533-543">take</a>()
 <a href=#509 id=509 data-nosnippet>509</a>    }
 <a href=#510 id=510 data-nosnippet>510</a>
 <a href=#511 id=511 data-nosnippet>511</a>    <span class="doccomment">/// Takes the value out of this `OnceLock`, moving it back to an uninitialized state.
@@ -530,59 +530,59 @@
 <a href=#530 id=530 data-nosnippet>530</a>    /// ```
 <a href=#531 id=531 data-nosnippet>531</a>    </span><span class="attr">#[inline]
 <a href=#532 id=532 data-nosnippet>532</a>    #[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#533 id=533 data-nosnippet>533</a>    </span><span class="kw">pub fn </span>take(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
-<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">if </span><span class="self">self</span>.initialized_mut() {
-<a href=#535 id=535 data-nosnippet>535</a>            <span class="self">self</span>.once = Once::new();
+<a href=#533 id=533 data-nosnippet>533</a>    </span><span class="kw">pub fn </span>take(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;T&gt; {
+<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">if </span><a class="self" href="#533">self</a>.<a href="#551-558">initialized_mut</a>() {
+<a href=#535 id=535 data-nosnippet>535</a>            <a class="self" href="#533">self</a>.once = <a href="once.rs.html#35-37">Once</a>::<a href="once.rs.html#84-86">new</a>();
 <a href=#536 id=536 data-nosnippet>536</a>            <span class="comment">// SAFETY: `self.value` is initialized and contains a valid `T`.
 <a href=#537 id=537 data-nosnippet>537</a>            // `self.once` is reset, so `initialized()` will be false again
 <a href=#538 id=538 data-nosnippet>538</a>            // which prevents the value from being read twice.
-<a href=#539 id=539 data-nosnippet>539</a>            </span><span class="kw">unsafe </span>{ <span class="prelude-val">Some</span>(<span class="self">self</span>.value.get_mut().assume_init_read()) }
+<a href=#539 id=539 data-nosnippet>539</a>            </span><span class="kw">unsafe </span>{ <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<a class="self" href="#533">self</a>.value.<a href="../../../std/cell/struct.UnsafeCell.html#method.get_mut">get_mut</a>().<a href="../../../std/mem/union.MaybeUninit.html#method.assume_init_read">assume_init_read</a>()) }
 <a href=#540 id=540 data-nosnippet>540</a>        } <span class="kw">else </span>{
-<a href=#541 id=541 data-nosnippet>541</a>            <span class="prelude-val">None
-<a href=#542 id=542 data-nosnippet>542</a>        </span>}
+<a href=#541 id=541 data-nosnippet>541</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>
+<a href=#542 id=542 data-nosnippet>542</a>        }
 <a href=#543 id=543 data-nosnippet>543</a>    }
 <a href=#544 id=544 data-nosnippet>544</a>
 <a href=#545 id=545 data-nosnippet>545</a>    <span class="attr">#[inline]
-<a href=#546 id=546 data-nosnippet>546</a>    </span><span class="kw">fn </span>initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#547 id=547 data-nosnippet>547</a>        <span class="self">self</span>.once.is_completed()
+<a href=#546 id=546 data-nosnippet>546</a>    </span><span class="kw">fn </span>initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../std/primitive.bool.html">bool</a> {
+<a href=#547 id=547 data-nosnippet>547</a>        <a class="self" href="#546">self</a>.once.<a href="once.rs.html#273-275">is_completed</a>()
 <a href=#548 id=548 data-nosnippet>548</a>    }
 <a href=#549 id=549 data-nosnippet>549</a>
 <a href=#550 id=550 data-nosnippet>550</a>    <span class="attr">#[inline]
-<a href=#551 id=551 data-nosnippet>551</a>    </span><span class="kw">fn </span>initialized_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+<a href=#551 id=551 data-nosnippet>551</a>    </span><span class="kw">fn </span>initialized_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a href="../../../std/primitive.bool.html">bool</a> {
 <a href=#552 id=552 data-nosnippet>552</a>        <span class="comment">// `state()` does not perform an atomic load, so prefer it over `is_complete()`.
-<a href=#553 id=553 data-nosnippet>553</a>        </span><span class="kw">let </span>state = <span class="self">self</span>.once.state();
-<a href=#554 id=554 data-nosnippet>554</a>        <span class="kw">match </span>state {
-<a href=#555 id=555 data-nosnippet>555</a>            OnceExclusiveState::Complete =&gt; <span class="bool-val">true</span>,
+<a href=#553 id=553 data-nosnippet>553</a>        </span><span class="kw">let </span>state = <a class="self" href="#551">self</a>.once.<a href="once.rs.html#329-331">state</a>();
+<a href=#554 id=554 data-nosnippet>554</a>        <span class="kw">match </span><a href="#553">state</a> {
+<a href=#555 id=555 data-nosnippet>555</a>            OnceExclusiveState::<a href="once.rs.html#57">Complete</a> =&gt; <span class="bool-val">true</span>,
 <a href=#556 id=556 data-nosnippet>556</a>            <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
 <a href=#557 id=557 data-nosnippet>557</a>        }
 <a href=#558 id=558 data-nosnippet>558</a>    }
 <a href=#559 id=559 data-nosnippet>559</a>
 <a href=#560 id=560 data-nosnippet>560</a>    <span class="attr">#[cold]
 <a href=#561 id=561 data-nosnippet>561</a>    #[optimize(size)]
-<a href=#562 id=562 data-nosnippet>562</a>    </span><span class="kw">fn </span>initialize&lt;F, E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;(), E&gt;
+<a href=#562 id=562 data-nosnippet>562</a>    </span><span class="kw">fn </span>initialize&lt;F, E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), E&gt;
 <a href=#563 id=563 data-nosnippet>563</a>    <span class="kw">where
-<a href=#564 id=564 data-nosnippet>564</a>        </span>F: FnOnce() -&gt; <span class="prelude-ty">Result</span>&lt;T, E&gt;,
+<a href=#564 id=564 data-nosnippet>564</a>        </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>() -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, E&gt;,
 <a href=#565 id=565 data-nosnippet>565</a>    {
-<a href=#566 id=566 data-nosnippet>566</a>        <span class="kw">let </span><span class="kw-2">mut </span>res: <span class="prelude-ty">Result</span>&lt;(), E&gt; = <span class="prelude-val">Ok</span>(());
-<a href=#567 id=567 data-nosnippet>567</a>        <span class="kw">let </span>slot = <span class="kw-2">&amp;</span><span class="self">self</span>.value;
+<a href=#566 id=566 data-nosnippet>566</a>        <span class="kw">let </span><span class="kw-2">mut </span>res: <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), E&gt; = <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(());
+<a href=#567 id=567 data-nosnippet>567</a>        <span class="kw">let </span>slot = <span class="kw-2">&amp;</span><a class="self" href="#562">self</a>.value;
 <a href=#568 id=568 data-nosnippet>568</a>
 <a href=#569 id=569 data-nosnippet>569</a>        <span class="comment">// Ignore poisoning from other threads
 <a href=#570 id=570 data-nosnippet>570</a>        // If another thread panics, then we'll be able to run our closure
-<a href=#571 id=571 data-nosnippet>571</a>        </span><span class="self">self</span>.once.call_once_force(|p| {
-<a href=#572 id=572 data-nosnippet>572</a>            <span class="kw">match </span>f() {
-<a href=#573 id=573 data-nosnippet>573</a>                <span class="prelude-val">Ok</span>(value) =&gt; {
-<a href=#574 id=574 data-nosnippet>574</a>                    <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;mut *</span>slot.get()).write(value) };
+<a href=#571 id=571 data-nosnippet>571</a>        </span><a class="self" href="#562">self</a>.once.<a href="once.rs.html#217-228">call_once_force</a>(|p| {
+<a href=#572 id=572 data-nosnippet>572</a>            <span class="kw">match </span><a href="#562">f</a>() {
+<a href=#573 id=573 data-nosnippet>573</a>                <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(value) =&gt; {
+<a href=#574 id=574 data-nosnippet>574</a>                    <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;mut *</span><a href="#567">slot</a>.<a href="../../../std/cell/struct.UnsafeCell.html#method.get">get</a>()).<a href="../../../std/mem/union.MaybeUninit.html#method.write">write</a>(<a href="#573">value</a>) };
 <a href=#575 id=575 data-nosnippet>575</a>                }
-<a href=#576 id=576 data-nosnippet>576</a>                <span class="prelude-val">Err</span>(e) =&gt; {
-<a href=#577 id=577 data-nosnippet>577</a>                    res = <span class="prelude-val">Err</span>(e);
+<a href=#576 id=576 data-nosnippet>576</a>                <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(e) =&gt; {
+<a href=#577 id=577 data-nosnippet>577</a>                    <a href="#566">res</a> = <a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(<a href="#576">e</a>);
 <a href=#578 id=578 data-nosnippet>578</a>
 <a href=#579 id=579 data-nosnippet>579</a>                    <span class="comment">// Treat the underlying `Once` as poisoned since we
 <a href=#580 id=580 data-nosnippet>580</a>                    // failed to initialize our value.
-<a href=#581 id=581 data-nosnippet>581</a>                    </span>p.poison();
+<a href=#581 id=581 data-nosnippet>581</a>                    </span><a href="#571">p</a>.<a href="once.rs.html#405-407">poison</a>();
 <a href=#582 id=582 data-nosnippet>582</a>                }
 <a href=#583 id=583 data-nosnippet>583</a>            }
 <a href=#584 id=584 data-nosnippet>584</a>        });
-<a href=#585 id=585 data-nosnippet>585</a>        res
+<a href=#585 id=585 data-nosnippet>585</a>        <a href="#566">res</a>
 <a href=#586 id=586 data-nosnippet>586</a>    }
 <a href=#587 id=587 data-nosnippet>587</a>
 <a href=#588 id=588 data-nosnippet>588</a>    <span class="doccomment">/// Returns a reference to the value in the `OnceLock` without checking
@@ -608,8 +608,8 @@
 <a href=#608 id=608 data-nosnippet>608</a>    </span><span class="attr">#[inline]
 <a href=#609 id=609 data-nosnippet>609</a>    #[unstable(feature = <span class="string">"once_lazy_lock_get_unchecked"</span>, issue = <span class="string">"162716"</span>)]
 <a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#611 id=611 data-nosnippet>611</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized());
-<a href=#612 id=612 data-nosnippet>612</a>        <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;*</span><span class="self">self</span>.value.get()).assume_init_ref() }
+<a href=#611 id=611 data-nosnippet>611</a>        <a href="../../../std/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.initialized());
+<a href=#612 id=612 data-nosnippet>612</a>        <span class="kw">unsafe </span>{ (<span class="kw-2">&amp;*</span><a class="self" href="#610">self</a>.value.<a href="../../../std/cell/struct.UnsafeCell.html#method.get">get</a>()).<a href="../../../std/mem/union.MaybeUninit.html#method.assume_init_ref">assume_init_ref</a>() }
 <a href=#613 id=613 data-nosnippet>613</a>    }
 <a href=#614 id=614 data-nosnippet>614</a>
 <a href=#615 id=615 data-nosnippet>615</a>    <span class="doccomment">/// Returns a mutable reference to the value in the `OnceLock` without
@@ -637,8 +637,8 @@
 <a href=#637 id=637 data-nosnippet>637</a>    </span><span class="attr">#[inline]
 <a href=#638 id=638 data-nosnippet>638</a>    #[unstable(feature = <span class="string">"once_lazy_lock_get_unchecked"</span>, issue = <span class="string">"162716"</span>)]
 <a href=#639 id=639 data-nosnippet>639</a>    </span><span class="kw">pub unsafe fn </span>get_unchecked_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#640 id=640 data-nosnippet>640</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.initialized_mut());
-<a href=#641 id=641 data-nosnippet>641</a>        <span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_mut() }
+<a href=#640 id=640 data-nosnippet>640</a>        <a href="../../../std/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.initialized_mut());
+<a href=#641 id=641 data-nosnippet>641</a>        <span class="kw">unsafe </span>{ <a class="self" href="#639">self</a>.value.<a href="../../../std/cell/struct.UnsafeCell.html#method.get_mut">get_mut</a>().<a href="../../../std/mem/union.MaybeUninit.html#method.assume_init_mut">assume_init_mut</a>() }
 <a href=#642 id=642 data-nosnippet>642</a>    }
 <a href=#643 id=643 data-nosnippet>643</a>}
 <a href=#644 id=644 data-nosnippet>644</a>
@@ -648,18 +648,18 @@
 <a href=#648 id=648 data-nosnippet>648</a>// then destroyed by A. That is, destructor observes
 <a href=#649 id=649 data-nosnippet>649</a>// a sent value.
 <a href=#650 id=650 data-nosnippet>650</a></span><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#651 id=651 data-nosnippet>651</a></span><span class="kw">unsafe impl</span>&lt;T: Sync + Send&gt; Sync <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#651 id=651 data-nosnippet>651</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Sync.html">Sync</a> + <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Sync.html">Sync</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {}
 <a href=#652 id=652 data-nosnippet>652</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#653 id=653 data-nosnippet>653</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#653 id=653 data-nosnippet>653</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Send.html">Send</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {}
 <a href=#654 id=654 data-nosnippet>654</a>
 <a href=#655 id=655 data-nosnippet>655</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#656 id=656 data-nosnippet>656</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + UnwindSafe&gt; RefUnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#656 id=656 data-nosnippet>656</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/panic/trait.RefUnwindSafe.html">RefUnwindSafe</a> + <a href="../../../std/panic/trait.UnwindSafe.html">UnwindSafe</a>&gt; <a href="../../../std/panic/trait.RefUnwindSafe.html">RefUnwindSafe</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {}
 <a href=#657 id=657 data-nosnippet>657</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#658 id=658 data-nosnippet>658</a></span><span class="kw">impl</span>&lt;T: UnwindSafe&gt; UnwindSafe <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#658 id=658 data-nosnippet>658</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/panic/trait.UnwindSafe.html">UnwindSafe</a>&gt; <a href="../../../std/panic/trait.UnwindSafe.html">UnwindSafe</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {}
 <a href=#659 id=659 data-nosnippet>659</a>
 <a href=#660 id=660 data-nosnippet>660</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#661 id=661 data-nosnippet>661</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
-<a href=#662 id=662 data-nosnippet>662</a></span><span class="kw">const impl</span>&lt;T&gt; Default <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#662 id=662 data-nosnippet>662</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../../../std/default/trait.Default.html">Default</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#663 id=663 data-nosnippet>663</a>    <span class="doccomment">/// Creates a new uninitialized cell.
 <a href=#664 id=664 data-nosnippet>664</a>    ///
 <a href=#665 id=665 data-nosnippet>665</a>    /// # Example
@@ -672,33 +672,33 @@
 <a href=#672 id=672 data-nosnippet>672</a>    /// }
 <a href=#673 id=673 data-nosnippet>673</a>    /// ```
 <a href=#674 id=674 data-nosnippet>674</a>    </span><span class="attr">#[inline]
-<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>default() -&gt; OnceLock&lt;T&gt; {
-<a href=#676 id=676 data-nosnippet>676</a>        OnceLock::new()
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>default() -&gt; <a href="#109-132">OnceLock</a>&lt;T&gt; {
+<a href=#676 id=676 data-nosnippet>676</a>        <a href="#109-132">OnceLock</a>::<a href="#140-146">new</a>()
 <a href=#677 id=677 data-nosnippet>677</a>    }
 <a href=#678 id=678 data-nosnippet>678</a>}
 <a href=#679 id=679 data-nosnippet>679</a>
 <a href=#680 id=680 data-nosnippet>680</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#681 id=681 data-nosnippet>681</a></span><span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>OnceLock&lt;T&gt; {
-<a href=#682 id=682 data-nosnippet>682</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#683 id=683 data-nosnippet>683</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = f.debug_tuple(<span class="string">"OnceLock"</span>);
-<a href=#684 id=684 data-nosnippet>684</a>        <span class="kw">match </span><span class="self">self</span>.get() {
-<a href=#685 id=685 data-nosnippet>685</a>            <span class="prelude-val">Some</span>(v) =&gt; d.field(v),
-<a href=#686 id=686 data-nosnippet>686</a>            <span class="prelude-val">None </span>=&gt; d.field(<span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"&lt;uninit&gt;"</span>)),
+<a href=#681 id=681 data-nosnippet>681</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a>&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
+<a href=#682 id=682 data-nosnippet>682</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#683 id=683 data-nosnippet>683</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = <a href="#682">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_tuple">debug_tuple</a>(<span class="string">"OnceLock"</span>);
+<a href=#684 id=684 data-nosnippet>684</a>        <span class="kw">match </span><a class="self" href="#682">self</a>.<a href="#184-191">get</a>() {
+<a href=#685 id=685 data-nosnippet>685</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(v) =&gt; <a href="#683">d</a>.<a href="../../../std/fmt/struct.DebugTuple.html#method.field">field</a>(<a href="#685">v</a>),
+<a href=#686 id=686 data-nosnippet>686</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a> =&gt; <a href="#683">d</a>.<a href="../../../std/fmt/struct.DebugTuple.html#method.field">field</a>(<span class="kw-2">&amp;</span><a href="../../../std/macro.format_args.html">format_args!</a>(<span class="string">"&lt;uninit&gt;"</span>)),
 <a href=#687 id=687 data-nosnippet>687</a>        };
-<a href=#688 id=688 data-nosnippet>688</a>        d.finish()
+<a href=#688 id=688 data-nosnippet>688</a>        <a href="#683">d</a>.<a href="../../../std/fmt/struct.DebugTuple.html#method.finish">finish</a>()
 <a href=#689 id=689 data-nosnippet>689</a>    }
 <a href=#690 id=690 data-nosnippet>690</a>}
 <a href=#691 id=691 data-nosnippet>691</a>
 <a href=#692 id=692 data-nosnippet>692</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#693 id=693 data-nosnippet>693</a></span><span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#693 id=693 data-nosnippet>693</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/clone/trait.Clone.html">Clone</a>&gt; <a href="../../../std/clone/trait.Clone.html">Clone</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#694 id=694 data-nosnippet>694</a>    <span class="attr">#[inline]
-<a href=#695 id=695 data-nosnippet>695</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OnceLock&lt;T&gt; {
-<a href=#696 id=696 data-nosnippet>696</a>        <span class="self">self</span>.get().cloned().map_or_default(<span class="self">Self</span>::from)
+<a href=#695 id=695 data-nosnippet>695</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#109-132">OnceLock</a>&lt;T&gt; {
+<a href=#696 id=696 data-nosnippet>696</a>        <a class="self" href="#695">self</a>.<a href="#184-191">get</a>().<a href="../../../std/option/enum.Option.html#method.cloned">cloned</a>().<a href="../../../std/option/enum.Option.html#method.map_or_default">map_or_default</a>(<span class="self">Self</span>::<a href="../../../std/convert/trait.From.html">from</a>)
 <a href=#697 id=697 data-nosnippet>697</a>    }
 <a href=#698 id=698 data-nosnippet>698</a>}
 <a href=#699 id=699 data-nosnippet>699</a>
 <a href=#700 id=700 data-nosnippet>700</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#701 id=701 data-nosnippet>701</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;T&gt; <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#701 id=701 data-nosnippet>701</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/convert/trait.From.html">From</a>&lt;T&gt; <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#702 id=702 data-nosnippet>702</a>    <span class="doccomment">/// Creates a new cell with its contents set to `value`.
 <a href=#703 id=703 data-nosnippet>703</a>    ///
 <a href=#704 id=704 data-nosnippet>704</a>    /// # Example
@@ -716,16 +716,16 @@
 <a href=#716 id=716 data-nosnippet>716</a>    /// ```
 <a href=#717 id=717 data-nosnippet>717</a>    </span><span class="attr">#[inline]
 <a href=#718 id=718 data-nosnippet>718</a>    </span><span class="kw">fn </span>from(value: T) -&gt; <span class="self">Self </span>{
-<a href=#719 id=719 data-nosnippet>719</a>        OnceLock {
-<a href=#720 id=720 data-nosnippet>720</a>            once: Once::new_complete(),
-<a href=#721 id=721 data-nosnippet>721</a>            value: UnsafeCell::new(MaybeUninit::new(value)),
-<a href=#722 id=722 data-nosnippet>722</a>            _marker: PhantomData,
+<a href=#719 id=719 data-nosnippet>719</a>        <a href="#109-132">OnceLock</a> {
+<a href=#720 id=720 data-nosnippet>720</a>            once: <a href="once.rs.html#35-37">Once</a>::<a href="once.rs.html#91-93">new_complete</a>(),
+<a href=#721 id=721 data-nosnippet>721</a>            value: <a href="../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>::<a href="../../../std/cell/struct.UnsafeCell.html#method.new">new</a>(<a href="../../../std/mem/union.MaybeUninit.html">MaybeUninit</a>::<a href="../../../std/mem/union.MaybeUninit.html#method.new">new</a>(<a href="#718">value</a>)),
+<a href=#722 id=722 data-nosnippet>722</a>            _marker: <a href="../../../std/marker/struct.PhantomData.html">PhantomData</a>,
 <a href=#723 id=723 data-nosnippet>723</a>        }
 <a href=#724 id=724 data-nosnippet>724</a>    }
 <a href=#725 id=725 data-nosnippet>725</a>}
 <a href=#726 id=726 data-nosnippet>726</a>
 <a href=#727 id=727 data-nosnippet>727</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#728 id=728 data-nosnippet>728</a></span><span class="kw">impl</span>&lt;T: PartialEq&gt; PartialEq <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#728 id=728 data-nosnippet>728</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/cmp/trait.PartialEq.html">PartialEq</a>&gt; <a href="../../../std/cmp/trait.PartialEq.html">PartialEq</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#729 id=729 data-nosnippet>729</a>    <span class="doccomment">/// Equality for two `OnceLock`s.
 <a href=#730 id=730 data-nosnippet>730</a>    ///
 <a href=#731 id=731 data-nosnippet>731</a>    /// Two `OnceLock`s are equal if they either both contain values and their
@@ -747,23 +747,23 @@
 <a href=#747 id=747 data-nosnippet>747</a>    /// assert!(OnceLock::&lt;u32&gt;::new() == OnceLock::&lt;u32&gt;::new());
 <a href=#748 id=748 data-nosnippet>748</a>    /// ```
 <a href=#749 id=749 data-nosnippet>749</a>    </span><span class="attr">#[inline]
-<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>OnceLock&lt;T&gt;) -&gt; bool {
-<a href=#751 id=751 data-nosnippet>751</a>        <span class="self">self</span>.get() == other.get()
+<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#109-132">OnceLock</a>&lt;T&gt;) -&gt; <a href="../../../std/primitive.bool.html">bool</a> {
+<a href=#751 id=751 data-nosnippet>751</a>        <a class="self" href="#750">self</a>.<a href="#184-191">get</a>() == <a href="#750">other</a>.<a href="#184-191">get</a>()
 <a href=#752 id=752 data-nosnippet>752</a>    }
 <a href=#753 id=753 data-nosnippet>753</a>}
 <a href=#754 id=754 data-nosnippet>754</a>
 <a href=#755 id=755 data-nosnippet>755</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#756 id=756 data-nosnippet>756</a></span><span class="kw">impl</span>&lt;T: Eq&gt; Eq <span class="kw">for </span>OnceLock&lt;T&gt; {}
+<a href=#756 id=756 data-nosnippet>756</a></span><span class="kw">impl</span>&lt;T: <a href="../../../std/cmp/trait.Eq.html">Eq</a>&gt; <a href="../../../std/cmp/trait.Eq.html">Eq</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {}
 <a href=#757 id=757 data-nosnippet>757</a>
 <a href=#758 id=758 data-nosnippet>758</a><span class="attr">#[stable(feature = <span class="string">"once_cell"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#759 id=759 data-nosnippet>759</a></span><span class="kw">unsafe impl</span>&lt;<span class="attr">#[may_dangle] </span>T&gt; Drop <span class="kw">for </span>OnceLock&lt;T&gt; {
+<a href=#759 id=759 data-nosnippet>759</a></span><span class="kw">unsafe impl</span>&lt;<span class="attr">#[may_dangle] </span>T&gt; <a href="../../../std/ops/trait.Drop.html">Drop</a> <span class="kw">for </span><a href="#109-132">OnceLock</a>&lt;T&gt; {
 <a href=#760 id=760 data-nosnippet>760</a>    <span class="attr">#[inline]
 <a href=#761 id=761 data-nosnippet>761</a>    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#762 id=762 data-nosnippet>762</a>        <span class="kw">if </span><span class="self">self</span>.initialized_mut() {
+<a href=#762 id=762 data-nosnippet>762</a>        <span class="kw">if </span><a class="self" href="#761">self</a>.<a href="#551-558">initialized_mut</a>() {
 <a href=#763 id=763 data-nosnippet>763</a>            <span class="comment">// SAFETY: The cell is initialized and being dropped, so it can't
 <a href=#764 id=764 data-nosnippet>764</a>            // be accessed again. We also don't touch the `T` other than
 <a href=#765 id=765 data-nosnippet>765</a>            // dropping it, which validates our usage of #[may_dangle].
-<a href=#766 id=766 data-nosnippet>766</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.value.get_mut().assume_init_drop() };
+<a href=#766 id=766 data-nosnippet>766</a>            </span><span class="kw">unsafe </span>{ <a class="self" href="#761">self</a>.value.<a href="../../../std/cell/struct.UnsafeCell.html#method.get_mut">get_mut</a>().<a href="../../../std/mem/union.MaybeUninit.html#method.assume_init_drop">assume_init_drop</a>() };
 <a href=#767 id=767 data-nosnippet>767</a>        }
 <a href=#768 id=768 data-nosnippet>768</a>    }
 <a href=#769 id=769 data-nosnippet>769</a>}

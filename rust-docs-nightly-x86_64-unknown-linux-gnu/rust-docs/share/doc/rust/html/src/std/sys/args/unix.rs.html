@@ -1,27 +1,27 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/args/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/args/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Global initialization and retrieval of command line arguments.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/args/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/args/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Global initialization and retrieval of command line arguments.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! On some platforms these are stored during runtime startup,
 <a href=#4 id=4 data-nosnippet>4</a>//! and on some they are retrieved from the system on demand.
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a></span><span class="attr">#![allow(dead_code)] </span><span class="comment">// runtime init functions not used during testing
 <a href=#7 id=7 data-nosnippet>7</a>
-<a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">pub use </span><span class="kw">super</span>::common::Args;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::ffi::CStr;
+<a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">pub use </span><a href="common.rs.html#6-8"><span class="kw">super</span>::common::Args</a>;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../../../../std/ffi/struct.CStr.html"><span class="kw">crate</span>::ffi::CStr</a>;
 <a href=#10 id=10 data-nosnippet>10</a><span class="attr">#[cfg(target_os = <span class="string">"hermit"</span>)]
 <a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">use </span><span class="kw">crate</span>::os::hermit::ffi::OsStringExt;
 <a href=#12 id=12 data-nosnippet>12</a><span class="attr">#[cfg(not(target_os = <span class="string">"hermit"</span>))]
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span><span class="kw">crate</span>::os::unix::ffi::OsStringExt;
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span><a href="../../os/unix/ffi/os_str.rs.html#12-24"><span class="kw">crate</span>::os::unix::ffi::OsStringExt</a>;
 <a href=#14 id=14 data-nosnippet>14</a>
 <a href=#15 id=15 data-nosnippet>15</a><span class="doccomment">/// One-time global initialization.
-<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub unsafe fn </span>init(argc: isize, argv: <span class="kw-2">*const *const </span>u8) {
-<a href=#17 id=17 data-nosnippet>17</a>    <span class="kw">unsafe </span>{ imp::init(argc, argv) }
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub unsafe fn </span>init(argc: <a href="../../../../std/primitive.isize.html">isize</a>, argv: <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>) {
+<a href=#17 id=17 data-nosnippet>17</a>    <span class="kw">unsafe </span>{ imp::<a href="#111-115">init</a>(<a href="#16">argc</a>, <a href="#16">argv</a>) }
 <a href=#18 id=18 data-nosnippet>18</a>}
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="doccomment">/// Returns the command line arguments
-<a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub fn </span>args() -&gt; Args {
-<a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">let </span>(argc, argv) = imp::argc_argv();
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub fn </span>args() -&gt; <a href="common.rs.html#6-8">Args</a> {
+<a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">let </span>(argc, argv) = imp::<a href="#137-150">argc_argv</a>();
 <a href=#23 id=23 data-nosnippet>23</a>
-<a href=#24 id=24 data-nosnippet>24</a>    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(argc <span class="kw">as </span>usize);
+<a href=#24 id=24 data-nosnippet>24</a>    <span class="kw">let </span><span class="kw-2">mut </span>vec = <a href="../../../../std/vec/struct.Vec.html">Vec</a>::<a href="../../../../std/vec/struct.Vec.html#method.with_capacity">with_capacity</a>(<a href="#22">argc</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>);
 <a href=#25 id=25 data-nosnippet>25</a>
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..argc {
 <a href=#27 id=27 data-nosnippet>27</a>        <span class="comment">// SAFETY: `argv` is non-null if `argc` is positive, and it is
@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>        vec.push(OsStringExt::from_vec(cstr.to_bytes().to_vec()));
 <a href=#59 id=59 data-nosnippet>59</a>    }
 <a href=#60 id=60 data-nosnippet>60</a>
-<a href=#61 id=61 data-nosnippet>61</a>    Args::new(vec)
+<a href=#61 id=61 data-nosnippet>61</a>    <a href="common.rs.html#6-8">Args</a>::<a href="common.rs.html#15-17">new</a>(<a href="#24">vec</a>)
 <a href=#62 id=62 data-nosnippet>62</a>}
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a><span class="attr">#[cfg(any(
@@ -87,9 +87,9 @@
 <a href=#87 id=87 data-nosnippet>87</a>    target_os = <span class="string">"nuttx"</span>,
 <a href=#88 id=88 data-nosnippet>88</a>))]
 <a href=#89 id=89 data-nosnippet>89</a></span><span class="kw">mod </span>imp {
-<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">use </span><span class="kw">crate</span>::ffi::c_char;
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">use </span><span class="kw">crate</span>::ptr;
-<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{Atomic, AtomicIsize, AtomicPtr, Ordering};
+<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">use </span><a href="../../../../std/ffi/type.c_char.html"><span class="kw">crate</span>::ffi::c_char</a>;
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">use </span><a href="../../../../std/ptr/index.html"><span class="kw">crate</span>::ptr</a>;
+<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{<a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>, <a href="../../../../std/sync/atomic/type.AtomicIsize.html">AtomicIsize</a>, <a href="../../../../std/sync/atomic/type.AtomicPtr.html">AtomicPtr</a>, <a href="../../../../std/sync/atomic/enum.Ordering.html">Ordering</a>};
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a>    <span class="comment">// The system-provided argc and argv, which we store in static memory
 <a href=#95 id=95 data-nosnippet>95</a>    // here so that we can defer the work of parsing them until its actually
@@ -97,21 +97,21 @@
 <a href=#97 id=97 data-nosnippet>97</a>    //
 <a href=#98 id=98 data-nosnippet>98</a>    // Note that we never mutate argv/argc, the argv array, or the argv
 <a href=#99 id=99 data-nosnippet>99</a>    // strings, which allows the code in this file to be very simple.
-<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">static </span>ARGC: Atomic&lt;isize&gt; = AtomicIsize::new(<span class="number">0</span>);
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">static </span>ARGV: Atomic&lt;<span class="kw-2">*mut *const </span>u8&gt; = AtomicPtr::new(ptr::null_mut());
+<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">static </span>ARGC: <a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../std/primitive.isize.html">isize</a>&gt; = <a href="../../../../std/sync/atomic/type.AtomicIsize.html">AtomicIsize</a>::<a href="../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="number">0</span>);
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">static </span>ARGV: <a href="../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<span class="kw-2">*mut *const </span><a href="../../../../std/primitive.u8.html">u8</a>&gt; = <a href="../../../../std/sync/atomic/type.AtomicPtr.html">AtomicPtr</a>::<a href="../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(ptr::<a href="../../../../std/ptr/fn.null_mut.html">null_mut</a>());
 <a href=#102 id=102 data-nosnippet>102</a>
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">unsafe fn </span>really_init(argc: isize, argv: <span class="kw-2">*const *const </span>u8) {
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">unsafe fn </span>really_init(argc: <a href="../../../../std/primitive.isize.html">isize</a>, argv: <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>) {
 <a href=#104 id=104 data-nosnippet>104</a>        <span class="comment">// These don't need to be ordered with each other or other stores,
 <a href=#105 id=105 data-nosnippet>105</a>        // because they only hold the unmodified system-provided argv/argc.
-<a href=#106 id=106 data-nosnippet>106</a>        </span>ARGC.store(argc, Ordering::Relaxed);
-<a href=#107 id=107 data-nosnippet>107</a>        ARGV.store(argv <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">_</span>, Ordering::Relaxed);
+<a href=#106 id=106 data-nosnippet>106</a>        </span><a href="#100">ARGC</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.store">store</a>(<a href="#103">argc</a>, Ordering::<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
+<a href=#107 id=107 data-nosnippet>107</a>        <a href="#101">ARGV</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.store">store</a>(<a href="#103">argv</a> <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">_</span>, Ordering::<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#108 id=108 data-nosnippet>108</a>    }
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a>    <span class="attr">#[inline(always)]
-<a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub unsafe fn </span>init(argc: isize, argv: <span class="kw-2">*const *const </span>u8) {
+<a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub unsafe fn </span>init(argc: <a href="../../../../std/primitive.isize.html">isize</a>, argv: <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>) {
 <a href=#112 id=112 data-nosnippet>112</a>        <span class="comment">// on GNU/Linux if we are main then we will init argv and argc twice, it "duplicates work"
 <a href=#113 id=113 data-nosnippet>113</a>        // BUT edge-cases are real: only using .init_array can break most emulators, dlopen, etc.
-<a href=#114 id=114 data-nosnippet>114</a>        </span><span class="kw">unsafe </span>{ really_init(argc, argv) };
+<a href=#114 id=114 data-nosnippet>114</a>        </span><span class="kw">unsafe </span>{ <a href="#103-108">really_init</a>(<a href="#111">argc</a>, <a href="#111">argv</a>) };
 <a href=#115 id=115 data-nosnippet>115</a>    }
 <a href=#116 id=116 data-nosnippet>116</a>
 <a href=#117 id=117 data-nosnippet>117</a>    <span class="doccomment">/// glibc passes argc, argv, and envp to functions in .init_array, as a non-standard extension.
@@ -120,21 +120,21 @@
 <a href=#120 id=120 data-nosnippet>120</a>    #[used]
 <a href=#121 id=121 data-nosnippet>121</a>    #[<span class="kw">unsafe</span>(link_section = <span class="string">".init_array.00099"</span>)]
 <a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">static </span>ARGV_INIT_ARRAY: <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn</span>(
-<a href=#123 id=123 data-nosnippet>123</a>        <span class="kw">crate</span>::os::raw::c_int,
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw-2">*const *const </span>u8,
-<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw-2">*const *const </span>u8,
+<a href=#123 id=123 data-nosnippet>123</a>        <span class="kw">crate</span>::os::raw::<a href="../../os/raw/mod.rs.html#17-26">c_int</a>,
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>,
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>,
 <a href=#126 id=126 data-nosnippet>126</a>    ) = {
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn </span>init_wrapper(
-<a href=#128 id=128 data-nosnippet>128</a>            argc: <span class="kw">crate</span>::os::raw::c_int,
-<a href=#129 id=129 data-nosnippet>129</a>            argv: <span class="kw-2">*const *const </span>u8,
-<a href=#130 id=130 data-nosnippet>130</a>            _envp: <span class="kw-2">*const *const </span>u8,
+<a href=#128 id=128 data-nosnippet>128</a>            argc: <span class="kw">crate</span>::os::raw::<a href="../../os/raw/mod.rs.html#17-26">c_int</a>,
+<a href=#129 id=129 data-nosnippet>129</a>            argv: <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>,
+<a href=#130 id=130 data-nosnippet>130</a>            _envp: <span class="kw-2">*const *const </span><a href="../../../../std/primitive.u8.html">u8</a>,
 <a href=#131 id=131 data-nosnippet>131</a>        ) {
-<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">unsafe </span>{ really_init(argc <span class="kw">as </span>isize, argv) };
+<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">unsafe </span>{ <a href="#103-108">really_init</a>(<a href="#128">argc</a> <span class="kw">as </span><a href="../../../../std/primitive.isize.html">isize</a>, <a href="#129">argv</a>) };
 <a href=#133 id=133 data-nosnippet>133</a>        }
-<a href=#134 id=134 data-nosnippet>134</a>        init_wrapper
+<a href=#134 id=134 data-nosnippet>134</a>        <a href="#127-133">init_wrapper</a>
 <a href=#135 id=135 data-nosnippet>135</a>    };
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">pub fn </span>argc_argv() -&gt; (isize, <span class="kw-2">*const *const </span>c_char) {
+<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">pub fn </span>argc_argv() -&gt; (<a href="../../../../std/primitive.isize.html">isize</a>, <span class="kw-2">*const *const </span><a href="../../../../std/ffi/type.c_char.html">c_char</a>) {
 <a href=#138 id=138 data-nosnippet>138</a>        <span class="comment">// Load ARGC and ARGV, which hold the unmodified system-provided
 <a href=#139 id=139 data-nosnippet>139</a>        // argc/argv, so we can read the pointed-to memory without atomics or
 <a href=#140 id=140 data-nosnippet>140</a>        // synchronization.
@@ -142,11 +142,11 @@
 <a href=#142 id=142 data-nosnippet>142</a>        // If either ARGC or ARGV is still zero or null, then either there
 <a href=#143 id=143 data-nosnippet>143</a>        // really are no arguments, or someone is asking for `args()` before
 <a href=#144 id=144 data-nosnippet>144</a>        // initialization has completed, and we return an empty list.
-<a href=#145 id=145 data-nosnippet>145</a>        </span><span class="kw">let </span>argv = ARGV.load(Ordering::Relaxed);
-<a href=#146 id=146 data-nosnippet>146</a>        <span class="kw">let </span>argc = <span class="kw">if </span>argv.is_null() { <span class="number">0 </span>} <span class="kw">else </span>{ ARGC.load(Ordering::Relaxed) };
+<a href=#145 id=145 data-nosnippet>145</a>        </span><span class="kw">let </span>argv = <a href="#101">ARGV</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
+<a href=#146 id=146 data-nosnippet>146</a>        <span class="kw">let </span>argc = <span class="kw">if </span><a href="#145">argv</a>.<a href="../../../../core/primitive.pointer.html#method.is_null">is_null</a>() { <span class="number">0 </span>} <span class="kw">else </span>{ <a href="#100">ARGC</a>.<a href="../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>) };
 <a href=#147 id=147 data-nosnippet>147</a>
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="comment">// Cast from `*mut *const u8` to `*const *const c_char`
-<a href=#149 id=149 data-nosnippet>149</a>        </span>(argc, argv.cast())
+<a href=#149 id=149 data-nosnippet>149</a>        </span>(<a href="#146">argc</a>, <a href="#145">argv</a>.<a href="../../../../core/primitive.pointer.html#method.cast">cast</a>())
 <a href=#150 id=150 data-nosnippet>150</a>    }
 <a href=#151 id=151 data-nosnippet>151</a>}
 <a href=#152 id=152 data-nosnippet>152</a>

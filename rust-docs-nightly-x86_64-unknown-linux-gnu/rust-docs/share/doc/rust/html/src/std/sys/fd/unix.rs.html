@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fd/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fd/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![unstable(reason = <span class="string">"not public"</span>, issue = <span class="string">"none"</span>, feature = <span class="string">"fd"</span>)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fd/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fd/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![unstable(reason = <span class="string">"not public"</span>, issue = <span class="string">"none"</span>, feature = <span class="string">"fd"</span>)]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a>#[cfg(test)]
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">mod </span>tests;
@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>    target_os = <span class="string">"l4re"</span>,
 <a href=#17 id=17 data-nosnippet>17</a>    target_os = <span class="string">"hurd"</span>,
 <a href=#18 id=18 data-nosnippet>18</a>))]
-<a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">use </span>libc::off64_t;
+<a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">use </span><a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/type.off64_t.html">libc::off64_t</a>;
 <a href=#20 id=20 data-nosnippet>20</a>
 <a href=#21 id=21 data-nosnippet>21</a><span class="macro">cfg_select!</span> {
 <a href=#22 id=22 data-nosnippet>22</a>    target_os = <span class="string">"vxworks" </span>=&gt; {
@@ -44,16 +44,16 @@
 <a href=#44 id=44 data-nosnippet>44</a>    {
 <a href=#45 id=45 data-nosnippet>45</a>        <span class="comment">// Prefer explicit pread64 for 64-bit offset independently of libc
 <a href=#46 id=46 data-nosnippet>46</a>        // #[cfg(gnu_file_offset_bits64)].
-<a href=#47 id=47 data-nosnippet>47</a>        </span><span class="kw">use </span>libc::{pread64, pwrite64};
+<a href=#47 id=47 data-nosnippet>47</a>        </span><span class="kw">use </span>libc::{<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.pread64.html">pread64</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.pwrite64.html">pwrite64</a>};
 <a href=#48 id=48 data-nosnippet>48</a>    }
 <a href=#49 id=49 data-nosnippet>49</a>    <span class="kw">_ </span>=&gt; {
 <a href=#50 id=50 data-nosnippet>50</a>        <span class="kw">use </span>libc::{pread <span class="kw">as </span>pread64, pwrite <span class="kw">as </span>pwrite64};
 <a href=#51 id=51 data-nosnippet>51</a>    }
 <a href=#52 id=52 data-nosnippet>52</a>}
 <a href=#53 id=53 data-nosnippet>53</a>
-<a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span><span class="kw">crate</span>::cmp;
-<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::io::{<span class="self">self</span>, BorrowedCursor, IoSlice, IoSliceMut, Read};
-<a href=#56 id=56 data-nosnippet>56</a><span class="kw">use </span><span class="kw">crate</span>::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, IntoRawFd, OwnedFd, RawFd};
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span><a href="../../../../std/cmp/index.html"><span class="kw">crate</span>::cmp</a>;
+<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::io::{<a class="self" href="../../lib.rs.html#634">self</a>, <a href="../../../../std/io/struct.BorrowedCursor.html">BorrowedCursor</a>, <a href="../../../../std/io/struct.IoSlice.html">IoSlice</a>, <a href="../../../../std/io/struct.IoSliceMut.html">IoSliceMut</a>, <a href="../../../../std/io/trait.Read.html">Read</a>};
+<a href=#56 id=56 data-nosnippet>56</a><span class="kw">use </span><span class="kw">crate</span>::os::fd::{<a href="../../os/fd/owned.rs.html#287-305">AsFd</a>, <a href="../../os/fd/raw.rs.html#44-72">AsRawFd</a>, <a href="../../os/fd/owned.rs.html#53-56">BorrowedFd</a>, <a href="../../os/fd/raw.rs.html#77-116">FromRawFd</a>, <a href="../../os/fd/raw.rs.html#121-148">IntoRawFd</a>, <a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>, <a href="../../os/fd/raw.rs.html#33">RawFd</a>};
 <a href=#57 id=57 data-nosnippet>57</a><span class="attr">#[cfg(all(target_os = <span class="string">"android"</span>, target_pointer_width = <span class="string">"64"</span>))]
 <a href=#58 id=58 data-nosnippet>58</a></span><span class="kw">use </span><span class="kw">crate</span>::sys::pal::weak::syscall;
 <a href=#59 id=59 data-nosnippet>59</a><span class="attr">#[cfg(any(
@@ -61,10 +61,10 @@
 <a href=#61 id=61 data-nosnippet>61</a>    all(target_vendor = <span class="string">"apple"</span>, not(all(target_os = <span class="string">"macos"</span>, target_arch = <span class="string">"aarch64"</span>)))
 <a href=#62 id=62 data-nosnippet>62</a>))]
 <a href=#63 id=63 data-nosnippet>63</a></span><span class="kw">use </span><span class="kw">crate</span>::sys::pal::weak::weak;
-<a href=#64 id=64 data-nosnippet>64</a><span class="kw">use </span><span class="kw">crate</span>::sys::{AsInner, FromInner, IntoInner, cvt};
+<a href=#64 id=64 data-nosnippet>64</a><span class="kw">use </span><span class="kw">crate</span>::sys::{<a href="../mod.rs.html#38-40">AsInner</a>, <a href="../mod.rs.html#54-56">FromInner</a>, <a href="../mod.rs.html#49-51">IntoInner</a>, <a href="../pal/unix/mod.rs.html#239-241">cvt</a>};
 <a href=#65 id=65 data-nosnippet>65</a>
-<a href=#66 id=66 data-nosnippet>66</a><span class="attr">#[derive(Debug)]
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub struct </span>FileDesc(OwnedFd);
+<a href=#66 id=66 data-nosnippet>66</a><span class="attr">#[derive(<a href="../../../../std/fmt/derive.Debug.html">Debug</a>)]
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub struct </span>FileDesc(<a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>);
 <a href=#68 id=68 data-nosnippet>68</a>
 <a href=#69 id=69 data-nosnippet>69</a><span class="comment">// The maximum read limit on most POSIX-like systems is `SSIZE_MAX`,
 <a href=#70 id=70 data-nosnippet>70</a>// with the man page quoting that if the count of bytes to read is
@@ -77,11 +77,11 @@
 <a href=#77 id=77 data-nosnippet>77</a>// Meanwhile on QNX, reads/writes/sends larger than INT_MAX return the wrong
 <a href=#78 id=78 data-nosnippet>78</a>// number of bytes written (eg, writing 2^31 bytes returns (2^64 - 2^31) instead
 <a href=#79 id=79 data-nosnippet>79</a>// of the correct byte count).
-<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">const </span>READ_LIMIT: usize = <span class="macro">cfg_select!</span> {
+<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">const </span>READ_LIMIT: <a href="../../../../std/primitive.usize.html">usize</a> = <span class="macro">cfg_select!</span> {
 <a href=#81 id=81 data-nosnippet>81</a>    any(target_vendor = <span class="string">"apple"</span>, target_os = <span class="string">"nto"</span>, target_os = <span class="string">"qnx"</span>) =&gt; {
 <a href=#82 id=82 data-nosnippet>82</a>        libc::c_int::MAX <span class="kw">as </span>usize
 <a href=#83 id=83 data-nosnippet>83</a>    }
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">_ </span>=&gt; libc::ssize_t::MAX <span class="kw">as </span>usize,
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">_ </span>=&gt; libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.ssize_t.html">ssize_t</a>::<a href="../../../../core/primitive.isize.html#associatedconstant.MAX">MAX</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>,
 <a href=#85 id=85 data-nosnippet>85</a>};
 <a href=#86 id=86 data-nosnippet>86</a>
 <a href=#87 id=87 data-nosnippet>87</a><span class="attr">#[cfg(any(
@@ -103,8 +103,8 @@
 <a href=#103 id=103 data-nosnippet>103</a>    target_os = <span class="string">"nto"</span>,
 <a href=#104 id=104 data-nosnippet>104</a>    target_os = <span class="string">"qnx"</span>,
 <a href=#105 id=105 data-nosnippet>105</a>))]
-<a href=#106 id=106 data-nosnippet>106</a></span><span class="kw">const fn </span>max_iov() -&gt; usize {
-<a href=#107 id=107 data-nosnippet>107</a>    libc::UIO_MAXIOV <span class="kw">as </span>usize
+<a href=#106 id=106 data-nosnippet>106</a></span><span class="kw">const fn </span>max_iov() -&gt; <a href="../../../../std/primitive.usize.html">usize</a> {
+<a href=#107 id=107 data-nosnippet>107</a>    libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.UIO_MAXIOV.html">UIO_MAXIOV</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>
 <a href=#108 id=108 data-nosnippet>108</a>}
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a><span class="attr">#[cfg(not(any(
@@ -128,13 +128,13 @@
 <a href=#128 id=128 data-nosnippet>128</a>    <span class="number">16 </span><span class="comment">// The minimum value required by POSIX.
 <a href=#129 id=129 data-nosnippet>129</a></span>}
 <a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a><span class="kw">impl </span>FileDesc {
+<a href=#131 id=131 data-nosnippet>131</a><span class="kw">impl </span><a href="#67">FileDesc</a> {
 <a href=#132 id=132 data-nosnippet>132</a>    <span class="attr">#[inline]
-<a href=#133 id=133 data-nosnippet>133</a>    </span><span class="kw">pub fn </span>try_clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;<span class="self">Self</span>&gt; {
-<a href=#134 id=134 data-nosnippet>134</a>        <span class="self">self</span>.duplicate()
+<a href=#133 id=133 data-nosnippet>133</a>    </span><span class="kw">pub fn </span>try_clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<span class="self">Self</span>&gt; {
+<a href=#134 id=134 data-nosnippet>134</a>        <a class="self" href="#133">self</a>.<a href="#653-655">duplicate</a>()
 <a href=#135 id=135 data-nosnippet>135</a>    }
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
+<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#139 id=139 data-nosnippet>139</a>            libc::read(
 <a href=#140 id=140 data-nosnippet>140</a>                <span class="self">self</span>.as_raw_fd(),
@@ -142,7 +142,7 @@
 <a href=#142 id=142 data-nosnippet>142</a>                cmp::min(buf.len(), READ_LIMIT),
 <a href=#143 id=143 data-nosnippet>143</a>            )
 <a href=#144 id=144 data-nosnippet>144</a>        })<span class="question-mark">?</span>;
-<a href=#145 id=145 data-nosnippet>145</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#145 id=145 data-nosnippet>145</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#138">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#146 id=146 data-nosnippet>146</a>    }
 <a href=#147 id=147 data-nosnippet>147</a>
 <a href=#148 id=148 data-nosnippet>148</a>    <span class="attr">#[cfg(not(any(
@@ -151,7 +151,7 @@
 <a href=#151 id=151 data-nosnippet>151</a>        target_os = <span class="string">"vita"</span>,
 <a href=#152 id=152 data-nosnippet>152</a>        target_os = <span class="string">"nuttx"
 <a href=#153 id=153 data-nosnippet>153</a>    </span>)))]
-<a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub fn </span>read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[IoSliceMut&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::Result&lt;usize&gt; {
+<a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub fn </span>read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/io/struct.IoSliceMut.html">IoSliceMut</a>&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#156 id=156 data-nosnippet>156</a>            libc::readv(
 <a href=#157 id=157 data-nosnippet>157</a>                <span class="self">self</span>.as_raw_fd(),
@@ -159,7 +159,7 @@
 <a href=#159 id=159 data-nosnippet>159</a>                cmp::min(bufs.len(), max_iov()) <span class="kw">as </span>libc::c_int,
 <a href=#160 id=160 data-nosnippet>160</a>            )
 <a href=#161 id=161 data-nosnippet>161</a>        })<span class="question-mark">?</span>;
-<a href=#162 id=162 data-nosnippet>162</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#162 id=162 data-nosnippet>162</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#155">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#163 id=163 data-nosnippet>163</a>    }
 <a href=#164 id=164 data-nosnippet>164</a>
 <a href=#165 id=165 data-nosnippet>165</a>    <span class="attr">#[cfg(any(
@@ -173,8 +173,8 @@
 <a href=#173 id=173 data-nosnippet>173</a>    }
 <a href=#174 id=174 data-nosnippet>174</a>
 <a href=#175 id=175 data-nosnippet>175</a>    <span class="attr">#[inline]
-<a href=#176 id=176 data-nosnippet>176</a>    </span><span class="kw">pub fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#177 id=177 data-nosnippet>177</a>        <span class="macro">cfg!</span>(not(any(
+<a href=#176 id=176 data-nosnippet>176</a>    </span><span class="kw">pub fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../std/primitive.bool.html">bool</a> {
+<a href=#177 id=177 data-nosnippet>177</a>        <a href="../../../../std/macro.cfg.html">cfg!</a>(not(any(
 <a href=#178 id=178 data-nosnippet>178</a>            target_os = <span class="string">"espidf"</span>,
 <a href=#179 id=179 data-nosnippet>179</a>            target_os = <span class="string">"horizon"</span>,
 <a href=#180 id=180 data-nosnippet>180</a>            target_os = <span class="string">"vita"</span>,
@@ -183,24 +183,24 @@
 <a href=#183 id=183 data-nosnippet>183</a>        )))
 <a href=#184 id=184 data-nosnippet>184</a>    }
 <a href=#185 id=185 data-nosnippet>185</a>
-<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub fn </span>read_to_end(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) -&gt; io::Result&lt;usize&gt; {
-<a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span><span class="kw-2">mut </span>me = <span class="self">self</span>;
-<a href=#188 id=188 data-nosnippet>188</a>        (<span class="kw-2">&amp;mut </span>me).read_to_end(buf)
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub fn </span>read_to_end(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span><a href="../../../../std/vec/struct.Vec.html">Vec</a>&lt;<a href="../../../../std/primitive.u8.html">u8</a>&gt;) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span><span class="kw-2">mut </span>me = <a class="self" href="#186">self</a>;
+<a href=#188 id=188 data-nosnippet>188</a>        (<span class="kw-2">&amp;mut </span><a href="#187">me</a>).<a href="../../../../std/io/trait.Read.html">read_to_end</a>(<a href="#186">buf</a>)
 <a href=#189 id=189 data-nosnippet>189</a>    }
 <a href=#190 id=190 data-nosnippet>190</a>
-<a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">pub fn </span>read_at(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8], offset: u64) -&gt; io::Result&lt;usize&gt; {
-<a href=#192 id=192 data-nosnippet>192</a>        cvt(<span class="kw">unsafe </span>{
-<a href=#193 id=193 data-nosnippet>193</a>            pread64(
-<a href=#194 id=194 data-nosnippet>194</a>                <span class="self">self</span>.as_raw_fd(),
-<a href=#195 id=195 data-nosnippet>195</a>                buf.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>libc::c_void,
-<a href=#196 id=196 data-nosnippet>196</a>                cmp::min(buf.len(), READ_LIMIT),
-<a href=#197 id=197 data-nosnippet>197</a>                offset <span class="kw">as </span>off64_t, <span class="comment">// EINVAL if offset + count overflows
+<a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">pub fn </span>read_at(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/primitive.u8.html">u8</a>], offset: <a href="../../../../std/primitive.u64.html">u64</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#192 id=192 data-nosnippet>192</a>        <a href="../pal/unix/mod.rs.html#239-241">cvt</a>(<span class="kw">unsafe </span>{
+<a href=#193 id=193 data-nosnippet>193</a>            <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.pread64.html">pread64</a>(
+<a href=#194 id=194 data-nosnippet>194</a>                <a class="self" href="#191">self</a>.<a href="../../os/fd/raw.rs.html#71">as_raw_fd</a>(),
+<a href=#195 id=195 data-nosnippet>195</a>                <a href="#191">buf</a>.<a href="../../../../core/primitive.slice.html#method.as_mut_ptr">as_mut_ptr</a>() <span class="kw">as </span><span class="kw-2">*mut </span>libc::<a href="../../../../std/ffi/enum.c_void.html">c_void</a>,
+<a href=#196 id=196 data-nosnippet>196</a>                cmp::<a href="../../../../std/cmp/fn.min.html">min</a>(<a href="#191">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>(), <a href="#80-85">READ_LIMIT</a>),
+<a href=#197 id=197 data-nosnippet>197</a>                <a href="#191">offset</a> <span class="kw">as </span><a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/type.off64_t.html">off64_t</a>, <span class="comment">// EINVAL if offset + count overflows
 <a href=#198 id=198 data-nosnippet>198</a>            </span>)
 <a href=#199 id=199 data-nosnippet>199</a>        })
-<a href=#200 id=200 data-nosnippet>200</a>        .map(|n| n <span class="kw">as </span>usize)
+<a href=#200 id=200 data-nosnippet>200</a>        .<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|n| <a href="#200">n</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#201 id=201 data-nosnippet>201</a>    }
 <a href=#202 id=202 data-nosnippet>202</a>
-<a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">pub fn </span>read_buf(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;) -&gt; io::Result&lt;()&gt; {
+<a href=#203 id=203 data-nosnippet>203</a>    <span class="kw">pub fn </span>read_buf(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cursor: <a href="../../../../std/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../../std/primitive.u8.html">u8</a>&gt;) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#204 id=204 data-nosnippet>204</a>        <span class="comment">// SAFETY: `cursor.as_mut()` starts with `cursor.capacity()` writable bytes
 <a href=#205 id=205 data-nosnippet>205</a>        </span><span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#206 id=206 data-nosnippet>206</a>            libc::read(
@@ -212,12 +212,12 @@
 <a href=#212 id=212 data-nosnippet>212</a>
 <a href=#213 id=213 data-nosnippet>213</a>        <span class="comment">// SAFETY: `ret` bytes were written to the initialized portion of the buffer
 <a href=#214 id=214 data-nosnippet>214</a>        </span><span class="kw">unsafe </span>{
-<a href=#215 id=215 data-nosnippet>215</a>            cursor.advance(ret <span class="kw">as </span>usize);
+<a href=#215 id=215 data-nosnippet>215</a>            <a href="#203">cursor</a>.<a href="../../../../std/io/struct.BorrowedCursor.html#method.advance">advance</a>(<a href="#205">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>);
 <a href=#216 id=216 data-nosnippet>216</a>        }
-<a href=#217 id=217 data-nosnippet>217</a>        <span class="prelude-val">Ok</span>(())
+<a href=#217 id=217 data-nosnippet>217</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(())
 <a href=#218 id=218 data-nosnippet>218</a>    }
 <a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">pub fn </span>read_buf_at(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;, offset: u64) -&gt; io::Result&lt;()&gt; {
+<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">pub fn </span>read_buf_at(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cursor: <a href="../../../../std/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../../std/primitive.u8.html">u8</a>&gt;, offset: <a href="../../../../std/primitive.u64.html">u64</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#221 id=221 data-nosnippet>221</a>        <span class="comment">// SAFETY: `cursor.as_mut()` starts with `cursor.capacity()` writable bytes
 <a href=#222 id=222 data-nosnippet>222</a>        </span><span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#223 id=223 data-nosnippet>223</a>            pread64(
@@ -230,9 +230,9 @@
 <a href=#230 id=230 data-nosnippet>230</a>
 <a href=#231 id=231 data-nosnippet>231</a>        <span class="comment">// SAFETY: `ret` bytes were written to the initialized portion of the buffer
 <a href=#232 id=232 data-nosnippet>232</a>        </span><span class="kw">unsafe </span>{
-<a href=#233 id=233 data-nosnippet>233</a>            cursor.advance(ret <span class="kw">as </span>usize);
+<a href=#233 id=233 data-nosnippet>233</a>            <a href="#220">cursor</a>.<a href="../../../../std/io/struct.BorrowedCursor.html#method.advance">advance</a>(<a href="#222">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>);
 <a href=#234 id=234 data-nosnippet>234</a>        }
-<a href=#235 id=235 data-nosnippet>235</a>        <span class="prelude-val">Ok</span>(())
+<a href=#235 id=235 data-nosnippet>235</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(())
 <a href=#236 id=236 data-nosnippet>236</a>    }
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a>    <span class="attr">#[cfg(any(
@@ -248,7 +248,7 @@
 <a href=#248 id=248 data-nosnippet>248</a>        target_os = <span class="string">"openbsd"</span>, <span class="comment">// OpenBSD 2.7
 <a href=#249 id=249 data-nosnippet>249</a>        </span>all(target_os = <span class="string">"macos"</span>, target_arch = <span class="string">"aarch64"</span>),
 <a href=#250 id=250 data-nosnippet>250</a>    ))]
-<a href=#251 id=251 data-nosnippet>251</a>    </span><span class="kw">pub fn </span>read_vectored_at(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[IoSliceMut&lt;<span class="lifetime">'_</span>&gt;], offset: u64) -&gt; io::Result&lt;usize&gt; {
+<a href=#251 id=251 data-nosnippet>251</a>    </span><span class="kw">pub fn </span>read_vectored_at(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/io/struct.IoSliceMut.html">IoSliceMut</a>&lt;<span class="lifetime">'_</span>&gt;], offset: <a href="../../../../std/primitive.u64.html">u64</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#253 id=253 data-nosnippet>253</a>            libc::preadv(
 <a href=#254 id=254 data-nosnippet>254</a>                <span class="self">self</span>.as_raw_fd(),
@@ -257,7 +257,7 @@
 <a href=#257 id=257 data-nosnippet>257</a>                offset <span class="kw">as _</span>,
 <a href=#258 id=258 data-nosnippet>258</a>            )
 <a href=#259 id=259 data-nosnippet>259</a>        })<span class="question-mark">?</span>;
-<a href=#260 id=260 data-nosnippet>260</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#260 id=260 data-nosnippet>260</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#252">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#261 id=261 data-nosnippet>261</a>    }
 <a href=#262 id=262 data-nosnippet>262</a>
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="attr">#[cfg(not(any(
@@ -370,7 +370,7 @@
 <a href=#370 id=370 data-nosnippet>370</a>        }
 <a href=#371 id=371 data-nosnippet>371</a>    }
 <a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">pub fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
+<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">pub fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[<a href="../../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#374 id=374 data-nosnippet>374</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#375 id=375 data-nosnippet>375</a>            libc::write(
 <a href=#376 id=376 data-nosnippet>376</a>                <span class="self">self</span>.as_raw_fd(),
@@ -378,7 +378,7 @@
 <a href=#378 id=378 data-nosnippet>378</a>                cmp::min(buf.len(), READ_LIMIT),
 <a href=#379 id=379 data-nosnippet>379</a>            )
 <a href=#380 id=380 data-nosnippet>380</a>        })<span class="question-mark">?</span>;
-<a href=#381 id=381 data-nosnippet>381</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#381 id=381 data-nosnippet>381</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#374">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#382 id=382 data-nosnippet>382</a>    }
 <a href=#383 id=383 data-nosnippet>383</a>
 <a href=#384 id=384 data-nosnippet>384</a>    <span class="attr">#[cfg(not(any(
@@ -387,7 +387,7 @@
 <a href=#387 id=387 data-nosnippet>387</a>        target_os = <span class="string">"vita"</span>,
 <a href=#388 id=388 data-nosnippet>388</a>        target_os = <span class="string">"nuttx"
 <a href=#389 id=389 data-nosnippet>389</a>    </span>)))]
-<a href=#390 id=390 data-nosnippet>390</a>    </span><span class="kw">pub fn </span>write_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;</span>[IoSlice&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::Result&lt;usize&gt; {
+<a href=#390 id=390 data-nosnippet>390</a>    </span><span class="kw">pub fn </span>write_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;</span>[<a href="../../../../std/io/struct.IoSlice.html">IoSlice</a>&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#391 id=391 data-nosnippet>391</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#392 id=392 data-nosnippet>392</a>            libc::writev(
 <a href=#393 id=393 data-nosnippet>393</a>                <span class="self">self</span>.as_raw_fd(),
@@ -395,7 +395,7 @@
 <a href=#395 id=395 data-nosnippet>395</a>                cmp::min(bufs.len(), max_iov()) <span class="kw">as </span>libc::c_int,
 <a href=#396 id=396 data-nosnippet>396</a>            )
 <a href=#397 id=397 data-nosnippet>397</a>        })<span class="question-mark">?</span>;
-<a href=#398 id=398 data-nosnippet>398</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#398 id=398 data-nosnippet>398</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#391">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#399 id=399 data-nosnippet>399</a>    }
 <a href=#400 id=400 data-nosnippet>400</a>
 <a href=#401 id=401 data-nosnippet>401</a>    <span class="attr">#[cfg(any(
@@ -409,8 +409,8 @@
 <a href=#409 id=409 data-nosnippet>409</a>    }
 <a href=#410 id=410 data-nosnippet>410</a>
 <a href=#411 id=411 data-nosnippet>411</a>    <span class="attr">#[inline]
-<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">pub fn </span>is_write_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#413 id=413 data-nosnippet>413</a>        <span class="macro">cfg!</span>(not(any(
+<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">pub fn </span>is_write_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../std/primitive.bool.html">bool</a> {
+<a href=#413 id=413 data-nosnippet>413</a>        <a href="../../../../std/macro.cfg.html">cfg!</a>(not(any(
 <a href=#414 id=414 data-nosnippet>414</a>            target_os = <span class="string">"espidf"</span>,
 <a href=#415 id=415 data-nosnippet>415</a>            target_os = <span class="string">"horizon"</span>,
 <a href=#416 id=416 data-nosnippet>416</a>            target_os = <span class="string">"vita"</span>,
@@ -419,15 +419,15 @@
 <a href=#419 id=419 data-nosnippet>419</a>        )))
 <a href=#420 id=420 data-nosnippet>420</a>    }
 <a href=#421 id=421 data-nosnippet>421</a>
-<a href=#422 id=422 data-nosnippet>422</a>    <span class="kw">pub fn </span>write_at(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8], offset: u64) -&gt; io::Result&lt;usize&gt; {
+<a href=#422 id=422 data-nosnippet>422</a>    <span class="kw">pub fn </span>write_at(<span class="kw-2">&amp;</span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[<a href="../../../../std/primitive.u8.html">u8</a>], offset: <a href="../../../../std/primitive.u64.html">u64</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#423 id=423 data-nosnippet>423</a>        <span class="kw">unsafe </span>{
-<a href=#424 id=424 data-nosnippet>424</a>            cvt(pwrite64(
-<a href=#425 id=425 data-nosnippet>425</a>                <span class="self">self</span>.as_raw_fd(),
-<a href=#426 id=426 data-nosnippet>426</a>                buf.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span>libc::c_void,
-<a href=#427 id=427 data-nosnippet>427</a>                cmp::min(buf.len(), READ_LIMIT),
-<a href=#428 id=428 data-nosnippet>428</a>                offset <span class="kw">as </span>off64_t,
+<a href=#424 id=424 data-nosnippet>424</a>            <a href="../pal/unix/mod.rs.html#239-241">cvt</a>(<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.pwrite64.html">pwrite64</a>(
+<a href=#425 id=425 data-nosnippet>425</a>                <a class="self" href="#422">self</a>.<a href="../../os/fd/raw.rs.html#71">as_raw_fd</a>(),
+<a href=#426 id=426 data-nosnippet>426</a>                <a href="#422">buf</a>.<a href="../../../../core/primitive.slice.html#method.as_ptr">as_ptr</a>() <span class="kw">as </span><span class="kw-2">*const </span>libc::<a href="../../../../std/ffi/enum.c_void.html">c_void</a>,
+<a href=#427 id=427 data-nosnippet>427</a>                cmp::<a href="../../../../std/cmp/fn.min.html">min</a>(<a href="#422">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>(), <a href="#80-85">READ_LIMIT</a>),
+<a href=#428 id=428 data-nosnippet>428</a>                <a href="#422">offset</a> <span class="kw">as </span><a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/type.off64_t.html">off64_t</a>,
 <a href=#429 id=429 data-nosnippet>429</a>            ))
-<a href=#430 id=430 data-nosnippet>430</a>            .map(|n| n <span class="kw">as </span>usize)
+<a href=#430 id=430 data-nosnippet>430</a>            .<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|n| <a href="#430">n</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#431 id=431 data-nosnippet>431</a>        }
 <a href=#432 id=432 data-nosnippet>432</a>    }
 <a href=#433 id=433 data-nosnippet>433</a>
@@ -444,7 +444,7 @@
 <a href=#444 id=444 data-nosnippet>444</a>        target_os = <span class="string">"openbsd"</span>, <span class="comment">// OpenBSD 2.7
 <a href=#445 id=445 data-nosnippet>445</a>        </span>all(target_os = <span class="string">"macos"</span>, target_arch = <span class="string">"aarch64"</span>),
 <a href=#446 id=446 data-nosnippet>446</a>    ))]
-<a href=#447 id=447 data-nosnippet>447</a>    </span><span class="kw">pub fn </span>write_vectored_at(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;</span>[IoSlice&lt;<span class="lifetime">'_</span>&gt;], offset: u64) -&gt; io::Result&lt;usize&gt; {
+<a href=#447 id=447 data-nosnippet>447</a>    </span><span class="kw">pub fn </span>write_vectored_at(<span class="kw-2">&amp;</span><span class="self">self</span>, bufs: <span class="kw-2">&amp;</span>[<a href="../../../../std/io/struct.IoSlice.html">IoSlice</a>&lt;<span class="lifetime">'_</span>&gt;], offset: <a href="../../../../std/primitive.u64.html">u64</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
 <a href=#448 id=448 data-nosnippet>448</a>        <span class="kw">let </span>ret = cvt(<span class="kw">unsafe </span>{
 <a href=#449 id=449 data-nosnippet>449</a>            libc::pwritev(
 <a href=#450 id=450 data-nosnippet>450</a>                <span class="self">self</span>.as_raw_fd(),
@@ -453,7 +453,7 @@
 <a href=#453 id=453 data-nosnippet>453</a>                offset <span class="kw">as _</span>,
 <a href=#454 id=454 data-nosnippet>454</a>            )
 <a href=#455 id=455 data-nosnippet>455</a>        })<span class="question-mark">?</span>;
-<a href=#456 id=456 data-nosnippet>456</a>        <span class="prelude-val">Ok</span>(ret <span class="kw">as </span>usize)
+<a href=#456 id=456 data-nosnippet>456</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#448">ret</a> <span class="kw">as </span><a href="../../../../std/primitive.usize.html">usize</a>)
 <a href=#457 id=457 data-nosnippet>457</a>    }
 <a href=#458 id=458 data-nosnippet>458</a>
 <a href=#459 id=459 data-nosnippet>459</a>    <span class="attr">#[cfg(not(any(
@@ -607,14 +607,14 @@
 <a href=#607 id=607 data-nosnippet>607</a>        target_os = <span class="string">"qnx"</span>,
 <a href=#608 id=608 data-nosnippet>608</a>        target_os = <span class="string">"wasi"</span>,
 <a href=#609 id=609 data-nosnippet>609</a>    ))]
-<a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">pub fn </span>set_cloexec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; {
+<a href=#610 id=610 data-nosnippet>610</a>    </span><span class="kw">pub fn </span>set_cloexec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#611 id=611 data-nosnippet>611</a>        <span class="kw">unsafe </span>{
 <a href=#612 id=612 data-nosnippet>612</a>            <span class="kw">let </span>previous = cvt(libc::fcntl(<span class="self">self</span>.as_raw_fd(), libc::F_GETFD))<span class="question-mark">?</span>;
-<a href=#613 id=613 data-nosnippet>613</a>            <span class="kw">let </span>new = previous | libc::FD_CLOEXEC;
-<a href=#614 id=614 data-nosnippet>614</a>            <span class="kw">if </span>new != previous {
+<a href=#613 id=613 data-nosnippet>613</a>            <span class="kw">let </span>new = <a href="#612">previous</a> | libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/constant.FD_CLOEXEC.html">FD_CLOEXEC</a>;
+<a href=#614 id=614 data-nosnippet>614</a>            <span class="kw">if </span><a href="#613">new</a> != <a href="#612">previous</a> {
 <a href=#615 id=615 data-nosnippet>615</a>                cvt(libc::fcntl(<span class="self">self</span>.as_raw_fd(), libc::F_SETFD, new))<span class="question-mark">?</span>;
 <a href=#616 id=616 data-nosnippet>616</a>            }
-<a href=#617 id=617 data-nosnippet>617</a>            <span class="prelude-val">Ok</span>(())
+<a href=#617 id=617 data-nosnippet>617</a>            <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(())
 <a href=#618 id=618 data-nosnippet>618</a>        }
 <a href=#619 id=619 data-nosnippet>619</a>    }
 <a href=#620 id=620 data-nosnippet>620</a>    <span class="attr">#[cfg(any(target_os = <span class="string">"espidf"</span>, target_os = <span class="string">"horizon"</span>, target_os = <span class="string">"vita"</span>))]
@@ -625,11 +625,11 @@
 <a href=#625 id=625 data-nosnippet>625</a>    }
 <a href=#626 id=626 data-nosnippet>626</a>
 <a href=#627 id=627 data-nosnippet>627</a>    <span class="attr">#[cfg(target_os = <span class="string">"linux"</span>)]
-<a href=#628 id=628 data-nosnippet>628</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: bool) -&gt; io::Result&lt;()&gt; {
+<a href=#628 id=628 data-nosnippet>628</a>    </span><span class="kw">pub fn </span>set_nonblocking(<span class="kw-2">&amp;</span><span class="self">self</span>, nonblocking: <a href="../../../../std/primitive.bool.html">bool</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#629 id=629 data-nosnippet>629</a>        <span class="kw">unsafe </span>{
-<a href=#630 id=630 data-nosnippet>630</a>            <span class="kw">let </span>v = nonblocking <span class="kw">as </span>libc::c_int;
+<a href=#630 id=630 data-nosnippet>630</a>            <span class="kw">let </span>v = <a href="#628">nonblocking</a> <span class="kw">as </span>libc::<a href="../../../../std/ffi/type.c_int.html">c_int</a>;
 <a href=#631 id=631 data-nosnippet>631</a>            cvt(libc::ioctl(<span class="self">self</span>.as_raw_fd(), libc::FIONBIO, <span class="kw-2">&amp;</span>v))<span class="question-mark">?</span>;
-<a href=#632 id=632 data-nosnippet>632</a>            <span class="prelude-val">Ok</span>(())
+<a href=#632 id=632 data-nosnippet>632</a>            <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(())
 <a href=#633 id=633 data-nosnippet>633</a>        }
 <a href=#634 id=634 data-nosnippet>634</a>    }
 <a href=#635 id=635 data-nosnippet>635</a>
@@ -650,71 +650,71 @@
 <a href=#650 id=650 data-nosnippet>650</a>    }
 <a href=#651 id=651 data-nosnippet>651</a>
 <a href=#652 id=652 data-nosnippet>652</a>    <span class="attr">#[inline]
-<a href=#653 id=653 data-nosnippet>653</a>    </span><span class="kw">pub fn </span>duplicate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;FileDesc&gt; {
-<a href=#654 id=654 data-nosnippet>654</a>        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.try_clone()<span class="question-mark">?</span>))
+<a href=#653 id=653 data-nosnippet>653</a>    </span><span class="kw">pub fn </span>duplicate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="#67">FileDesc</a>&gt; {
+<a href=#654 id=654 data-nosnippet>654</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.try_clone()<span class="question-mark">?</span>))
 <a href=#655 id=655 data-nosnippet>655</a>    }
 <a href=#656 id=656 data-nosnippet>656</a>}
 <a href=#657 id=657 data-nosnippet>657</a>
-<a href=#658 id=658 data-nosnippet>658</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Read <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>FileDesc {
-<a href=#659 id=659 data-nosnippet>659</a>    <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-<a href=#660 id=660 data-nosnippet>660</a>        (<span class="kw-2">**</span><span class="self">self</span>).read(buf)
+<a href=#658 id=658 data-nosnippet>658</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../../../std/io/trait.Read.html">Read</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#67">FileDesc</a> {
+<a href=#659 id=659 data-nosnippet>659</a>    <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/primitive.u8.html">u8</a>]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#660 id=660 data-nosnippet>660</a>        (<span class="kw-2">**</span><a class="self" href="#659">self</a>).<a href="#137-146">read</a>(<a href="#659">buf</a>)
 <a href=#661 id=661 data-nosnippet>661</a>    }
 <a href=#662 id=662 data-nosnippet>662</a>
-<a href=#663 id=663 data-nosnippet>663</a>    <span class="kw">fn </span>read_buf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;) -&gt; io::Result&lt;()&gt; {
-<a href=#664 id=664 data-nosnippet>664</a>        (<span class="kw-2">**</span><span class="self">self</span>).read_buf(cursor)
+<a href=#663 id=663 data-nosnippet>663</a>    <span class="kw">fn </span>read_buf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cursor: <a href="../../../../std/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../../std/primitive.u8.html">u8</a>&gt;) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#664 id=664 data-nosnippet>664</a>        (<span class="kw-2">**</span><a class="self" href="#663">self</a>).<a href="#203-218">read_buf</a>(<a href="#663">cursor</a>)
 <a href=#665 id=665 data-nosnippet>665</a>    }
 <a href=#666 id=666 data-nosnippet>666</a>
-<a href=#667 id=667 data-nosnippet>667</a>    <span class="kw">fn </span>read_vectored(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[IoSliceMut&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::Result&lt;usize&gt; {
-<a href=#668 id=668 data-nosnippet>668</a>        (<span class="kw-2">**</span><span class="self">self</span>).read_vectored(bufs)
+<a href=#667 id=667 data-nosnippet>667</a>    <span class="kw">fn </span>read_vectored(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[<a href="../../../../std/io/struct.IoSliceMut.html">IoSliceMut</a>&lt;<span class="lifetime">'_</span>&gt;]) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.usize.html">usize</a>&gt; {
+<a href=#668 id=668 data-nosnippet>668</a>        (<span class="kw-2">**</span><a class="self" href="#667">self</a>).<a href="#154-163">read_vectored</a>(<a href="#667">bufs</a>)
 <a href=#669 id=669 data-nosnippet>669</a>    }
 <a href=#670 id=670 data-nosnippet>670</a>
 <a href=#671 id=671 data-nosnippet>671</a>    <span class="attr">#[inline]
-<a href=#672 id=672 data-nosnippet>672</a>    </span><span class="kw">fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#673 id=673 data-nosnippet>673</a>        (<span class="kw-2">**</span><span class="self">self</span>).is_read_vectored()
+<a href=#672 id=672 data-nosnippet>672</a>    </span><span class="kw">fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../std/primitive.bool.html">bool</a> {
+<a href=#673 id=673 data-nosnippet>673</a>        (<span class="kw-2">**</span><a class="self" href="#672">self</a>).<a href="#176-184">is_read_vectored</a>()
 <a href=#674 id=674 data-nosnippet>674</a>    }
 <a href=#675 id=675 data-nosnippet>675</a>}
 <a href=#676 id=676 data-nosnippet>676</a>
-<a href=#677 id=677 data-nosnippet>677</a><span class="kw">impl </span>AsInner&lt;OwnedFd&gt; <span class="kw">for </span>FileDesc {
+<a href=#677 id=677 data-nosnippet>677</a><span class="kw">impl </span><a href="../mod.rs.html#38-40">AsInner</a>&lt;<a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>&gt; <span class="kw">for </span><a href="#67">FileDesc</a> {
 <a href=#678 id=678 data-nosnippet>678</a>    <span class="attr">#[inline]
-<a href=#679 id=679 data-nosnippet>679</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>OwnedFd {
-<a href=#680 id=680 data-nosnippet>680</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#679 id=679 data-nosnippet>679</a>    </span><span class="kw">fn </span>as_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a> {
+<a href=#680 id=680 data-nosnippet>680</a>        <span class="kw-2">&amp;</span><a class="self" href="#679">self</a>.<span class="number">0
 <a href=#681 id=681 data-nosnippet>681</a>    </span>}
 <a href=#682 id=682 data-nosnippet>682</a>}
 <a href=#683 id=683 data-nosnippet>683</a>
-<a href=#684 id=684 data-nosnippet>684</a><span class="kw">impl </span>IntoInner&lt;OwnedFd&gt; <span class="kw">for </span>FileDesc {
-<a href=#685 id=685 data-nosnippet>685</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; OwnedFd {
-<a href=#686 id=686 data-nosnippet>686</a>        <span class="self">self</span>.<span class="number">0
+<a href=#684 id=684 data-nosnippet>684</a><span class="kw">impl </span><a href="../mod.rs.html#49-51">IntoInner</a>&lt;<a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>&gt; <span class="kw">for </span><a href="#67">FileDesc</a> {
+<a href=#685 id=685 data-nosnippet>685</a>    <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; <a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a> {
+<a href=#686 id=686 data-nosnippet>686</a>        <a class="self" href="#685">self</a>.<span class="number">0
 <a href=#687 id=687 data-nosnippet>687</a>    </span>}
 <a href=#688 id=688 data-nosnippet>688</a>}
 <a href=#689 id=689 data-nosnippet>689</a>
-<a href=#690 id=690 data-nosnippet>690</a><span class="kw">impl </span>FromInner&lt;OwnedFd&gt; <span class="kw">for </span>FileDesc {
-<a href=#691 id=691 data-nosnippet>691</a>    <span class="kw">fn </span>from_inner(owned_fd: OwnedFd) -&gt; <span class="self">Self </span>{
-<a href=#692 id=692 data-nosnippet>692</a>        <span class="self">Self</span>(owned_fd)
+<a href=#690 id=690 data-nosnippet>690</a><span class="kw">impl </span><a href="../mod.rs.html#54-56">FromInner</a>&lt;<a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>&gt; <span class="kw">for </span><a href="#67">FileDesc</a> {
+<a href=#691 id=691 data-nosnippet>691</a>    <span class="kw">fn </span>from_inner(owned_fd: <a href="../../os/fd/owned.rs.html#72-74">OwnedFd</a>) -&gt; <span class="self">Self </span>{
+<a href=#692 id=692 data-nosnippet>692</a>        <span class="self">Self</span>(<a href="#691">owned_fd</a>)
 <a href=#693 id=693 data-nosnippet>693</a>    }
 <a href=#694 id=694 data-nosnippet>694</a>}
 <a href=#695 id=695 data-nosnippet>695</a>
-<a href=#696 id=696 data-nosnippet>696</a><span class="kw">impl </span>AsFd <span class="kw">for </span>FileDesc {
-<a href=#697 id=697 data-nosnippet>697</a>    <span class="kw">fn </span>as_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BorrowedFd&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#698 id=698 data-nosnippet>698</a>        <span class="self">self</span>.<span class="number">0</span>.as_fd()
+<a href=#696 id=696 data-nosnippet>696</a><span class="kw">impl </span><a href="../../os/fd/owned.rs.html#287-305">AsFd</a> <span class="kw">for </span><a href="#67">FileDesc</a> {
+<a href=#697 id=697 data-nosnippet>697</a>    <span class="kw">fn </span>as_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../os/fd/owned.rs.html#53-56">BorrowedFd</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#698 id=698 data-nosnippet>698</a>        <a class="self" href="#697">self</a>.<span class="number">0</span>.<a href="../../os/fd/owned.rs.html#304">as_fd</a>()
 <a href=#699 id=699 data-nosnippet>699</a>    }
 <a href=#700 id=700 data-nosnippet>700</a>}
 <a href=#701 id=701 data-nosnippet>701</a>
-<a href=#702 id=702 data-nosnippet>702</a><span class="kw">impl </span>AsRawFd <span class="kw">for </span>FileDesc {
+<a href=#702 id=702 data-nosnippet>702</a><span class="kw">impl </span><a href="../../os/fd/raw.rs.html#44-72">AsRawFd</a> <span class="kw">for </span><a href="#67">FileDesc</a> {
 <a href=#703 id=703 data-nosnippet>703</a>    <span class="attr">#[inline]
-<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">fn </span>as_raw_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RawFd {
-<a href=#705 id=705 data-nosnippet>705</a>        <span class="self">self</span>.<span class="number">0</span>.as_raw_fd()
+<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">fn </span>as_raw_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../os/fd/raw.rs.html#33">RawFd</a> {
+<a href=#705 id=705 data-nosnippet>705</a>        <a class="self" href="#704">self</a>.<span class="number">0</span>.<a href="../../os/fd/raw.rs.html#71">as_raw_fd</a>()
 <a href=#706 id=706 data-nosnippet>706</a>    }
 <a href=#707 id=707 data-nosnippet>707</a>}
 <a href=#708 id=708 data-nosnippet>708</a>
-<a href=#709 id=709 data-nosnippet>709</a><span class="kw">impl </span>IntoRawFd <span class="kw">for </span>FileDesc {
-<a href=#710 id=710 data-nosnippet>710</a>    <span class="kw">fn </span>into_raw_fd(<span class="self">self</span>) -&gt; RawFd {
-<a href=#711 id=711 data-nosnippet>711</a>        <span class="self">self</span>.<span class="number">0</span>.into_raw_fd()
+<a href=#709 id=709 data-nosnippet>709</a><span class="kw">impl </span><a href="../../os/fd/raw.rs.html#121-148">IntoRawFd</a> <span class="kw">for </span><a href="#67">FileDesc</a> {
+<a href=#710 id=710 data-nosnippet>710</a>    <span class="kw">fn </span>into_raw_fd(<span class="self">self</span>) -&gt; <a href="../../os/fd/raw.rs.html#33">RawFd</a> {
+<a href=#711 id=711 data-nosnippet>711</a>        <a class="self" href="#710">self</a>.<span class="number">0</span>.<a href="../../os/fd/raw.rs.html#147">into_raw_fd</a>()
 <a href=#712 id=712 data-nosnippet>712</a>    }
 <a href=#713 id=713 data-nosnippet>713</a>}
 <a href=#714 id=714 data-nosnippet>714</a>
-<a href=#715 id=715 data-nosnippet>715</a><span class="kw">impl </span>FromRawFd <span class="kw">for </span>FileDesc {
-<a href=#716 id=716 data-nosnippet>716</a>    <span class="kw">unsafe fn </span>from_raw_fd(raw_fd: RawFd) -&gt; <span class="self">Self </span>{
-<a href=#717 id=717 data-nosnippet>717</a>        <span class="self">Self</span>(<span class="kw">unsafe </span>{ FromRawFd::from_raw_fd(raw_fd) })
+<a href=#715 id=715 data-nosnippet>715</a><span class="kw">impl </span><a href="../../os/fd/raw.rs.html#77-116">FromRawFd</a> <span class="kw">for </span><a href="#67">FileDesc</a> {
+<a href=#716 id=716 data-nosnippet>716</a>    <span class="kw">unsafe fn </span>from_raw_fd(raw_fd: <a href="../../os/fd/raw.rs.html#33">RawFd</a>) -&gt; <span class="self">Self </span>{
+<a href=#717 id=717 data-nosnippet>717</a>        <span class="self">Self</span>(<span class="kw">unsafe </span>{ FromRawFd::<a href="../../os/fd/raw.rs.html#115">from_raw_fd</a>(<a href="#716">raw_fd</a>) })
 <a href=#718 id=718 data-nosnippet>718</a>    }
 <a href=#719 id=719 data-nosnippet>719</a>}
 </code></pre></div></section></main></body></html>

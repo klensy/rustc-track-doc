@@ -1,16 +1,16 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/current.rs`."><title>current.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>current.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::id::ThreadId;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">super</span>::main_thread;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">super</span>::thread::Thread;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::ManuallyDrop;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::ptr;
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::sys::thread <span class="kw">as </span>imp;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::sys::thread_local::local_pointer;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/thread/current.rs`."><title>current.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/thread/</div>current.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="id.rs.html#31"><span class="kw">super</span>::id::ThreadId</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="mod.rs.html#174"><span class="kw">super</span>::main_thread</a>;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="thread.rs.html#87-92"><span class="kw">super</span>::thread::Thread</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../../../std/mem/struct.ManuallyDrop.html"><span class="kw">crate</span>::mem::ManuallyDrop</a>;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../../../std/ptr/index.html"><span class="kw">crate</span>::ptr</a>;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../sys/mod.rs.html#28"><span class="kw">crate</span>::sys::thread</a> <span class="kw">as </span>imp;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../sys/thread_local/native/mod.rs.html#121-128"><span class="kw">crate</span>::sys::thread_local::local_pointer</a>;
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">const </span>NONE: <span class="kw-2">*mut </span>() = ptr::null_mut();
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">const </span>BUSY: <span class="kw-2">*mut </span>() = ptr::without_provenance_mut(<span class="number">1</span>);
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">const </span>DESTROYED: <span class="kw-2">*mut </span>() = ptr::without_provenance_mut(<span class="number">2</span>);
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">const </span>NONE: <span class="kw-2">*mut </span>() = ptr::<a href="../../../std/ptr/fn.null_mut.html">null_mut</a>();
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">const </span>BUSY: <span class="kw-2">*mut </span>() = ptr::<a href="../../../std/ptr/fn.without_provenance_mut.html">without_provenance_mut</a>(<span class="number">1</span>);
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">const </span>DESTROYED: <span class="kw-2">*mut </span>() = ptr::<a href="../../../std/ptr/fn.without_provenance_mut.html">without_provenance_mut</a>(<span class="number">2</span>);
 <a href=#12 id=12 data-nosnippet>12</a>
-<a href=#13 id=13 data-nosnippet>13</a><span class="macro">local_pointer!</span> {
+<a href=#13 id=13 data-nosnippet>13</a><a href="../sys/thread_local/native/mod.rs.html#121-128">local_pointer!</a> {
 <a href=#14 id=14 data-nosnippet>14</a>    <span class="kw">static </span>CURRENT;
 <a href=#15 id=15 data-nosnippet>15</a>}
 <a href=#16 id=16 data-nosnippet>16</a>
@@ -23,19 +23,19 @@
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="macro">cfg_select!</span> {
 <a href=#25 id=25 data-nosnippet>25</a>        target_thread_local =&gt; {
-<a href=#26 id=26 data-nosnippet>26</a>            <span class="kw">use </span><span class="kw">crate</span>::cell::Cell;
+<a href=#26 id=26 data-nosnippet>26</a>            <span class="kw">use </span><a href="../../../std/cell/struct.Cell.html"><span class="kw">crate</span>::cell::Cell</a>;
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a>            <span class="attr">#[thread_local]
-<a href=#29 id=29 data-nosnippet>29</a>            </span><span class="kw">static </span>ID: Cell&lt;<span class="prelude-ty">Option</span>&lt;ThreadId&gt;&gt; = Cell::new(<span class="prelude-val">None</span>);
+<a href=#29 id=29 data-nosnippet>29</a>            </span><span class="kw">static </span>ID: <a href="../../../std/cell/struct.Cell.html">Cell</a>&lt;<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="id.rs.html#31">ThreadId</a>&gt;&gt; = <a href="../../../std/cell/struct.Cell.html">Cell</a>::<a href="../../../std/cell/struct.Cell.html#method.new">new</a>(<a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>);
 <a href=#30 id=30 data-nosnippet>30</a>
-<a href=#31 id=31 data-nosnippet>31</a>            <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>CHEAP: bool = <span class="bool-val">true</span>;
+<a href=#31 id=31 data-nosnippet>31</a>            <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>CHEAP: <a href="../../../std/primitive.bool.html">bool</a> = <span class="bool-val">true</span>;
 <a href=#32 id=32 data-nosnippet>32</a>
-<a href=#33 id=33 data-nosnippet>33</a>            <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get() -&gt; <span class="prelude-ty">Option</span>&lt;ThreadId&gt; {
-<a href=#34 id=34 data-nosnippet>34</a>                ID.get()
+<a href=#33 id=33 data-nosnippet>33</a>            <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get() -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<a href="id.rs.html#31">ThreadId</a>&gt; {
+<a href=#34 id=34 data-nosnippet>34</a>                <a href="#29">ID</a>.<a href="../../../std/cell/struct.Cell.html#method.get">get</a>()
 <a href=#35 id=35 data-nosnippet>35</a>            }
 <a href=#36 id=36 data-nosnippet>36</a>
-<a href=#37 id=37 data-nosnippet>37</a>            <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set(id: ThreadId) {
-<a href=#38 id=38 data-nosnippet>38</a>                ID.set(<span class="prelude-val">Some</span>(id))
+<a href=#37 id=37 data-nosnippet>37</a>            <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set(id: <a href="id.rs.html#31">ThreadId</a>) {
+<a href=#38 id=38 data-nosnippet>38</a>                <a href="#29">ID</a>.<a href="../../../std/cell/struct.Cell.html#method.set">set</a>(<a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<a href="#37">id</a>))
 <a href=#39 id=39 data-nosnippet>39</a>            }
 <a href=#40 id=40 data-nosnippet>40</a>        }
 <a href=#41 id=41 data-nosnippet>41</a>        target_pointer_width = <span class="string">"16" </span>=&gt; {
@@ -104,13 +104,13 @@
 <a href=#104 id=104 data-nosnippet>104</a>    }
 <a href=#105 id=105 data-nosnippet>105</a>
 <a href=#106 id=106 data-nosnippet>106</a>    <span class="attr">#[inline]
-<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>get_or_init() -&gt; ThreadId {
-<a href=#108 id=108 data-nosnippet>108</a>        get().unwrap_or_else(
+<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>get_or_init() -&gt; <a href="id.rs.html#31">ThreadId</a> {
+<a href=#108 id=108 data-nosnippet>108</a>        <a href="#33-35">get</a>().<a href="../../../std/option/enum.Option.html#method.unwrap_or_else">unwrap_or_else</a>(
 <a href=#109 id=109 data-nosnippet>109</a>            <span class="attr">#[cold]
 <a href=#110 id=110 data-nosnippet>110</a>            </span>|| {
-<a href=#111 id=111 data-nosnippet>111</a>                <span class="kw">let </span>id = ThreadId::new();
-<a href=#112 id=112 data-nosnippet>112</a>                id::set(id);
-<a href=#113 id=113 data-nosnippet>113</a>                id
+<a href=#111 id=111 data-nosnippet>111</a>                <span class="kw">let </span>id = <a href="id.rs.html#31">ThreadId</a>::<a href="id.rs.html#35-105">new</a>();
+<a href=#112 id=112 data-nosnippet>112</a>                id::<a href="#37-39">set</a>(<a href="#111">id</a>);
+<a href=#113 id=113 data-nosnippet>113</a>                <a href="#111">id</a>
 <a href=#114 id=114 data-nosnippet>114</a>            },
 <a href=#115 id=115 data-nosnippet>115</a>        )
 <a href=#116 id=116 data-nosnippet>116</a>    }
@@ -118,22 +118,22 @@
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a><span class="doccomment">/// Tries to set the thread handle for the current thread. Fails if a handle was
 <a href=#120 id=120 data-nosnippet>120</a>/// already set or if the thread ID of `thread` would change an already-set ID.
-<a href=#121 id=121 data-nosnippet>121</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set_current(thread: Thread) -&gt; <span class="prelude-ty">Result</span>&lt;(), Thread&gt; {
-<a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">if </span>CURRENT.get() != NONE {
-<a href=#123 id=123 data-nosnippet>123</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(thread);
+<a href=#121 id=121 data-nosnippet>121</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set_current(thread: <a href="thread.rs.html#87-92">Thread</a>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), <a href="thread.rs.html#87-92">Thread</a>&gt; {
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">if </span><a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#139-141">get</a>() != <a href="#9">NONE</a> {
+<a href=#123 id=123 data-nosnippet>123</a>        <span class="kw">return </span><a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(<a href="#121">thread</a>);
 <a href=#124 id=124 data-nosnippet>124</a>    }
 <a href=#125 id=125 data-nosnippet>125</a>
-<a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">match </span>id::get() {
-<a href=#127 id=127 data-nosnippet>127</a>        <span class="prelude-val">Some</span>(id) <span class="kw">if </span>id == thread.id() =&gt; {}
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="prelude-val">None </span>=&gt; id::set(thread.id()),
-<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(thread),
+<a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">match </span>id::<a href="#33-35">get</a>() {
+<a href=#127 id=127 data-nosnippet>127</a>        <a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(id) <span class="kw">if </span><a href="#127">id</a> == <a href="#121">thread</a>.<a href="thread.rs.html#235-237">id</a>() =&gt; {}
+<a href=#128 id=128 data-nosnippet>128</a>        <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a> =&gt; id::<a href="#37-39">set</a>(<a href="#121">thread</a>.<a href="thread.rs.html#235-237">id</a>()),
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">_ </span>=&gt; <span class="kw">return </span><a class="prelude-val" href="../../../std/result/enum.Result.html">Err</a>(<a href="#121">thread</a>),
 <a href=#130 id=130 data-nosnippet>130</a>    }
 <a href=#131 id=131 data-nosnippet>131</a>
 <a href=#132 id=132 data-nosnippet>132</a>    <span class="comment">// Make sure that `crate::rt::thread_cleanup` will be run, which will
 <a href=#133 id=133 data-nosnippet>133</a>    // call `drop_current`.
-<a href=#134 id=134 data-nosnippet>134</a>    </span><span class="kw">crate</span>::sys::thread_local::guard::enable();
-<a href=#135 id=135 data-nosnippet>135</a>    CURRENT.set(thread.into_raw().cast_mut());
-<a href=#136 id=136 data-nosnippet>136</a>    <span class="prelude-val">Ok</span>(())
+<a href=#134 id=134 data-nosnippet>134</a>    </span><span class="kw">crate</span>::sys::thread_local::guard::<a href="../sys/thread_local/guard/key.rs.html#6-31">enable</a>();
+<a href=#135 id=135 data-nosnippet>135</a>    <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#143-145">set</a>(<a href="#121">thread</a>.<a href="thread.rs.html#343-347">into_raw</a>().<a href="../../../core/primitive.pointer.html#method.cast_mut">cast_mut</a>());
+<a href=#136 id=136 data-nosnippet>136</a>    <a class="prelude-val" href="../../../std/result/enum.Result.html">Ok</a>(())
 <a href=#137 id=137 data-nosnippet>137</a>}
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a><span class="doccomment">/// Gets the unique identifier of the thread which invokes it.
@@ -161,17 +161,17 @@
 <a href=#161 id=161 data-nosnippet>161</a></span><span class="attr">#[inline]
 <a href=#162 id=162 data-nosnippet>162</a>#[must_use]
 <a href=#163 id=163 data-nosnippet>163</a>#[unstable(feature = <span class="string">"current_thread_id"</span>, issue = <span class="string">"147194"</span>)]
-<a href=#164 id=164 data-nosnippet>164</a></span><span class="kw">pub fn </span>current_id() -&gt; ThreadId {
+<a href=#164 id=164 data-nosnippet>164</a></span><span class="kw">pub fn </span><a href="../../../std/thread/fn.current_id.html">current_id</a>() -&gt; <a href="id.rs.html#31">ThreadId</a> {
 <a href=#165 id=165 data-nosnippet>165</a>    <span class="comment">// If accessing the persistent thread ID takes multiple TLS accesses, try
 <a href=#166 id=166 data-nosnippet>166</a>    // to retrieve it from the current thread handle, which will only take one
 <a href=#167 id=167 data-nosnippet>167</a>    // TLS access.
-<a href=#168 id=168 data-nosnippet>168</a>    </span><span class="kw">if </span>!id::CHEAP {
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = try_with_current(|t| t.map(|t| t.id())) {
-<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">return </span>id;
+<a href=#168 id=168 data-nosnippet>168</a>    </span><span class="kw">if </span>!id::<a href="#31">CHEAP</a> {
+<a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">if let </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(id) = <a href="#190-206">try_with_current</a>(|t| <a href="#169">t</a>.<a href="../../../std/option/enum.Option.html#method.map">map</a>(|t| <a href="#169">t</a>.<a href="thread.rs.html#235-237">id</a>())) {
+<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">return </span><a href="#169">id</a>;
 <a href=#171 id=171 data-nosnippet>171</a>        }
 <a href=#172 id=172 data-nosnippet>172</a>    }
 <a href=#173 id=173 data-nosnippet>173</a>
-<a href=#174 id=174 data-nosnippet>174</a>    id::get_or_init()
+<a href=#174 id=174 data-nosnippet>174</a>    id::<a href="#107-116">get_or_init</a>()
 <a href=#175 id=175 data-nosnippet>175</a>}
 <a href=#176 id=176 data-nosnippet>176</a>
 <a href=#177 id=177 data-nosnippet>177</a><span class="doccomment">/// Gets the OS thread ID of the thread that invokes it, if available. If not, return the Rust
@@ -181,27 +181,27 @@
 <a href=#181 id=181 data-nosnippet>181</a>/// pointer, and Apple uses `uint64_t`. This is a "best effort" approach for diagnostics and is
 <a href=#182 id=182 data-nosnippet>182</a>/// allowed to fall back to a non-OS ID (such as the Rust thread ID) or a non-unique ID (such as a
 <a href=#183 id=183 data-nosnippet>183</a>/// PID) if the thread ID cannot be retrieved.
-<a href=#184 id=184 data-nosnippet>184</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_os_id() -&gt; u64 {
-<a href=#185 id=185 data-nosnippet>185</a>    imp::current_os_id().unwrap_or_else(|| current_id().as_u64().get())
+<a href=#184 id=184 data-nosnippet>184</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_os_id() -&gt; <a href="../../../std/primitive.u64.html">u64</a> {
+<a href=#185 id=185 data-nosnippet>185</a>    imp::<a href="../sys/thread/unix.rs.html#349-406">current_os_id</a>().<a href="../../../std/option/enum.Option.html#method.unwrap_or_else">unwrap_or_else</a>(|| <a href="#164-175">current_id</a>().<a href="id.rs.html#122-124">as_u64</a>().<a href="../../../std/num/struct.NonZero.html#method.get">get</a>())
 <a href=#186 id=186 data-nosnippet>186</a>}
 <a href=#187 id=187 data-nosnippet>187</a>
 <a href=#188 id=188 data-nosnippet>188</a><span class="doccomment">/// Gets a reference to the handle of the thread that invokes it, if the handle
 <a href=#189 id=189 data-nosnippet>189</a>/// has been initialized.
 <a href=#190 id=190 data-nosnippet>190</a></span><span class="kw">fn </span>try_with_current&lt;F, R&gt;(f: F) -&gt; R
 <a href=#191 id=191 data-nosnippet>191</a><span class="kw">where
-<a href=#192 id=192 data-nosnippet>192</a>    </span>F: FnOnce(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Thread&gt;) -&gt; R,
+<a href=#192 id=192 data-nosnippet>192</a>    </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>(<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span><a href="thread.rs.html#87-92">Thread</a>&gt;) -&gt; R,
 <a href=#193 id=193 data-nosnippet>193</a>{
-<a href=#194 id=194 data-nosnippet>194</a>    <span class="kw">let </span>current = CURRENT.get();
-<a href=#195 id=195 data-nosnippet>195</a>    <span class="kw">if </span>current &gt; DESTROYED {
+<a href=#194 id=194 data-nosnippet>194</a>    <span class="kw">let </span>current = <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#139-141">get</a>();
+<a href=#195 id=195 data-nosnippet>195</a>    <span class="kw">if </span><a href="#194">current</a> &gt; <a href="#11">DESTROYED</a> {
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="comment">// SAFETY: `Arc` does not contain interior mutability, so it does not
 <a href=#197 id=197 data-nosnippet>197</a>        // matter that the address of the handle might be different depending
 <a href=#198 id=198 data-nosnippet>198</a>        // on where this is called.
 <a href=#199 id=199 data-nosnippet>199</a>        </span><span class="kw">unsafe </span>{
-<a href=#200 id=200 data-nosnippet>200</a>            <span class="kw">let </span>current = ManuallyDrop::new(Thread::from_raw(current));
-<a href=#201 id=201 data-nosnippet>201</a>            f(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>current))
+<a href=#200 id=200 data-nosnippet>200</a>            <span class="kw">let </span>current = <a href="../../../std/mem/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../../std/mem/struct.ManuallyDrop.html#method.new">new</a>(<a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#366-371">from_raw</a>(<a href="#194">current</a>));
+<a href=#201 id=201 data-nosnippet>201</a>            <a href="#190">f</a>(<a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<span class="kw-2">&amp;</span><a href="#200">current</a>))
 <a href=#202 id=202 data-nosnippet>202</a>        }
 <a href=#203 id=203 data-nosnippet>203</a>    } <span class="kw">else </span>{
-<a href=#204 id=204 data-nosnippet>204</a>        f(<span class="prelude-val">None</span>)
+<a href=#204 id=204 data-nosnippet>204</a>        <a href="#190">f</a>(<a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>)
 <a href=#205 id=205 data-nosnippet>205</a>    }
 <a href=#206 id=206 data-nosnippet>206</a>}
 <a href=#207 id=207 data-nosnippet>207</a>
@@ -211,45 +211,45 @@
 <a href=#211 id=211 data-nosnippet>211</a>/// handlers and in similar circumstances where allocations are not possible.
 <a href=#212 id=212 data-nosnippet>212</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_current_name&lt;F, R&gt;(f: F) -&gt; R
 <a href=#213 id=213 data-nosnippet>213</a><span class="kw">where
-<a href=#214 id=214 data-nosnippet>214</a>    </span>F: FnOnce(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; R,
+<a href=#214 id=214 data-nosnippet>214</a>    </span>F: <a href="../../../std/ops/trait.FnOnce.html">FnOnce</a>(<a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span><a href="../../../std/primitive.str.html">str</a>&gt;) -&gt; R,
 <a href=#215 id=215 data-nosnippet>215</a>{
-<a href=#216 id=216 data-nosnippet>216</a>    try_with_current(|thread| {
-<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>name = <span class="kw">if let </span><span class="prelude-val">Some</span>(thread) = thread {
+<a href=#216 id=216 data-nosnippet>216</a>    <a href="#190-206">try_with_current</a>(|thread| {
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>name = <span class="kw">if let </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(thread) = <a href="#216">thread</a> {
 <a href=#218 id=218 data-nosnippet>218</a>            <span class="comment">// If there is a current thread handle, try to use the name stored
 <a href=#219 id=219 data-nosnippet>219</a>            // there.
-<a href=#220 id=220 data-nosnippet>220</a>            </span>thread.name()
-<a href=#221 id=221 data-nosnippet>221</a>        } <span class="kw">else if let </span><span class="prelude-val">Some</span>(main) = main_thread::get()
-<a href=#222 id=222 data-nosnippet>222</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(id) = id::get()
-<a href=#223 id=223 data-nosnippet>223</a>            &amp;&amp; id == main
+<a href=#220 id=220 data-nosnippet>220</a>            </span><a href="#217">thread</a>.<a href="thread.rs.html#312-320">name</a>()
+<a href=#221 id=221 data-nosnippet>221</a>        } <span class="kw">else if let </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(main) = main_thread::<a href="main_thread.rs.html#22-24">get</a>()
+<a href=#222 id=222 data-nosnippet>222</a>            &amp;&amp; <span class="kw">let </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(id) = id::<a href="#33-35">get</a>()
+<a href=#223 id=223 data-nosnippet>223</a>            &amp;&amp; <a href="#222">id</a> == <a href="#221">main</a>
 <a href=#224 id=224 data-nosnippet>224</a>        {
 <a href=#225 id=225 data-nosnippet>225</a>            <span class="comment">// The main thread doesn't always have a thread handle, we must
 <a href=#226 id=226 data-nosnippet>226</a>            // identify it through its ID instead. The checks are ordered so
 <a href=#227 id=227 data-nosnippet>227</a>            // that the current ID is only loaded if it is actually needed,
 <a href=#228 id=228 data-nosnippet>228</a>            // since loading it from TLS might need multiple expensive accesses.
-<a href=#229 id=229 data-nosnippet>229</a>            </span><span class="prelude-val">Some</span>(<span class="string">"main"</span>)
+<a href=#229 id=229 data-nosnippet>229</a>            </span><a class="prelude-val" href="../../../std/option/enum.Option.html">Some</a>(<span class="string">"main"</span>)
 <a href=#230 id=230 data-nosnippet>230</a>        } <span class="kw">else </span>{
-<a href=#231 id=231 data-nosnippet>231</a>            <span class="prelude-val">None
-<a href=#232 id=232 data-nosnippet>232</a>        </span>};
+<a href=#231 id=231 data-nosnippet>231</a>            <a class="prelude-val" href="../../../std/option/enum.Option.html">None</a>
+<a href=#232 id=232 data-nosnippet>232</a>        };
 <a href=#233 id=233 data-nosnippet>233</a>
-<a href=#234 id=234 data-nosnippet>234</a>        f(name)
+<a href=#234 id=234 data-nosnippet>234</a>        <a href="#212">f</a>(<a href="#217">name</a>)
 <a href=#235 id=235 data-nosnippet>235</a>    })
 <a href=#236 id=236 data-nosnippet>236</a>}
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a><span class="doccomment">/// Gets a handle to the thread that invokes it. If the handle stored in thread-
 <a href=#239 id=239 data-nosnippet>239</a>/// local storage was already destroyed, this creates a new unnamed temporary
 <a href=#240 id=240 data-nosnippet>240</a>/// handle to allow thread parking in nearly all situations.
-<a href=#241 id=241 data-nosnippet>241</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_or_unnamed() -&gt; Thread {
-<a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">let </span>current = CURRENT.get();
-<a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">if </span>current &gt; DESTROYED {
+<a href=#241 id=241 data-nosnippet>241</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>current_or_unnamed() -&gt; <a href="thread.rs.html#87-92">Thread</a> {
+<a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">let </span>current = <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#139-141">get</a>();
+<a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">if </span><a href="#242">current</a> &gt; <a href="#11">DESTROYED</a> {
 <a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">unsafe </span>{
-<a href=#245 id=245 data-nosnippet>245</a>            <span class="kw">let </span>current = ManuallyDrop::new(Thread::from_raw(current));
-<a href=#246 id=246 data-nosnippet>246</a>            (<span class="kw-2">*</span>current).clone()
+<a href=#245 id=245 data-nosnippet>245</a>            <span class="kw">let </span>current = <a href="../../../std/mem/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../../std/mem/struct.ManuallyDrop.html#method.new">new</a>(<a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#366-371">from_raw</a>(<a href="#242">current</a>));
+<a href=#246 id=246 data-nosnippet>246</a>            (<span class="kw-2">*</span><a href="#245">current</a>).<a href="../../../std/clone/trait.Clone.html">clone</a>()
 <a href=#247 id=247 data-nosnippet>247</a>        }
-<a href=#248 id=248 data-nosnippet>248</a>    } <span class="kw">else if </span>current == DESTROYED {
-<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>id = id::get_or_init();
-<a href=#250 id=250 data-nosnippet>250</a>        Thread::new_current(id)
+<a href=#248 id=248 data-nosnippet>248</a>    } <span class="kw">else if </span><a href="#242">current</a> == <a href="#11">DESTROYED</a> {
+<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>id = id::<a href="#107-116">get_or_init</a>();
+<a href=#250 id=250 data-nosnippet>250</a>        <a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#122-126">new_current</a>(<a href="#249">id</a>)
 <a href=#251 id=251 data-nosnippet>251</a>    } <span class="kw">else </span>{
-<a href=#252 id=252 data-nosnippet>252</a>        init_current(current)
+<a href=#252 id=252 data-nosnippet>252</a>        <a href="#290-321">init_current</a>(<a href="#242">current</a>)
 <a href=#253 id=253 data-nosnippet>253</a>    }
 <a href=#254 id=254 data-nosnippet>254</a>}
 <a href=#255 id=255 data-nosnippet>255</a>
@@ -274,32 +274,32 @@
 <a href=#274 id=274 data-nosnippet>274</a>/// ```
 <a href=#275 id=275 data-nosnippet>275</a></span><span class="attr">#[must_use]
 <a href=#276 id=276 data-nosnippet>276</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#277 id=277 data-nosnippet>277</a></span><span class="kw">pub fn </span>current() -&gt; Thread {
-<a href=#278 id=278 data-nosnippet>278</a>    <span class="kw">let </span>current = CURRENT.get();
-<a href=#279 id=279 data-nosnippet>279</a>    <span class="kw">if </span>current &gt; DESTROYED {
+<a href=#277 id=277 data-nosnippet>277</a></span><span class="kw">pub fn </span><a href="../../../std/thread/fn.current.html">current</a>() -&gt; <a href="thread.rs.html#87-92">Thread</a> {
+<a href=#278 id=278 data-nosnippet>278</a>    <span class="kw">let </span>current = <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#139-141">get</a>();
+<a href=#279 id=279 data-nosnippet>279</a>    <span class="kw">if </span><a href="#278">current</a> &gt; <a href="#11">DESTROYED</a> {
 <a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">unsafe </span>{
-<a href=#281 id=281 data-nosnippet>281</a>            <span class="kw">let </span>current = ManuallyDrop::new(Thread::from_raw(current));
-<a href=#282 id=282 data-nosnippet>282</a>            (<span class="kw-2">*</span>current).clone()
+<a href=#281 id=281 data-nosnippet>281</a>            <span class="kw">let </span>current = <a href="../../../std/mem/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../../std/mem/struct.ManuallyDrop.html#method.new">new</a>(<a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#366-371">from_raw</a>(<a href="#278">current</a>));
+<a href=#282 id=282 data-nosnippet>282</a>            (<span class="kw-2">*</span><a href="#281">current</a>).<a href="../../../std/clone/trait.Clone.html">clone</a>()
 <a href=#283 id=283 data-nosnippet>283</a>        }
 <a href=#284 id=284 data-nosnippet>284</a>    } <span class="kw">else </span>{
-<a href=#285 id=285 data-nosnippet>285</a>        init_current(current)
+<a href=#285 id=285 data-nosnippet>285</a>        <a href="#290-321">init_current</a>(<a href="#278">current</a>)
 <a href=#286 id=286 data-nosnippet>286</a>    }
 <a href=#287 id=287 data-nosnippet>287</a>}
 <a href=#288 id=288 data-nosnippet>288</a>
 <a href=#289 id=289 data-nosnippet>289</a><span class="attr">#[cold]
-<a href=#290 id=290 data-nosnippet>290</a></span><span class="kw">fn </span>init_current(current: <span class="kw-2">*mut </span>()) -&gt; Thread {
-<a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">if </span>current == NONE {
-<a href=#292 id=292 data-nosnippet>292</a>        CURRENT.set(BUSY);
+<a href=#290 id=290 data-nosnippet>290</a></span><span class="kw">fn </span>init_current(current: <span class="kw-2">*mut </span>()) -&gt; <a href="thread.rs.html#87-92">Thread</a> {
+<a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">if </span><a href="#290">current</a> == <a href="#9">NONE</a> {
+<a href=#292 id=292 data-nosnippet>292</a>        <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#143-145">set</a>(<a href="#10">BUSY</a>);
 <a href=#293 id=293 data-nosnippet>293</a>        <span class="comment">// If the thread ID was initialized already, use it.
-<a href=#294 id=294 data-nosnippet>294</a>        </span><span class="kw">let </span>id = id::get_or_init();
-<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>thread = Thread::new_current(id);
+<a href=#294 id=294 data-nosnippet>294</a>        </span><span class="kw">let </span>id = id::<a href="#107-116">get_or_init</a>();
+<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>thread = <a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#122-126">new_current</a>(<a href="#294">id</a>);
 <a href=#296 id=296 data-nosnippet>296</a>
 <a href=#297 id=297 data-nosnippet>297</a>        <span class="comment">// Make sure that `crate::rt::thread_cleanup` will be run, which will
 <a href=#298 id=298 data-nosnippet>298</a>        // call `drop_current`.
-<a href=#299 id=299 data-nosnippet>299</a>        </span><span class="kw">crate</span>::sys::thread_local::guard::enable();
-<a href=#300 id=300 data-nosnippet>300</a>        CURRENT.set(thread.clone().into_raw().cast_mut());
-<a href=#301 id=301 data-nosnippet>301</a>        thread
-<a href=#302 id=302 data-nosnippet>302</a>    } <span class="kw">else if </span>current == BUSY {
+<a href=#299 id=299 data-nosnippet>299</a>        </span><span class="kw">crate</span>::sys::thread_local::guard::<a href="../sys/thread_local/guard/key.rs.html#6-31">enable</a>();
+<a href=#300 id=300 data-nosnippet>300</a>        <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#143-145">set</a>(<a href="#295">thread</a>.<a href="../../../std/clone/trait.Clone.html">clone</a>().<a href="thread.rs.html#343-347">into_raw</a>().<a href="../../../core/primitive.pointer.html#method.cast_mut">cast_mut</a>());
+<a href=#301 id=301 data-nosnippet>301</a>        <a href="#295">thread</a>
+<a href=#302 id=302 data-nosnippet>302</a>    } <span class="kw">else if </span><a href="#290">current</a> == <a href="#10">BUSY</a> {
 <a href=#303 id=303 data-nosnippet>303</a>        <span class="comment">// BUSY exists solely for this check, but as it is in the slow path, the
 <a href=#304 id=304 data-nosnippet>304</a>        // extra TLS write above shouldn't matter. The alternative is nearly always
 <a href=#305 id=305 data-nosnippet>305</a>        // a stack overflow.
@@ -308,12 +308,12 @@
 <a href=#308 id=308 data-nosnippet>308</a>        // calling current() either directly, or indirectly through the global
 <a href=#309 id=309 data-nosnippet>309</a>        // allocator, which is a bug either way as we may not call the global
 <a href=#310 id=310 data-nosnippet>310</a>        // allocator in current().
-<a href=#311 id=311 data-nosnippet>311</a>        </span><span class="macro">rtabort!</span>(
+<a href=#311 id=311 data-nosnippet>311</a>        </span><a href="../rt.rs.html#53-60">rtabort!</a>(
 <a href=#312 id=312 data-nosnippet>312</a>            <span class="string">"init_current() was re-entrant, which indicates a bug in the Rust threading implementation"
 <a href=#313 id=313 data-nosnippet>313</a>        </span>)
 <a href=#314 id=314 data-nosnippet>314</a>    } <span class="kw">else </span>{
-<a href=#315 id=315 data-nosnippet>315</a>        <span class="macro">debug_assert_eq!</span>(current, DESTROYED);
-<a href=#316 id=316 data-nosnippet>316</a>        <span class="macro">panic!</span>(
+<a href=#315 id=315 data-nosnippet>315</a>        <a href="../../../std/macro.debug_assert_eq.html">debug_assert_eq!</a>(current, DESTROYED);
+<a href=#316 id=316 data-nosnippet>316</a>        <a href="../macros.rs.html#17-23">panic!</a>(
 <a href=#317 id=317 data-nosnippet>317</a>            <span class="string">"use of std::thread::current() is not possible after the thread's \
 <a href=#318 id=318 data-nosnippet>318</a>            local data has been destroyed"
 <a href=#319 id=319 data-nosnippet>319</a>        </span>)
@@ -323,11 +323,11 @@
 <a href=#323 id=323 data-nosnippet>323</a><span class="doccomment">/// This should be run in [`crate::rt::thread_cleanup`] to reset the thread
 <a href=#324 id=324 data-nosnippet>324</a>/// handle.
 <a href=#325 id=325 data-nosnippet>325</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>drop_current() {
-<a href=#326 id=326 data-nosnippet>326</a>    <span class="kw">let </span>current = CURRENT.get();
-<a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">if </span>current &gt; DESTROYED {
+<a href=#326 id=326 data-nosnippet>326</a>    <span class="kw">let </span>current = <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#139-141">get</a>();
+<a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">if </span><a href="#326">current</a> &gt; <a href="#11">DESTROYED</a> {
 <a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">unsafe </span>{
-<a href=#329 id=329 data-nosnippet>329</a>            CURRENT.set(DESTROYED);
-<a href=#330 id=330 data-nosnippet>330</a>            drop(Thread::from_raw(current));
+<a href=#329 id=329 data-nosnippet>329</a>            <a href="#13-15">CURRENT</a>.<a href="../sys/thread_local/native/mod.rs.html#143-145">set</a>(<a href="#11">DESTROYED</a>);
+<a href=#330 id=330 data-nosnippet>330</a>            <a href="../../../std/mem/fn.drop.html">drop</a>(<a href="thread.rs.html#87-92">Thread</a>::<a href="thread.rs.html#366-371">from_raw</a>(<a href="#326">current</a>));
 <a href=#331 id=331 data-nosnippet>331</a>        }
 <a href=#332 id=332 data-nosnippet>332</a>    }
 <a href=#333 id=333 data-nosnippet>333</a>}

@@ -1,7 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/vec_deque/iter_mut.rs`."><title>iter_mut.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/vec_deque/</div>iter_mut.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::iter::{FusedIterator, TrustedLen, TrustedRandomAccess, TrustedRandomAccessNoCoerce};
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>core::num::NonZero;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>core::ops::Try;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>core::{fmt, mem, slice};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/collections/vec_deque/iter_mut.rs`."><title>iter_mut.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/collections/vec_deque/</div>iter_mut.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::iter::{<a href="../../../../core/iter/traits/marker/trait.FusedIterator.html">FusedIterator</a>, <a href="../../../../core/iter/traits/marker/trait.TrustedLen.html">TrustedLen</a>, TrustedRandomAccess, TrustedRandomAccessNoCoerce};
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../../../../core/num/nonzero/struct.NonZero.html">core::num::NonZero</a>;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../../../../core/ops/try_trait/trait.Try.html">core::ops::Try</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>core::{<a href="../../../../core/fmt/index.html">fmt</a>, <a href="../../../../core/mem/index.html">mem</a>, <a href="../../../../core/slice/index.html">slice</a>};
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="doccomment">/// A mutable iterator over the elements of a `VecDeque`.
 <a href=#7 id=7 data-nosnippet>7</a>///
@@ -10,14 +10,14 @@
 <a href=#10 id=10 data-nosnippet>10</a>///
 <a href=#11 id=11 data-nosnippet>11</a>/// [`iter_mut`]: super::VecDeque::iter_mut
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span>IterMut&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
-<a href=#14 id=14 data-nosnippet>14</a>    i1: slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;,
-<a href=#15 id=15 data-nosnippet>15</a>    i2: slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;,
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span><a href="../../../../alloc/collections/vec_deque/struct.IterMut.html">IterMut</a>&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
+<a href=#14 id=14 data-nosnippet>14</a>    i1: slice::<a href="../../../../alloc/slice/struct.IterMut.html">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt;,
+<a href=#15 id=15 data-nosnippet>15</a>    i2: slice::<a href="../../../../alloc/slice/struct.IterMut.html">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt;,
 <a href=#16 id=16 data-nosnippet>16</a>}
 <a href=#17 id=17 data-nosnippet>17</a>
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; IterMut&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(i1: slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;, i2: slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;) -&gt; <span class="self">Self </span>{
-<a href=#20 id=20 data-nosnippet>20</a>        <span class="self">Self </span>{ i1, i2 }
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="#13-16">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(i1: slice::<a href="../../../../alloc/slice/struct.IterMut.html">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt;, i2: slice::<a href="../../../../alloc/slice/struct.IterMut.html">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt;) -&gt; <span class="self">Self </span>{
+<a href=#20 id=20 data-nosnippet>20</a>        <span class="self">Self </span>{ <a href="#19">i1</a>, <a href="#19">i2</a> }
 <a href=#21 id=21 data-nosnippet>21</a>    }
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// Views the underlying data as a pair of subslices of the original data.
@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>    /// ```
 <a href=#55 id=55 data-nosnippet>55</a>    </span><span class="attr">#[unstable(feature = <span class="string">"vec_deque_iter_as_slices"</span>, issue = <span class="string">"133253"</span>)]
 <a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">pub fn </span>into_slices(<span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[T], <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[T]) {
-<a href=#57 id=57 data-nosnippet>57</a>        (<span class="self">self</span>.i1.into_slice(), <span class="self">self</span>.i2.into_slice())
+<a href=#57 id=57 data-nosnippet>57</a>        (<a class="self" href="#56">self</a>.i1.<a href="../../../../alloc/slice/struct.IterMut.html#method.into_slice">into_slice</a>(), <a class="self" href="#56">self</a>.i2.<a href="../../../../alloc/slice/struct.IterMut.html#method.into_slice">into_slice</a>())
 <a href=#58 id=58 data-nosnippet>58</a>    }
 <a href=#59 id=59 data-nosnippet>59</a>
 <a href=#60 id=60 data-nosnippet>60</a>    <span class="doccomment">/// Views the underlying data as a pair of subslices of the original data.
@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>    /// ```
 <a href=#89 id=89 data-nosnippet>89</a>    </span><span class="attr">#[unstable(feature = <span class="string">"vec_deque_iter_as_slices"</span>, issue = <span class="string">"133253"</span>)]
 <a href=#90 id=90 data-nosnippet>90</a>    </span><span class="kw">pub fn </span>as_slices(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span>[T], <span class="kw-2">&amp;</span>[T]) {
-<a href=#91 id=91 data-nosnippet>91</a>        (<span class="self">self</span>.i1.as_slice(), <span class="self">self</span>.i2.as_slice())
+<a href=#91 id=91 data-nosnippet>91</a>        (<a class="self" href="#90">self</a>.i1.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_slice">as_slice</a>(), <a class="self" href="#90">self</a>.i2.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_slice">as_slice</a>())
 <a href=#92 id=92 data-nosnippet>92</a>    }
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a>    <span class="doccomment">/// Views the underlying data as a pair of subslices of the original data.
@@ -124,19 +124,19 @@
 <a href=#124 id=124 data-nosnippet>124</a>    /// ```
 <a href=#125 id=125 data-nosnippet>125</a>    </span><span class="attr">#[unstable(feature = <span class="string">"vec_deque_iter_as_slices"</span>, issue = <span class="string">"133253"</span>)]
 <a href=#126 id=126 data-nosnippet>126</a>    </span><span class="kw">pub fn </span>as_mut_slices(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;mut </span>[T], <span class="kw-2">&amp;mut </span>[T]) {
-<a href=#127 id=127 data-nosnippet>127</a>        (<span class="self">self</span>.i1.as_mut_slice(), <span class="self">self</span>.i2.as_mut_slice())
+<a href=#127 id=127 data-nosnippet>127</a>        (<a class="self" href="#126">self</a>.i1.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_mut_slice">as_mut_slice</a>(), <a class="self" href="#126">self</a>.i2.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_mut_slice">as_mut_slice</a>())
 <a href=#128 id=128 data-nosnippet>128</a>    }
 <a href=#129 id=129 data-nosnippet>129</a>}
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a><span class="attr">#[stable(feature = <span class="string">"collection_debug"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#133 id=133 data-nosnippet>133</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#134 id=134 data-nosnippet>134</a>        f.debug_tuple(<span class="string">"IterMut"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.i1.as_slice()).field(<span class="kw-2">&amp;</span><span class="self">self</span>.i2.as_slice()).finish()
+<a href=#132 id=132 data-nosnippet>132</a></span><span class="kw">impl</span>&lt;T: <a href="../../../../alloc/fmt/trait.Debug.html">fmt::Debug</a>&gt; <a href="../../../../alloc/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#133 id=133 data-nosnippet>133</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../../alloc/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../../alloc/fmt/type.Result.html">Result</a> {
+<a href=#134 id=134 data-nosnippet>134</a>        <a href="#133">f</a>.<a href="../../../../alloc/fmt/struct.Formatter.html#method.debug_tuple">debug_tuple</a>(<span class="string">"IterMut"</span>).<a href="../../../../alloc/fmt/struct.DebugTuple.html#method.field">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#133">self</a>.i1.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_slice">as_slice</a>()).<a href="../../../../alloc/fmt/struct.DebugTuple.html#method.field">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#133">self</a>.i2.<a href="../../../../alloc/slice/struct.IterMut.html#method.as_slice">as_slice</a>()).<a href="../../../../alloc/fmt/struct.DebugTuple.html#method.finish">finish</a>()
 <a href=#135 id=135 data-nosnippet>135</a>    }
 <a href=#136 id=136 data-nosnippet>136</a>}
 <a href=#137 id=137 data-nosnippet>137</a>
 <a href=#138 id=138 data-nosnippet>138</a><span class="attr">#[stable(feature = <span class="string">"default_iters_sequel"</span>, since = <span class="string">"1.82.0"</span>)]
-<a href=#139 id=139 data-nosnippet>139</a></span><span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#139 id=139 data-nosnippet>139</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../../core/default/trait.Default.html">Default</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#140 id=140 data-nosnippet>140</a>    <span class="doccomment">/// Creates an empty `vec_deque::IterMut`.
 <a href=#141 id=141 data-nosnippet>141</a>    ///
 <a href=#142 id=142 data-nosnippet>142</a>    /// ```
@@ -145,153 +145,153 @@
 <a href=#145 id=145 data-nosnippet>145</a>    /// assert_eq!(iter.len(), 0);
 <a href=#146 id=146 data-nosnippet>146</a>    /// ```
 <a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#148 id=148 data-nosnippet>148</a>        IterMut { i1: Default::default(), i2: Default::default() }
+<a href=#148 id=148 data-nosnippet>148</a>        <a href="#13-16">IterMut</a> { i1: Default::<a href="../../../../core/default/trait.Default.html#tymethod.default">default</a>(), i2: Default::<a href="../../../../core/default/trait.Default.html#tymethod.default">default</a>() }
 <a href=#149 id=149 data-nosnippet>149</a>    }
 <a href=#150 id=150 data-nosnippet>150</a>}
 <a href=#151 id=151 data-nosnippet>151</a>
 <a href=#152 id=152 data-nosnippet>152</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#153 id=153 data-nosnippet>153</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>IterMut&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#153 id=153 data-nosnippet>153</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="../../../../core/iter/traits/iterator/trait.Iterator.html">Iterator</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt; {
 <a href=#154 id=154 data-nosnippet>154</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T;
 <a href=#155 id=155 data-nosnippet>155</a>
 <a href=#156 id=156 data-nosnippet>156</a>    <span class="attr">#[inline]
-<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
-<a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">match </span><span class="self">self</span>.i1.next() {
-<a href=#159 id=159 data-nosnippet>159</a>            <span class="prelude-val">Some</span>(val) =&gt; <span class="prelude-val">Some</span>(val),
-<a href=#160 id=160 data-nosnippet>160</a>            <span class="prelude-val">None </span>=&gt; {
+<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../../core/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
+<a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">match </span><a class="self" href="#157">self</a>.i1.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>() {
+<a href=#159 id=159 data-nosnippet>159</a>            <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.Some">Some</a>(val) =&gt; <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.Some">Some</a>(<a href="#159">val</a>),
+<a href=#160 id=160 data-nosnippet>160</a>            <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.None">None</a> =&gt; {
 <a href=#161 id=161 data-nosnippet>161</a>                <span class="comment">// most of the time, the iterator will either always
 <a href=#162 id=162 data-nosnippet>162</a>                // call next(), or always call next_back(). By swapping
 <a href=#163 id=163 data-nosnippet>163</a>                // the iterators once the first one is empty, we ensure
 <a href=#164 id=164 data-nosnippet>164</a>                // that the first branch is taken as often as possible,
 <a href=#165 id=165 data-nosnippet>165</a>                // without sacrificing correctness, as i1 is empty anyways
-<a href=#166 id=166 data-nosnippet>166</a>                </span>mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.i1, <span class="kw-2">&amp;mut </span><span class="self">self</span>.i2);
-<a href=#167 id=167 data-nosnippet>167</a>                <span class="self">self</span>.i1.next()
+<a href=#166 id=166 data-nosnippet>166</a>                </span>mem::<a href="../../../../core/mem/fn.swap.html">swap</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#157">self</a>.i1, <span class="kw-2">&amp;mut </span><a class="self" href="#157">self</a>.i2);
+<a href=#167 id=167 data-nosnippet>167</a>                <a class="self" href="#157">self</a>.i1.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>()
 <a href=#168 id=168 data-nosnippet>168</a>            }
 <a href=#169 id=169 data-nosnippet>169</a>        }
 <a href=#170 id=170 data-nosnippet>170</a>    }
 <a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">fn </span>advance_by(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), NonZero&lt;usize&gt;&gt; {
-<a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">match </span><span class="self">self</span>.i1.advance_by(n) {
-<a href=#174 id=174 data-nosnippet>174</a>            <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(()),
-<a href=#175 id=175 data-nosnippet>175</a>            <span class="prelude-val">Err</span>(remaining) =&gt; {
-<a href=#176 id=176 data-nosnippet>176</a>                mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.i1, <span class="kw-2">&amp;mut </span><span class="self">self</span>.i2);
-<a href=#177 id=177 data-nosnippet>177</a>                <span class="self">self</span>.i1.advance_by(remaining.get())
+<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">fn </span>advance_by(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../core/result/enum.Result.html">Result</a>&lt;(), <a href="../../../../core/num/nonzero/struct.NonZero.html">NonZero</a>&lt;<a href="../../../../core/primitive.usize.html">usize</a>&gt;&gt; {
+<a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">match </span><a class="self" href="#172">self</a>.i1.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#method.advance_by">advance_by</a>(<a href="#172">n</a>) {
+<a href=#174 id=174 data-nosnippet>174</a>            <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Ok">Ok</a>(()) =&gt; <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Ok">Ok</a>(()),
+<a href=#175 id=175 data-nosnippet>175</a>            <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Err">Err</a>(remaining) =&gt; {
+<a href=#176 id=176 data-nosnippet>176</a>                mem::<a href="../../../../core/mem/fn.swap.html">swap</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#172">self</a>.i1, <span class="kw-2">&amp;mut </span><a class="self" href="#172">self</a>.i2);
+<a href=#177 id=177 data-nosnippet>177</a>                <a class="self" href="#172">self</a>.i1.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#method.advance_by">advance_by</a>(<a href="#175">remaining</a>.<a href="../../../../core/num/nonzero/struct.NonZero.html#method.get">get</a>())
 <a href=#178 id=178 data-nosnippet>178</a>            }
 <a href=#179 id=179 data-nosnippet>179</a>        }
 <a href=#180 id=180 data-nosnippet>180</a>    }
 <a href=#181 id=181 data-nosnippet>181</a>
 <a href=#182 id=182 data-nosnippet>182</a>    <span class="attr">#[inline]
-<a href=#183 id=183 data-nosnippet>183</a>    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
-<a href=#184 id=184 data-nosnippet>184</a>        <span class="kw">let </span>len = <span class="self">self</span>.len();
-<a href=#185 id=185 data-nosnippet>185</a>        (len, <span class="prelude-val">Some</span>(len))
+<a href=#183 id=183 data-nosnippet>183</a>    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<a href="../../../../core/primitive.usize.html">usize</a>, <a class="prelude-ty" href="../../../../core/option/enum.Option.html">Option</a>&lt;<a href="../../../../core/primitive.usize.html">usize</a>&gt;) {
+<a href=#184 id=184 data-nosnippet>184</a>        <span class="kw">let </span>len = <a class="self" href="#183">self</a>.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.len">len</a>();
+<a href=#185 id=185 data-nosnippet>185</a>        (<a href="#184">len</a>, <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.Some">Some</a>(<a href="#184">len</a>))
 <a href=#186 id=186 data-nosnippet>186</a>    }
 <a href=#187 id=187 data-nosnippet>187</a>
 <a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">fn </span>fold&lt;Acc, F&gt;(<span class="self">self</span>, accum: Acc, <span class="kw-2">mut </span>f: F) -&gt; Acc
 <a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">where
-<a href=#190 id=190 data-nosnippet>190</a>        </span>F: FnMut(Acc, <span class="self">Self</span>::Item) -&gt; Acc,
+<a href=#190 id=190 data-nosnippet>190</a>        </span>F: <a href="../../../../core/ops/function/trait.FnMut.html">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; Acc,
 <a href=#191 id=191 data-nosnippet>191</a>    {
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">let </span>accum = <span class="self">self</span>.i1.fold(accum, <span class="kw-2">&amp;mut </span>f);
-<a href=#193 id=193 data-nosnippet>193</a>        <span class="self">self</span>.i2.fold(accum, <span class="kw-2">&amp;mut </span>f)
+<a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">let </span>accum = <a class="self" href="#188">self</a>.i1.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#method.fold">fold</a>(<a href="#188">accum</a>, <span class="kw-2">&amp;mut </span><a href="#188">f</a>);
+<a href=#193 id=193 data-nosnippet>193</a>        <a class="self" href="#188">self</a>.i2.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#method.fold">fold</a>(<a href="#192">accum</a>, <span class="kw-2">&amp;mut </span><a href="#188">f</a>)
 <a href=#194 id=194 data-nosnippet>194</a>    }
 <a href=#195 id=195 data-nosnippet>195</a>
 <a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">fn </span>try_fold&lt;B, F, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, init: B, <span class="kw-2">mut </span>f: F) -&gt; R
 <a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">where
-<a href=#198 id=198 data-nosnippet>198</a>        </span>F: FnMut(B, <span class="self">Self</span>::Item) -&gt; R,
-<a href=#199 id=199 data-nosnippet>199</a>        R: Try&lt;Output = B&gt;,
+<a href=#198 id=198 data-nosnippet>198</a>        </span>F: <a href="../../../../core/ops/function/trait.FnMut.html">FnMut</a>(B, <span class="self">Self</span>::Item) -&gt; R,
+<a href=#199 id=199 data-nosnippet>199</a>        R: <a href="../../../../core/ops/try_trait/trait.Try.html">Try</a>&lt;Output = B&gt;,
 <a href=#200 id=200 data-nosnippet>200</a>    {
 <a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span>acc = <span class="self">self</span>.i1.try_fold(init, <span class="kw-2">&amp;mut </span>f)<span class="question-mark">?</span>;
-<a href=#202 id=202 data-nosnippet>202</a>        <span class="self">self</span>.i2.try_fold(acc, <span class="kw-2">&amp;mut </span>f)
+<a href=#202 id=202 data-nosnippet>202</a>        <a class="self" href="#196">self</a>.i2.<a href="../../../../core/iter/traits/iterator/trait.Iterator.html#method.try_fold">try_fold</a>(<a href="#201">acc</a>, <span class="kw-2">&amp;mut </span><a href="#196">f</a>)
 <a href=#203 id=203 data-nosnippet>203</a>    }
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>    <span class="attr">#[inline]
-<a href=#206 id=206 data-nosnippet>206</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
-<a href=#207 id=207 data-nosnippet>207</a>        <span class="self">self</span>.next_back()
+<a href=#206 id=206 data-nosnippet>206</a>    </span><span class="kw">fn </span>last(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../../core/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
+<a href=#207 id=207 data-nosnippet>207</a>        <a class="self" href="#206">self</a>.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#tymethod.next_back">next_back</a>()
 <a href=#208 id=208 data-nosnippet>208</a>    }
 <a href=#209 id=209 data-nosnippet>209</a>
 <a href=#210 id=210 data-nosnippet>210</a>    <span class="attr">#[inline]
-<a href=#211 id=211 data-nosnippet>211</a>    </span><span class="kw">unsafe fn </span>__iterator_get_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: usize) -&gt; <span class="self">Self</span>::Item {
+<a href=#211 id=211 data-nosnippet>211</a>    </span><span class="kw">unsafe fn </span>__iterator_get_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self</span>::Item {
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="comment">// SAFETY: The TrustedRandomAccess contract requires that callers only pass an index
 <a href=#213 id=213 data-nosnippet>213</a>        // that is in bounds.
 <a href=#214 id=214 data-nosnippet>214</a>        </span><span class="kw">unsafe </span>{
-<a href=#215 id=215 data-nosnippet>215</a>            <span class="kw">let </span>i1_len = <span class="self">self</span>.i1.len();
-<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">if </span>idx &lt; i1_len {
-<a href=#217 id=217 data-nosnippet>217</a>                <span class="self">self</span>.i1.__iterator_get_unchecked(idx)
+<a href=#215 id=215 data-nosnippet>215</a>            <span class="kw">let </span>i1_len = <a class="self" href="#211">self</a>.i1.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.len">len</a>();
+<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">if </span><a href="#211">idx</a> &lt; <a href="#215">i1_len</a> {
+<a href=#217 id=217 data-nosnippet>217</a>                <a class="self" href="#211">self</a>.i1.__iterator_get_unchecked(<a href="#211">idx</a>)
 <a href=#218 id=218 data-nosnippet>218</a>            } <span class="kw">else </span>{
-<a href=#219 id=219 data-nosnippet>219</a>                <span class="self">self</span>.i2.__iterator_get_unchecked(idx - i1_len)
+<a href=#219 id=219 data-nosnippet>219</a>                <a class="self" href="#211">self</a>.i2.__iterator_get_unchecked(<a href="#211">idx</a> - <a href="#215">i1_len</a>)
 <a href=#220 id=220 data-nosnippet>220</a>            }
 <a href=#221 id=221 data-nosnippet>221</a>        }
 <a href=#222 id=222 data-nosnippet>222</a>    }
 <a href=#223 id=223 data-nosnippet>223</a>}
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; DoubleEndedIterator <span class="kw">for </span>IterMut&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html">DoubleEndedIterator</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'a</span>, T&gt; {
 <a href=#227 id=227 data-nosnippet>227</a>    <span class="attr">#[inline]
-<a href=#228 id=228 data-nosnippet>228</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">match </span><span class="self">self</span>.i2.next_back() {
-<a href=#230 id=230 data-nosnippet>230</a>            <span class="prelude-val">Some</span>(val) =&gt; <span class="prelude-val">Some</span>(val),
-<a href=#231 id=231 data-nosnippet>231</a>            <span class="prelude-val">None </span>=&gt; {
+<a href=#228 id=228 data-nosnippet>228</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../../core/option/enum.Option.html">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
+<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">match </span><a class="self" href="#228">self</a>.i2.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#tymethod.next_back">next_back</a>() {
+<a href=#230 id=230 data-nosnippet>230</a>            <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.Some">Some</a>(val) =&gt; <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.Some">Some</a>(<a href="#230">val</a>),
+<a href=#231 id=231 data-nosnippet>231</a>            <a class="prelude-val" href="../../../../core/option/enum.Option.html#variant.None">None</a> =&gt; {
 <a href=#232 id=232 data-nosnippet>232</a>                <span class="comment">// most of the time, the iterator will either always
 <a href=#233 id=233 data-nosnippet>233</a>                // call next(), or always call next_back(). By swapping
 <a href=#234 id=234 data-nosnippet>234</a>                // the iterators once the first one is empty, we ensure
 <a href=#235 id=235 data-nosnippet>235</a>                // that the first branch is taken as often as possible,
 <a href=#236 id=236 data-nosnippet>236</a>                // without sacrificing correctness, as i2 is empty anyways
-<a href=#237 id=237 data-nosnippet>237</a>                </span>mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.i1, <span class="kw-2">&amp;mut </span><span class="self">self</span>.i2);
-<a href=#238 id=238 data-nosnippet>238</a>                <span class="self">self</span>.i2.next_back()
+<a href=#237 id=237 data-nosnippet>237</a>                </span>mem::<a href="../../../../core/mem/fn.swap.html">swap</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#228">self</a>.i1, <span class="kw-2">&amp;mut </span><a class="self" href="#228">self</a>.i2);
+<a href=#238 id=238 data-nosnippet>238</a>                <a class="self" href="#228">self</a>.i2.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#tymethod.next_back">next_back</a>()
 <a href=#239 id=239 data-nosnippet>239</a>            }
 <a href=#240 id=240 data-nosnippet>240</a>        }
 <a href=#241 id=241 data-nosnippet>241</a>    }
 <a href=#242 id=242 data-nosnippet>242</a>
-<a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">fn </span>advance_back_by(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), NonZero&lt;usize&gt;&gt; {
-<a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">match </span><span class="self">self</span>.i2.advance_back_by(n) {
-<a href=#245 id=245 data-nosnippet>245</a>            <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(()),
-<a href=#246 id=246 data-nosnippet>246</a>            <span class="prelude-val">Err</span>(remaining) =&gt; {
-<a href=#247 id=247 data-nosnippet>247</a>                mem::swap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.i1, <span class="kw-2">&amp;mut </span><span class="self">self</span>.i2);
-<a href=#248 id=248 data-nosnippet>248</a>                <span class="self">self</span>.i2.advance_back_by(remaining.get())
+<a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">fn </span>advance_back_by(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../core/result/enum.Result.html">Result</a>&lt;(), <a href="../../../../core/num/nonzero/struct.NonZero.html">NonZero</a>&lt;<a href="../../../../core/primitive.usize.html">usize</a>&gt;&gt; {
+<a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">match </span><a class="self" href="#243">self</a>.i2.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#method.advance_back_by">advance_back_by</a>(<a href="#243">n</a>) {
+<a href=#245 id=245 data-nosnippet>245</a>            <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Ok">Ok</a>(()) =&gt; <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Ok">Ok</a>(()),
+<a href=#246 id=246 data-nosnippet>246</a>            <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Err">Err</a>(remaining) =&gt; {
+<a href=#247 id=247 data-nosnippet>247</a>                mem::<a href="../../../../core/mem/fn.swap.html">swap</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#243">self</a>.i1, <span class="kw-2">&amp;mut </span><a class="self" href="#243">self</a>.i2);
+<a href=#248 id=248 data-nosnippet>248</a>                <a class="self" href="#243">self</a>.i2.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#method.advance_back_by">advance_back_by</a>(<a href="#246">remaining</a>.<a href="../../../../core/num/nonzero/struct.NonZero.html#method.get">get</a>())
 <a href=#249 id=249 data-nosnippet>249</a>            }
 <a href=#250 id=250 data-nosnippet>250</a>        }
 <a href=#251 id=251 data-nosnippet>251</a>    }
 <a href=#252 id=252 data-nosnippet>252</a>
 <a href=#253 id=253 data-nosnippet>253</a>    <span class="kw">fn </span>rfold&lt;Acc, F&gt;(<span class="self">self</span>, accum: Acc, <span class="kw-2">mut </span>f: F) -&gt; Acc
 <a href=#254 id=254 data-nosnippet>254</a>    <span class="kw">where
-<a href=#255 id=255 data-nosnippet>255</a>        </span>F: FnMut(Acc, <span class="self">Self</span>::Item) -&gt; Acc,
+<a href=#255 id=255 data-nosnippet>255</a>        </span>F: <a href="../../../../core/ops/function/trait.FnMut.html">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; Acc,
 <a href=#256 id=256 data-nosnippet>256</a>    {
-<a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">let </span>accum = <span class="self">self</span>.i2.rfold(accum, <span class="kw-2">&amp;mut </span>f);
-<a href=#258 id=258 data-nosnippet>258</a>        <span class="self">self</span>.i1.rfold(accum, <span class="kw-2">&amp;mut </span>f)
+<a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">let </span>accum = <a class="self" href="#253">self</a>.i2.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#method.rfold">rfold</a>(<a href="#253">accum</a>, <span class="kw-2">&amp;mut </span><a href="#253">f</a>);
+<a href=#258 id=258 data-nosnippet>258</a>        <a class="self" href="#253">self</a>.i1.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#method.rfold">rfold</a>(<a href="#257">accum</a>, <span class="kw-2">&amp;mut </span><a href="#253">f</a>)
 <a href=#259 id=259 data-nosnippet>259</a>    }
 <a href=#260 id=260 data-nosnippet>260</a>
 <a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">fn </span>try_rfold&lt;B, F, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, init: B, <span class="kw-2">mut </span>f: F) -&gt; R
 <a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">where
-<a href=#263 id=263 data-nosnippet>263</a>        </span>F: FnMut(B, <span class="self">Self</span>::Item) -&gt; R,
-<a href=#264 id=264 data-nosnippet>264</a>        R: Try&lt;Output = B&gt;,
+<a href=#263 id=263 data-nosnippet>263</a>        </span>F: <a href="../../../../core/ops/function/trait.FnMut.html">FnMut</a>(B, <span class="self">Self</span>::Item) -&gt; R,
+<a href=#264 id=264 data-nosnippet>264</a>        R: <a href="../../../../core/ops/try_trait/trait.Try.html">Try</a>&lt;Output = B&gt;,
 <a href=#265 id=265 data-nosnippet>265</a>    {
 <a href=#266 id=266 data-nosnippet>266</a>        <span class="kw">let </span>acc = <span class="self">self</span>.i2.try_rfold(init, <span class="kw-2">&amp;mut </span>f)<span class="question-mark">?</span>;
-<a href=#267 id=267 data-nosnippet>267</a>        <span class="self">self</span>.i1.try_rfold(acc, <span class="kw-2">&amp;mut </span>f)
+<a href=#267 id=267 data-nosnippet>267</a>        <a class="self" href="#261">self</a>.i1.<a href="../../../../core/iter/traits/double_ended/trait.DoubleEndedIterator.html#method.try_rfold">try_rfold</a>(<a href="#266">acc</a>, <span class="kw-2">&amp;mut </span><a href="#261">f</a>)
 <a href=#268 id=268 data-nosnippet>268</a>    }
 <a href=#269 id=269 data-nosnippet>269</a>}
 <a href=#270 id=270 data-nosnippet>270</a>
 <a href=#271 id=271 data-nosnippet>271</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#272 id=272 data-nosnippet>272</a></span><span class="kw">impl</span>&lt;T&gt; ExactSizeIterator <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-<a href=#274 id=274 data-nosnippet>274</a>        <span class="self">self</span>.i1.len() + <span class="self">self</span>.i2.len()
+<a href=#272 id=272 data-nosnippet>272</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html">ExactSizeIterator</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.usize.html">usize</a> {
+<a href=#274 id=274 data-nosnippet>274</a>        <a class="self" href="#273">self</a>.i1.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.len">len</a>() + <a class="self" href="#273">self</a>.i2.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.len">len</a>()
 <a href=#275 id=275 data-nosnippet>275</a>    }
 <a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a>    <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#278 id=278 data-nosnippet>278</a>        <span class="self">self</span>.i1.is_empty() &amp;&amp; <span class="self">self</span>.i2.is_empty()
+<a href=#277 id=277 data-nosnippet>277</a>    <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.bool.html">bool</a> {
+<a href=#278 id=278 data-nosnippet>278</a>        <a class="self" href="#277">self</a>.i1.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.is_empty">is_empty</a>() &amp;&amp; <a class="self" href="#277">self</a>.i2.<a href="../../../../core/iter/traits/exact_size/trait.ExactSizeIterator.html#method.is_empty">is_empty</a>()
 <a href=#279 id=279 data-nosnippet>279</a>    }
 <a href=#280 id=280 data-nosnippet>280</a>}
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a><span class="attr">#[stable(feature = <span class="string">"fused"</span>, since = <span class="string">"1.26.0"</span>)]
-<a href=#283 id=283 data-nosnippet>283</a></span><span class="kw">impl</span>&lt;T&gt; FusedIterator <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {}
+<a href=#283 id=283 data-nosnippet>283</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../../core/iter/traits/marker/trait.FusedIterator.html">FusedIterator</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {}
 <a href=#284 id=284 data-nosnippet>284</a>
 <a href=#285 id=285 data-nosnippet>285</a><span class="attr">#[unstable(feature = <span class="string">"trusted_len"</span>, issue = <span class="string">"37572"</span>)]
-<a href=#286 id=286 data-nosnippet>286</a></span><span class="kw">unsafe impl</span>&lt;T&gt; TrustedLen <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {}
+<a href=#286 id=286 data-nosnippet>286</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="../../../../core/iter/traits/marker/trait.TrustedLen.html">TrustedLen</a> <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {}
 <a href=#287 id=287 data-nosnippet>287</a>
 <a href=#288 id=288 data-nosnippet>288</a><span class="attr">#[doc(hidden)]
 <a href=#289 id=289 data-nosnippet>289</a>#[unstable(feature = <span class="string">"trusted_random_access"</span>, issue = <span class="string">"none"</span>)]
-<a href=#290 id=290 data-nosnippet>290</a></span><span class="kw">unsafe impl</span>&lt;T&gt; TrustedRandomAccess <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {}
+<a href=#290 id=290 data-nosnippet>290</a></span><span class="kw">unsafe impl</span>&lt;T&gt; TrustedRandomAccess <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {}
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a><span class="attr">#[doc(hidden)]
 <a href=#293 id=293 data-nosnippet>293</a>#[unstable(feature = <span class="string">"trusted_random_access"</span>, issue = <span class="string">"none"</span>)]
-<a href=#294 id=294 data-nosnippet>294</a></span><span class="kw">unsafe impl</span>&lt;T&gt; TrustedRandomAccessNoCoerce <span class="kw">for </span>IterMut&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#295 id=295 data-nosnippet>295</a>    <span class="kw">const </span>MAY_HAVE_SIDE_EFFECT: bool = <span class="bool-val">false</span>;
+<a href=#294 id=294 data-nosnippet>294</a></span><span class="kw">unsafe impl</span>&lt;T&gt; TrustedRandomAccessNoCoerce <span class="kw">for </span><a href="#13-16">IterMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#295 id=295 data-nosnippet>295</a>    <span class="kw">const </span>MAY_HAVE_SIDE_EFFECT: <a href="../../../../core/primitive.bool.html">bool</a> = <span class="bool-val">false</span>;
 <a href=#296 id=296 data-nosnippet>296</a>}
 </code></pre></div></section></main></body></html>

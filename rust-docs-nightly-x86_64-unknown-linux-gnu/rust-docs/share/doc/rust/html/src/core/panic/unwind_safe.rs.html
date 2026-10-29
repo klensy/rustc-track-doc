@@ -1,12 +1,12 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/panic/unwind_safe.rs`."><title>unwind_safe.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/panic/</div>unwind_safe.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::async_iter::AsyncIterator;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cell::UnsafeCell;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::fmt;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::future::Future;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::marker::PointeeSized;
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::ops::{Deref, DerefMut};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::pin::Pin;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::ptr::NonNull;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::task::{Context, Poll};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/panic/unwind_safe.rs`."><title>unwind_safe.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/panic/</div>unwind_safe.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../async_iter/async_iter.rs.html#17-83"><span class="kw">crate</span>::async_iter::AsyncIterator</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../cell.rs.html#2311-2313"><span class="kw">crate</span>::cell::UnsafeCell</a>;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../lib.rs.html#325"><span class="kw">crate</span>::fmt</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../future/future.rs.html#37-114"><span class="kw">crate</span>::future::Future</a>;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../marker.rs.html#190-192"><span class="kw">crate</span>::marker::PointeeSized</a>;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a href="../ops/deref.rs.html#139-151">Deref</a>, <a href="../ops/deref.rs.html#270-275">DerefMut</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../pin.rs.html#1091-1093"><span class="kw">crate</span>::pin::Pin</a>;
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="../ptr/non_null.rs.html#78-80"><span class="kw">crate</span>::ptr::NonNull</a>;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::task::{<a href="../task/wake.rs.html#222-234">Context</a>, <a href="../task/poll.rs.html#13-27">Poll</a>};
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// A marker trait which represents "panic safe" types in Rust.
 <a href=#12 id=12 data-nosnippet>12</a>///
@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>    message = <span class="string">"the type `{Self}` may not be safely transferred across an unwind boundary"</span>,
 <a href=#89 id=89 data-nosnippet>89</a>    label = <span class="string">"`{Self}` may not be safely transferred across an unwind boundary"
 <a href=#90 id=90 data-nosnippet>90</a></span>)]
-<a href=#91 id=91 data-nosnippet>91</a></span><span class="kw">pub auto trait </span>UnwindSafe {}
+<a href=#91 id=91 data-nosnippet>91</a></span><span class="kw">pub auto trait </span><a href="../../../core/panic/trait.UnwindSafe.html">UnwindSafe</a> {}
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a><span class="doccomment">/// A marker trait representing types where a shared reference is considered
 <a href=#94 id=94 data-nosnippet>94</a>/// unwind safe.
@@ -106,7 +106,7 @@
 <a href=#106 id=106 data-nosnippet>106</a>    label = <span class="string">"`{Self}` may contain interior mutability and a reference may not be safely \
 <a href=#107 id=107 data-nosnippet>107</a>             transferable across a catch_unwind boundary"
 <a href=#108 id=108 data-nosnippet>108</a></span>)]
-<a href=#109 id=109 data-nosnippet>109</a></span><span class="kw">pub auto trait </span>RefUnwindSafe {}
+<a href=#109 id=109 data-nosnippet>109</a></span><span class="kw">pub auto trait </span><a href="../../../core/panic/trait.RefUnwindSafe.html">RefUnwindSafe</a> {}
 <a href=#110 id=110 data-nosnippet>110</a>
 <a href=#111 id=111 data-nosnippet>111</a><span class="doccomment">/// A simple wrapper around a type to assert that it is unwind safe.
 <a href=#112 id=112 data-nosnippet>112</a>///
@@ -168,7 +168,7 @@
 <a href=#168 id=168 data-nosnippet>168</a>/// // ...
 <a href=#169 id=169 data-nosnippet>169</a>/// ```
 <a href=#170 id=170 data-nosnippet>170</a></span><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub struct </span>AssertUnwindSafe&lt;T&gt;(<span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)] </span><span class="kw">pub </span>T);
+<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub struct </span><a href="../../../core/panic/struct.AssertUnwindSafe.html">AssertUnwindSafe</a>&lt;T&gt;(<span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)] </span><span class="kw">pub </span>T);
 <a href=#172 id=172 data-nosnippet>172</a>
 <a href=#173 id=173 data-nosnippet>173</a><span class="comment">// Implementations of the `UnwindSafe` trait:
 <a href=#174 id=174 data-nosnippet>174</a>//
@@ -178,150 +178,150 @@
 <a href=#178 id=178 data-nosnippet>178</a>// * Our custom AssertUnwindSafe wrapper is indeed unwind safe
 <a href=#179 id=179 data-nosnippet>179</a>
 <a href=#180 id=180 data-nosnippet>180</a></span><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#181 id=181 data-nosnippet>181</a></span><span class="kw">impl</span>&lt;T: PointeeSized&gt; !UnwindSafe <span class="kw">for </span><span class="kw-2">&amp;mut </span>T {}
+<a href=#181 id=181 data-nosnippet>181</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; !<a href="#91">UnwindSafe</a> <span class="kw">for </span><span class="kw-2">&amp;mut </span>T {}
 <a href=#182 id=182 data-nosnippet>182</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#183 id=183 data-nosnippet>183</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + PointeeSized&gt; UnwindSafe <span class="kw">for </span><span class="kw-2">&amp;</span>T {}
+<a href=#183 id=183 data-nosnippet>183</a></span><span class="kw">impl</span>&lt;T: <a href="#109">RefUnwindSafe</a> + <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="#91">UnwindSafe</a> <span class="kw">for </span><span class="kw-2">&amp;</span>T {}
 <a href=#184 id=184 data-nosnippet>184</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#185 id=185 data-nosnippet>185</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + PointeeSized&gt; UnwindSafe <span class="kw">for </span><span class="kw-2">*const </span>T {}
+<a href=#185 id=185 data-nosnippet>185</a></span><span class="kw">impl</span>&lt;T: <a href="#109">RefUnwindSafe</a> + <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="#91">UnwindSafe</a> <span class="kw">for </span><span class="kw-2">*const </span>T {}
 <a href=#186 id=186 data-nosnippet>186</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + PointeeSized&gt; UnwindSafe <span class="kw">for </span><span class="kw-2">*mut </span>T {}
+<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">impl</span>&lt;T: <a href="#109">RefUnwindSafe</a> + <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="#91">UnwindSafe</a> <span class="kw">for </span><span class="kw-2">*mut </span>T {}
 <a href=#188 id=188 data-nosnippet>188</a><span class="attr">#[stable(feature = <span class="string">"nonnull"</span>, since = <span class="string">"1.25.0"</span>)]
-<a href=#189 id=189 data-nosnippet>189</a></span><span class="kw">impl</span>&lt;T: RefUnwindSafe + PointeeSized&gt; UnwindSafe <span class="kw">for </span>NonNull&lt;T&gt; {}
+<a href=#189 id=189 data-nosnippet>189</a></span><span class="kw">impl</span>&lt;T: <a href="#109">RefUnwindSafe</a> + <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="#91">UnwindSafe</a> <span class="kw">for </span><a href="../ptr/non_null.rs.html#78-80">NonNull</a>&lt;T&gt; {}
 <a href=#190 id=190 data-nosnippet>190</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">impl</span>&lt;T&gt; UnwindSafe <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {}
+<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#91">UnwindSafe</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {}
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a><span class="comment">// Pretty simple implementations for the `RefUnwindSafe` marker trait,
 <a href=#194 id=194 data-nosnippet>194</a>// basically just saying that `UnsafeCell` is the
 <a href=#195 id=195 data-nosnippet>195</a>// only thing which doesn't implement it (which then transitively applies to
 <a href=#196 id=196 data-nosnippet>196</a>// everything else).
 <a href=#197 id=197 data-nosnippet>197</a></span><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#198 id=198 data-nosnippet>198</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; !RefUnwindSafe <span class="kw">for </span>UnsafeCell&lt;T&gt; {}
+<a href=#198 id=198 data-nosnippet>198</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt; !<a href="#109">RefUnwindSafe</a> <span class="kw">for </span><a href="../cell.rs.html#2311-2313">UnsafeCell</a>&lt;T&gt; {}
 <a href=#199 id=199 data-nosnippet>199</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#200 id=200 data-nosnippet>200</a></span><span class="kw">impl</span>&lt;T&gt; RefUnwindSafe <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {}
+<a href=#200 id=200 data-nosnippet>200</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#109">RefUnwindSafe</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {}
 <a href=#201 id=201 data-nosnippet>201</a>
 <a href=#202 id=202 data-nosnippet>202</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"ptr"</span>)]
 <a href=#203 id=203 data-nosnippet>203</a>#[stable(feature = <span class="string">"unwind_safe_atomic_refs"</span>, since = <span class="string">"1.14.0"</span>)]
-<a href=#204 id=204 data-nosnippet>204</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicIsize {}
+<a href=#204 id=204 data-nosnippet>204</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4278-4282">AtomicIsize</a> {}
 <a href=#205 id=205 data-nosnippet>205</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"8"</span>)]
 <a href=#206 id=206 data-nosnippet>206</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#207 id=207 data-nosnippet>207</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicI8 {}
+<a href=#207 id=207 data-nosnippet>207</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4021-4038">AtomicI8</a> {}
 <a href=#208 id=208 data-nosnippet>208</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"16"</span>)]
 <a href=#209 id=209 data-nosnippet>209</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#210 id=210 data-nosnippet>210</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicI16 {}
+<a href=#210 id=210 data-nosnippet>210</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4059-4076">AtomicI16</a> {}
 <a href=#211 id=211 data-nosnippet>211</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"32"</span>)]
 <a href=#212 id=212 data-nosnippet>212</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#213 id=213 data-nosnippet>213</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicI32 {}
+<a href=#213 id=213 data-nosnippet>213</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4097-4114">AtomicI32</a> {}
 <a href=#214 id=214 data-nosnippet>214</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"64"</span>)]
 <a href=#215 id=215 data-nosnippet>215</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#216 id=216 data-nosnippet>216</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicI64 {}
+<a href=#216 id=216 data-nosnippet>216</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4135-4152">AtomicI64</a> {}
 <a href=#217 id=217 data-nosnippet>217</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"128"</span>)]
 <a href=#218 id=218 data-nosnippet>218</a>#[unstable(feature = <span class="string">"integer_atomics"</span>, issue = <span class="string">"99069"</span>)]
 <a href=#219 id=219 data-nosnippet>219</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicI128 {}
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"ptr"</span>)]
 <a href=#222 id=222 data-nosnippet>222</a>#[stable(feature = <span class="string">"unwind_safe_atomic_refs"</span>, since = <span class="string">"1.14.0"</span>)]
-<a href=#223 id=223 data-nosnippet>223</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicUsize {}
+<a href=#223 id=223 data-nosnippet>223</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4278-4282">AtomicUsize</a> {}
 <a href=#224 id=224 data-nosnippet>224</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"8"</span>)]
 <a href=#225 id=225 data-nosnippet>225</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicU8 {}
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4040-4057">AtomicU8</a> {}
 <a href=#227 id=227 data-nosnippet>227</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"16"</span>)]
 <a href=#228 id=228 data-nosnippet>228</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#229 id=229 data-nosnippet>229</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicU16 {}
+<a href=#229 id=229 data-nosnippet>229</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4078-4095">AtomicU16</a> {}
 <a href=#230 id=230 data-nosnippet>230</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"32"</span>)]
 <a href=#231 id=231 data-nosnippet>231</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#232 id=232 data-nosnippet>232</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicU32 {}
+<a href=#232 id=232 data-nosnippet>232</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4116-4133">AtomicU32</a> {}
 <a href=#233 id=233 data-nosnippet>233</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"64"</span>)]
 <a href=#234 id=234 data-nosnippet>234</a>#[stable(feature = <span class="string">"integer_atomics_stable"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#235 id=235 data-nosnippet>235</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicU64 {}
+<a href=#235 id=235 data-nosnippet>235</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#4154-4171">AtomicU64</a> {}
 <a href=#236 id=236 data-nosnippet>236</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"128"</span>)]
 <a href=#237 id=237 data-nosnippet>237</a>#[unstable(feature = <span class="string">"integer_atomics"</span>, issue = <span class="string">"99069"</span>)]
 <a href=#238 id=238 data-nosnippet>238</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicU128 {}
 <a href=#239 id=239 data-nosnippet>239</a>
 <a href=#240 id=240 data-nosnippet>240</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"8"</span>)]
 <a href=#241 id=241 data-nosnippet>241</a>#[stable(feature = <span class="string">"unwind_safe_atomic_refs"</span>, since = <span class="string">"1.14.0"</span>)]
-<a href=#242 id=242 data-nosnippet>242</a></span><span class="kw">impl </span>RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicBool {}
+<a href=#242 id=242 data-nosnippet>242</a></span><span class="kw">impl </span><a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#416">AtomicBool</a> {}
 <a href=#243 id=243 data-nosnippet>243</a>
 <a href=#244 id=244 data-nosnippet>244</a><span class="attr">#[cfg(target_has_atomic_load_store = <span class="string">"ptr"</span>)]
 <a href=#245 id=245 data-nosnippet>245</a>#[stable(feature = <span class="string">"unwind_safe_atomic_refs"</span>, since = <span class="string">"1.14.0"</span>)]
-<a href=#246 id=246 data-nosnippet>246</a></span><span class="kw">impl</span>&lt;T&gt; RefUnwindSafe <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::AtomicPtr&lt;T&gt; {}
+<a href=#246 id=246 data-nosnippet>246</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#109">RefUnwindSafe</a> <span class="kw">for </span><span class="kw">crate</span>::sync::atomic::<a href="../sync/atomic.rs.html#436">AtomicPtr</a>&lt;T&gt; {}
 <a href=#247 id=247 data-nosnippet>247</a>
 <a href=#248 id=248 data-nosnippet>248</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
 <a href=#249 id=249 data-nosnippet>249</a>#[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
-<a href=#250 id=250 data-nosnippet>250</a></span><span class="kw">const impl</span>&lt;T&gt; Deref <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {
+<a href=#250 id=250 data-nosnippet>250</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../ops/deref.rs.html#139-151">Deref</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {
 <a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">type </span>Target = T;
 <a href=#252 id=252 data-nosnippet>252</a>
 <a href=#253 id=253 data-nosnippet>253</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#254 id=254 data-nosnippet>254</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+<a href=#254 id=254 data-nosnippet>254</a>        <span class="kw-2">&amp;</span><a class="self" href="#253">self</a>.<span class="number">0
 <a href=#255 id=255 data-nosnippet>255</a>    </span>}
 <a href=#256 id=256 data-nosnippet>256</a>}
 <a href=#257 id=257 data-nosnippet>257</a>
 <a href=#258 id=258 data-nosnippet>258</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
 <a href=#259 id=259 data-nosnippet>259</a>#[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
-<a href=#260 id=260 data-nosnippet>260</a></span><span class="kw">const impl</span>&lt;T&gt; DerefMut <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {
+<a href=#260 id=260 data-nosnippet>260</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../ops/deref.rs.html#270-275">DerefMut</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {
 <a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#262 id=262 data-nosnippet>262</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0
+<a href=#262 id=262 data-nosnippet>262</a>        <span class="kw-2">&amp;mut </span><a class="self" href="#261">self</a>.<span class="number">0
 <a href=#263 id=263 data-nosnippet>263</a>    </span>}
 <a href=#264 id=264 data-nosnippet>264</a>}
 <a href=#265 id=265 data-nosnippet>265</a>
 <a href=#266 id=266 data-nosnippet>266</a><span class="attr">#[stable(feature = <span class="string">"catch_unwind"</span>, since = <span class="string">"1.9.0"</span>)]
-<a href=#267 id=267 data-nosnippet>267</a></span><span class="kw">impl</span>&lt;R, F: FnOnce() -&gt; R&gt; FnOnce&lt;()&gt; <span class="kw">for </span>AssertUnwindSafe&lt;F&gt; {
+<a href=#267 id=267 data-nosnippet>267</a></span><span class="kw">impl</span>&lt;R, F: <a href="../ops/function.rs.html#242-251">FnOnce</a>() -&gt; R&gt; <a href="../ops/function.rs.html#242-251">FnOnce</a>&lt;()&gt; <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;F&gt; {
 <a href=#268 id=268 data-nosnippet>268</a>    <span class="kw">type </span>Output = R;
 <a href=#269 id=269 data-nosnippet>269</a>
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="attr">#[inline]
 <a href=#271 id=271 data-nosnippet>271</a>    </span><span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_once(<span class="self">self</span>, _args: ()) -&gt; R {
-<a href=#272 id=272 data-nosnippet>272</a>        (<span class="self">self</span>.<span class="number">0</span>)()
+<a href=#272 id=272 data-nosnippet>272</a>        (<a class="self" href="#271">self</a>.<span class="number">0</span>)()
 <a href=#273 id=273 data-nosnippet>273</a>    }
 <a href=#274 id=274 data-nosnippet>274</a>}
 <a href=#275 id=275 data-nosnippet>275</a>
 <a href=#276 id=276 data-nosnippet>276</a><span class="attr">#[stable(feature = <span class="string">"std_debug"</span>, since = <span class="string">"1.16.0"</span>)]
-<a href=#277 id=277 data-nosnippet>277</a></span><span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {
-<a href=#278 id=278 data-nosnippet>278</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#279 id=279 data-nosnippet>279</a>        f.debug_tuple(<span class="string">"AssertUnwindSafe"</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>).finish()
+<a href=#277 id=277 data-nosnippet>277</a></span><span class="kw">impl</span>&lt;T: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {
+<a href=#278 id=278 data-nosnippet>278</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#279 id=279 data-nosnippet>279</a>        <a href="#278">f</a>.<a href="../fmt/mod.rs.html#2662-2664">debug_tuple</a>(<span class="string">"AssertUnwindSafe"</span>).<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#278">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#505-515">finish</a>()
 <a href=#280 id=280 data-nosnippet>280</a>    }
 <a href=#281 id=281 data-nosnippet>281</a>}
 <a href=#282 id=282 data-nosnippet>282</a>
 <a href=#283 id=283 data-nosnippet>283</a><span class="attr">#[stable(feature = <span class="string">"assertunwindsafe_default"</span>, since = <span class="string">"1.62.0"</span>)]
-<a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">impl</span>&lt;T: Default&gt; Default <span class="kw">for </span>AssertUnwindSafe&lt;T&gt; {
+<a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">impl</span>&lt;T: <a href="../default.rs.html#107-140">Default</a>&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt; {
 <a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="self">Self</span>(Default::default())
+<a href=#286 id=286 data-nosnippet>286</a>        <span class="self">Self</span>(Default::<a href="../default.rs.html#139">default</a>())
 <a href=#287 id=287 data-nosnippet>287</a>    }
 <a href=#288 id=288 data-nosnippet>288</a>}
 <a href=#289 id=289 data-nosnippet>289</a>
 <a href=#290 id=290 data-nosnippet>290</a><span class="attr">#[stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#291 id=291 data-nosnippet>291</a></span><span class="kw">impl</span>&lt;F: Future&gt; Future <span class="kw">for </span>AssertUnwindSafe&lt;F&gt; {
+<a href=#291 id=291 data-nosnippet>291</a></span><span class="kw">impl</span>&lt;F: <a href="../future/future.rs.html#37-114">Future</a>&gt; <a href="../future/future.rs.html#37-114">Future</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;F&gt; {
 <a href=#292 id=292 data-nosnippet>292</a>    <span class="kw">type </span>Output = F::Output;
 <a href=#293 id=293 data-nosnippet>293</a>
-<a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+<a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">fn </span>poll(<span class="self">self</span>: <a href="../pin.rs.html#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span><a href="../task/wake.rs.html#222-234">Context</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; <a href="../task/poll.rs.html#13-27">Poll</a>&lt;<span class="self">Self</span>::Output&gt; {
 <a href=#295 id=295 data-nosnippet>295</a>        <span class="comment">// SAFETY: pin projection. AssertUnwindSafe follows structural pinning.
-<a href=#296 id=296 data-nosnippet>296</a>        </span><span class="kw">let </span>pinned_field = <span class="kw">unsafe </span>{ Pin::map_unchecked_mut(<span class="self">self</span>, |x| <span class="kw-2">&amp;mut </span>x.<span class="number">0</span>) };
-<a href=#297 id=297 data-nosnippet>297</a>        F::poll(pinned_field, cx)
+<a href=#296 id=296 data-nosnippet>296</a>        </span><span class="kw">let </span>pinned_field = <span class="kw">unsafe </span>{ <a href="../pin.rs.html#1091-1093">Pin</a>::<a href="../pin.rs.html#1642-1654">map_unchecked_mut</a>(<a class="self" href="#294">self</a>, |x| <span class="kw-2">&amp;mut </span><a href="#296">x</a>.<span class="number">0</span>) };
+<a href=#297 id=297 data-nosnippet>297</a>        F::<a href="../future/future.rs.html#113">poll</a>(<a href="#296">pinned_field</a>, <a href="#294">cx</a>)
 <a href=#298 id=298 data-nosnippet>298</a>    }
 <a href=#299 id=299 data-nosnippet>299</a>}
 <a href=#300 id=300 data-nosnippet>300</a>
 <a href=#301 id=301 data-nosnippet>301</a><span class="attr">#[unstable(feature = <span class="string">"async_iterator"</span>, issue = <span class="string">"79024"</span>)]
-<a href=#302 id=302 data-nosnippet>302</a></span><span class="kw">impl</span>&lt;S: AsyncIterator&gt; AsyncIterator <span class="kw">for </span>AssertUnwindSafe&lt;S&gt; {
+<a href=#302 id=302 data-nosnippet>302</a></span><span class="kw">impl</span>&lt;S: <a href="../async_iter/async_iter.rs.html#17-83">AsyncIterator</a>&gt; <a href="../async_iter/async_iter.rs.html#17-83">AsyncIterator</a> <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;S&gt; {
 <a href=#303 id=303 data-nosnippet>303</a>    <span class="kw">type </span>Item = S::Item;
 <a href=#304 id=304 data-nosnippet>304</a>
-<a href=#305 id=305 data-nosnippet>305</a>    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;S::Item&gt;&gt; {
+<a href=#305 id=305 data-nosnippet>305</a>    <span class="kw">fn </span>poll_next(<span class="self">self</span>: <a href="../pin.rs.html#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span><a href="../task/wake.rs.html#222-234">Context</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; <a href="../task/poll.rs.html#13-27">Poll</a>&lt;<a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;S::Item&gt;&gt; {
 <a href=#306 id=306 data-nosnippet>306</a>        <span class="comment">// SAFETY: pin projection. AssertUnwindSafe follows structural pinning.
-<a href=#307 id=307 data-nosnippet>307</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.map_unchecked_mut(|x| <span class="kw-2">&amp;mut </span>x.<span class="number">0</span>) }.poll_next(cx)
+<a href=#307 id=307 data-nosnippet>307</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#305">self</a>.<a href="../pin.rs.html#1642-1654">map_unchecked_mut</a>(|x| <span class="kw-2">&amp;mut </span><a href="#307">x</a>.<span class="number">0</span>) }.<a href="../async_iter/async_iter.rs.html#51">poll_next</a>(<a href="#305">cx</a>)
 <a href=#308 id=308 data-nosnippet>308</a>    }
 <a href=#309 id=309 data-nosnippet>309</a>
-<a href=#310 id=310 data-nosnippet>310</a>    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="self">self</span>.<span class="number">0</span>.size_hint()
+<a href=#310 id=310 data-nosnippet>310</a>    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<a href="../../../core/primitive.usize.html">usize</a>, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) {
+<a href=#311 id=311 data-nosnippet>311</a>        <a class="self" href="#310">self</a>.<span class="number">0</span>.<a href="../async_iter/async_iter.rs.html#80-82">size_hint</a>()
 <a href=#312 id=312 data-nosnippet>312</a>    }
 <a href=#313 id=313 data-nosnippet>313</a>}
 <a href=#314 id=314 data-nosnippet>314</a>
 <a href=#315 id=315 data-nosnippet>315</a><span class="doccomment">/// If a value's type is already `UnwindSafe`,
 <a href=#316 id=316 data-nosnippet>316</a>/// wrapping it in `AssertUnwindSafe` is never incorrect.
 <a href=#317 id=317 data-nosnippet>317</a></span><span class="attr">#[stable(feature = <span class="string">"from_wrapper_impls"</span>, since = <span class="string">"1.96.0"</span>)]
-<a href=#318 id=318 data-nosnippet>318</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;T&gt; <span class="kw">for </span>AssertUnwindSafe&lt;T&gt;
+<a href=#318 id=318 data-nosnippet>318</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../convert/mod.rs.html#588-595">From</a>&lt;T&gt; <span class="kw">for </span><a href="#171">AssertUnwindSafe</a>&lt;T&gt;
 <a href=#319 id=319 data-nosnippet>319</a><span class="kw">where
-<a href=#320 id=320 data-nosnippet>320</a>    </span>T: UnwindSafe,
+<a href=#320 id=320 data-nosnippet>320</a>    </span>T: <a href="#91">UnwindSafe</a>,
 <a href=#321 id=321 data-nosnippet>321</a>{
 <a href=#322 id=322 data-nosnippet>322</a>    <span class="attr">#[inline(always)]
 <a href=#323 id=323 data-nosnippet>323</a>    </span><span class="kw">fn </span>from(value: T) -&gt; <span class="self">Self </span>{
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="self">Self</span>(value)
+<a href=#324 id=324 data-nosnippet>324</a>        <span class="self">Self</span>(<a href="#323">value</a>)
 <a href=#325 id=325 data-nosnippet>325</a>    }
 <a href=#326 id=326 data-nosnippet>326</a>}
 </code></pre></div></section></main></body></html>

@@ -1,26 +1,26 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/net/ucred.rs`."><title>ucred.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/net/</div>ucred.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// NOTE: Code in this file is heavily based on work done in PR 13 from the tokio-uds repository on
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/net/ucred.rs`."><title>ucred.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/net/</div>ucred.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// NOTE: Code in this file is heavily based on work done in PR 13 from the tokio-uds repository on
 <a href=#2 id=2 data-nosnippet>2</a>//       GitHub.
 <a href=#3 id=3 data-nosnippet>3</a>//
 <a href=#4 id=4 data-nosnippet>4</a>//       For reference, the link is here: https://github.com/tokio-rs/tokio-uds/pull/13
 <a href=#5 id=5 data-nosnippet>5</a>//       Credit to Martin Habovštiak (GitHub username Kixunil) and contributors for this work.
 <a href=#6 id=6 data-nosnippet>6</a>
-<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>libc::{gid_t, pid_t, uid_t};
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>libc::{<a href="https://docs.rs/libc/0.2.191/libc/unix/type.gid_t.html">gid_t</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.pid_t.html">pid_t</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.uid_t.html">uid_t</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// Credentials for a UNIX process for credentials passing.
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="attr">#[unstable(feature = <span class="string">"peer_credentials_unix_socket"</span>, issue = <span class="string">"42839"</span>)]
-<a href=#11 id=11 data-nosnippet>11</a>#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub struct </span>UCred {
+<a href=#11 id=11 data-nosnippet>11</a>#[derive(<a href="../../../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../../../std/marker/derive.Copy.html">Copy</a>, <a href="../../../../../std/fmt/derive.Debug.html">Debug</a>, <a href="../../../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../../../std/hash/derive.Hash.html">Hash</a>, <a href="../../../../../std/cmp/derive.PartialEq.html">PartialEq</a>)]
+<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub struct </span><a href="../../../../../std/os/unix/net/struct.UCred.html">UCred</a> {
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="doccomment">/// The UID part of the peer credential. This is the effective UID of the process at the domain
 <a href=#14 id=14 data-nosnippet>14</a>    /// socket's endpoint.
-<a href=#15 id=15 data-nosnippet>15</a>    </span><span class="kw">pub </span>uid: uid_t,
+<a href=#15 id=15 data-nosnippet>15</a>    </span><span class="kw">pub </span>uid: <a href="https://docs.rs/libc/0.2.191/libc/unix/type.uid_t.html">uid_t</a>,
 <a href=#16 id=16 data-nosnippet>16</a>    <span class="doccomment">/// The GID part of the peer credential. This is the effective GID of the process at the domain
 <a href=#17 id=17 data-nosnippet>17</a>    /// socket's endpoint.
-<a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub </span>gid: gid_t,
+<a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub </span>gid: <a href="https://docs.rs/libc/0.2.191/libc/unix/type.gid_t.html">gid_t</a>,
 <a href=#19 id=19 data-nosnippet>19</a>    <span class="doccomment">/// The PID part of the peer credential. This field is optional because the PID part of the
 <a href=#20 id=20 data-nosnippet>20</a>    /// peer credentials is not supported on every platform. On platforms where the mechanism to
 <a href=#21 id=21 data-nosnippet>21</a>    /// discover the PID exists, this field will be populated to the PID of the process at the
 <a href=#22 id=22 data-nosnippet>22</a>    /// domain socket's endpoint. Otherwise, it will be set to None.
-<a href=#23 id=23 data-nosnippet>23</a>    </span><span class="kw">pub </span>pid: <span class="prelude-ty">Option</span>&lt;pid_t&gt;,
+<a href=#23 id=23 data-nosnippet>23</a>    </span><span class="kw">pub </span>pid: <a class="prelude-ty" href="../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="https://docs.rs/libc/0.2.191/libc/unix/type.pid_t.html">pid_t</a>&gt;,
 <a href=#24 id=24 data-nosnippet>24</a>}
 <a href=#25 id=25 data-nosnippet>25</a>
 <a href=#26 id=26 data-nosnippet>26</a><span class="attr">#[cfg(target_vendor = <span class="string">"apple"</span>)]
@@ -35,40 +35,40 @@
 <a href=#35 id=35 data-nosnippet>35</a></span>))]
 <a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::impl_bsd::peer_cred;
 <a href=#37 id=37 data-nosnippet>37</a><span class="attr">#[cfg(any(target_os = <span class="string">"android"</span>, target_os = <span class="string">"linux"</span>, target_os = <span class="string">"cygwin"</span>))]
-<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::impl_linux::peer_cred;
+<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><a href="#49-74"><span class="self">self</span>::impl_linux::peer_cred</a>;
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="attr">#[cfg(any(target_os = <span class="string">"linux"</span>, target_os = <span class="string">"android"</span>, target_os = <span class="string">"cygwin"</span>))]
 <a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">mod </span>impl_linux {
-<a href=#42 id=42 data-nosnippet>42</a>    <span class="kw">use </span>libc::{SO_PEERCRED, SOL_SOCKET, c_void, getsockopt, socklen_t, ucred};
+<a href=#42 id=42 data-nosnippet>42</a>    <span class="kw">use </span>libc::{<a href="https://docs.rs/libc/0.2.191/libc/new/linux_uapi/asm/socket/constant.SO_PEERCRED.html">SO_PEERCRED</a>, <a href="https://docs.rs/libc/0.2.191/libc/new/linux_uapi/asm/socket/constant.SOL_SOCKET.html">SOL_SOCKET</a>, <a href="../../../../../std/ffi/enum.c_void.html">c_void</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/fn.getsockopt.html">getsockopt</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/type.socklen_t.html">socklen_t</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/struct.ucred.html">ucred</a>};
 <a href=#43 id=43 data-nosnippet>43</a>
-<a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">use </span><span class="kw">super</span>::UCred;
-<a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">use </span><span class="kw">crate</span>::io;
-<a href=#46 id=46 data-nosnippet>46</a>    <span class="kw">use </span><span class="kw">crate</span>::os::unix::io::AsRawFd;
-<a href=#47 id=47 data-nosnippet>47</a>    <span class="kw">use </span><span class="kw">crate</span>::os::unix::net::UnixStream;
+<a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">use </span><a href="#12-24"><span class="kw">super</span>::UCred</a>;
+<a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">use </span><a href="../../../lib.rs.html#634"><span class="kw">crate</span>::io</a>;
+<a href=#46 id=46 data-nosnippet>46</a>    <span class="kw">use </span><a href="../../fd/raw.rs.html#44-72"><span class="kw">crate</span>::os::unix::io::AsRawFd</a>;
+<a href=#47 id=47 data-nosnippet>47</a>    <span class="kw">use </span><a href="stream.rs.html#84"><span class="kw">crate</span>::os::unix::net::UnixStream</a>;
 <a href=#48 id=48 data-nosnippet>48</a>
-<a href=#49 id=49 data-nosnippet>49</a>    <span class="kw">pub fn </span>peer_cred(socket: <span class="kw-2">&amp;</span>UnixStream) -&gt; io::Result&lt;UCred&gt; {
-<a href=#50 id=50 data-nosnippet>50</a>        <span class="kw">let </span>ucred_size = size_of::&lt;ucred&gt;();
+<a href=#49 id=49 data-nosnippet>49</a>    <span class="kw">pub fn </span>peer_cred(socket: <span class="kw-2">&amp;</span><a href="stream.rs.html#84">UnixStream</a>) -&gt; io::<a href="../../../../../std/io/type.Result.html">Result</a>&lt;<a href="#12-24">UCred</a>&gt; {
+<a href=#50 id=50 data-nosnippet>50</a>        <span class="kw">let </span>ucred_size = <a href="../../../../../std/mem/fn.size_of.html">size_of</a>::&lt;<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/struct.ucred.html">ucred</a>&gt;();
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>        <span class="comment">// Trivial sanity checks.
-<a href=#53 id=53 data-nosnippet>53</a>        </span><span class="macro">assert!</span>(size_of::&lt;u32&gt;() &lt;= size_of::&lt;usize&gt;());
-<a href=#54 id=54 data-nosnippet>54</a>        <span class="macro">assert!</span>(ucred_size &lt;= u32::MAX <span class="kw">as </span>usize);
+<a href=#53 id=53 data-nosnippet>53</a>        </span><a href="../../../../../std/macro.assert.html">assert!</a>(size_of::&lt;u32&gt;() &lt;= size_of::&lt;usize&gt;());
+<a href=#54 id=54 data-nosnippet>54</a>        <a href="../../../../../std/macro.assert.html">assert!</a>(ucred_size &lt;= u32::MAX <span class="kw">as </span>usize);
 <a href=#55 id=55 data-nosnippet>55</a>
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>ucred_size = ucred_size <span class="kw">as </span>socklen_t;
-<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span><span class="kw-2">mut </span>ucred: ucred = ucred { pid: <span class="number">1</span>, uid: <span class="number">1</span>, gid: <span class="number">1 </span>};
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>ucred_size = <a href="#50">ucred_size</a> <span class="kw">as </span><a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/type.socklen_t.html">socklen_t</a>;
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span><span class="kw-2">mut </span>ucred: <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/struct.ucred.html">ucred</a> = <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/struct.ucred.html">ucred</a> { pid: <span class="number">1</span>, uid: <span class="number">1</span>, gid: <span class="number">1 </span>};
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">unsafe </span>{
-<a href=#60 id=60 data-nosnippet>60</a>            <span class="kw">let </span>ret = getsockopt(
-<a href=#61 id=61 data-nosnippet>61</a>                socket.as_raw_fd(),
-<a href=#62 id=62 data-nosnippet>62</a>                SOL_SOCKET,
-<a href=#63 id=63 data-nosnippet>63</a>                SO_PEERCRED,
-<a href=#64 id=64 data-nosnippet>64</a>                (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>ucred) <span class="kw">as </span><span class="kw-2">*mut </span>c_void,
-<a href=#65 id=65 data-nosnippet>65</a>                <span class="kw-2">&amp;mut </span>ucred_size,
+<a href=#60 id=60 data-nosnippet>60</a>            <span class="kw">let </span>ret = <a href="https://docs.rs/libc/0.2.191/libc/unix/fn.getsockopt.html">getsockopt</a>(
+<a href=#61 id=61 data-nosnippet>61</a>                <a href="#49">socket</a>.<a href="../../fd/raw.rs.html#71">as_raw_fd</a>(),
+<a href=#62 id=62 data-nosnippet>62</a>                <a href="https://docs.rs/libc/0.2.191/libc/new/linux_uapi/asm/socket/constant.SOL_SOCKET.html">SOL_SOCKET</a>,
+<a href=#63 id=63 data-nosnippet>63</a>                <a href="https://docs.rs/libc/0.2.191/libc/new/linux_uapi/asm/socket/constant.SO_PEERCRED.html">SO_PEERCRED</a>,
+<a href=#64 id=64 data-nosnippet>64</a>                (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span><a href="#57">ucred</a>) <span class="kw">as </span><span class="kw-2">*mut </span><a href="../../../../../std/ffi/enum.c_void.html">c_void</a>,
+<a href=#65 id=65 data-nosnippet>65</a>                <span class="kw-2">&amp;mut </span><a href="#56">ucred_size</a>,
 <a href=#66 id=66 data-nosnippet>66</a>            );
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>            <span class="kw">if </span>ret == <span class="number">0 </span>&amp;&amp; ucred_size <span class="kw">as </span>usize == size_of::&lt;ucred&gt;() {
-<a href=#69 id=69 data-nosnippet>69</a>                <span class="prelude-val">Ok</span>(UCred { uid: ucred.uid, gid: ucred.gid, pid: <span class="prelude-val">Some</span>(ucred.pid) })
+<a href=#68 id=68 data-nosnippet>68</a>            <span class="kw">if </span><a href="#60">ret</a> == <span class="number">0 </span>&amp;&amp; <a href="#56">ucred_size</a> <span class="kw">as </span><a href="../../../../../std/primitive.usize.html">usize</a> == <a href="../../../../../std/mem/fn.size_of.html">size_of</a>::&lt;<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/struct.ucred.html">ucred</a>&gt;() {
+<a href=#69 id=69 data-nosnippet>69</a>                <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Ok</a>(<a href="#12-24">UCred</a> { uid: <a href="#57">ucred</a>.uid, gid: <a href="#57">ucred</a>.gid, pid: <a class="prelude-val" href="../../../../../std/option/enum.Option.html">Some</a>(<a href="#57">ucred</a>.pid) })
 <a href=#70 id=70 data-nosnippet>70</a>            } <span class="kw">else </span>{
-<a href=#71 id=71 data-nosnippet>71</a>                <span class="prelude-val">Err</span>(io::Error::last_os_error())
+<a href=#71 id=71 data-nosnippet>71</a>                <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Err</a>(io::<a href="../../../../../std/io/struct.Error.html">Error</a>::<a href="../../../io/error.rs.html#43-45">last_os_error</a>())
 <a href=#72 id=72 data-nosnippet>72</a>            }
 <a href=#73 id=73 data-nosnippet>73</a>        }
 <a href=#74 id=74 data-nosnippet>74</a>    }

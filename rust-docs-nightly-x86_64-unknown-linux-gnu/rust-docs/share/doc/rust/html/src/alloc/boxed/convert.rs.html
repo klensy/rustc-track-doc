@@ -1,22 +1,22 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed/convert.rs`."><title>convert.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/boxed/</div>convert.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::any::Any;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>core::error::Error;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/boxed/convert.rs`."><title>convert.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/boxed/</div>convert.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../../core/any/trait.Any.html">core::any::Any</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../../../core/error/trait.Error.html">core::error::Error</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span>core::fmt;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>core::mem;
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>core::pin::Pin;
+<a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span><a href="../../../core/fmt/index.html">core::fmt</a>;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../../../core/mem/index.html">core::mem</a>;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../../../core/pin/struct.Pin.html">core::pin::Pin</a>;
 <a href=#7 id=7 data-nosnippet>7</a>
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::alloc::{Allocator, StaticAllocator};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::alloc::{<a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>, <a href="../../../alloc/alloc/trait.StaticAllocator.html">StaticAllocator</a>};
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span><span class="kw">crate</span>::borrow::Cow;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::boxed::Box;
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span><a href="../borrow.rs.html#169-180"><span class="kw">crate</span>::borrow::Cow</a>;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><a href="../boxed.rs.html#308-311"><span class="kw">crate</span>::boxed::Box</a>;
 <a href=#12 id=12 data-nosnippet>12</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span><span class="kw">crate</span>::string::String;
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">use </span><a href="../string.rs.html#357-359"><span class="kw">crate</span>::string::String</a>;
 <a href=#14 id=14 data-nosnippet>14</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="kw">use </span><span class="kw">crate</span>::vec::Vec;
+<a href=#15 id=15 data-nosnippet>15</a></span><span class="kw">use </span><a href="../vec/mod.rs.html#442-445"><span class="kw">crate</span>::vec::Vec</a>;
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#18 id=18 data-nosnippet>18</a>#[stable(feature = <span class="string">"from_for_ptrs"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;T&gt; <span class="kw">for </span>Box&lt;T&gt; {
+<a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;T&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;T&gt; {
 <a href=#20 id=20 data-nosnippet>20</a>    <span class="doccomment">/// Converts a `T` into a `Box&lt;T&gt;`
 <a href=#21 id=21 data-nosnippet>21</a>    ///
 <a href=#22 id=22 data-nosnippet>22</a>    /// The conversion allocates on the heap and moves `t`
@@ -31,14 +31,14 @@
 <a href=#31 id=31 data-nosnippet>31</a>    /// assert_eq!(Box::from(x), boxed);
 <a href=#32 id=32 data-nosnippet>32</a>    /// ```
 <a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">fn </span>from(t: T) -&gt; <span class="self">Self </span>{
-<a href=#34 id=34 data-nosnippet>34</a>        Box::new(t)
+<a href=#34 id=34 data-nosnippet>34</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#33">t</a>)
 <a href=#35 id=35 data-nosnippet>35</a>    }
 <a href=#36 id=36 data-nosnippet>36</a>}
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#39 id=39 data-nosnippet>39</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized, A: Allocator&gt; From&lt;Box&lt;T, A&gt;&gt; <span class="kw">for </span>Pin&lt;Box&lt;T, A&gt;&gt;
+<a href=#39 id=39 data-nosnippet>39</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>, A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;&gt; <span class="kw">for </span><a href="../../../core/pin/struct.Pin.html">Pin</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;&gt;
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">where
-<a href=#41 id=41 data-nosnippet>41</a>    </span>A: StaticAllocator,
+<a href=#41 id=41 data-nosnippet>41</a>    </span>A: <a href="../../../alloc/alloc/trait.StaticAllocator.html">StaticAllocator</a>,
 <a href=#42 id=42 data-nosnippet>42</a>{
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="doccomment">/// Converts a `Box&lt;T&gt;` into a `Pin&lt;Box&lt;T&gt;&gt;`. If `T` does not implement [`Unpin`], then
 <a href=#44 id=44 data-nosnippet>44</a>    /// `*boxed` will be pinned in memory and unable to be moved.
@@ -51,14 +51,14 @@
 <a href=#51 id=51 data-nosnippet>51</a>    /// can also be written more concisely using &lt;code&gt;[Box::pin]\(x)&lt;/code&gt;.
 <a href=#52 id=52 data-nosnippet>52</a>    /// This `From` implementation is useful if you already have a `Box&lt;T&gt;`, or you are
 <a href=#53 id=53 data-nosnippet>53</a>    /// constructing a (pinned) `Box` in a different way than with [`Box::new`].
-<a href=#54 id=54 data-nosnippet>54</a>    </span><span class="kw">fn </span>from(boxed: Box&lt;T, A&gt;) -&gt; <span class="self">Self </span>{
-<a href=#55 id=55 data-nosnippet>55</a>        Box::into_pin(boxed)
+<a href=#54 id=54 data-nosnippet>54</a>    </span><span class="kw">fn </span>from(boxed: <a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;) -&gt; <span class="self">Self </span>{
+<a href=#55 id=55 data-nosnippet>55</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#2114-2122">into_pin</a>(<a href="#54">boxed</a>)
 <a href=#56 id=56 data-nosnippet>56</a>    }
 <a href=#57 id=57 data-nosnippet>57</a>}
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#60 id=60 data-nosnippet>60</a>#[stable(feature = <span class="string">"box_from_slice"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">impl</span>&lt;T: Clone&gt; From&lt;<span class="kw-2">&amp;</span>[T]&gt; <span class="kw">for </span>Box&lt;[T]&gt; {
+<a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">impl</span>&lt;T: <a href="../../../core/clone/trait.Clone.html">Clone</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// Converts a `&amp;[T]` into a `Box&lt;[T]&gt;`
 <a href=#63 id=63 data-nosnippet>63</a>    ///
 <a href=#64 id=64 data-nosnippet>64</a>    /// This conversion allocates on the heap
@@ -73,14 +73,14 @@
 <a href=#73 id=73 data-nosnippet>73</a>    /// println!("{boxed_slice:?}");
 <a href=#74 id=74 data-nosnippet>74</a>    /// ```
 <a href=#75 id=75 data-nosnippet>75</a>    </span><span class="attr">#[inline]
-<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">fn </span>from(slice: <span class="kw-2">&amp;</span>[T]) -&gt; Box&lt;[T]&gt; {
-<a href=#77 id=77 data-nosnippet>77</a>        Box::clone_from_ref(slice)
+<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">fn </span>from(slice: <span class="kw-2">&amp;</span>[T]) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
+<a href=#77 id=77 data-nosnippet>77</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#879-881">clone_from_ref</a>(<a href="#76">slice</a>)
 <a href=#78 id=78 data-nosnippet>78</a>    }
 <a href=#79 id=79 data-nosnippet>79</a>}
 <a href=#80 id=80 data-nosnippet>80</a>
 <a href=#81 id=81 data-nosnippet>81</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#82 id=82 data-nosnippet>82</a>#[stable(feature = <span class="string">"box_from_mut_slice"</span>, since = <span class="string">"1.84.0"</span>)]
-<a href=#83 id=83 data-nosnippet>83</a></span><span class="kw">impl</span>&lt;T: Clone&gt; From&lt;<span class="kw-2">&amp;mut </span>[T]&gt; <span class="kw">for </span>Box&lt;[T]&gt; {
+<a href=#83 id=83 data-nosnippet>83</a></span><span class="kw">impl</span>&lt;T: <a href="../../../core/clone/trait.Clone.html">Clone</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;mut </span>[T]&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
 <a href=#84 id=84 data-nosnippet>84</a>    <span class="doccomment">/// Converts a `&amp;mut [T]` into a `Box&lt;[T]&gt;`
 <a href=#85 id=85 data-nosnippet>85</a>    ///
 <a href=#86 id=86 data-nosnippet>86</a>    /// This conversion allocates on the heap
@@ -96,14 +96,14 @@
 <a href=#96 id=96 data-nosnippet>96</a>    /// println!("{boxed_slice:?}");
 <a href=#97 id=97 data-nosnippet>97</a>    /// ```
 <a href=#98 id=98 data-nosnippet>98</a>    </span><span class="attr">#[inline]
-<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">fn </span>from(slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; Box&lt;[T]&gt; {
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="self">Self</span>::from(<span class="kw-2">&amp;*</span>slice)
+<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">fn </span>from(slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="self">Self</span>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<span class="kw-2">&amp;*</span><a href="#99">slice</a>)
 <a href=#101 id=101 data-nosnippet>101</a>    }
 <a href=#102 id=102 data-nosnippet>102</a>}
 <a href=#103 id=103 data-nosnippet>103</a>
 <a href=#104 id=104 data-nosnippet>104</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#105 id=105 data-nosnippet>105</a>#[stable(feature = <span class="string">"box_from_cow"</span>, since = <span class="string">"1.45.0"</span>)]
-<a href=#106 id=106 data-nosnippet>106</a></span><span class="kw">impl</span>&lt;T: Clone&gt; From&lt;Cow&lt;<span class="lifetime">'_</span>, [T]&gt;&gt; <span class="kw">for </span>Box&lt;[T]&gt; {
+<a href=#106 id=106 data-nosnippet>106</a></span><span class="kw">impl</span>&lt;T: <a href="../../../core/clone/trait.Clone.html">Clone</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'_</span>, [T]&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
 <a href=#107 id=107 data-nosnippet>107</a>    <span class="doccomment">/// Converts a `Cow&lt;'_, [T]&gt;` into a `Box&lt;[T]&gt;`
 <a href=#108 id=108 data-nosnippet>108</a>    ///
 <a href=#109 id=109 data-nosnippet>109</a>    /// When `cow` is the `Cow::Borrowed` variant, this
@@ -111,17 +111,17 @@
 <a href=#111 id=111 data-nosnippet>111</a>    /// underlying slice. Otherwise, it will try to reuse the owned
 <a href=#112 id=112 data-nosnippet>112</a>    /// `Vec`'s allocation.
 <a href=#113 id=113 data-nosnippet>113</a>    </span><span class="attr">#[inline]
-<a href=#114 id=114 data-nosnippet>114</a>    </span><span class="kw">fn </span>from(cow: Cow&lt;<span class="lifetime">'_</span>, [T]&gt;) -&gt; Box&lt;[T]&gt; {
-<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">match </span>cow {
-<a href=#116 id=116 data-nosnippet>116</a>            Cow::Borrowed(slice) =&gt; Box::from(slice),
-<a href=#117 id=117 data-nosnippet>117</a>            Cow::Owned(slice) =&gt; Box::from(slice),
+<a href=#114 id=114 data-nosnippet>114</a>    </span><span class="kw">fn </span>from(cow: <a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'_</span>, [T]&gt;) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">match </span><a href="#114">cow</a> {
+<a href=#116 id=116 data-nosnippet>116</a>            Cow::<a href="../borrow.rs.html#175">Borrowed</a>(slice) =&gt; <a href="../boxed.rs.html#308-311">Box</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#116">slice</a>),
+<a href=#117 id=117 data-nosnippet>117</a>            Cow::<a href="../borrow.rs.html#179">Owned</a>(slice) =&gt; <a href="../boxed.rs.html#308-311">Box</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#117">slice</a>),
 <a href=#118 id=118 data-nosnippet>118</a>        }
 <a href=#119 id=119 data-nosnippet>119</a>    }
 <a href=#120 id=120 data-nosnippet>120</a>}
 <a href=#121 id=121 data-nosnippet>121</a>
 <a href=#122 id=122 data-nosnippet>122</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#123 id=123 data-nosnippet>123</a>#[stable(feature = <span class="string">"box_from_slice"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#124 id=124 data-nosnippet>124</a></span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>Box&lt;str&gt; {
+<a href=#124 id=124 data-nosnippet>124</a></span><span class="kw">impl </span><a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="doccomment">/// Converts a `&amp;str` into a `Box&lt;str&gt;`
 <a href=#126 id=126 data-nosnippet>126</a>    ///
 <a href=#127 id=127 data-nosnippet>127</a>    /// This conversion allocates on the heap
@@ -134,14 +134,14 @@
 <a href=#134 id=134 data-nosnippet>134</a>    /// println!("{boxed}");
 <a href=#135 id=135 data-nosnippet>135</a>    /// ```
 <a href=#136 id=136 data-nosnippet>136</a>    </span><span class="attr">#[inline]
-<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">fn </span>from(s: <span class="kw-2">&amp;</span>str) -&gt; Box&lt;str&gt; {
-<a href=#138 id=138 data-nosnippet>138</a>        Box::clone_from_ref(s)
+<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">fn </span>from(s: <span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
+<a href=#138 id=138 data-nosnippet>138</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#879-881">clone_from_ref</a>(<a href="#137">s</a>)
 <a href=#139 id=139 data-nosnippet>139</a>    }
 <a href=#140 id=140 data-nosnippet>140</a>}
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#143 id=143 data-nosnippet>143</a>#[stable(feature = <span class="string">"box_from_mut_slice"</span>, since = <span class="string">"1.84.0"</span>)]
-<a href=#144 id=144 data-nosnippet>144</a></span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;mut </span>str&gt; <span class="kw">for </span>Box&lt;str&gt; {
+<a href=#144 id=144 data-nosnippet>144</a></span><span class="kw">impl </span><a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;mut </span><a href="../../../core/primitive.str.html">str</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#145 id=145 data-nosnippet>145</a>    <span class="doccomment">/// Converts a `&amp;mut str` into a `Box&lt;str&gt;`
 <a href=#146 id=146 data-nosnippet>146</a>    ///
 <a href=#147 id=147 data-nosnippet>147</a>    /// This conversion allocates on the heap
@@ -156,14 +156,14 @@
 <a href=#156 id=156 data-nosnippet>156</a>    /// println!("{boxed}");
 <a href=#157 id=157 data-nosnippet>157</a>    /// ```
 <a href=#158 id=158 data-nosnippet>158</a>    </span><span class="attr">#[inline]
-<a href=#159 id=159 data-nosnippet>159</a>    </span><span class="kw">fn </span>from(s: <span class="kw-2">&amp;mut </span>str) -&gt; Box&lt;str&gt; {
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="self">Self</span>::from(<span class="kw-2">&amp;*</span>s)
+<a href=#159 id=159 data-nosnippet>159</a>    </span><span class="kw">fn </span>from(s: <span class="kw-2">&amp;mut </span><a href="../../../core/primitive.str.html">str</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
+<a href=#160 id=160 data-nosnippet>160</a>        <span class="self">Self</span>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<span class="kw-2">&amp;*</span><a href="#159">s</a>)
 <a href=#161 id=161 data-nosnippet>161</a>    }
 <a href=#162 id=162 data-nosnippet>162</a>}
 <a href=#163 id=163 data-nosnippet>163</a>
 <a href=#164 id=164 data-nosnippet>164</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#165 id=165 data-nosnippet>165</a>#[stable(feature = <span class="string">"box_from_cow"</span>, since = <span class="string">"1.45.0"</span>)]
-<a href=#166 id=166 data-nosnippet>166</a></span><span class="kw">impl </span>From&lt;Cow&lt;<span class="lifetime">'_</span>, str&gt;&gt; <span class="kw">for </span>Box&lt;str&gt; {
+<a href=#166 id=166 data-nosnippet>166</a></span><span class="kw">impl </span><a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.str.html">str</a>&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#167 id=167 data-nosnippet>167</a>    <span class="doccomment">/// Converts a `Cow&lt;'_, str&gt;` into a `Box&lt;str&gt;`
 <a href=#168 id=168 data-nosnippet>168</a>    ///
 <a href=#169 id=169 data-nosnippet>169</a>    /// When `cow` is the `Cow::Borrowed` variant, this
@@ -188,16 +188,16 @@
 <a href=#188 id=188 data-nosnippet>188</a>    /// println!("{boxed}");
 <a href=#189 id=189 data-nosnippet>189</a>    /// ```
 <a href=#190 id=190 data-nosnippet>190</a>    </span><span class="attr">#[inline]
-<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">fn </span>from(cow: Cow&lt;<span class="lifetime">'_</span>, str&gt;) -&gt; Box&lt;str&gt; {
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">match </span>cow {
-<a href=#193 id=193 data-nosnippet>193</a>            Cow::Borrowed(s) =&gt; Box::from(s),
-<a href=#194 id=194 data-nosnippet>194</a>            Cow::Owned(s) =&gt; Box::from(s),
+<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">fn </span>from(cow: <a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.str.html">str</a>&gt;) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>&gt; {
+<a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">match </span><a href="#191">cow</a> {
+<a href=#193 id=193 data-nosnippet>193</a>            Cow::<a href="../borrow.rs.html#175">Borrowed</a>(s) =&gt; <a href="../boxed.rs.html#308-311">Box</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#193">s</a>),
+<a href=#194 id=194 data-nosnippet>194</a>            Cow::<a href="../borrow.rs.html#179">Owned</a>(s) =&gt; <a href="../boxed.rs.html#308-311">Box</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#194">s</a>),
 <a href=#195 id=195 data-nosnippet>195</a>        }
 <a href=#196 id=196 data-nosnippet>196</a>    }
 <a href=#197 id=197 data-nosnippet>197</a>}
 <a href=#198 id=198 data-nosnippet>198</a>
 <a href=#199 id=199 data-nosnippet>199</a><span class="attr">#[stable(feature = <span class="string">"boxed_str_conv"</span>, since = <span class="string">"1.19.0"</span>)]
-<a href=#200 id=200 data-nosnippet>200</a></span><span class="kw">impl</span>&lt;A: Allocator&gt; From&lt;Box&lt;str, A&gt;&gt; <span class="kw">for </span>Box&lt;[u8], A&gt; {
+<a href=#200 id=200 data-nosnippet>200</a></span><span class="kw">impl</span>&lt;A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>, A&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[<a href="../../../core/primitive.u8.html">u8</a>], A&gt; {
 <a href=#201 id=201 data-nosnippet>201</a>    <span class="doccomment">/// Converts a `Box&lt;str&gt;` into a `Box&lt;[u8]&gt;`
 <a href=#202 id=202 data-nosnippet>202</a>    ///
 <a href=#203 id=203 data-nosnippet>203</a>    /// This conversion does not allocate on the heap and happens in place.
@@ -215,16 +215,16 @@
 <a href=#215 id=215 data-nosnippet>215</a>    /// assert_eq!(boxed_slice, boxed_str);
 <a href=#216 id=216 data-nosnippet>216</a>    /// ```
 <a href=#217 id=217 data-nosnippet>217</a>    </span><span class="attr">#[inline]
-<a href=#218 id=218 data-nosnippet>218</a>    </span><span class="kw">fn </span>from(s: Box&lt;str, A&gt;) -&gt; <span class="self">Self </span>{
-<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>(raw, alloc) = Box::into_raw_with_allocator(s);
+<a href=#218 id=218 data-nosnippet>218</a>    </span><span class="kw">fn </span>from(s: <a href="../boxed.rs.html#308-311">Box</a>&lt;<a href="../../../core/primitive.str.html">str</a>, A&gt;) -&gt; <span class="self">Self </span>{
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>(raw, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a href="#218">s</a>);
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="comment">// SAFETY: All `str`s are also valid if reinterpreted as `[u8]`s.
-<a href=#221 id=221 data-nosnippet>221</a>        </span><span class="kw">unsafe </span>{ Box::from_raw_in(raw <span class="kw">as </span><span class="kw-2">*mut </span>[u8], alloc) }
+<a href=#221 id=221 data-nosnippet>221</a>        </span><span class="kw">unsafe </span>{ <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#219">raw</a> <span class="kw">as </span><span class="kw-2">*mut </span>[<a href="../../../core/primitive.u8.html">u8</a>], <a href="#219">alloc</a>) }
 <a href=#222 id=222 data-nosnippet>222</a>    }
 <a href=#223 id=223 data-nosnippet>223</a>}
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#226 id=226 data-nosnippet>226</a>#[stable(feature = <span class="string">"box_from_array"</span>, since = <span class="string">"1.45.0"</span>)]
-<a href=#227 id=227 data-nosnippet>227</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; From&lt;[T; N]&gt; <span class="kw">for </span>Box&lt;[T]&gt; {
+<a href=#227 id=227 data-nosnippet>227</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;[T; <a href="#227">N</a>]&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
 <a href=#228 id=228 data-nosnippet>228</a>    <span class="doccomment">/// Converts a `[T; N]` into a `Box&lt;[T]&gt;`
 <a href=#229 id=229 data-nosnippet>229</a>    ///
 <a href=#230 id=230 data-nosnippet>230</a>    /// This conversion moves the array to newly heap-allocated memory.
@@ -235,8 +235,8 @@
 <a href=#235 id=235 data-nosnippet>235</a>    /// let boxed: Box&lt;[u8]&gt; = Box::from([4, 2]);
 <a href=#236 id=236 data-nosnippet>236</a>    /// println!("{boxed:?}");
 <a href=#237 id=237 data-nosnippet>237</a>    /// ```
-<a href=#238 id=238 data-nosnippet>238</a>    </span><span class="kw">fn </span>from(array: [T; N]) -&gt; Box&lt;[T]&gt; {
-<a href=#239 id=239 data-nosnippet>239</a>        Box::new(array)
+<a href=#238 id=238 data-nosnippet>238</a>    </span><span class="kw">fn </span>from(array: [T; <a href="#227">N</a>]) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;[T]&gt; {
+<a href=#239 id=239 data-nosnippet>239</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#238">array</a>)
 <a href=#240 id=240 data-nosnippet>240</a>    }
 <a href=#241 id=241 data-nosnippet>241</a>}
 <a href=#242 id=242 data-nosnippet>242</a>
@@ -245,20 +245,20 @@
 <a href=#245 id=245 data-nosnippet>245</a>/// # Safety
 <a href=#246 id=246 data-nosnippet>246</a>///
 <a href=#247 id=247 data-nosnippet>247</a>/// `boxed_slice.len()` must be exactly `N`.
-<a href=#248 id=248 data-nosnippet>248</a></span><span class="kw">unsafe fn </span>boxed_slice_as_array_unchecked&lt;T, A: Allocator, <span class="kw">const </span>N: usize&gt;(
-<a href=#249 id=249 data-nosnippet>249</a>    boxed_slice: Box&lt;[T], A&gt;,
-<a href=#250 id=250 data-nosnippet>250</a>) -&gt; Box&lt;[T; N], A&gt; {
-<a href=#251 id=251 data-nosnippet>251</a>    <span class="macro">debug_assert_eq!</span>(boxed_slice.len(), N);
+<a href=#248 id=248 data-nosnippet>248</a></span><span class="kw">unsafe fn </span>boxed_slice_as_array_unchecked&lt;T, A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(
+<a href=#249 id=249 data-nosnippet>249</a>    boxed_slice: <a href="../boxed.rs.html#308-311">Box</a>&lt;[T], A&gt;,
+<a href=#250 id=250 data-nosnippet>250</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;[T; <a href="#248">N</a>], A&gt; {
+<a href=#251 id=251 data-nosnippet>251</a>    <a href="../../../core/macro.debug_assert_eq.html">debug_assert_eq!</a>(boxed_slice.len(), N);
 <a href=#252 id=252 data-nosnippet>252</a>
-<a href=#253 id=253 data-nosnippet>253</a>    <span class="kw">let </span>(ptr, alloc) = Box::into_raw_with_allocator(boxed_slice);
+<a href=#253 id=253 data-nosnippet>253</a>    <span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a href="#249">boxed_slice</a>);
 <a href=#254 id=254 data-nosnippet>254</a>    <span class="comment">// SAFETY: Pointer and allocator came from an existing box,
 <a href=#255 id=255 data-nosnippet>255</a>    // and our safety condition requires that the length is exactly `N`
-<a href=#256 id=256 data-nosnippet>256</a>    </span><span class="kw">unsafe </span>{ Box::from_raw_in(ptr <span class="kw">as </span><span class="kw-2">*mut </span>[T; N], alloc) }
+<a href=#256 id=256 data-nosnippet>256</a>    </span><span class="kw">unsafe </span>{ <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#253">ptr</a> <span class="kw">as </span><span class="kw-2">*mut </span>[T; <a href="#248">N</a>], <a href="#253">alloc</a>) }
 <a href=#257 id=257 data-nosnippet>257</a>}
 <a href=#258 id=258 data-nosnippet>258</a>
 <a href=#259 id=259 data-nosnippet>259</a><span class="attr">#[stable(feature = <span class="string">"boxed_slice_try_from"</span>, since = <span class="string">"1.43.0"</span>)]
-<a href=#260 id=260 data-nosnippet>260</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize, A: Allocator&gt; TryFrom&lt;Box&lt;[T], A&gt;&gt; <span class="kw">for </span>Box&lt;[T; N], A&gt; {
-<a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">type </span>Error = Box&lt;[T], A&gt;;
+<a href=#260 id=260 data-nosnippet>260</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>, A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../../../core/convert/trait.TryFrom.html">TryFrom</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;[T], A&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T; <a href="#260">N</a>], A&gt; {
+<a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">type </span>Error = <a href="../boxed.rs.html#308-311">Box</a>&lt;[T], A&gt;;
 <a href=#262 id=262 data-nosnippet>262</a>
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="doccomment">/// Attempts to convert a `Box&lt;[T]&gt;` into a `Box&lt;[T; N]&gt;`.
 <a href=#264 id=264 data-nosnippet>264</a>    ///
@@ -269,20 +269,20 @@
 <a href=#269 id=269 data-nosnippet>269</a>    ///
 <a href=#270 id=270 data-nosnippet>270</a>    /// Returns the old `Box&lt;[T]&gt;` in the `Err` variant if
 <a href=#271 id=271 data-nosnippet>271</a>    /// `boxed_slice.len()` does not equal `N`.
-<a href=#272 id=272 data-nosnippet>272</a>    </span><span class="kw">fn </span>try_from(boxed_slice: Box&lt;[T], A&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-<a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">if </span>boxed_slice.len() == N {
+<a href=#272 id=272 data-nosnippet>272</a>    </span><span class="kw">fn </span>try_from(boxed_slice: <a href="../boxed.rs.html#308-311">Box</a>&lt;[T], A&gt;) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+<a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">if </span><a href="#272">boxed_slice</a>.<a href="../../../core/primitive.slice.html#method.len">len</a>() == <a href="#260">N</a> {
 <a href=#274 id=274 data-nosnippet>274</a>            <span class="comment">// SAFETY: Checked length.
-<a href=#275 id=275 data-nosnippet>275</a>            </span><span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ boxed_slice_as_array_unchecked(boxed_slice) })
+<a href=#275 id=275 data-nosnippet>275</a>            </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="kw">unsafe </span>{ <a href="#248-257">boxed_slice_as_array_unchecked</a>(<a href="#272">boxed_slice</a>) })
 <a href=#276 id=276 data-nosnippet>276</a>        } <span class="kw">else </span>{
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="prelude-val">Err</span>(boxed_slice)
+<a href=#277 id=277 data-nosnippet>277</a>            <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="#272">boxed_slice</a>)
 <a href=#278 id=278 data-nosnippet>278</a>        }
 <a href=#279 id=279 data-nosnippet>279</a>    }
 <a href=#280 id=280 data-nosnippet>280</a>}
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#283 id=283 data-nosnippet>283</a>#[stable(feature = <span class="string">"boxed_array_try_from_vec"</span>, since = <span class="string">"1.66.0"</span>)]
-<a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize, A: Allocator&gt; TryFrom&lt;Vec&lt;T, A&gt;&gt; <span class="kw">for </span>Box&lt;[T; N], A&gt; {
-<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">type </span>Error = Vec&lt;T, A&gt;;
+<a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>, A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../../../core/convert/trait.TryFrom.html">TryFrom</a>&lt;<a href="../vec/mod.rs.html#442-445">Vec</a>&lt;T, A&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;[T; <a href="#284">N</a>], A&gt; {
+<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">type </span>Error = <a href="../vec/mod.rs.html#442-445">Vec</a>&lt;T, A&gt;;
 <a href=#286 id=286 data-nosnippet>286</a>
 <a href=#287 id=287 data-nosnippet>287</a>    <span class="doccomment">/// Attempts to convert a `Vec&lt;T&gt;` into a `Box&lt;[T; N]&gt;`.
 <a href=#288 id=288 data-nosnippet>288</a>    ///
@@ -302,18 +302,18 @@
 <a href=#302 id=302 data-nosnippet>302</a>    /// let state: Box&lt;[f32; 100]&gt; = vec![1.0; 100].try_into().unwrap();
 <a href=#303 id=303 data-nosnippet>303</a>    /// assert_eq!(state.len(), 100);
 <a href=#304 id=304 data-nosnippet>304</a>    /// ```
-<a href=#305 id=305 data-nosnippet>305</a>    </span><span class="kw">fn </span>try_from(vec: Vec&lt;T, A&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-<a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">if </span>vec.len() == N {
-<a href=#307 id=307 data-nosnippet>307</a>            <span class="kw">let </span>boxed_slice = vec.into_boxed_slice();
+<a href=#305 id=305 data-nosnippet>305</a>    </span><span class="kw">fn </span>try_from(vec: <a href="../vec/mod.rs.html#442-445">Vec</a>&lt;T, A&gt;) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+<a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">if </span><a href="#305">vec</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() == <a href="#284">N</a> {
+<a href=#307 id=307 data-nosnippet>307</a>            <span class="kw">let </span>boxed_slice = <a href="#305">vec</a>.<a href="../vec/mod.rs.html#1640-1649">into_boxed_slice</a>();
 <a href=#308 id=308 data-nosnippet>308</a>            <span class="comment">// SAFETY: Checked length.
-<a href=#309 id=309 data-nosnippet>309</a>            </span><span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ boxed_slice_as_array_unchecked(boxed_slice) })
+<a href=#309 id=309 data-nosnippet>309</a>            </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="kw">unsafe </span>{ <a href="#248-257">boxed_slice_as_array_unchecked</a>(<a href="#307">boxed_slice</a>) })
 <a href=#310 id=310 data-nosnippet>310</a>        } <span class="kw">else </span>{
-<a href=#311 id=311 data-nosnippet>311</a>            <span class="prelude-val">Err</span>(vec)
+<a href=#311 id=311 data-nosnippet>311</a>            <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="#305">vec</a>)
 <a href=#312 id=312 data-nosnippet>312</a>        }
 <a href=#313 id=313 data-nosnippet>313</a>    }
 <a href=#314 id=314 data-nosnippet>314</a>}
 <a href=#315 id=315 data-nosnippet>315</a>
-<a href=#316 id=316 data-nosnippet>316</a><span class="kw">impl</span>&lt;A: Allocator&gt; Box&lt;<span class="kw">dyn </span>Any, A&gt; {
+<a href=#316 id=316 data-nosnippet>316</a><span class="kw">impl</span>&lt;A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a>, A&gt; {
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#318 id=318 data-nosnippet>318</a>    ///
 <a href=#319 id=319 data-nosnippet>319</a>    /// # Examples
@@ -333,9 +333,9 @@
 <a href=#333 id=333 data-nosnippet>333</a>    /// ```
 <a href=#334 id=334 data-nosnippet>334</a>    </span><span class="attr">#[inline]
 <a href=#335 id=335 data-nosnippet>335</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#336 id=336 data-nosnippet>336</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Any&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T, A&gt;, <span class="self">Self</span>&gt; {
+<a href=#336 id=336 data-nosnippet>336</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;, <span class="self">Self</span>&gt; {
 <a href=#337 id=337 data-nosnippet>337</a>        <span class="comment">// SAFETY: Check ensures the type is correct.
-<a href=#338 id=338 data-nosnippet>338</a>        </span><span class="kw">if </span><span class="self">self</span>.is::&lt;T&gt;() { <span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(<span class="self">self</span>.downcast_unchecked::&lt;T&gt;()) } } <span class="kw">else </span>{ <span class="prelude-val">Err</span>(<span class="self">self</span>) }
+<a href=#338 id=338 data-nosnippet>338</a>        </span><span class="kw">if </span><a class="self" href="#336">self</a>.<a href="../../../core/any/trait.Any.html#method.is">is</a>::&lt;T&gt;() { <span class="kw">unsafe </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a class="self" href="#336">self</a>.<a href="#367-374">downcast_unchecked</a>::&lt;T&gt;()) } } <span class="kw">else </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a class="self" href="#336">self</a>) }
 <a href=#339 id=339 data-nosnippet>339</a>    }
 <a href=#340 id=340 data-nosnippet>340</a>
 <a href=#341 id=341 data-nosnippet>341</a>    <span class="doccomment">/// Downcasts the box to a concrete type.
@@ -364,17 +364,17 @@
 <a href=#364 id=364 data-nosnippet>364</a>    /// [`downcast`]: Self::downcast
 <a href=#365 id=365 data-nosnippet>365</a>    </span><span class="attr">#[inline]
 <a href=#366 id=366 data-nosnippet>366</a>    #[unstable(feature = <span class="string">"downcast_unchecked"</span>, issue = <span class="string">"90850"</span>)]
-<a href=#367 id=367 data-nosnippet>367</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: Any&gt;(<span class="self">self</span>) -&gt; Box&lt;T, A&gt; {
-<a href=#368 id=368 data-nosnippet>368</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is::&lt;T&gt;());
+<a href=#367 id=367 data-nosnippet>367</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt; {
+<a href=#368 id=368 data-nosnippet>368</a>        <a href="../../../core/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.is::&lt;T&gt;());
 <a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// SAFETY: Caller ensures the type is correct.
 <a href=#370 id=370 data-nosnippet>370</a>        </span><span class="kw">unsafe </span>{
-<a href=#371 id=371 data-nosnippet>371</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span><span class="kw">dyn </span>Any, <span class="kw">_</span>) = Box::into_raw_with_allocator(<span class="self">self</span>);
-<a href=#372 id=372 data-nosnippet>372</a>            Box::from_raw_in(raw <span class="kw">as </span><span class="kw-2">*mut </span>T, alloc)
+<a href=#371 id=371 data-nosnippet>371</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span><span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a>, <span class="kw">_</span>) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a class="self" href="#367">self</a>);
+<a href=#372 id=372 data-nosnippet>372</a>            <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#371">raw</a> <span class="kw">as </span><span class="kw-2">*mut </span>T, <a href="#371">alloc</a>)
 <a href=#373 id=373 data-nosnippet>373</a>        }
 <a href=#374 id=374 data-nosnippet>374</a>    }
 <a href=#375 id=375 data-nosnippet>375</a>}
 <a href=#376 id=376 data-nosnippet>376</a>
-<a href=#377 id=377 data-nosnippet>377</a><span class="kw">impl</span>&lt;A: Allocator&gt; Box&lt;<span class="kw">dyn </span>Any + Send, A&gt; {
+<a href=#377 id=377 data-nosnippet>377</a><span class="kw">impl</span>&lt;A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a> + <a href="../../../core/marker/trait.Send.html">Send</a>, A&gt; {
 <a href=#378 id=378 data-nosnippet>378</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#379 id=379 data-nosnippet>379</a>    ///
 <a href=#380 id=380 data-nosnippet>380</a>    /// # Examples
@@ -394,9 +394,9 @@
 <a href=#394 id=394 data-nosnippet>394</a>    /// ```
 <a href=#395 id=395 data-nosnippet>395</a>    </span><span class="attr">#[inline]
 <a href=#396 id=396 data-nosnippet>396</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#397 id=397 data-nosnippet>397</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Any&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T, A&gt;, <span class="self">Self</span>&gt; {
+<a href=#397 id=397 data-nosnippet>397</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;, <span class="self">Self</span>&gt; {
 <a href=#398 id=398 data-nosnippet>398</a>        <span class="comment">// SAFETY: Check ensures the type is correct.
-<a href=#399 id=399 data-nosnippet>399</a>        </span><span class="kw">if </span><span class="self">self</span>.is::&lt;T&gt;() { <span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(<span class="self">self</span>.downcast_unchecked::&lt;T&gt;()) } } <span class="kw">else </span>{ <span class="prelude-val">Err</span>(<span class="self">self</span>) }
+<a href=#399 id=399 data-nosnippet>399</a>        </span><span class="kw">if </span><a class="self" href="#397">self</a>.<a href="../../../core/any/trait.Any.html#method.is">is</a>::&lt;T&gt;() { <span class="kw">unsafe </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a class="self" href="#397">self</a>.<a href="#428-435">downcast_unchecked</a>::&lt;T&gt;()) } } <span class="kw">else </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a class="self" href="#397">self</a>) }
 <a href=#400 id=400 data-nosnippet>400</a>    }
 <a href=#401 id=401 data-nosnippet>401</a>
 <a href=#402 id=402 data-nosnippet>402</a>    <span class="doccomment">/// Downcasts the box to a concrete type.
@@ -425,17 +425,17 @@
 <a href=#425 id=425 data-nosnippet>425</a>    /// [`downcast`]: Self::downcast
 <a href=#426 id=426 data-nosnippet>426</a>    </span><span class="attr">#[inline]
 <a href=#427 id=427 data-nosnippet>427</a>    #[unstable(feature = <span class="string">"downcast_unchecked"</span>, issue = <span class="string">"90850"</span>)]
-<a href=#428 id=428 data-nosnippet>428</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: Any&gt;(<span class="self">self</span>) -&gt; Box&lt;T, A&gt; {
-<a href=#429 id=429 data-nosnippet>429</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is::&lt;T&gt;());
+<a href=#428 id=428 data-nosnippet>428</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt; {
+<a href=#429 id=429 data-nosnippet>429</a>        <a href="../../../core/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.is::&lt;T&gt;());
 <a href=#430 id=430 data-nosnippet>430</a>        <span class="comment">// SAFETY: Caller ensures the type is correct.
 <a href=#431 id=431 data-nosnippet>431</a>        </span><span class="kw">unsafe </span>{
-<a href=#432 id=432 data-nosnippet>432</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span>(<span class="kw">dyn </span>Any + Send), <span class="kw">_</span>) = Box::into_raw_with_allocator(<span class="self">self</span>);
-<a href=#433 id=433 data-nosnippet>433</a>            Box::from_raw_in(raw <span class="kw">as </span><span class="kw-2">*mut </span>T, alloc)
+<a href=#432 id=432 data-nosnippet>432</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span>(<span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a> + <a href="../../../core/marker/trait.Send.html">Send</a>), <span class="kw">_</span>) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a class="self" href="#428">self</a>);
+<a href=#433 id=433 data-nosnippet>433</a>            <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#432">raw</a> <span class="kw">as </span><span class="kw-2">*mut </span>T, <a href="#432">alloc</a>)
 <a href=#434 id=434 data-nosnippet>434</a>        }
 <a href=#435 id=435 data-nosnippet>435</a>    }
 <a href=#436 id=436 data-nosnippet>436</a>}
 <a href=#437 id=437 data-nosnippet>437</a>
-<a href=#438 id=438 data-nosnippet>438</a><span class="kw">impl</span>&lt;A: Allocator&gt; Box&lt;<span class="kw">dyn </span>Any + Send + Sync, A&gt; {
+<a href=#438 id=438 data-nosnippet>438</a><span class="kw">impl</span>&lt;A: <a href="../../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a>, A&gt; {
 <a href=#439 id=439 data-nosnippet>439</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#440 id=440 data-nosnippet>440</a>    ///
 <a href=#441 id=441 data-nosnippet>441</a>    /// # Examples
@@ -455,9 +455,9 @@
 <a href=#455 id=455 data-nosnippet>455</a>    /// ```
 <a href=#456 id=456 data-nosnippet>456</a>    </span><span class="attr">#[inline]
 <a href=#457 id=457 data-nosnippet>457</a>    #[stable(feature = <span class="string">"box_send_sync_any_downcast"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#458 id=458 data-nosnippet>458</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Any&gt;(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T, A&gt;, <span class="self">Self</span>&gt; {
+<a href=#458 id=458 data-nosnippet>458</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt;, <span class="self">Self</span>&gt; {
 <a href=#459 id=459 data-nosnippet>459</a>        <span class="comment">// SAFETY: Check ensures the type is correct.
-<a href=#460 id=460 data-nosnippet>460</a>        </span><span class="kw">if </span><span class="self">self</span>.is::&lt;T&gt;() { <span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(<span class="self">self</span>.downcast_unchecked::&lt;T&gt;()) } } <span class="kw">else </span>{ <span class="prelude-val">Err</span>(<span class="self">self</span>) }
+<a href=#460 id=460 data-nosnippet>460</a>        </span><span class="kw">if </span><a class="self" href="#458">self</a>.<a href="../../../core/any/trait.Any.html#method.is">is</a>::&lt;T&gt;() { <span class="kw">unsafe </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a class="self" href="#458">self</a>.<a href="#489-497">downcast_unchecked</a>::&lt;T&gt;()) } } <span class="kw">else </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a class="self" href="#458">self</a>) }
 <a href=#461 id=461 data-nosnippet>461</a>    }
 <a href=#462 id=462 data-nosnippet>462</a>
 <a href=#463 id=463 data-nosnippet>463</a>    <span class="doccomment">/// Downcasts the box to a concrete type.
@@ -486,20 +486,20 @@
 <a href=#486 id=486 data-nosnippet>486</a>    /// [`downcast`]: Self::downcast
 <a href=#487 id=487 data-nosnippet>487</a>    </span><span class="attr">#[inline]
 <a href=#488 id=488 data-nosnippet>488</a>    #[unstable(feature = <span class="string">"downcast_unchecked"</span>, issue = <span class="string">"90850"</span>)]
-<a href=#489 id=489 data-nosnippet>489</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: Any&gt;(<span class="self">self</span>) -&gt; Box&lt;T, A&gt; {
-<a href=#490 id=490 data-nosnippet>490</a>        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is::&lt;T&gt;());
+<a href=#489 id=489 data-nosnippet>489</a>    </span><span class="kw">pub unsafe fn </span>downcast_unchecked&lt;T: <a href="../../../core/any/trait.Any.html">Any</a>&gt;(<span class="self">self</span>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;T, A&gt; {
+<a href=#490 id=490 data-nosnippet>490</a>        <a href="../../../core/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.is::&lt;T&gt;());
 <a href=#491 id=491 data-nosnippet>491</a>        <span class="comment">// SAFETY: Caller ensures the type is correct.
 <a href=#492 id=492 data-nosnippet>492</a>        </span><span class="kw">unsafe </span>{
-<a href=#493 id=493 data-nosnippet>493</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span>(<span class="kw">dyn </span>Any + Send + Sync), <span class="kw">_</span>) =
-<a href=#494 id=494 data-nosnippet>494</a>                Box::into_raw_with_allocator(<span class="self">self</span>);
-<a href=#495 id=495 data-nosnippet>495</a>            Box::from_raw_in(raw <span class="kw">as </span><span class="kw-2">*mut </span>T, alloc)
+<a href=#493 id=493 data-nosnippet>493</a>            <span class="kw">let </span>(raw, alloc): (<span class="kw-2">*mut </span>(<span class="kw">dyn </span><a href="../../../core/any/trait.Any.html">Any</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a>), <span class="kw">_</span>) =
+<a href=#494 id=494 data-nosnippet>494</a>                <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a class="self" href="#489">self</a>);
+<a href=#495 id=495 data-nosnippet>495</a>            <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#493">raw</a> <span class="kw">as </span><span class="kw-2">*mut </span>T, <a href="#493">alloc</a>)
 <a href=#496 id=496 data-nosnippet>496</a>        }
 <a href=#497 id=497 data-nosnippet>497</a>    }
 <a href=#498 id=498 data-nosnippet>498</a>}
 <a href=#499 id=499 data-nosnippet>499</a>
 <a href=#500 id=500 data-nosnippet>500</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#501 id=501 data-nosnippet>501</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#502 id=502 data-nosnippet>502</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, E: Error + <span class="lifetime">'a</span>&gt; From&lt;E&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
+<a href=#502 id=502 data-nosnippet>502</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, E: <a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;E&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#503 id=503 data-nosnippet>503</a>    <span class="doccomment">/// Converts a type of [`Error`] into a box of dyn [`Error`].
 <a href=#504 id=504 data-nosnippet>504</a>    ///
 <a href=#505 id=505 data-nosnippet>505</a>    /// # Examples
@@ -524,14 +524,14 @@
 <a href=#524 id=524 data-nosnippet>524</a>    /// let a_boxed_error = Box::&lt;dyn Error&gt;::from(an_error);
 <a href=#525 id=525 data-nosnippet>525</a>    /// assert!(size_of::&lt;Box&lt;dyn Error&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#526 id=526 data-nosnippet>526</a>    /// ```
-<a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">fn </span>from(err: E) -&gt; Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
-<a href=#528 id=528 data-nosnippet>528</a>        Box::new(err)
+<a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">fn </span>from(err: E) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#528 id=528 data-nosnippet>528</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#527">err</a>)
 <a href=#529 id=529 data-nosnippet>529</a>    }
 <a href=#530 id=530 data-nosnippet>530</a>}
 <a href=#531 id=531 data-nosnippet>531</a>
 <a href=#532 id=532 data-nosnippet>532</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#533 id=533 data-nosnippet>533</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#534 id=534 data-nosnippet>534</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, E: Error + Send + Sync + <span class="lifetime">'a</span>&gt; From&lt;E&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
+<a href=#534 id=534 data-nosnippet>534</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, E: <a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;E&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#535 id=535 data-nosnippet>535</a>    <span class="doccomment">/// Converts a type of [`Error`] + [`Send`] + [`Sync`] into a box of
 <a href=#536 id=536 data-nosnippet>536</a>    /// dyn [`Error`] + [`Send`] + [`Sync`].
 <a href=#537 id=537 data-nosnippet>537</a>    ///
@@ -562,14 +562,14 @@
 <a href=#562 id=562 data-nosnippet>562</a>    /// assert!(
 <a href=#563 id=563 data-nosnippet>563</a>    ///     size_of::&lt;Box&lt;dyn Error + Send + Sync&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#564 id=564 data-nosnippet>564</a>    /// ```
-<a href=#565 id=565 data-nosnippet>565</a>    </span><span class="kw">fn </span>from(err: E) -&gt; Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
-<a href=#566 id=566 data-nosnippet>566</a>        Box::new(err)
+<a href=#565 id=565 data-nosnippet>565</a>    </span><span class="kw">fn </span>from(err: E) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#566 id=566 data-nosnippet>566</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#565">err</a>)
 <a href=#567 id=567 data-nosnippet>567</a>    }
 <a href=#568 id=568 data-nosnippet>568</a>}
 <a href=#569 id=569 data-nosnippet>569</a>
 <a href=#570 id=570 data-nosnippet>570</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#571 id=571 data-nosnippet>571</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#572 id=572 data-nosnippet>572</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;String&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
+<a href=#572 id=572 data-nosnippet>572</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../string.rs.html#357-359">String</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#573 id=573 data-nosnippet>573</a>    <span class="doccomment">/// Converts a [`String`] into a box of dyn [`Error`] + [`Send`] + [`Sync`].
 <a href=#574 id=574 data-nosnippet>574</a>    ///
 <a href=#575 id=575 data-nosnippet>575</a>    /// # Examples
@@ -583,31 +583,31 @@
 <a href=#583 id=583 data-nosnippet>583</a>    ///     size_of::&lt;Box&lt;dyn Error + Send + Sync&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#584 id=584 data-nosnippet>584</a>    /// ```
 <a href=#585 id=585 data-nosnippet>585</a>    </span><span class="attr">#[inline]
-<a href=#586 id=586 data-nosnippet>586</a>    </span><span class="kw">fn </span>from(err: String) -&gt; Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
-<a href=#587 id=587 data-nosnippet>587</a>        <span class="kw">struct </span>StringError(String);
+<a href=#586 id=586 data-nosnippet>586</a>    </span><span class="kw">fn </span>from(err: <a href="../string.rs.html#357-359">String</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#587 id=587 data-nosnippet>587</a>        <span class="kw">struct </span>StringError(<a href="../string.rs.html#357-359">String</a>);
 <a href=#588 id=588 data-nosnippet>588</a>
-<a href=#589 id=589 data-nosnippet>589</a>        <span class="kw">impl </span>Error <span class="kw">for </span>StringError {}
+<a href=#589 id=589 data-nosnippet>589</a>        <span class="kw">impl </span><a href="../../../core/error/trait.Error.html">Error</a> <span class="kw">for </span><a href="#587">StringError</a> {}
 <a href=#590 id=590 data-nosnippet>590</a>
-<a href=#591 id=591 data-nosnippet>591</a>        <span class="kw">impl </span>fmt::Display <span class="kw">for </span>StringError {
-<a href=#592 id=592 data-nosnippet>592</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#593 id=593 data-nosnippet>593</a>                fmt::Display::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, f)
+<a href=#591 id=591 data-nosnippet>591</a>        <span class="kw">impl </span><a href="../../../alloc/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#587">StringError</a> {
+<a href=#592 id=592 data-nosnippet>592</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../alloc/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../alloc/fmt/type.Result.html">Result</a> {
+<a href=#593 id=593 data-nosnippet>593</a>                fmt::Display::<a href="../../../alloc/fmt/trait.Display.html">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#592">self</a>.<span class="number">0</span>, <a href="#592">f</a>)
 <a href=#594 id=594 data-nosnippet>594</a>            }
 <a href=#595 id=595 data-nosnippet>595</a>        }
 <a href=#596 id=596 data-nosnippet>596</a>
 <a href=#597 id=597 data-nosnippet>597</a>        <span class="comment">// Purposefully skip printing "StringError(..)"
-<a href=#598 id=598 data-nosnippet>598</a>        </span><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>StringError {
-<a href=#599 id=599 data-nosnippet>599</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#600 id=600 data-nosnippet>600</a>                fmt::Debug::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, f)
+<a href=#598 id=598 data-nosnippet>598</a>        </span><span class="kw">impl </span><a href="../../../alloc/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#587">StringError</a> {
+<a href=#599 id=599 data-nosnippet>599</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../alloc/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../alloc/fmt/type.Result.html">Result</a> {
+<a href=#600 id=600 data-nosnippet>600</a>                fmt::Debug::<a href="../../../alloc/fmt/trait.Debug.html">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#599">self</a>.<span class="number">0</span>, <a href="#599">f</a>)
 <a href=#601 id=601 data-nosnippet>601</a>            }
 <a href=#602 id=602 data-nosnippet>602</a>        }
 <a href=#603 id=603 data-nosnippet>603</a>
-<a href=#604 id=604 data-nosnippet>604</a>        Box::new(StringError(err))
+<a href=#604 id=604 data-nosnippet>604</a>        <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#587">StringError</a>(<a href="#586">err</a>))
 <a href=#605 id=605 data-nosnippet>605</a>    }
 <a href=#606 id=606 data-nosnippet>606</a>}
 <a href=#607 id=607 data-nosnippet>607</a>
 <a href=#608 id=608 data-nosnippet>608</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#609 id=609 data-nosnippet>609</a>#[stable(feature = <span class="string">"string_box_error"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#610 id=610 data-nosnippet>610</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;String&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
+<a href=#610 id=610 data-nosnippet>610</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../string.rs.html#357-359">String</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#611 id=611 data-nosnippet>611</a>    <span class="doccomment">/// Converts a [`String`] into a box of dyn [`Error`].
 <a href=#612 id=612 data-nosnippet>612</a>    ///
 <a href=#613 id=613 data-nosnippet>613</a>    /// # Examples
@@ -619,16 +619,16 @@
 <a href=#619 id=619 data-nosnippet>619</a>    /// let a_boxed_error = Box::&lt;dyn Error&gt;::from(a_string_error);
 <a href=#620 id=620 data-nosnippet>620</a>    /// assert!(size_of::&lt;Box&lt;dyn Error&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#621 id=621 data-nosnippet>621</a>    /// ```
-<a href=#622 id=622 data-nosnippet>622</a>    </span><span class="kw">fn </span>from(str_err: String) -&gt; Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
-<a href=#623 id=623 data-nosnippet>623</a>        <span class="kw">let </span>err1: Box&lt;<span class="kw">dyn </span>Error + Send + Sync&gt; = From::from(str_err);
-<a href=#624 id=624 data-nosnippet>624</a>        <span class="kw">let </span>err2: Box&lt;<span class="kw">dyn </span>Error&gt; = err1;
-<a href=#625 id=625 data-nosnippet>625</a>        err2
+<a href=#622 id=622 data-nosnippet>622</a>    </span><span class="kw">fn </span>from(str_err: <a href="../string.rs.html#357-359">String</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#623 id=623 data-nosnippet>623</a>        <span class="kw">let </span>err1: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a>&gt; = From::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#622">str_err</a>);
+<a href=#624 id=624 data-nosnippet>624</a>        <span class="kw">let </span>err2: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt; = <a href="#623">err1</a>;
+<a href=#625 id=625 data-nosnippet>625</a>        <a href="#624">err2</a>
 <a href=#626 id=626 data-nosnippet>626</a>    }
 <a href=#627 id=627 data-nosnippet>627</a>}
 <a href=#628 id=628 data-nosnippet>628</a>
 <a href=#629 id=629 data-nosnippet>629</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#630 id=630 data-nosnippet>630</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#631 id=631 data-nosnippet>631</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
+<a href=#631 id=631 data-nosnippet>631</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#632 id=632 data-nosnippet>632</a>    <span class="doccomment">/// Converts a [`str`] into a box of dyn [`Error`] + [`Send`] + [`Sync`].
 <a href=#633 id=633 data-nosnippet>633</a>    ///
 <a href=#634 id=634 data-nosnippet>634</a>    /// [`str`]: prim@str
@@ -644,14 +644,14 @@
 <a href=#644 id=644 data-nosnippet>644</a>    ///     size_of::&lt;Box&lt;dyn Error + Send + Sync&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#645 id=645 data-nosnippet>645</a>    /// ```
 <a href=#646 id=646 data-nosnippet>646</a>    </span><span class="attr">#[inline]
-<a href=#647 id=647 data-nosnippet>647</a>    </span><span class="kw">fn </span>from(err: <span class="kw-2">&amp;</span>str) -&gt; Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
-<a href=#648 id=648 data-nosnippet>648</a>        From::from(String::from(err))
+<a href=#647 id=647 data-nosnippet>647</a>    </span><span class="kw">fn </span>from(err: <span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#648 id=648 data-nosnippet>648</a>        From::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="../string.rs.html#357-359">String</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#647">err</a>))
 <a href=#649 id=649 data-nosnippet>649</a>    }
 <a href=#650 id=650 data-nosnippet>650</a>}
 <a href=#651 id=651 data-nosnippet>651</a>
 <a href=#652 id=652 data-nosnippet>652</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#653 id=653 data-nosnippet>653</a>#[stable(feature = <span class="string">"string_box_error"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#654 id=654 data-nosnippet>654</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
+<a href=#654 id=654 data-nosnippet>654</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#655 id=655 data-nosnippet>655</a>    <span class="doccomment">/// Converts a [`str`] into a box of dyn [`Error`].
 <a href=#656 id=656 data-nosnippet>656</a>    ///
 <a href=#657 id=657 data-nosnippet>657</a>    /// [`str`]: prim@str
@@ -665,14 +665,14 @@
 <a href=#665 id=665 data-nosnippet>665</a>    /// let a_boxed_error = Box::&lt;dyn Error&gt;::from(a_str_error);
 <a href=#666 id=666 data-nosnippet>666</a>    /// assert!(size_of::&lt;Box&lt;dyn Error&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#667 id=667 data-nosnippet>667</a>    /// ```
-<a href=#668 id=668 data-nosnippet>668</a>    </span><span class="kw">fn </span>from(err: <span class="kw-2">&amp;</span>str) -&gt; Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
-<a href=#669 id=669 data-nosnippet>669</a>        From::from(String::from(err))
+<a href=#668 id=668 data-nosnippet>668</a>    </span><span class="kw">fn </span>from(err: <span class="kw-2">&amp;</span><a href="../../../core/primitive.str.html">str</a>) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#669 id=669 data-nosnippet>669</a>        From::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="../string.rs.html#357-359">String</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#668">err</a>))
 <a href=#670 id=670 data-nosnippet>670</a>    }
 <a href=#671 id=671 data-nosnippet>671</a>}
 <a href=#672 id=672 data-nosnippet>672</a>
 <a href=#673 id=673 data-nosnippet>673</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#674 id=674 data-nosnippet>674</a>#[stable(feature = <span class="string">"cow_box_error"</span>, since = <span class="string">"1.22.0"</span>)]
-<a href=#675 id=675 data-nosnippet>675</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; From&lt;Cow&lt;<span class="lifetime">'b</span>, str&gt;&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
+<a href=#675 id=675 data-nosnippet>675</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'b</span>, <a href="../../../core/primitive.str.html">str</a>&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#676 id=676 data-nosnippet>676</a>    <span class="doccomment">/// Converts a [`Cow`] into a box of dyn [`Error`] + [`Send`] + [`Sync`].
 <a href=#677 id=677 data-nosnippet>677</a>    ///
 <a href=#678 id=678 data-nosnippet>678</a>    /// # Examples
@@ -686,14 +686,14 @@
 <a href=#686 id=686 data-nosnippet>686</a>    /// assert!(
 <a href=#687 id=687 data-nosnippet>687</a>    ///     size_of::&lt;Box&lt;dyn Error + Send + Sync&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#688 id=688 data-nosnippet>688</a>    /// ```
-<a href=#689 id=689 data-nosnippet>689</a>    </span><span class="kw">fn </span>from(err: Cow&lt;<span class="lifetime">'b</span>, str&gt;) -&gt; Box&lt;<span class="kw">dyn </span>Error + Send + Sync + <span class="lifetime">'a</span>&gt; {
-<a href=#690 id=690 data-nosnippet>690</a>        From::from(String::from(err))
+<a href=#689 id=689 data-nosnippet>689</a>    </span><span class="kw">fn </span>from(err: <a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'b</span>, <a href="../../../core/primitive.str.html">str</a>&gt;) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#690 id=690 data-nosnippet>690</a>        From::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="../string.rs.html#357-359">String</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#689">err</a>))
 <a href=#691 id=691 data-nosnippet>691</a>    }
 <a href=#692 id=692 data-nosnippet>692</a>}
 <a href=#693 id=693 data-nosnippet>693</a>
 <a href=#694 id=694 data-nosnippet>694</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#695 id=695 data-nosnippet>695</a>#[stable(feature = <span class="string">"cow_box_error"</span>, since = <span class="string">"1.22.0"</span>)]
-<a href=#696 id=696 data-nosnippet>696</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; From&lt;Cow&lt;<span class="lifetime">'b</span>, str&gt;&gt; <span class="kw">for </span>Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
+<a href=#696 id=696 data-nosnippet>696</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; <a href="../../../core/convert/trait.From.html">From</a>&lt;<a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'b</span>, <a href="../../../core/primitive.str.html">str</a>&gt;&gt; <span class="kw">for </span><a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
 <a href=#697 id=697 data-nosnippet>697</a>    <span class="doccomment">/// Converts a [`Cow`] into a box of dyn [`Error`].
 <a href=#698 id=698 data-nosnippet>698</a>    ///
 <a href=#699 id=699 data-nosnippet>699</a>    /// # Examples
@@ -706,52 +706,52 @@
 <a href=#706 id=706 data-nosnippet>706</a>    /// let a_boxed_error = Box::&lt;dyn Error&gt;::from(a_cow_str_error);
 <a href=#707 id=707 data-nosnippet>707</a>    /// assert!(size_of::&lt;Box&lt;dyn Error&gt;&gt;() == size_of_val(&amp;a_boxed_error))
 <a href=#708 id=708 data-nosnippet>708</a>    /// ```
-<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">fn </span>from(err: Cow&lt;<span class="lifetime">'b</span>, str&gt;) -&gt; Box&lt;<span class="kw">dyn </span>Error + <span class="lifetime">'a</span>&gt; {
-<a href=#710 id=710 data-nosnippet>710</a>        From::from(String::from(err))
+<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">fn </span>from(err: <a href="../borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'b</span>, <a href="../../../core/primitive.str.html">str</a>&gt;) -&gt; <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'a</span>&gt; {
+<a href=#710 id=710 data-nosnippet>710</a>        From::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="../string.rs.html#357-359">String</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#709">err</a>))
 <a href=#711 id=711 data-nosnippet>711</a>    }
 <a href=#712 id=712 data-nosnippet>712</a>}
 <a href=#713 id=713 data-nosnippet>713</a>
-<a href=#714 id=714 data-nosnippet>714</a><span class="kw">impl dyn </span>Error {
+<a href=#714 id=714 data-nosnippet>714</a><span class="kw">impl dyn </span><a href="../../../core/error/trait.Error.html">Error</a> {
 <a href=#715 id=715 data-nosnippet>715</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#716 id=716 data-nosnippet>716</a>    </span><span class="attr">#[inline]
 <a href=#717 id=717 data-nosnippet>717</a>    #[stable(feature = <span class="string">"error_downcast"</span>, since = <span class="string">"1.3.0"</span>)]
 <a href=#718 id=718 data-nosnippet>718</a>    #[rustc_allow_incoherent_impl]
-<a href=#719 id=719 data-nosnippet>719</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Error + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T&gt;, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
-<a href=#720 id=720 data-nosnippet>720</a>        <span class="kw">if </span><span class="self">self</span>.is::&lt;T&gt;() {
+<a href=#719 id=719 data-nosnippet>719</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="self">Self</span>&gt;) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T&gt;, <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt;&gt; {
+<a href=#720 id=720 data-nosnippet>720</a>        <span class="kw">if </span><a class="self" href="#719">self</a>.<a href="../../../core/error/trait.Error.html#method.is">is</a>::&lt;T&gt;() {
 <a href=#721 id=721 data-nosnippet>721</a>            <span class="comment">// SAFETY: Check ensures the type is correct.
 <a href=#722 id=722 data-nosnippet>722</a>            </span><span class="kw">unsafe </span>{
-<a href=#723 id=723 data-nosnippet>723</a>                <span class="kw">let </span>raw: <span class="kw-2">*mut </span><span class="kw">dyn </span>Error = Box::into_raw(<span class="self">self</span>);
-<a href=#724 id=724 data-nosnippet>724</a>                <span class="prelude-val">Ok</span>(Box::from_raw(raw <span class="kw">as </span><span class="kw-2">*mut </span>T))
+<a href=#723 id=723 data-nosnippet>723</a>                <span class="kw">let </span>raw: <span class="kw-2">*mut </span><span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1563-1573">into_raw</a>(<a class="self" href="#719">self</a>);
+<a href=#724 id=724 data-nosnippet>724</a>                <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1442-1445">from_raw</a>(<a href="#723">raw</a> <span class="kw">as </span><span class="kw-2">*mut </span>T))
 <a href=#725 id=725 data-nosnippet>725</a>            }
 <a href=#726 id=726 data-nosnippet>726</a>        } <span class="kw">else </span>{
-<a href=#727 id=727 data-nosnippet>727</a>            <span class="prelude-val">Err</span>(<span class="self">self</span>)
+<a href=#727 id=727 data-nosnippet>727</a>            <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a class="self" href="#719">self</a>)
 <a href=#728 id=728 data-nosnippet>728</a>        }
 <a href=#729 id=729 data-nosnippet>729</a>    }
 <a href=#730 id=730 data-nosnippet>730</a>}
 <a href=#731 id=731 data-nosnippet>731</a>
-<a href=#732 id=732 data-nosnippet>732</a><span class="kw">impl dyn </span>Error + Send {
+<a href=#732 id=732 data-nosnippet>732</a><span class="kw">impl dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> {
 <a href=#733 id=733 data-nosnippet>733</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#734 id=734 data-nosnippet>734</a>    </span><span class="attr">#[inline]
 <a href=#735 id=735 data-nosnippet>735</a>    #[stable(feature = <span class="string">"error_downcast"</span>, since = <span class="string">"1.3.0"</span>)]
 <a href=#736 id=736 data-nosnippet>736</a>    #[rustc_allow_incoherent_impl]
-<a href=#737 id=737 data-nosnippet>737</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Error + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T&gt;, Box&lt;<span class="kw">dyn </span>Error + Send&gt;&gt; {
-<a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">let </span>err: Box&lt;<span class="kw">dyn </span>Error&gt; = <span class="self">self</span>;
-<a href=#739 id=739 data-nosnippet>739</a>        &lt;<span class="kw">dyn </span>Error&gt;::downcast(err)
+<a href=#737 id=737 data-nosnippet>737</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="self">Self</span>&gt;) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T&gt;, <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a>&gt;&gt; {
+<a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">let </span>err: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt; = <a class="self" href="#737">self</a>;
+<a href=#739 id=739 data-nosnippet>739</a>        &lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt;::<a href="#719-729">downcast</a>(<a href="#738">err</a>)
 <a href=#740 id=740 data-nosnippet>740</a>            <span class="comment">// SAFETY: Reapplying the `Send` marker we already know to hold.
-<a href=#741 id=741 data-nosnippet>741</a>            </span>.map_err(|s| <span class="kw">unsafe </span>{ mem::transmute::&lt;Box&lt;<span class="kw">dyn </span>Error&gt;, Box&lt;<span class="kw">dyn </span>Error + Send&gt;&gt;(s) })
+<a href=#741 id=741 data-nosnippet>741</a>            </span>.<a href="../../../core/result/enum.Result.html#method.map_err">map_err</a>(|s| <span class="kw">unsafe </span>{ mem::<a href="../../../core/intrinsics/fn.transmute.html">transmute</a>::&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt;, <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a>&gt;&gt;(<a href="#741">s</a>) })
 <a href=#742 id=742 data-nosnippet>742</a>    }
 <a href=#743 id=743 data-nosnippet>743</a>}
 <a href=#744 id=744 data-nosnippet>744</a>
-<a href=#745 id=745 data-nosnippet>745</a><span class="kw">impl dyn </span>Error + Send + Sync {
+<a href=#745 id=745 data-nosnippet>745</a><span class="kw">impl dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a> {
 <a href=#746 id=746 data-nosnippet>746</a>    <span class="doccomment">/// Attempts to downcast the box to a concrete type.
 <a href=#747 id=747 data-nosnippet>747</a>    </span><span class="attr">#[inline]
 <a href=#748 id=748 data-nosnippet>748</a>    #[stable(feature = <span class="string">"error_downcast"</span>, since = <span class="string">"1.3.0"</span>)]
 <a href=#749 id=749 data-nosnippet>749</a>    #[rustc_allow_incoherent_impl]
-<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">pub fn </span>downcast&lt;T: Error + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;T&gt;, Box&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#751 id=751 data-nosnippet>751</a>        <span class="kw">let </span>err: Box&lt;<span class="kw">dyn </span>Error&gt; = <span class="self">self</span>;
+<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">pub fn </span>downcast&lt;T: <a href="../../../core/error/trait.Error.html">Error</a> + <span class="lifetime">'static</span>&gt;(<span class="self">self</span>: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="self">Self</span>&gt;) -&gt; <a class="prelude-ty" href="../../../core/result/enum.Result.html">Result</a>&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;T&gt;, <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#751 id=751 data-nosnippet>751</a>        <span class="kw">let </span>err: <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt; = <a class="self" href="#750">self</a>;
 <a href=#752 id=752 data-nosnippet>752</a>        <span class="comment">// SAFETY: Reapplying the `Send` and `Sync` markers we already know to hold.
-<a href=#753 id=753 data-nosnippet>753</a>        </span>&lt;<span class="kw">dyn </span>Error&gt;::downcast(err).map_err(|s| <span class="kw">unsafe </span>{
-<a href=#754 id=754 data-nosnippet>754</a>            mem::transmute::&lt;Box&lt;<span class="kw">dyn </span>Error&gt;, Box&lt;<span class="kw">dyn </span>Error + Send + Sync&gt;&gt;(s)
+<a href=#753 id=753 data-nosnippet>753</a>        </span>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt;::<a href="#719-729">downcast</a>(<a href="#751">err</a>).<a href="../../../core/result/enum.Result.html#method.map_err">map_err</a>(|s| <span class="kw">unsafe </span>{
+<a href=#754 id=754 data-nosnippet>754</a>            mem::<a href="../../../core/intrinsics/fn.transmute.html">transmute</a>::&lt;<a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a>&gt;, <a href="../boxed.rs.html#308-311">Box</a>&lt;<span class="kw">dyn </span><a href="../../../core/error/trait.Error.html">Error</a> + <a href="../../../core/marker/trait.Send.html">Send</a> + <a href="../../../core/marker/trait.Sync.html">Sync</a>&gt;&gt;(<a href="#753">s</a>)
 <a href=#755 id=755 data-nosnippet>755</a>        })
 <a href=#756 id=756 data-nosnippet>756</a>    }
 <a href=#757 id=757 data-nosnippet>757</a>}

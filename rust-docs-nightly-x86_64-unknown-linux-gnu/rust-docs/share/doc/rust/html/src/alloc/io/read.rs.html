@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/io/read.rs`."><title>read.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/io/</div>read.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::mem::{DropGuard, MaybeUninit};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/io/read.rs`."><title>read.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/io/</div>read.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::mem::{<a href="../../../core/mem/drop_guard/struct.DropGuard.html">DropGuard</a>, <a href="../../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>};
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::io::{
-<a href=#4 id=4 data-nosnippet>4</a>    BorrowedBuf, BorrowedCursor, Bytes, Chain, Error, IoSliceMut, <span class="prelude-ty">Result</span>, Take, bytes, chain, take,
+<a href=#4 id=4 data-nosnippet>4</a>    <a href="../../../alloc/io/struct.BorrowedBuf.html">BorrowedBuf</a>, <a href="../../../alloc/io/struct.BorrowedCursor.html">BorrowedCursor</a>, <a href="util.rs.html#336-338">Bytes</a>, <a href="../../../alloc/io/struct.Chain.html">Chain</a>, <a href="../../../alloc/io/struct.Error.html">Error</a>, <a href="../../../alloc/io/struct.IoSliceMut.html">IoSliceMut</a>, <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>, <a href="../../../alloc/io/struct.Take.html">Take</a>, <a href="util.rs.html#395-397">bytes</a>, chain, take,
 <a href=#5 id=5 data-nosnippet>5</a>};
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::string::String;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::vec::Vec;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../string.rs.html#357-359"><span class="kw">crate</span>::string::String</a>;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../vec/mod.rs.html#442-445"><span class="kw">crate</span>::vec::Vec</a>;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// The `Read` trait allows for reading bytes from a source.
 <a href=#10 id=10 data-nosnippet>10</a>///
@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>#[doc(notable_trait)]
 <a href=#85 id=85 data-nosnippet>85</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"IoRead"</span>)]
 <a href=#86 id=86 data-nosnippet>86</a>#[rustc_must_implement_one_of(read_buf, read)] </span><span class="comment">// Keep this order, it's important for rust-analyzer (the preferred-to-implement method should come first).
-<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">pub trait </span>Read {
+<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">pub trait </span><a href="../../../alloc/io/trait.Read.html">Read</a> {
 <a href=#88 id=88 data-nosnippet>88</a>    <span class="doccomment">/// Pull some bytes from this source into the specified buffer, returning
 <a href=#89 id=89 data-nosnippet>89</a>    /// how many bytes were read.
 <a href=#90 id=90 data-nosnippet>90</a>    ///
@@ -164,9 +164,9 @@
 <a href=#164 id=164 data-nosnippet>164</a>    /// }
 <a href=#165 id=165 data-nosnippet>165</a>    /// ```
 <a href=#166 id=166 data-nosnippet>166</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#167 id=167 data-nosnippet>167</a>    </span><span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = BorrowedBuf::from(buf);
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="self">self</span>.read_buf(buf.unfilled()).map(|()| buf.len())
+<a href=#167 id=167 data-nosnippet>167</a>    </span><span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../core/primitive.u8.html">u8</a>]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="../../../alloc/io/struct.BorrowedBuf.html">BorrowedBuf</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#167">buf</a>);
+<a href=#169 id=169 data-nosnippet>169</a>        <a class="self" href="#167">self</a>.<a href="#409-411">read_buf</a>(<a href="#168">buf</a>.<a href="../../../alloc/io/struct.BorrowedBuf.html#method.unfilled">unfilled</a>()).<a href="../../../core/result/enum.Result.html#method.map">map</a>(|()| <a href="#168">buf</a>.<a href="../../../alloc/io/struct.BorrowedBuf.html#method.len">len</a>())
 <a href=#170 id=170 data-nosnippet>170</a>    }
 <a href=#171 id=171 data-nosnippet>171</a>
 <a href=#172 id=172 data-nosnippet>172</a>    <span class="doccomment">/// Like `read`, except that it reads into a slice of buffers.
@@ -179,8 +179,8 @@
 <a href=#179 id=179 data-nosnippet>179</a>    /// The default implementation calls `read` with either the first nonempty
 <a href=#180 id=180 data-nosnippet>180</a>    /// buffer provided, or an empty one if none exists.
 <a href=#181 id=181 data-nosnippet>181</a>    </span><span class="attr">#[stable(feature = <span class="string">"iovec"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#182 id=182 data-nosnippet>182</a>    </span><span class="kw">fn </span>read_vectored(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[IoSliceMut&lt;<span class="lifetime">'_</span>&gt;]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#183 id=183 data-nosnippet>183</a>        default_read_vectored(|b| <span class="self">self</span>.read(b), bufs)
+<a href=#182 id=182 data-nosnippet>182</a>    </span><span class="kw">fn </span>read_vectored(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bufs: <span class="kw-2">&amp;mut </span>[<a href="../../../alloc/io/struct.IoSliceMut.html">IoSliceMut</a>&lt;<span class="lifetime">'_</span>&gt;]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#183 id=183 data-nosnippet>183</a>        <a href="#1029-1035">default_read_vectored</a>(|b| <a class="self" href="#182">self</a>.<a href="#167-170">read</a>(<a href="#183">b</a>), <a href="#182">bufs</a>)
 <a href=#184 id=184 data-nosnippet>184</a>    }
 <a href=#185 id=185 data-nosnippet>185</a>
 <a href=#186 id=186 data-nosnippet>186</a>    <span class="doccomment">/// Determines if this `Read`er has an efficient `read_vectored`
@@ -192,7 +192,7 @@
 <a href=#192 id=192 data-nosnippet>192</a>    ///
 <a href=#193 id=193 data-nosnippet>193</a>    /// The default implementation returns `false`.
 <a href=#194 id=194 data-nosnippet>194</a>    </span><span class="attr">#[unstable(feature = <span class="string">"can_vector"</span>, issue = <span class="string">"69941"</span>)]
-<a href=#195 id=195 data-nosnippet>195</a>    </span><span class="kw">fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#195 id=195 data-nosnippet>195</a>    </span><span class="kw">fn </span>is_read_vectored(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="bool-val">false
 <a href=#197 id=197 data-nosnippet>197</a>    </span>}
 <a href=#198 id=198 data-nosnippet>198</a>
@@ -287,8 +287,8 @@
 <a href=#287 id=287 data-nosnippet>287</a>    /// [`read`]: Read::read
 <a href=#288 id=288 data-nosnippet>288</a>    /// [`Vec::try_reserve`]: crate::vec::Vec::try_reserve
 <a href=#289 id=289 data-nosnippet>289</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#290 id=290 data-nosnippet>290</a>    </span><span class="kw">fn </span>read_to_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#291 id=291 data-nosnippet>291</a>        default_read_to_end(<span class="self">self</span>, buf, <span class="prelude-val">None</span>)
+<a href=#290 id=290 data-nosnippet>290</a>    </span><span class="kw">fn </span>read_to_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span><a href="../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#291 id=291 data-nosnippet>291</a>        <a href="#846-1005">default_read_to_end</a>(<a class="self" href="#290">self</a>, <a href="#290">buf</a>, <a class="prelude-val" href="../../../core/option/enum.Option.html#variant.None">None</a>)
 <a href=#292 id=292 data-nosnippet>292</a>    }
 <a href=#293 id=293 data-nosnippet>293</a>
 <a href=#294 id=294 data-nosnippet>294</a>    <span class="doccomment">/// Reads all bytes until EOF in this source, appending them to `buf`.
@@ -339,8 +339,8 @@
 <a href=#339 id=339 data-nosnippet>339</a>    ///
 <a href=#340 id=340 data-nosnippet>340</a>    /// [`read`]: Read::read
 <a href=#341 id=341 data-nosnippet>341</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#342 id=342 data-nosnippet>342</a>    </span><span class="kw">fn </span>read_to_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>String) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#343 id=343 data-nosnippet>343</a>        default_read_to_string(<span class="self">self</span>, buf, <span class="prelude-val">None</span>)
+<a href=#342 id=342 data-nosnippet>342</a>    </span><span class="kw">fn </span>read_to_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span><a href="../string.rs.html#357-359">String</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#343 id=343 data-nosnippet>343</a>        <a href="#1009-1025">default_read_to_string</a>(<a class="self" href="#342">self</a>, <a href="#342">buf</a>, <a class="prelude-val" href="../../../core/option/enum.Option.html#variant.None">None</a>)
 <a href=#344 id=344 data-nosnippet>344</a>    }
 <a href=#345 id=345 data-nosnippet>345</a>
 <a href=#346 id=346 data-nosnippet>346</a>    <span class="doccomment">/// Reads the exact number of bytes required to fill `buf`.
@@ -393,8 +393,8 @@
 <a href=#393 id=393 data-nosnippet>393</a>    /// }
 <a href=#394 id=394 data-nosnippet>394</a>    /// ```
 <a href=#395 id=395 data-nosnippet>395</a>    </span><span class="attr">#[stable(feature = <span class="string">"read_exact"</span>, since = <span class="string">"1.6.0"</span>)]
-<a href=#396 id=396 data-nosnippet>396</a>    </span><span class="kw">fn </span>read_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#397 id=397 data-nosnippet>397</a>        default_read_exact(<span class="self">self</span>, buf)
+<a href=#396 id=396 data-nosnippet>396</a>    </span><span class="kw">fn </span>read_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[<a href="../../../core/primitive.u8.html">u8</a>]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#397 id=397 data-nosnippet>397</a>        <a href="#1037-1049">default_read_exact</a>(<a class="self" href="#396">self</a>, <a href="#396">buf</a>)
 <a href=#398 id=398 data-nosnippet>398</a>    }
 <a href=#399 id=399 data-nosnippet>399</a>
 <a href=#400 id=400 data-nosnippet>400</a>    <span class="doccomment">/// Pull some bytes from this source into the specified buffer.
@@ -406,8 +406,8 @@
 <a href=#406 id=406 data-nosnippet>406</a>    ///
 <a href=#407 id=407 data-nosnippet>407</a>    /// This method makes it possible to return both data and an error but it is advised against.
 <a href=#408 id=408 data-nosnippet>408</a>    </span><span class="attr">#[unstable(feature = <span class="string">"read_buf"</span>, issue = <span class="string">"78485"</span>)]
-<a href=#409 id=409 data-nosnippet>409</a>    </span><span class="kw">fn </span>read_buf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#410 id=410 data-nosnippet>410</a>        default_read_buf(|b| <span class="self">self</span>.read(b), buf)
+<a href=#409 id=409 data-nosnippet>409</a>    </span><span class="kw">fn </span>read_buf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <a href="../../../alloc/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#410 id=410 data-nosnippet>410</a>        <a href="#1053-1060">default_read_buf</a>(|b| <a class="self" href="#409">self</a>.<a href="#167-170">read</a>(<a href="#410">b</a>), <a href="#409">buf</a>)
 <a href=#411 id=411 data-nosnippet>411</a>    }
 <a href=#412 id=412 data-nosnippet>412</a>
 <a href=#413 id=413 data-nosnippet>413</a>    <span class="doccomment">/// Reads the exact number of bytes required to fill `cursor`.
@@ -433,8 +433,8 @@
 <a href=#433 id=433 data-nosnippet>433</a>    /// [`ErrorKind::UnexpectedEof`]: crate::io::ErrorKind::UnexpectedEof
 <a href=#434 id=434 data-nosnippet>434</a>    </span><span class="attr">#[unstable(feature = <span class="string">"read_buf"</span>, issue = <span class="string">"78485"</span>)]
 <a href=#435 id=435 data-nosnippet>435</a>    #[doc(alias(<span class="string">"read_exact_buf"</span>))]
-<a href=#436 id=436 data-nosnippet>436</a>    </span><span class="kw">fn </span>read_buf_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#437 id=437 data-nosnippet>437</a>        default_read_buf_exact(<span class="self">self</span>, cursor)
+<a href=#436 id=436 data-nosnippet>436</a>    </span><span class="kw">fn </span>read_buf_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cursor: <a href="../../../alloc/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#437 id=437 data-nosnippet>437</a>        <a href="#1062-1080">default_read_buf_exact</a>(<a class="self" href="#436">self</a>, <a href="#436">cursor</a>)
 <a href=#438 id=438 data-nosnippet>438</a>    }
 <a href=#439 id=439 data-nosnippet>439</a>
 <a href=#440 id=440 data-nosnippet>440</a>    <span class="doccomment">/// Creates a "by reference" adapter for this instance of `Read`.
@@ -472,10 +472,10 @@
 <a href=#472 id=472 data-nosnippet>472</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#473 id=473 data-nosnippet>473</a>    </span><span class="kw">fn </span>by_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
 <a href=#474 id=474 data-nosnippet>474</a>    </span><span class="kw">where
-<a href=#475 id=475 data-nosnippet>475</a>        </span><span class="self">Self</span>: Sized,
+<a href=#475 id=475 data-nosnippet>475</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#476 id=476 data-nosnippet>476</a>    {
-<a href=#477 id=477 data-nosnippet>477</a>        <span class="self">self
-<a href=#478 id=478 data-nosnippet>478</a>    </span>}
+<a href=#477 id=477 data-nosnippet>477</a>        <a class="self" href="#473">self</a>
+<a href=#478 id=478 data-nosnippet>478</a>    }
 <a href=#479 id=479 data-nosnippet>479</a>
 <a href=#480 id=480 data-nosnippet>480</a>    <span class="doccomment">/// Transforms this `Read` instance to an [`Iterator`] over its bytes.
 <a href=#481 id=481 data-nosnippet>481</a>    ///
@@ -520,11 +520,11 @@
 <a href=#520 id=520 data-nosnippet>520</a>    /// }
 <a href=#521 id=521 data-nosnippet>521</a>    /// ```
 <a href=#522 id=522 data-nosnippet>522</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#523 id=523 data-nosnippet>523</a>    </span><span class="kw">fn </span>bytes(<span class="self">self</span>) -&gt; Bytes&lt;<span class="self">Self</span>&gt;
+<a href=#523 id=523 data-nosnippet>523</a>    </span><span class="kw">fn </span>bytes(<span class="self">self</span>) -&gt; <a href="util.rs.html#336-338">Bytes</a>&lt;<span class="self">Self</span>&gt;
 <a href=#524 id=524 data-nosnippet>524</a>    <span class="kw">where
-<a href=#525 id=525 data-nosnippet>525</a>        </span><span class="self">Self</span>: Sized,
+<a href=#525 id=525 data-nosnippet>525</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#526 id=526 data-nosnippet>526</a>    {
-<a href=#527 id=527 data-nosnippet>527</a>        bytes(<span class="self">self</span>)
+<a href=#527 id=527 data-nosnippet>527</a>        <a href="util.rs.html#395-397">bytes</a>(<a class="self" href="#523">self</a>)
 <a href=#528 id=528 data-nosnippet>528</a>    }
 <a href=#529 id=529 data-nosnippet>529</a>
 <a href=#530 id=530 data-nosnippet>530</a>    <span class="doccomment">/// Creates an adapter which will chain this stream with another.
@@ -556,11 +556,11 @@
 <a href=#556 id=556 data-nosnippet>556</a>    /// }
 <a href=#557 id=557 data-nosnippet>557</a>    /// ```
 <a href=#558 id=558 data-nosnippet>558</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#559 id=559 data-nosnippet>559</a>    </span><span class="kw">fn </span>chain&lt;R: Read&gt;(<span class="self">self</span>, next: R) -&gt; Chain&lt;<span class="self">Self</span>, R&gt;
+<a href=#559 id=559 data-nosnippet>559</a>    </span><span class="kw">fn </span>chain&lt;R: <a href="#87-716">Read</a>&gt;(<span class="self">self</span>, next: R) -&gt; <a href="../../../alloc/io/struct.Chain.html">Chain</a>&lt;<span class="self">Self</span>, R&gt;
 <a href=#560 id=560 data-nosnippet>560</a>    <span class="kw">where
-<a href=#561 id=561 data-nosnippet>561</a>        </span><span class="self">Self</span>: Sized,
+<a href=#561 id=561 data-nosnippet>561</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#562 id=562 data-nosnippet>562</a>    {
-<a href=#563 id=563 data-nosnippet>563</a>        chain(<span class="self">self</span>, next)
+<a href=#563 id=563 data-nosnippet>563</a>        chain(<a class="self" href="#559">self</a>, <a href="#559">next</a>)
 <a href=#564 id=564 data-nosnippet>564</a>    }
 <a href=#565 id=565 data-nosnippet>565</a>
 <a href=#566 id=566 data-nosnippet>566</a>    <span class="doccomment">/// Creates an adapter which will read at most `limit` bytes from it.
@@ -594,11 +594,11 @@
 <a href=#594 id=594 data-nosnippet>594</a>    /// }
 <a href=#595 id=595 data-nosnippet>595</a>    /// ```
 <a href=#596 id=596 data-nosnippet>596</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#597 id=597 data-nosnippet>597</a>    </span><span class="kw">fn </span>take(<span class="self">self</span>, limit: u64) -&gt; Take&lt;<span class="self">Self</span>&gt;
+<a href=#597 id=597 data-nosnippet>597</a>    </span><span class="kw">fn </span>take(<span class="self">self</span>, limit: <a href="../../../core/primitive.u64.html">u64</a>) -&gt; <a href="../../../alloc/io/struct.Take.html">Take</a>&lt;<span class="self">Self</span>&gt;
 <a href=#598 id=598 data-nosnippet>598</a>    <span class="kw">where
-<a href=#599 id=599 data-nosnippet>599</a>        </span><span class="self">Self</span>: Sized,
+<a href=#599 id=599 data-nosnippet>599</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#600 id=600 data-nosnippet>600</a>    {
-<a href=#601 id=601 data-nosnippet>601</a>        take(<span class="self">self</span>, limit)
+<a href=#601 id=601 data-nosnippet>601</a>        take(<a class="self" href="#597">self</a>, <a href="#597">limit</a>)
 <a href=#602 id=602 data-nosnippet>602</a>    }
 <a href=#603 id=603 data-nosnippet>603</a>
 <a href=#604 id=604 data-nosnippet>604</a>    <span class="doccomment">/// Read and return a fixed array of bytes from this source.
@@ -631,17 +631,17 @@
 <a href=#631 id=631 data-nosnippet>631</a>    /// }
 <a href=#632 id=632 data-nosnippet>632</a>    /// ```
 <a href=#633 id=633 data-nosnippet>633</a>    </span><span class="attr">#[unstable(feature = <span class="string">"read_array"</span>, issue = <span class="string">"148848"</span>)]
-<a href=#634 id=634 data-nosnippet>634</a>    </span><span class="kw">fn </span>read_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[u8; N]&gt;
+<a href=#634 id=634 data-nosnippet>634</a>    </span><span class="kw">fn </span>read_array&lt;<span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;[<a href="../../../core/primitive.u8.html">u8</a>; <a href="#634">N</a>]&gt;
 <a href=#635 id=635 data-nosnippet>635</a>    <span class="kw">where
-<a href=#636 id=636 data-nosnippet>636</a>        </span><span class="self">Self</span>: Sized,
+<a href=#636 id=636 data-nosnippet>636</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#637 id=637 data-nosnippet>637</a>    {
-<a href=#638 id=638 data-nosnippet>638</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = [MaybeUninit::uninit(); N];
-<a href=#639 id=639 data-nosnippet>639</a>        <span class="kw">let </span><span class="kw-2">mut </span>borrowed_buf = BorrowedBuf::from(buf.as_mut_slice());
+<a href=#638 id=638 data-nosnippet>638</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = [<a href="../../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>::<a href="../../../core/mem/maybe_uninit/union.MaybeUninit.html#method.uninit">uninit</a>(); <a href="#634">N</a>];
+<a href=#639 id=639 data-nosnippet>639</a>        <span class="kw">let </span><span class="kw-2">mut </span>borrowed_buf = <a href="../../../alloc/io/struct.BorrowedBuf.html">BorrowedBuf</a>::<a href="../../../core/convert/trait.From.html#tymethod.from">from</a>(<a href="#638">buf</a>.<a href="../../../core/primitive.array.html#method.as_mut_slice">as_mut_slice</a>());
 <a href=#640 id=640 data-nosnippet>640</a>        <span class="self">self</span>.read_buf_exact(borrowed_buf.unfilled())<span class="question-mark">?</span>;
 <a href=#641 id=641 data-nosnippet>641</a>        <span class="comment">// Guard against incorrect `read_buf_exact` implementations.
-<a href=#642 id=642 data-nosnippet>642</a>        </span><span class="macro">assert_eq!</span>(borrowed_buf.len(), N);
+<a href=#642 id=642 data-nosnippet>642</a>        </span><a href="../../../core/macro.assert_eq.html">assert_eq!</a>(borrowed_buf.len(), N);
 <a href=#643 id=643 data-nosnippet>643</a>        <span class="comment">// SAFETY: Buffer was initialised above.
-<a href=#644 id=644 data-nosnippet>644</a>        </span><span class="prelude-val">Ok</span>(<span class="kw">unsafe </span>{ MaybeUninit::array_assume_init(buf) })
+<a href=#644 id=644 data-nosnippet>644</a>        </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="kw">unsafe </span>{ <a href="../../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>::<a href="../../../core/mem/maybe_uninit/union.MaybeUninit.html#method.array_assume_init">array_assume_init</a>(<a href="#638">buf</a>) })
 <a href=#645 id=645 data-nosnippet>645</a>    }
 <a href=#646 id=646 data-nosnippet>646</a>
 <a href=#647 id=647 data-nosnippet>647</a>    <span class="doccomment">/// Read and return a type (e.g. an integer) in little-endian order.
@@ -672,11 +672,11 @@
 <a href=#672 id=672 data-nosnippet>672</a>    /// ```
 <a href=#673 id=673 data-nosnippet>673</a>    </span><span class="attr">#[unstable(feature = <span class="string">"read_le"</span>, issue = <span class="string">"156984"</span>)]
 <a href=#674 id=674 data-nosnippet>674</a>    #[inline]
-<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>read_le&lt;T: FromEndianBytes&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>read_le&lt;T: <a href="#1086-1092">FromEndianBytes</a>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;T&gt;
 <a href=#676 id=676 data-nosnippet>676</a>    <span class="kw">where
-<a href=#677 id=677 data-nosnippet>677</a>        </span><span class="self">Self</span>: Sized,
+<a href=#677 id=677 data-nosnippet>677</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#678 id=678 data-nosnippet>678</a>    {
-<a href=#679 id=679 data-nosnippet>679</a>        T::read_le_from(<span class="self">self</span>)
+<a href=#679 id=679 data-nosnippet>679</a>        T::<a href="#1088">read_le_from</a>(<a class="self" href="#675">self</a>)
 <a href=#680 id=680 data-nosnippet>680</a>    }
 <a href=#681 id=681 data-nosnippet>681</a>
 <a href=#682 id=682 data-nosnippet>682</a>    <span class="doccomment">/// Read and return a type (e.g. an integer) in big-endian order.
@@ -707,11 +707,11 @@
 <a href=#707 id=707 data-nosnippet>707</a>    /// ```
 <a href=#708 id=708 data-nosnippet>708</a>    </span><span class="attr">#[unstable(feature = <span class="string">"read_le"</span>, issue = <span class="string">"156984"</span>)]
 <a href=#709 id=709 data-nosnippet>709</a>    #[inline]
-<a href=#710 id=710 data-nosnippet>710</a>    </span><span class="kw">fn </span>read_be&lt;T: FromEndianBytes&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
+<a href=#710 id=710 data-nosnippet>710</a>    </span><span class="kw">fn </span>read_be&lt;T: <a href="#1086-1092">FromEndianBytes</a>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;T&gt;
 <a href=#711 id=711 data-nosnippet>711</a>    <span class="kw">where
-<a href=#712 id=712 data-nosnippet>712</a>        </span><span class="self">Self</span>: Sized,
+<a href=#712 id=712 data-nosnippet>712</a>        </span><span class="self">Self</span>: <a href="../../../core/marker/trait.Sized.html">Sized</a>,
 <a href=#713 id=713 data-nosnippet>713</a>    {
-<a href=#714 id=714 data-nosnippet>714</a>        T::read_be_from(<span class="self">self</span>)
+<a href=#714 id=714 data-nosnippet>714</a>        T::<a href="#1091">read_be_from</a>(<a class="self" href="#710">self</a>)
 <a href=#715 id=715 data-nosnippet>715</a>    }
 <a href=#716 id=716 data-nosnippet>716</a>}
 <a href=#717 id=717 data-nosnippet>717</a>
@@ -774,17 +774,17 @@
 <a href=#774 id=774 data-nosnippet>774</a>/// [`read`]: Read::read
 <a href=#775 id=775 data-nosnippet>775</a>///
 <a href=#776 id=776 data-nosnippet>776</a></span><span class="attr">#[stable(feature = <span class="string">"io_read_to_string"</span>, since = <span class="string">"1.65.0"</span>)]
-<a href=#777 id=777 data-nosnippet>777</a></span><span class="kw">pub fn </span>read_to_string&lt;R: Read&gt;(<span class="kw-2">mut </span>reader: R) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#778 id=778 data-nosnippet>778</a>    <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
+<a href=#777 id=777 data-nosnippet>777</a></span><span class="kw">pub fn </span><a href="../../../alloc/io/fn.read_to_string.html">read_to_string</a>&lt;R: <a href="#87-716">Read</a>&gt;(<span class="kw-2">mut </span>reader: R) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../string.rs.html#357-359">String</a>&gt; {
+<a href=#778 id=778 data-nosnippet>778</a>    <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="../string.rs.html#357-359">String</a>::<a href="../string.rs.html#450-452">new</a>();
 <a href=#779 id=779 data-nosnippet>779</a>    reader.read_to_string(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
-<a href=#780 id=780 data-nosnippet>780</a>    <span class="prelude-val">Ok</span>(buf)
+<a href=#780 id=780 data-nosnippet>780</a>    <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#778">buf</a>)
 <a href=#781 id=781 data-nosnippet>781</a>}
 <a href=#782 id=782 data-nosnippet>782</a>
 <a href=#783 id=783 data-nosnippet>783</a><span class="doccomment">/// Bare metal platforms usually have very small amounts of RAM
 <a href=#784 id=784 data-nosnippet>784</a>/// (in the order of hundreds of KB)
 <a href=#785 id=785 data-nosnippet>785</a></span><span class="attr">#[doc(hidden)]
 <a href=#786 id=786 data-nosnippet>786</a>#[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#787 id=787 data-nosnippet>787</a></span><span class="kw">pub const </span>DEFAULT_BUF_SIZE: usize = <span class="macro">cfg_select!</span> {
+<a href=#787 id=787 data-nosnippet>787</a></span><span class="kw">pub const </span>DEFAULT_BUF_SIZE: <a href="../../../core/primitive.usize.html">usize</a> = <span class="macro">cfg_select!</span> {
 <a href=#788 id=788 data-nosnippet>788</a>    target_os = <span class="string">"espidf" </span>=&gt; <span class="number">512</span>,
 <a href=#789 id=789 data-nosnippet>789</a>    <span class="kw">_ </span>=&gt; <span class="number">8 </span>* <span class="number">1024</span>,
 <a href=#790 id=790 data-nosnippet>790</a>};
@@ -808,26 +808,26 @@
 <a href=#808 id=808 data-nosnippet>808</a>/// 2. We're passing a raw buffer to the function `f`, and it is expected that
 <a href=#809 id=809 data-nosnippet>809</a>///    the function only *appends* bytes to the buffer. We'll get undefined
 <a href=#810 id=810 data-nosnippet>810</a>///    behavior if existing bytes are overwritten to have non-UTF-8 data.
-<a href=#811 id=811 data-nosnippet>811</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>append_to_string&lt;F&gt;(buf: <span class="kw-2">&amp;mut </span>String, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;
+<a href=#811 id=811 data-nosnippet>811</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>append_to_string&lt;F&gt;(buf: <span class="kw-2">&amp;mut </span><a href="../string.rs.html#357-359">String</a>, f: F) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;
 <a href=#812 id=812 data-nosnippet>812</a><span class="kw">where
-<a href=#813 id=813 data-nosnippet>813</a>    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;,
+<a href=#813 id=813 data-nosnippet>813</a>    </span>F: <a href="../../../core/ops/function/trait.FnOnce.html">FnOnce</a>(<span class="kw-2">&amp;mut </span><a href="../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
 <a href=#814 id=814 data-nosnippet>814</a>{
-<a href=#815 id=815 data-nosnippet>815</a>    <span class="kw">let </span>len_original = buf.len();
+<a href=#815 id=815 data-nosnippet>815</a>    <span class="kw">let </span>len_original = <a href="#811">buf</a>.<a href="../string.rs.html#1916-1918">len</a>();
 <a href=#816 id=816 data-nosnippet>816</a>    <span class="comment">// SAFETY: invalid UTF-8 discarded before return or unwind
-<a href=#817 id=817 data-nosnippet>817</a>    </span><span class="kw">let </span>buf_vec = <span class="kw">unsafe </span>{ buf.as_mut_vec() };
+<a href=#817 id=817 data-nosnippet>817</a>    </span><span class="kw">let </span>buf_vec = <span class="kw">unsafe </span>{ <a href="#811">buf</a>.<a href="../string.rs.html#1892-1894">as_mut_vec</a>() };
 <a href=#818 id=818 data-nosnippet>818</a>    <span class="comment">// ignore-tidy-undocumented-unsafe
-<a href=#819 id=819 data-nosnippet>819</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>g = DropGuard::new((len_original, buf_vec), |(len, buf)| <span class="kw">unsafe </span>{
-<a href=#820 id=820 data-nosnippet>820</a>        buf.set_len(len);
+<a href=#819 id=819 data-nosnippet>819</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>g = <a href="../../../core/mem/drop_guard/struct.DropGuard.html">DropGuard</a>::<a href="../../../core/mem/drop_guard/struct.DropGuard.html#method.new">new</a>((<a href="#815">len_original</a>, <a href="#817">buf_vec</a>), |(len, buf)| <span class="kw">unsafe </span>{
+<a href=#820 id=820 data-nosnippet>820</a>        <a href="#819">buf</a>.<a href="../vec/mod.rs.html#2134-2142">set_len</a>(<a href="#819">len</a>);
 <a href=#821 id=821 data-nosnippet>821</a>    });
-<a href=#822 id=822 data-nosnippet>822</a>    <span class="kw">let </span>ret = f(g.<span class="number">1</span>);
+<a href=#822 id=822 data-nosnippet>822</a>    <span class="kw">let </span>ret = <a href="#811">f</a>(<a href="#819">g</a>.<span class="number">1</span>);
 <a href=#823 id=823 data-nosnippet>823</a>
 <a href=#824 id=824 data-nosnippet>824</a>    <span class="comment">// SAFETY: the caller promises to only append data to `buf`
-<a href=#825 id=825 data-nosnippet>825</a>    </span><span class="kw">let </span>appended = <span class="kw">unsafe </span>{ g.<span class="number">1</span>.get_unchecked(g.<span class="number">0</span>..) };
-<a href=#826 id=826 data-nosnippet>826</a>    <span class="kw">if </span>str::from_utf8(appended).is_err() {
-<a href=#827 id=827 data-nosnippet>827</a>        ret.and_then(|<span class="kw">_</span>| <span class="prelude-val">Err</span>(Error::INVALID_UTF8))
+<a href=#825 id=825 data-nosnippet>825</a>    </span><span class="kw">let </span>appended = <span class="kw">unsafe </span>{ <a href="#819">g</a>.<span class="number">1</span>.<a href="../../../core/primitive.slice.html#method.get_unchecked">get_unchecked</a>(g.<span class="number">0</span>..) };
+<a href=#826 id=826 data-nosnippet>826</a>    <span class="kw">if </span><a href="../../../core/primitive.str.html">str</a>::<a href="../../../core/primitive.str.html#method.from_utf8">from_utf8</a>(<a href="#825">appended</a>).<a href="../../../core/result/enum.Result.html#method.is_err">is_err</a>() {
+<a href=#827 id=827 data-nosnippet>827</a>        <a href="#822">ret</a>.<a href="../../../core/result/enum.Result.html#method.and_then">and_then</a>(|<span class="kw">_</span>| <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="../../../alloc/io/struct.Error.html">Error</a>::INVALID_UTF8))
 <a href=#828 id=828 data-nosnippet>828</a>    } <span class="kw">else </span>{
-<a href=#829 id=829 data-nosnippet>829</a>        g.<span class="number">0 </span>= g.<span class="number">1</span>.len();
-<a href=#830 id=830 data-nosnippet>830</a>        ret
+<a href=#829 id=829 data-nosnippet>829</a>        <a href="#819">g</a>.<span class="number">0 </span>= <a href="#819">g</a>.<span class="number">1</span>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
+<a href=#830 id=830 data-nosnippet>830</a>        <a href="#822">ret</a>
 <a href=#831 id=831 data-nosnippet>831</a>    }
 <a href=#832 id=832 data-nosnippet>832</a>}
 <a href=#833 id=833 data-nosnippet>833</a>
@@ -843,26 +843,26 @@
 <a href=#843 id=843 data-nosnippet>843</a>/// - also avoid &lt;4 byte reads as this may split UTF-8 code points, which can be a problem for Windows console reads (#142847)
 <a href=#844 id=844 data-nosnippet>844</a></span><span class="attr">#[doc(hidden)]
 <a href=#845 id=845 data-nosnippet>845</a>#[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#846 id=846 data-nosnippet>846</a></span><span class="kw">pub fn </span>default_read_to_end&lt;R: Read + <span class="question-mark">?</span>Sized&gt;(
+<a href=#846 id=846 data-nosnippet>846</a></span><span class="kw">pub fn </span>default_read_to_end&lt;R: <a href="#87-716">Read</a> + <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>&gt;(
 <a href=#847 id=847 data-nosnippet>847</a>    r: <span class="kw-2">&amp;mut </span>R,
-<a href=#848 id=848 data-nosnippet>848</a>    buf: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
-<a href=#849 id=849 data-nosnippet>849</a>    size_hint: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-<a href=#850 id=850 data-nosnippet>850</a>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#851 id=851 data-nosnippet>851</a>    <span class="kw">let </span>start_len = buf.len();
-<a href=#852 id=852 data-nosnippet>852</a>    <span class="kw">let </span>start_cap = buf.capacity();
+<a href=#848 id=848 data-nosnippet>848</a>    buf: <span class="kw-2">&amp;mut </span><a href="../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#849 id=849 data-nosnippet>849</a>    size_hint: <a class="prelude-ty" href="../../../core/option/enum.Option.html">Option</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
+<a href=#850 id=850 data-nosnippet>850</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#851 id=851 data-nosnippet>851</a>    <span class="kw">let </span>start_len = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
+<a href=#852 id=852 data-nosnippet>852</a>    <span class="kw">let </span>start_cap = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#1353-1355">capacity</a>();
 <a href=#853 id=853 data-nosnippet>853</a>    <span class="comment">// Optionally limit the maximum bytes read on each iteration.
 <a href=#854 id=854 data-nosnippet>854</a>    // This adds an arbitrary fiddle factor to allow for more data than we expect.
-<a href=#855 id=855 data-nosnippet>855</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>max_read_size = size_hint
-<a href=#856 id=856 data-nosnippet>856</a>        .and_then(|s| s.checked_add(<span class="number">1024</span>)<span class="question-mark">?</span>.checked_next_multiple_of(DEFAULT_BUF_SIZE))
-<a href=#857 id=857 data-nosnippet>857</a>        .unwrap_or(DEFAULT_BUF_SIZE);
+<a href=#855 id=855 data-nosnippet>855</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>max_read_size = <a href="#849">size_hint</a>
+<a href=#856 id=856 data-nosnippet>856</a>        .<a href="../../../core/option/enum.Option.html#method.and_then">and_then</a>(|s| s.checked_add(<span class="number">1024</span>)<span class="question-mark">?</span>.<a href="../../../core/primitive.usize.html#method.checked_next_multiple_of">checked_next_multiple_of</a>(<a href="#787-790">DEFAULT_BUF_SIZE</a>))
+<a href=#857 id=857 data-nosnippet>857</a>        .<a href="../../../core/option/enum.Option.html#method.unwrap_or">unwrap_or</a>(<a href="#787-790">DEFAULT_BUF_SIZE</a>);
 <a href=#858 id=858 data-nosnippet>858</a>
 <a href=#859 id=859 data-nosnippet>859</a>    <span class="comment">// Tracks how many bytes are initialized in the buffer
-<a href=#860 id=860 data-nosnippet>860</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>init_until = buf.len();
+<a href=#860 id=860 data-nosnippet>860</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>init_until = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
 <a href=#861 id=861 data-nosnippet>861</a>
-<a href=#862 id=862 data-nosnippet>862</a>    <span class="kw">const </span>PROBE_SIZE: usize = <span class="number">32</span>;
+<a href=#862 id=862 data-nosnippet>862</a>    <span class="kw">const </span>PROBE_SIZE: <a href="../../../core/primitive.usize.html">usize</a> = <span class="number">32</span>;
 <a href=#863 id=863 data-nosnippet>863</a>
-<a href=#864 id=864 data-nosnippet>864</a>    <span class="kw">fn </span>small_probe_read&lt;R: Read + <span class="question-mark">?</span>Sized&gt;(r: <span class="kw-2">&amp;mut </span>R, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-<a href=#865 id=865 data-nosnippet>865</a>        <span class="kw">let </span><span class="kw-2">mut </span>probe = [<span class="number">0u8</span>; PROBE_SIZE];
+<a href=#864 id=864 data-nosnippet>864</a>    <span class="kw">fn </span>small_probe_read&lt;R: <a href="#87-716">Read</a> + <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>&gt;(r: <span class="kw-2">&amp;mut </span>R, buf: <span class="kw-2">&amp;mut </span><a href="../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#865 id=865 data-nosnippet>865</a>        <span class="kw">let </span><span class="kw-2">mut </span>probe = [<span class="number">0u8</span>; <a href="#862">PROBE_SIZE</a>];
 <a href=#866 id=866 data-nosnippet>866</a>
 <a href=#867 id=867 data-nosnippet>867</a>        <span class="kw">loop </span>{
 <a href=#868 id=868 data-nosnippet>868</a>            <span class="macro">cfg_select!</span> {
@@ -874,8 +874,8 @@
 <a href=#874 id=874 data-nosnippet>874</a>                <span class="kw">_ </span>=&gt; {}
 <a href=#875 id=875 data-nosnippet>875</a>            }
 <a href=#876 id=876 data-nosnippet>876</a>
-<a href=#877 id=877 data-nosnippet>877</a>            <span class="kw">match </span>r.read(<span class="kw-2">&amp;mut </span>probe) {
-<a href=#878 id=878 data-nosnippet>878</a>                <span class="prelude-val">Ok</span>(n) =&gt; {
+<a href=#877 id=877 data-nosnippet>877</a>            <span class="kw">match </span><a href="#864">r</a>.<a href="#167-170">read</a>(<span class="kw-2">&amp;mut </span><a href="#865">probe</a>) {
+<a href=#878 id=878 data-nosnippet>878</a>                <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(n) =&gt; {
 <a href=#879 id=879 data-nosnippet>879</a>                    <span class="macro">cfg_select!</span> {
 <a href=#880 id=880 data-nosnippet>880</a>                        no_global_oom_handling =&gt; {
 <a href=#881 id=881 data-nosnippet>881</a>                            <span class="comment">// there is no way to recover from allocation failure here
@@ -885,39 +885,39 @@
 <a href=#885 id=885 data-nosnippet>885</a>                        <span class="kw">_ </span>=&gt; {
 <a href=#886 id=886 data-nosnippet>886</a>                            <span class="comment">// there is no way to recover from allocation failure here
 <a href=#887 id=887 data-nosnippet>887</a>                            // because the data has already been read.
-<a href=#888 id=888 data-nosnippet>888</a>                            </span>buf.extend_from_slice(<span class="kw-2">&amp;</span>probe[..n]);
+<a href=#888 id=888 data-nosnippet>888</a>                            </span><a href="#864">buf</a>.<a href="../vec/mod.rs.html#3578-3580">extend_from_slice</a>(<span class="kw-2">&amp;</span><a href="#865">probe</a>[..n]);
 <a href=#889 id=889 data-nosnippet>889</a>                        }
 <a href=#890 id=890 data-nosnippet>890</a>                    }
-<a href=#891 id=891 data-nosnippet>891</a>                    <span class="kw">return </span><span class="prelude-val">Ok</span>(n);
+<a href=#891 id=891 data-nosnippet>891</a>                    <span class="kw">return </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#878">n</a>);
 <a href=#892 id=892 data-nosnippet>892</a>                }
-<a href=#893 id=893 data-nosnippet>893</a>                <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.is_interrupted() =&gt; <span class="kw">continue</span>,
-<a href=#894 id=894 data-nosnippet>894</a>                <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
+<a href=#893 id=893 data-nosnippet>893</a>                <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<span class="kw-2">ref </span>e) <span class="kw">if </span><a href="#893">e</a>.is_interrupted() =&gt; <span class="kw">continue</span>,
+<a href=#894 id=894 data-nosnippet>894</a>                <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(e) =&gt; <span class="kw">return </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="#894">e</a>),
 <a href=#895 id=895 data-nosnippet>895</a>            }
 <a href=#896 id=896 data-nosnippet>896</a>        }
 <a href=#897 id=897 data-nosnippet>897</a>    }
 <a href=#898 id=898 data-nosnippet>898</a>
 <a href=#899 id=899 data-nosnippet>899</a>    <span class="comment">// avoid inflating empty/small vecs before we have determined that there's anything to read
-<a href=#900 id=900 data-nosnippet>900</a>    </span><span class="kw">if </span>(size_hint.is_none() || size_hint == <span class="prelude-val">Some</span>(<span class="number">0</span>)) &amp;&amp; buf.capacity() - buf.len() &lt; PROBE_SIZE {
+<a href=#900 id=900 data-nosnippet>900</a>    </span><span class="kw">if </span>(<a href="#849">size_hint</a>.<a href="../../../core/option/enum.Option.html#method.is_none">is_none</a>() || <a href="#849">size_hint</a> == <a class="prelude-val" href="../../../core/option/enum.Option.html#variant.Some">Some</a>(<span class="number">0</span>)) &amp;&amp; <a href="#848">buf</a>.<a href="../vec/mod.rs.html#1353-1355">capacity</a>() - <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() &lt; <a href="#862">PROBE_SIZE</a> {
 <a href=#901 id=901 data-nosnippet>901</a>        <span class="kw">let </span>read = small_probe_read(r, buf)<span class="question-mark">?</span>;
 <a href=#902 id=902 data-nosnippet>902</a>
-<a href=#903 id=903 data-nosnippet>903</a>        <span class="kw">if </span>read == <span class="number">0 </span>{
-<a href=#904 id=904 data-nosnippet>904</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="number">0</span>);
+<a href=#903 id=903 data-nosnippet>903</a>        <span class="kw">if </span><a href="#901">read</a> == <span class="number">0 </span>{
+<a href=#904 id=904 data-nosnippet>904</a>            <span class="kw">return </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="number">0</span>);
 <a href=#905 id=905 data-nosnippet>905</a>        }
 <a href=#906 id=906 data-nosnippet>906</a>    }
 <a href=#907 id=907 data-nosnippet>907</a>
 <a href=#908 id=908 data-nosnippet>908</a>    <span class="kw">loop </span>{
-<a href=#909 id=909 data-nosnippet>909</a>        <span class="kw">if </span>buf.spare_capacity_mut().len() &lt; PROBE_SIZE &amp;&amp; buf.capacity() == start_cap {
+<a href=#909 id=909 data-nosnippet>909</a>        <span class="kw">if </span><a href="#848">buf</a>.<a href="../vec/mod.rs.html#3271-3282">spare_capacity_mut</a>().<a href="../../../core/primitive.slice.html#method.len">len</a>() &lt; <a href="#862">PROBE_SIZE</a> &amp;&amp; <a href="#848">buf</a>.<a href="../vec/mod.rs.html#1353-1355">capacity</a>() == <a href="#852">start_cap</a> {
 <a href=#910 id=910 data-nosnippet>910</a>            <span class="comment">// The buffer might be an exact fit. Let's read into a probe buffer
 <a href=#911 id=911 data-nosnippet>911</a>            // and see if it returns `Ok(0)`. If so, we've avoided an
 <a href=#912 id=912 data-nosnippet>912</a>            // unnecessary doubling of the capacity. But if not, append the
 <a href=#913 id=913 data-nosnippet>913</a>            // probe buffer to the primary buffer and let its capacity grow.
 <a href=#914 id=914 data-nosnippet>914</a>            </span><span class="kw">let </span>read = small_probe_read(r, buf)<span class="question-mark">?</span>;
 <a href=#915 id=915 data-nosnippet>915</a>
-<a href=#916 id=916 data-nosnippet>916</a>            <span class="kw">if </span>read == <span class="number">0 </span>{
-<a href=#917 id=917 data-nosnippet>917</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(buf.len() - start_len);
+<a href=#916 id=916 data-nosnippet>916</a>            <span class="kw">if </span><a href="#914">read</a> == <span class="number">0 </span>{
+<a href=#917 id=917 data-nosnippet>917</a>                <span class="kw">return </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() - <a href="#851">start_len</a>);
 <a href=#918 id=918 data-nosnippet>918</a>            }
 <a href=#919 id=919 data-nosnippet>919</a>
-<a href=#920 id=920 data-nosnippet>920</a>            init_until = buf.len();
+<a href=#920 id=920 data-nosnippet>920</a>            <a href="#860">init_until</a> = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
 <a href=#921 id=921 data-nosnippet>921</a>            <span class="comment">// In the case of very short reads, continue to use the stack buffer
 <a href=#922 id=922 data-nosnippet>922</a>            // until either we reach the end or we need to reallocate.
 <a href=#923 id=923 data-nosnippet>923</a>            </span><span class="kw">continue</span>;
@@ -925,80 +925,80 @@
 <a href=#925 id=925 data-nosnippet>925</a>
 <a href=#926 id=926 data-nosnippet>926</a>        <span class="comment">// Avoid unnecessarily short reads by ensuring there's at least PROBE_SIZE space available.
 <a href=#927 id=927 data-nosnippet>927</a>        // And assert that PROBE_SIZE is always at least large enough to fit any UTF-8 encoded code point.
-<a href=#928 id=928 data-nosnippet>928</a>        </span><span class="kw">const </span>{ <span class="macro">assert!</span>(PROBE_SIZE &gt;= char::MAX_LEN_UTF8) }
-<a href=#929 id=929 data-nosnippet>929</a>        <span class="kw">if </span>buf.spare_capacity_mut().len() &lt; PROBE_SIZE {
+<a href=#928 id=928 data-nosnippet>928</a>        </span><span class="kw">const </span>{ <a href="../../../core/macro.assert.html">assert!</a>(PROBE_SIZE &gt;= char::MAX_LEN_UTF8) }
+<a href=#929 id=929 data-nosnippet>929</a>        <span class="kw">if </span><a href="#848">buf</a>.<a href="../vec/mod.rs.html#3271-3282">spare_capacity_mut</a>().<a href="../../../core/primitive.slice.html#method.len">len</a>() &lt; <a href="#862">PROBE_SIZE</a> {
 <a href=#930 id=930 data-nosnippet>930</a>            buf.try_reserve(PROBE_SIZE)<span class="question-mark">?</span>;
 <a href=#931 id=931 data-nosnippet>931</a>            <span class="comment">// When reallocation occurs, we have to update init_until accordingly
 <a href=#932 id=932 data-nosnippet>932</a>            // to re-calibrate how many bytes are actually initialized in the buffer
-<a href=#933 id=933 data-nosnippet>933</a>            </span>init_until = buf.len();
+<a href=#933 id=933 data-nosnippet>933</a>            </span><a href="#860">init_until</a> = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
 <a href=#934 id=934 data-nosnippet>934</a>        }
 <a href=#935 id=935 data-nosnippet>935</a>
 <a href=#936 id=936 data-nosnippet>936</a>        <span class="comment">// We set a threshold of &gt;PROBE_SIZE initialized yet unfilled bytes left in the
 <a href=#937 id=937 data-nosnippet>937</a>        // spare buffer before determining that we need to initialize more bytes into
 <a href=#938 id=938 data-nosnippet>938</a>        // the spare buffer
-<a href=#939 id=939 data-nosnippet>939</a>        </span><span class="kw">let </span>buf_len = <span class="kw">if </span>init_until &gt; buf.len() + PROBE_SIZE {
-<a href=#940 id=940 data-nosnippet>940</a>            init_until - buf.len()
+<a href=#939 id=939 data-nosnippet>939</a>        </span><span class="kw">let </span>buf_len = <span class="kw">if </span><a href="#860">init_until</a> &gt; <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() + <a href="#862">PROBE_SIZE</a> {
+<a href=#940 id=940 data-nosnippet>940</a>            <a href="#860">init_until</a> - <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>()
 <a href=#941 id=941 data-nosnippet>941</a>        } <span class="kw">else </span>{
-<a href=#942 id=942 data-nosnippet>942</a>            usize::min(max_read_size, buf.capacity() - buf.len())
+<a href=#942 id=942 data-nosnippet>942</a>            <a href="../../../core/primitive.usize.html">usize</a>::<a href="../../../core/cmp/trait.Ord.html#method.min">min</a>(<a href="#855">max_read_size</a>, <a href="#848">buf</a>.<a href="../vec/mod.rs.html#1353-1355">capacity</a>() - <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>())
 <a href=#943 id=943 data-nosnippet>943</a>        };
-<a href=#944 id=944 data-nosnippet>944</a>        <span class="kw">let </span>was_init = init_until &gt;= buf.len() + buf_len;
+<a href=#944 id=944 data-nosnippet>944</a>        <span class="kw">let </span>was_init = <a href="#860">init_until</a> &gt;= <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() + <a href="#939">buf_len</a>;
 <a href=#945 id=945 data-nosnippet>945</a>
-<a href=#946 id=946 data-nosnippet>946</a>        <span class="kw">let </span><span class="kw-2">mut </span>spare = buf.spare_capacity_mut();
-<a href=#947 id=947 data-nosnippet>947</a>        spare = <span class="kw-2">&amp;mut </span>spare[..buf_len];
-<a href=#948 id=948 data-nosnippet>948</a>        <span class="kw">let </span><span class="kw-2">mut </span>read_buf: BorrowedBuf&lt;<span class="lifetime">'_</span>, u8&gt; = spare.into();
+<a href=#946 id=946 data-nosnippet>946</a>        <span class="kw">let </span><span class="kw-2">mut </span>spare = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3271-3282">spare_capacity_mut</a>();
+<a href=#947 id=947 data-nosnippet>947</a>        <a href="#946">spare</a> = <span class="kw-2">&amp;mut </span><a href="#946">spare</a>[..buf_len];
+<a href=#948 id=948 data-nosnippet>948</a>        <span class="kw">let </span><span class="kw-2">mut </span>read_buf: <a href="../../../alloc/io/struct.BorrowedBuf.html">BorrowedBuf</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt; = <a href="#946">spare</a>.<a href="../../../core/convert/trait.Into.html#tymethod.into">into</a>();
 <a href=#949 id=949 data-nosnippet>949</a>
-<a href=#950 id=950 data-nosnippet>950</a>        <span class="kw">if </span>was_init {
+<a href=#950 id=950 data-nosnippet>950</a>        <span class="kw">if </span><a href="#944">was_init</a> {
 <a href=#951 id=951 data-nosnippet>951</a>            <span class="comment">// SAFETY: These bytes were initialized but not filled in the previous loop
-<a href=#952 id=952 data-nosnippet>952</a>            </span><span class="kw">unsafe </span>{ read_buf.set_init() };
+<a href=#952 id=952 data-nosnippet>952</a>            </span><span class="kw">unsafe </span>{ <a href="#948">read_buf</a>.<a href="../../../alloc/io/struct.BorrowedBuf.html#method.set_init">set_init</a>() };
 <a href=#953 id=953 data-nosnippet>953</a>        }
 <a href=#954 id=954 data-nosnippet>954</a>
-<a href=#955 id=955 data-nosnippet>955</a>        <span class="kw">let </span><span class="kw-2">mut </span>cursor = read_buf.unfilled();
+<a href=#955 id=955 data-nosnippet>955</a>        <span class="kw">let </span><span class="kw-2">mut </span>cursor = <a href="#948">read_buf</a>.<a href="../../../alloc/io/struct.BorrowedBuf.html#method.unfilled">unfilled</a>();
 <a href=#956 id=956 data-nosnippet>956</a>        <span class="kw">let </span>result = <span class="kw">loop </span>{
-<a href=#957 id=957 data-nosnippet>957</a>            <span class="kw">match </span>r.read_buf(cursor.reborrow()) {
-<a href=#958 id=958 data-nosnippet>958</a>                <span class="prelude-val">Err</span>(e) <span class="kw">if </span>e.is_interrupted() =&gt; <span class="kw">continue</span>,
+<a href=#957 id=957 data-nosnippet>957</a>            <span class="kw">match </span><a href="#847">r</a>.<a href="#409-411">read_buf</a>(<a href="#955">cursor</a>.<a href="../../../alloc/io/struct.BorrowedCursor.html#method.reborrow">reborrow</a>()) {
+<a href=#958 id=958 data-nosnippet>958</a>                <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(e) <span class="kw">if </span><a href="#958">e</a>.is_interrupted() =&gt; <span class="kw">continue</span>,
 <a href=#959 id=959 data-nosnippet>959</a>                <span class="comment">// Do not stop now in case of error: we might have received both data
 <a href=#960 id=960 data-nosnippet>960</a>                // and an error
-<a href=#961 id=961 data-nosnippet>961</a>                </span>res =&gt; <span class="kw">break </span>res,
+<a href=#961 id=961 data-nosnippet>961</a>                </span>res =&gt; <span class="kw">break </span><a href="#961">res</a>,
 <a href=#962 id=962 data-nosnippet>962</a>            }
 <a href=#963 id=963 data-nosnippet>963</a>        };
 <a href=#964 id=964 data-nosnippet>964</a>
-<a href=#965 id=965 data-nosnippet>965</a>        <span class="kw">let </span>bytes_read = cursor.written();
-<a href=#966 id=966 data-nosnippet>966</a>        <span class="kw">let </span>is_init = read_buf.is_init();
+<a href=#965 id=965 data-nosnippet>965</a>        <span class="kw">let </span>bytes_read = <a href="#955">cursor</a>.<a href="../../../alloc/io/struct.BorrowedCursor.html#method.written">written</a>();
+<a href=#966 id=966 data-nosnippet>966</a>        <span class="kw">let </span>is_init = <a href="#948">read_buf</a>.<a href="../../../alloc/io/struct.BorrowedBuf.html#method.is_init">is_init</a>();
 <a href=#967 id=967 data-nosnippet>967</a>
-<a href=#968 id=968 data-nosnippet>968</a>        <span class="kw">if </span>is_init {
-<a href=#969 id=969 data-nosnippet>969</a>            init_until = buf.len() + buf_len;
+<a href=#968 id=968 data-nosnippet>968</a>        <span class="kw">if </span><a href="#966">is_init</a> {
+<a href=#969 id=969 data-nosnippet>969</a>            <a href="#860">init_until</a> = <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() + <a href="#939">buf_len</a>;
 <a href=#970 id=970 data-nosnippet>970</a>        }
 <a href=#971 id=971 data-nosnippet>971</a>
 <a href=#972 id=972 data-nosnippet>972</a>        <span class="comment">// SAFETY: BorrowedBuf's invariants mean this much memory is initialized.
 <a href=#973 id=973 data-nosnippet>973</a>        </span><span class="kw">unsafe </span>{
-<a href=#974 id=974 data-nosnippet>974</a>            <span class="kw">let </span>new_len = bytes_read + buf.len();
-<a href=#975 id=975 data-nosnippet>975</a>            buf.set_len(new_len);
+<a href=#974 id=974 data-nosnippet>974</a>            <span class="kw">let </span>new_len = <a href="#965">bytes_read</a> + <a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>();
+<a href=#975 id=975 data-nosnippet>975</a>            <a href="#848">buf</a>.<a href="../vec/mod.rs.html#2134-2142">set_len</a>(<a href="#974">new_len</a>);
 <a href=#976 id=976 data-nosnippet>976</a>        }
 <a href=#977 id=977 data-nosnippet>977</a>
 <a href=#978 id=978 data-nosnippet>978</a>        <span class="comment">// Now that all data is pushed to the vector, we can fail without data loss
 <a href=#979 id=979 data-nosnippet>979</a>        </span>result<span class="question-mark">?</span>;
 <a href=#980 id=980 data-nosnippet>980</a>
-<a href=#981 id=981 data-nosnippet>981</a>        <span class="kw">if </span>bytes_read == <span class="number">0 </span>{
-<a href=#982 id=982 data-nosnippet>982</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(buf.len() - start_len);
+<a href=#981 id=981 data-nosnippet>981</a>        <span class="kw">if </span><a href="#965">bytes_read</a> == <span class="number">0 </span>{
+<a href=#982 id=982 data-nosnippet>982</a>            <span class="kw">return </span><a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#848">buf</a>.<a href="../vec/mod.rs.html#3068-3077">len</a>() - <a href="#851">start_len</a>);
 <a href=#983 id=983 data-nosnippet>983</a>        }
 <a href=#984 id=984 data-nosnippet>984</a>
 <a href=#985 id=985 data-nosnippet>985</a>        <span class="comment">// Use heuristics to determine the max read size if no initial size hint was provided
-<a href=#986 id=986 data-nosnippet>986</a>        </span><span class="kw">if </span>size_hint.is_none() {
+<a href=#986 id=986 data-nosnippet>986</a>        </span><span class="kw">if </span><a href="#849">size_hint</a>.<a href="../../../core/option/enum.Option.html#method.is_none">is_none</a>() {
 <a href=#987 id=987 data-nosnippet>987</a>            <span class="comment">// The reader is returning short reads but it doesn't call ensure_init().
 <a href=#988 id=988 data-nosnippet>988</a>            // In that case we no longer need to restrict read sizes to avoid
 <a href=#989 id=989 data-nosnippet>989</a>            // initialization costs.
 <a href=#990 id=990 data-nosnippet>990</a>            // When reading from disk we usually don't get any short reads except at EOF.
 <a href=#991 id=991 data-nosnippet>991</a>            // So we wait for at least 2 short reads before uncapping the read buffer;
 <a href=#992 id=992 data-nosnippet>992</a>            // this helps with the Windows issue.
-<a href=#993 id=993 data-nosnippet>993</a>            </span><span class="kw">if </span>!is_init {
-<a href=#994 id=994 data-nosnippet>994</a>                max_read_size = usize::MAX;
+<a href=#993 id=993 data-nosnippet>993</a>            </span><span class="kw">if </span>!<a href="#966">is_init</a> {
+<a href=#994 id=994 data-nosnippet>994</a>                <a href="#855">max_read_size</a> = <a href="../../../core/primitive.usize.html">usize</a>::<a href="../../../core/primitive.usize.html#associatedconstant.MAX">MAX</a>;
 <a href=#995 id=995 data-nosnippet>995</a>            }
 <a href=#996 id=996 data-nosnippet>996</a>            <span class="comment">// the spare buffer has initialized and read in `max_read_size` bytes.
 <a href=#997 id=997 data-nosnippet>997</a>            // it's possible that we have more than `max_read_size` bytes to read
 <a href=#998 id=998 data-nosnippet>998</a>            // left, so a larger buffer may be necessary to minimize the number of
 <a href=#999 id=999 data-nosnippet>999</a>            // iterations of reading in bytes to the buffer
-<a href=#1000 id=1000 data-nosnippet>1000</a>            </span><span class="kw">else if </span>bytes_read == max_read_size {
-<a href=#1001 id=1001 data-nosnippet>1001</a>                max_read_size = max_read_size.saturating_mul(<span class="number">2</span>);
+<a href=#1000 id=1000 data-nosnippet>1000</a>            </span><span class="kw">else if </span><a href="#965">bytes_read</a> == <a href="#855">max_read_size</a> {
+<a href=#1001 id=1001 data-nosnippet>1001</a>                <a href="#855">max_read_size</a> = <a href="#855">max_read_size</a>.<a href="../../../core/primitive.usize.html#method.saturating_mul">saturating_mul</a>(<span class="number">2</span>);
 <a href=#1002 id=1002 data-nosnippet>1002</a>            }
 <a href=#1003 id=1003 data-nosnippet>1003</a>        }
 <a href=#1004 id=1004 data-nosnippet>1004</a>    }
@@ -1006,11 +1006,11 @@
 <a href=#1006 id=1006 data-nosnippet>1006</a>
 <a href=#1007 id=1007 data-nosnippet>1007</a><span class="attr">#[doc(hidden)]
 <a href=#1008 id=1008 data-nosnippet>1008</a>#[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#1009 id=1009 data-nosnippet>1009</a></span><span class="kw">pub fn </span>default_read_to_string&lt;R: Read + <span class="question-mark">?</span>Sized&gt;(
+<a href=#1009 id=1009 data-nosnippet>1009</a></span><span class="kw">pub fn </span>default_read_to_string&lt;R: <a href="#87-716">Read</a> + <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>&gt;(
 <a href=#1010 id=1010 data-nosnippet>1010</a>    r: <span class="kw-2">&amp;mut </span>R,
-<a href=#1011 id=1011 data-nosnippet>1011</a>    buf: <span class="kw-2">&amp;mut </span>String,
-<a href=#1012 id=1012 data-nosnippet>1012</a>    size_hint: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-<a href=#1013 id=1013 data-nosnippet>1013</a>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+<a href=#1011 id=1011 data-nosnippet>1011</a>    buf: <span class="kw-2">&amp;mut </span><a href="../string.rs.html#357-359">String</a>,
+<a href=#1012 id=1012 data-nosnippet>1012</a>    size_hint: <a class="prelude-ty" href="../../../core/option/enum.Option.html">Option</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
+<a href=#1013 id=1013 data-nosnippet>1013</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#1014 id=1014 data-nosnippet>1014</a>    <span class="comment">// Note that we do *not* call `r.read_to_end()` here. We are passing
 <a href=#1015 id=1015 data-nosnippet>1015</a>    // `&amp;mut Vec&lt;u8&gt;` (the raw contents of `buf`) into the `read_to_end`
 <a href=#1016 id=1016 data-nosnippet>1016</a>    // method to fill it up. An arbitrary implementation could overwrite the
@@ -1021,20 +1021,20 @@
 <a href=#1021 id=1021 data-nosnippet>1021</a>    // we pass it to our hardcoded `default_read_to_end` implementation which
 <a href=#1022 id=1022 data-nosnippet>1022</a>    // we know is guaranteed to only read data into the end of the buffer.
 <a href=#1023 id=1023 data-nosnippet>1023</a>    // ignore-tidy-undocumented-unsafe
-<a href=#1024 id=1024 data-nosnippet>1024</a>    </span><span class="kw">unsafe </span>{ append_to_string(buf, |b| default_read_to_end(r, b, size_hint)) }
+<a href=#1024 id=1024 data-nosnippet>1024</a>    </span><span class="kw">unsafe </span>{ <a href="#811-832">append_to_string</a>(<a href="#1011">buf</a>, |b| <a href="#846-1005">default_read_to_end</a>(<a href="#1010">r</a>, <a href="#1024">b</a>, <a href="#1012">size_hint</a>)) }
 <a href=#1025 id=1025 data-nosnippet>1025</a>}
 <a href=#1026 id=1026 data-nosnippet>1026</a>
 <a href=#1027 id=1027 data-nosnippet>1027</a><span class="attr">#[doc(hidden)]
 <a href=#1028 id=1028 data-nosnippet>1028</a>#[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#1029 id=1029 data-nosnippet>1029</a></span><span class="kw">pub fn </span>default_read_vectored&lt;F&gt;(read: F, bufs: <span class="kw-2">&amp;mut </span>[IoSliceMut&lt;<span class="lifetime">'_</span>&gt;]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;
+<a href=#1029 id=1029 data-nosnippet>1029</a></span><span class="kw">pub fn </span>default_read_vectored&lt;F&gt;(read: F, bufs: <span class="kw-2">&amp;mut </span>[<a href="../../../alloc/io/struct.IoSliceMut.html">IoSliceMut</a>&lt;<span class="lifetime">'_</span>&gt;]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;
 <a href=#1030 id=1030 data-nosnippet>1030</a><span class="kw">where
-<a href=#1031 id=1031 data-nosnippet>1031</a>    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;,
+<a href=#1031 id=1031 data-nosnippet>1031</a>    </span>F: <a href="../../../core/ops/function/trait.FnOnce.html">FnOnce</a>(<span class="kw-2">&amp;mut </span>[<a href="../../../core/primitive.u8.html">u8</a>]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
 <a href=#1032 id=1032 data-nosnippet>1032</a>{
-<a href=#1033 id=1033 data-nosnippet>1033</a>    <span class="kw">let </span>buf = bufs.iter_mut().find(|b| !b.is_empty()).map_or(<span class="kw-2">&amp;mut </span>[][..], |b| <span class="kw-2">&amp;mut **</span>b);
-<a href=#1034 id=1034 data-nosnippet>1034</a>    read(buf)
+<a href=#1033 id=1033 data-nosnippet>1033</a>    <span class="kw">let </span>buf = <a href="#1029">bufs</a>.<a href="../../../core/primitive.slice.html#method.iter_mut">iter_mut</a>().<a href="../../../core/iter/traits/iterator/trait.Iterator.html#method.find">find</a>(|b| !<a href="#1033">b</a>.<a href="../../../core/primitive.slice.html#method.is_empty">is_empty</a>()).<a href="../../../core/option/enum.Option.html#method.map_or">map_or</a>(<span class="kw-2">&amp;mut </span>[][..], |b| <span class="kw-2">&amp;mut **</span><a href="#1033">b</a>);
+<a href=#1034 id=1034 data-nosnippet>1034</a>    <a href="#1029">read</a>(<a href="#1033">buf</a>)
 <a href=#1035 id=1035 data-nosnippet>1035</a>}
 <a href=#1036 id=1036 data-nosnippet>1036</a>
-<a href=#1037 id=1037 data-nosnippet>1037</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>default_read_exact&lt;R: Read + <span class="question-mark">?</span>Sized&gt;(this: <span class="kw-2">&amp;mut </span>R, <span class="kw-2">mut </span>buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#1037 id=1037 data-nosnippet>1037</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>default_read_exact&lt;R: <a href="#87-716">Read</a> + <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>&gt;(this: <span class="kw-2">&amp;mut </span>R, <span class="kw-2">mut </span>buf: <span class="kw-2">&amp;mut </span>[<a href="../../../core/primitive.u8.html">u8</a>]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#1038 id=1038 data-nosnippet>1038</a>    <span class="kw">while </span>!buf.is_empty() {
 <a href=#1039 id=1039 data-nosnippet>1039</a>        <span class="kw">match </span>this.read(buf) {
 <a href=#1040 id=1040 data-nosnippet>1040</a>            <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="kw">break</span>,
@@ -1045,24 +1045,24 @@
 <a href=#1045 id=1045 data-nosnippet>1045</a>            <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
 <a href=#1046 id=1046 data-nosnippet>1046</a>        }
 <a href=#1047 id=1047 data-nosnippet>1047</a>    }
-<a href=#1048 id=1048 data-nosnippet>1048</a>    <span class="kw">if </span>!buf.is_empty() { <span class="prelude-val">Err</span>(Error::READ_EXACT_EOF) } <span class="kw">else </span>{ <span class="prelude-val">Ok</span>(()) }
+<a href=#1048 id=1048 data-nosnippet>1048</a>    <span class="kw">if </span>!<a href="#1037">buf</a>.<a href="../../../core/primitive.slice.html#method.is_empty">is_empty</a>() { <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="../../../alloc/io/struct.Error.html">Error</a>::READ_EXACT_EOF) } <span class="kw">else </span>{ <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(()) }
 <a href=#1049 id=1049 data-nosnippet>1049</a>}
 <a href=#1050 id=1050 data-nosnippet>1050</a>
 <a href=#1051 id=1051 data-nosnippet>1051</a><span class="attr">#[doc(hidden)]
 <a href=#1052 id=1052 data-nosnippet>1052</a>#[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#1053 id=1053 data-nosnippet>1053</a></span><span class="kw">pub fn </span>default_read_buf&lt;F&gt;(read: F, <span class="kw-2">mut </span>cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
+<a href=#1053 id=1053 data-nosnippet>1053</a></span><span class="kw">pub fn </span>default_read_buf&lt;F&gt;(read: F, <span class="kw-2">mut </span>cursor: <a href="../../../alloc/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt;
 <a href=#1054 id=1054 data-nosnippet>1054</a><span class="kw">where
-<a href=#1055 id=1055 data-nosnippet>1055</a>    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;,
+<a href=#1055 id=1055 data-nosnippet>1055</a>    </span>F: <a href="../../../core/ops/function/trait.FnOnce.html">FnOnce</a>(<span class="kw-2">&amp;mut </span>[<a href="../../../core/primitive.u8.html">u8</a>]) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
 <a href=#1056 id=1056 data-nosnippet>1056</a>{
 <a href=#1057 id=1057 data-nosnippet>1057</a>    <span class="kw">let </span>n = read(cursor.ensure_init())<span class="question-mark">?</span>;
-<a href=#1058 id=1058 data-nosnippet>1058</a>    cursor.advance_checked(n);
-<a href=#1059 id=1059 data-nosnippet>1059</a>    <span class="prelude-val">Ok</span>(())
+<a href=#1058 id=1058 data-nosnippet>1058</a>    <a href="#1053">cursor</a>.<a href="../../../alloc/io/struct.BorrowedCursor.html#method.advance_checked">advance_checked</a>(<a href="#1057">n</a>);
+<a href=#1059 id=1059 data-nosnippet>1059</a>    <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(())
 <a href=#1060 id=1060 data-nosnippet>1060</a>}
 <a href=#1061 id=1061 data-nosnippet>1061</a>
-<a href=#1062 id=1062 data-nosnippet>1062</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>default_read_buf_exact&lt;R: Read + <span class="question-mark">?</span>Sized&gt;(
+<a href=#1062 id=1062 data-nosnippet>1062</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>default_read_buf_exact&lt;R: <a href="#87-716">Read</a> + <span class="question-mark">?</span><a href="../../../core/marker/trait.Sized.html">Sized</a>&gt;(
 <a href=#1063 id=1063 data-nosnippet>1063</a>    this: <span class="kw-2">&amp;mut </span>R,
-<a href=#1064 id=1064 data-nosnippet>1064</a>    <span class="kw-2">mut </span>cursor: BorrowedCursor&lt;<span class="lifetime">'_</span>, u8&gt;,
-<a href=#1065 id=1065 data-nosnippet>1065</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#1064 id=1064 data-nosnippet>1064</a>    <span class="kw-2">mut </span>cursor: <a href="../../../alloc/io/struct.BorrowedCursor.html">BorrowedCursor</a>&lt;<span class="lifetime">'_</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#1065 id=1065 data-nosnippet>1065</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#1066 id=1066 data-nosnippet>1066</a>    <span class="kw">while </span>cursor.capacity() &gt; <span class="number">0 </span>{
 <a href=#1067 id=1067 data-nosnippet>1067</a>        <span class="kw">let </span>prev_written = cursor.written();
 <a href=#1068 id=1068 data-nosnippet>1068</a>        <span class="kw">match </span>this.read_buf(cursor.reborrow()) {
@@ -1076,19 +1076,19 @@
 <a href=#1076 id=1076 data-nosnippet>1076</a>        }
 <a href=#1077 id=1077 data-nosnippet>1077</a>    }
 <a href=#1078 id=1078 data-nosnippet>1078</a>
-<a href=#1079 id=1079 data-nosnippet>1079</a>    <span class="prelude-val">Ok</span>(())
+<a href=#1079 id=1079 data-nosnippet>1079</a>    <a class="prelude-val" href="../../../core/result/enum.Result.html#variant.Ok">Ok</a>(())
 <a href=#1080 id=1080 data-nosnippet>1080</a>}
 <a href=#1081 id=1081 data-nosnippet>1081</a>
 <a href=#1082 id=1082 data-nosnippet>1082</a><span class="doccomment">/// Trait for types that can be converted from a fixed-size byte array with a specified endianness
 <a href=#1083 id=1083 data-nosnippet>1083</a></span><span class="attr">#[unstable(feature = <span class="string">"read_le_be_internals"</span>, reason = <span class="string">"internals"</span>, issue = <span class="string">"none"</span>)]
 <a href=#1084 id=1084 data-nosnippet>1084</a></span><span class="comment">// Once we can use associated consts in the types of method parameters, rewrite this to have
 <a href=#1085 id=1085 data-nosnippet>1085</a>// `from_le_bytes` and `from_be_bytes` methods, move it to `core`, and make it public.
-<a href=#1086 id=1086 data-nosnippet>1086</a></span><span class="kw">pub impl</span>(<span class="self">self</span>) <span class="kw">trait </span>FromEndianBytes: Sized {
+<a href=#1086 id=1086 data-nosnippet>1086</a></span><span class="kw">pub impl</span>(<span class="self">self</span>) <span class="kw">trait </span>FromEndianBytes: <a href="../../../core/marker/trait.Sized.html">Sized</a> {
 <a href=#1087 id=1087 data-nosnippet>1087</a>    <span class="attr">#[doc(hidden)]
-<a href=#1088 id=1088 data-nosnippet>1088</a>    </span><span class="kw">fn </span>read_le_from(r: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Read) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
+<a href=#1088 id=1088 data-nosnippet>1088</a>    </span><span class="kw">fn </span>read_le_from(r: <span class="kw-2">&amp;mut </span><span class="kw">impl </span><a href="#87-716">Read</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<span class="self">Self</span>&gt;;
 <a href=#1089 id=1089 data-nosnippet>1089</a>
 <a href=#1090 id=1090 data-nosnippet>1090</a>    <span class="attr">#[doc(hidden)]
-<a href=#1091 id=1091 data-nosnippet>1091</a>    </span><span class="kw">fn </span>read_be_from(r: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Read) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
+<a href=#1091 id=1091 data-nosnippet>1091</a>    </span><span class="kw">fn </span>read_be_from(r: <span class="kw-2">&amp;mut </span><span class="kw">impl </span><a href="#87-716">Read</a>) -&gt; <a class="prelude-ty" href="../../../alloc/io/type.Result.html">Result</a>&lt;<span class="self">Self</span>&gt;;
 <a href=#1092 id=1092 data-nosnippet>1092</a>}
 <a href=#1093 id=1093 data-nosnippet>1093</a>
 <a href=#1094 id=1094 data-nosnippet>1094</a><span class="macro">macro_rules!</span> impl_from_endian_bytes {
@@ -1108,5 +1108,5 @@
 <a href=#1108 id=1108 data-nosnippet>1108</a>    )<span class="kw-2">*</span>};
 <a href=#1109 id=1109 data-nosnippet>1109</a>}
 <a href=#1110 id=1110 data-nosnippet>1110</a>
-<a href=#1111 id=1111 data-nosnippet>1111</a><span class="macro">impl_from_endian_bytes!</span>(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+<a href=#1111 id=1111 data-nosnippet>1111</a><a href="#1094-1109">impl_from_endian_bytes!</a>(<a href="../../../core/primitive.u8.html">u8</a>, <a href="../../../core/primitive.u16.html">u16</a>, <a href="../../../core/primitive.u32.html">u32</a>, <a href="../../../core/primitive.u64.html">u64</a>, <a href="../../../core/primitive.u128.html">u128</a>, <a href="../../../core/primitive.usize.html">usize</a>, <a href="../../../core/primitive.i8.html">i8</a>, <a href="../../../core/primitive.i16.html">i16</a>, <a href="../../../core/primitive.i32.html">i32</a>, <a href="../../../core/primitive.i64.html">i64</a>, <a href="../../../core/primitive.i128.html">i128</a>, <a href="../../../core/primitive.isize.html">isize</a>, <a href="../../../core/primitive.f32.html">f32</a>, <a href="../../../core/primitive.f64.html">f64</a>);
 </code></pre></div></section></main></body></html>

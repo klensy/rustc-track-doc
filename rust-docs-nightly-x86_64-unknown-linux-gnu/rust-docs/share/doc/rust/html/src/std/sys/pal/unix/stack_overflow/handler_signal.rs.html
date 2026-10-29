@@ -1,18 +1,18 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/stack_overflow/handler_signal.rs`."><title>handler_signal.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files1.101.0.js"></script><script defer src="../../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/stack_overflow/</div>handler_signal.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>libc::{
-<a href=#2 id=2 data-nosnippet>2</a>    MAP_ANON, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, PROT_NONE, PROT_READ, PROT_WRITE, SA_ONSTACK,
-<a href=#3 id=3 data-nosnippet>3</a>    SA_SIGINFO, SIG_DFL, SIGBUS, SIGSEGV, SS_DISABLE, sigaction, sigaltstack, sighandler_t,
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/pal/unix/stack_overflow/handler_signal.rs`."><title>handler_signal.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files1.101.0.js"></script><script defer src="../../../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/pal/unix/stack_overflow/</div>handler_signal.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>libc::{
+<a href=#2 id=2 data-nosnippet>2</a>    <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.MAP_ANON.html">MAP_ANON</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_FAILED.html">MAP_FAILED</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_FIXED.html">MAP_FIXED</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_PRIVATE.html">MAP_PRIVATE</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_NONE.html">PROT_NONE</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_READ.html">PROT_READ</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_WRITE.html">PROT_WRITE</a>, <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/sigaction/constant.SA_ONSTACK.html">SA_ONSTACK</a>,
+<a href=#3 id=3 data-nosnippet>3</a>    <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/sigaction/constant.SA_SIGINFO.html">SA_SIGINFO</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/constant.SIG_DFL.html">SIG_DFL</a>, <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/signum_arch/constant.SIGBUS.html">SIGBUS</a>, <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/bits/signum_generic/constant.SIGSEGV.html">SIGSEGV</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.SS_DISABLE.html">SS_DISABLE</a>, <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/signal/fn.sigaction.html">sigaction</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/fn.sigaltstack.html">sigaltstack</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.sighandler_t.html">sighandler_t</a>,
 <a href=#4 id=4 data-nosnippet>4</a>};
 <a href=#5 id=5 data-nosnippet>5</a><span class="attr">#[cfg(not(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>)))]
 <a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span>libc::{mmap <span class="kw">as </span>mmap64, mprotect, munmap};
 <a href=#7 id=7 data-nosnippet>7</a><span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"gnu"</span>))]
-<a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">use </span>libc::{mmap64, mprotect, munmap};
+<a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">use </span>libc::{<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.mmap64.html">mmap64</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/fn.mprotect.html">mprotect</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/fn.munmap.html">munmap</a>};
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">super</span>::Handler;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">super</span>::thread_info::{delete_current_info, set_current_info, with_current_info};
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::ops::Range;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{Atomic, AtomicBool, AtomicPtr, AtomicUsize, Ordering};
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::sys::pal::unix::conf;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{io, mem, ptr};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="mod.rs.html#51-53"><span class="kw">super</span>::Handler</a>;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">super</span>::thread_info::{<a href="thread_info.rs.html#125-133">delete_current_info</a>, <a href="thread_info.rs.html#112-123">set_current_info</a>, <a href="thread_info.rs.html#62-92">with_current_info</a>};
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><a href="../../../../../../std/ops/struct.Range.html"><span class="kw">crate</span>::ops::Range</a>;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{<a href="../../../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>, <a href="../../../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>, <a href="../../../../../../std/sync/atomic/type.AtomicPtr.html">AtomicPtr</a>, <a href="../../../../../../std/sync/atomic/type.AtomicUsize.html">AtomicUsize</a>, <a href="../../../../../../std/sync/atomic/enum.Ordering.html">Ordering</a>};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><a href="../mod.rs.html#5"><span class="kw">crate</span>::sys::pal::unix::conf</a>;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{<a href="../../../../lib.rs.html#634">io</a>, <a href="../../../../../../std/mem/index.html">mem</a>, <a href="../../../../../../std/ptr/index.html">ptr</a>};
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="doccomment">/// Signal handler for the SIGSEGV and SIGBUS handlers.
 <a href=#18 id=18 data-nosnippet>18</a>///
@@ -42,23 +42,23 @@
 <a href=#42 id=42 data-nosnippet>42</a>/// to provide valid parameters. Apart from that, this function does not
 <a href=#43 id=43 data-nosnippet>43</a>/// have any other preconditions.
 <a href=#44 id=44 data-nosnippet>44</a></span><span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn </span>signal_handler(
-<a href=#45 id=45 data-nosnippet>45</a>    signum: libc::c_int,
-<a href=#46 id=46 data-nosnippet>46</a>    info: <span class="kw-2">*mut </span>libc::siginfo_t,
-<a href=#47 id=47 data-nosnippet>47</a>    _data: <span class="kw-2">*mut </span>libc::c_void,
+<a href=#45 id=45 data-nosnippet>45</a>    signum: libc::<a href="../../../../../../std/ffi/type.c_int.html">c_int</a>,
+<a href=#46 id=46 data-nosnippet>46</a>    info: <span class="kw-2">*mut </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/types/siginfo_t/struct.siginfo_t.html">siginfo_t</a>,
+<a href=#47 id=47 data-nosnippet>47</a>    _data: <span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>,
 <a href=#48 id=48 data-nosnippet>48</a>) {
 <a href=#49 id=49 data-nosnippet>49</a>    <span class="comment">// SAFETY: this pointer is provided by the system and will always point to a valid `siginfo_t`.
-<a href=#50 id=50 data-nosnippet>50</a>    </span><span class="kw">let </span>fault_addr = <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>info).si_addr().addr() };
+<a href=#50 id=50 data-nosnippet>50</a>    </span><span class="kw">let </span>fault_addr = <span class="kw">unsafe </span>{ (<span class="kw-2">*</span><a href="#46">info</a>).<a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/types/siginfo_t/struct.siginfo_t.html#method.si_addr">si_addr</a>().<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>() };
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="comment">// `with_current_info` expects that the process aborts after it is
 <a href=#53 id=53 data-nosnippet>53</a>    // called. If the signal was not caused by a memory access, this might
 <a href=#54 id=54 data-nosnippet>54</a>    // not be true. We detect this by noticing that the `si_addr` field is
 <a href=#55 id=55 data-nosnippet>55</a>    // zero if the signal is synthetic.
-<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">if </span>fault_addr != <span class="number">0 </span>{
-<a href=#57 id=57 data-nosnippet>57</a>        with_current_info(|thread_info| {
+<a href=#56 id=56 data-nosnippet>56</a>    </span><span class="kw">if </span><a href="#50">fault_addr</a> != <span class="number">0 </span>{
+<a href=#57 id=57 data-nosnippet>57</a>        <a href="thread_info.rs.html#62-92">with_current_info</a>(|thread_info| {
 <a href=#58 id=58 data-nosnippet>58</a>            <span class="comment">// If the faulting address is within the guard page, then we print a
 <a href=#59 id=59 data-nosnippet>59</a>            // message saying so and abort.
-<a href=#60 id=60 data-nosnippet>60</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(thread_info) = thread_info
-<a href=#61 id=61 data-nosnippet>61</a>                &amp;&amp; thread_info.guard_page_range.contains(<span class="kw-2">&amp;</span>fault_addr)
+<a href=#60 id=60 data-nosnippet>60</a>            </span><span class="kw">if let </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(thread_info) = <a href="#57">thread_info</a>
+<a href=#61 id=61 data-nosnippet>61</a>                &amp;&amp; <a href="#60">thread_info</a>.guard_page_range.<a href="../../../../../../std/ops/struct.Range.html#method.contains">contains</a>(<span class="kw-2">&amp;</span><a href="#50">fault_addr</a>)
 <a href=#62 id=62 data-nosnippet>62</a>            {
 <a href=#63 id=63 data-nosnippet>63</a>                <span class="comment">// Hey you! Yes, you modifying the stack overflow message!
 <a href=#64 id=64 data-nosnippet>64</a>                // Please make sure that all functions called here are
@@ -67,54 +67,54 @@
 <a href=#67 id=67 data-nosnippet>67</a>                // Thank you!
 <a href=#68 id=68 data-nosnippet>68</a>                // - says Jonas after having had to watch his carefully
 <a href=#69 id=69 data-nosnippet>69</a>                //   written code get made unsound again.
-<a href=#70 id=70 data-nosnippet>70</a>                </span><span class="kw">let </span>tid = thread_info.tid;
-<a href=#71 id=71 data-nosnippet>71</a>                <span class="kw">let </span>name = thread_info.name.as_deref().unwrap_or(<span class="string">"&lt;unknown&gt;"</span>);
-<a href=#72 id=72 data-nosnippet>72</a>                <span class="macro">rtprintpanic!</span>(<span class="string">"\nthread '{name}' ({tid}) has overflowed its stack\n"</span>);
-<a href=#73 id=73 data-nosnippet>73</a>                <span class="macro">rtabort!</span>(<span class="string">"stack overflow"</span>);
+<a href=#70 id=70 data-nosnippet>70</a>                </span><span class="kw">let </span>tid = <a href="#60">thread_info</a>.tid;
+<a href=#71 id=71 data-nosnippet>71</a>                <span class="kw">let </span>name = <a href="#60">thread_info</a>.name.<a href="../../../../../../std/option/enum.Option.html#method.as_deref">as_deref</a>().<a href="../../../../../../std/option/enum.Option.html#method.unwrap_or">unwrap_or</a>(<span class="string">"&lt;unknown&gt;"</span>);
+<a href=#72 id=72 data-nosnippet>72</a>                <a href="../../../../rt.rs.html#40-51">rtprintpanic!</a>(<span class="string">"\nthread '{name}' ({tid}) has overflowed its stack\n"</span>);
+<a href=#73 id=73 data-nosnippet>73</a>                <a href="../../../../rt.rs.html#53-60">rtabort!</a>(<span class="string">"stack overflow"</span>);
 <a href=#74 id=74 data-nosnippet>74</a>            }
 <a href=#75 id=75 data-nosnippet>75</a>        })
 <a href=#76 id=76 data-nosnippet>76</a>    }
 <a href=#77 id=77 data-nosnippet>77</a>
 <a href=#78 id=78 data-nosnippet>78</a>    <span class="comment">// Unregister ourselves by reverting back to the default behavior.
 <a href=#79 id=79 data-nosnippet>79</a>    // SAFETY: assuming all platforms define struct sigaction as "zero-initializable"
-<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>action: sigaction = <span class="kw">unsafe </span>{ mem::zeroed() };
-<a href=#81 id=81 data-nosnippet>81</a>    action.sa_sigaction = SIG_DFL;
+<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>action: <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/sigaction/struct.sigaction.html">sigaction</a> = <span class="kw">unsafe </span>{ mem::<a href="../../../../../../std/mem/fn.zeroed.html">zeroed</a>() };
+<a href=#81 id=81 data-nosnippet>81</a>    <a href="#80">action</a>.sa_sigaction = <a href="https://docs.rs/libc/0.2.191/libc/unix/constant.SIG_DFL.html">SIG_DFL</a>;
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="comment">// SAFETY: pray this is a well-behaved POSIX implementation of fn sigaction
-<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">unsafe </span>{ sigaction(signum, <span class="kw-2">&amp;</span>action, ptr::null_mut()) };
+<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/signal/fn.sigaction.html">sigaction</a>(<a href="#45">signum</a>, <span class="kw-2">&amp;</span><a href="#80">action</a>, ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>()) };
 <a href=#84 id=84 data-nosnippet>84</a>
 <a href=#85 id=85 data-nosnippet>85</a>    <span class="comment">// See comment above for why this function returns.
 <a href=#86 id=86 data-nosnippet>86</a></span>}
 <a href=#87 id=87 data-nosnippet>87</a>
-<a href=#88 id=88 data-nosnippet>88</a><span class="kw">static </span>PAGE_SIZE: Atomic&lt;usize&gt; = AtomicUsize::new(<span class="number">0</span>);
+<a href=#88 id=88 data-nosnippet>88</a><span class="kw">static </span>PAGE_SIZE: <a href="../../../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt; = <a href="../../../../../../std/sync/atomic/type.AtomicUsize.html">AtomicUsize</a>::<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="number">0</span>);
 <a href=#89 id=89 data-nosnippet>89</a><span class="comment">// Store a pointer to the allocation for the main thread's altstack so that
 <a href=#90 id=90 data-nosnippet>90</a>// tools like valgrind don't complain about a leaked unreachable allocation.
 <a href=#91 id=91 data-nosnippet>91</a>//
 <a href=#92 id=92 data-nosnippet>92</a>// If the main thread exits, the process will terminate so there's no use in
 <a href=#93 id=93 data-nosnippet>93</a>// freeing resources. It also means that the altstack is still installed
 <a href=#94 id=94 data-nosnippet>94</a>// while TLS destructors are run on the main thread (c.f. #111272).
-<a href=#95 id=95 data-nosnippet>95</a></span><span class="kw">static </span>MAIN_ALTSTACK: Atomic&lt;<span class="kw-2">*mut </span>libc::c_void&gt; = AtomicPtr::new(ptr::null_mut());
-<a href=#96 id=96 data-nosnippet>96</a><span class="kw">static </span>NEED_ALTSTACK: Atomic&lt;bool&gt; = AtomicBool::new(<span class="bool-val">false</span>);
+<a href=#95 id=95 data-nosnippet>95</a></span><span class="kw">static </span>MAIN_ALTSTACK: <a href="../../../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>&gt; = <a href="../../../../../../std/sync/atomic/type.AtomicPtr.html">AtomicPtr</a>::<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>());
+<a href=#96 id=96 data-nosnippet>96</a><span class="kw">static </span>NEED_ALTSTACK: <a href="../../../../../../std/sync/atomic/struct.Atomic.html">Atomic</a>&lt;<a href="../../../../../../std/primitive.bool.html">bool</a>&gt; = <a href="../../../../../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>::<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.new">new</a>(<span class="bool-val">false</span>);
 <a href=#97 id=97 data-nosnippet>97</a>
 <a href=#98 id=98 data-nosnippet>98</a><span class="doccomment">/// # Safety
 <a href=#99 id=99 data-nosnippet>99</a>/// Must be called only once, on the main thread, during program startup.
 <a href=#100 id=100 data-nosnippet>100</a></span><span class="kw">pub unsafe fn </span>init() {
-<a href=#101 id=101 data-nosnippet>101</a>    PAGE_SIZE.store(conf::page_size(), Ordering::Relaxed);
+<a href=#101 id=101 data-nosnippet>101</a>    <a href="#88">PAGE_SIZE</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.store">store</a>(conf::<a href="../conf.rs.html#5-7">page_size</a>(), Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a>    <span class="comment">// SAFETY:
 <a href=#104 id=104 data-nosnippet>104</a>    // This is only called on the main thread, and since it is still early
 <a href=#105 id=105 data-nosnippet>105</a>    // in the programs lifetime there is (almost) certainly enough stack
 <a href=#106 id=106 data-nosnippet>106</a>    // space left to install the guard page.
-<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>guard_page_range = <span class="kw">unsafe </span>{ install_main_guard() };
+<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>guard_page_range = <span class="kw">unsafe </span>{ <a href="#411-431">install_main_guard</a>() };
 <a href=#108 id=108 data-nosnippet>108</a>
 <a href=#109 id=109 data-nosnippet>109</a>    <span class="comment">// Even for panic=immediate-abort, installing the guard pages is important for soundness.
 <a href=#110 id=110 data-nosnippet>110</a>    // That said, we do not care about giving nice stackoverflow messages via our custom
 <a href=#111 id=111 data-nosnippet>111</a>    // signal handler, just exit early and let the user enjoy the segfault.
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">if </span><span class="macro">cfg!</span>(panic = <span class="string">"immediate-abort"</span>) {
+<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">return</span>;
 <a href=#114 id=114 data-nosnippet>114</a>    }
 <a href=#115 id=115 data-nosnippet>115</a>
 <a href=#116 id=116 data-nosnippet>116</a>    <span class="comment">// SAFETY: C structures are always zero-initializable.
-<a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>action: sigaction = <span class="kw">unsafe </span>{ mem::zeroed() };
+<a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>action: <a href="https://docs.rs/libc/0.2.191/libc/new/glibc/sysdeps/unix/linux/bits/sigaction/struct.sigaction.html">sigaction</a> = <span class="kw">unsafe </span>{ mem::<a href="../../../../../../std/mem/fn.zeroed.html">zeroed</a>() };
 <a href=#118 id=118 data-nosnippet>118</a>    <span class="kw">for </span><span class="kw-2">&amp;</span>signal <span class="kw">in </span><span class="kw-2">&amp;</span>[SIGSEGV, SIGBUS] {
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="comment">// SAFETY: just fetches the current signal handler into action
 <a href=#120 id=120 data-nosnippet>120</a>        </span><span class="kw">unsafe </span>{ sigaction(signal, ptr::null_mut(), <span class="kw-2">&amp;mut </span>action) };
@@ -147,7 +147,7 @@
 <a href=#147 id=147 data-nosnippet>147</a>    }
 <a href=#148 id=148 data-nosnippet>148</a>}
 <a href=#149 id=149 data-nosnippet>149</a>
-<a href=#150 id=150 data-nosnippet>150</a><span class="kw">fn </span>get_stack() -&gt; libc::stack_t {
+<a href=#150 id=150 data-nosnippet>150</a><span class="kw">fn </span>get_stack() -&gt; libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/struct.stack_t.html">stack_t</a> {
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="comment">// OpenBSD requires this flag for stack mapping
 <a href=#152 id=152 data-nosnippet>152</a>    // otherwise the said mapping will fail as a no-op on most systems
 <a href=#153 id=153 data-nosnippet>153</a>    // and has a different meaning on FreeBSD
@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>        target_os = <span class="string">"linux"</span>,
 <a href=#158 id=158 data-nosnippet>158</a>        target_os = <span class="string">"dragonfly"</span>,
 <a href=#159 id=159 data-nosnippet>159</a>    ))]
-<a href=#160 id=160 data-nosnippet>160</a>    </span><span class="kw">let </span>flags = MAP_PRIVATE | MAP_ANON | libc::MAP_STACK;
+<a href=#160 id=160 data-nosnippet>160</a>    </span><span class="kw">let </span>flags = <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_PRIVATE.html">MAP_PRIVATE</a> | <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.MAP_ANON.html">MAP_ANON</a> | libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.MAP_STACK.html">MAP_STACK</a>;
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="attr">#[cfg(not(any(
 <a href=#162 id=162 data-nosnippet>162</a>        target_os = <span class="string">"openbsd"</span>,
 <a href=#163 id=163 data-nosnippet>163</a>        target_os = <span class="string">"netbsd"</span>,
@@ -166,37 +166,37 @@
 <a href=#166 id=166 data-nosnippet>166</a>    )))]
 <a href=#167 id=167 data-nosnippet>167</a>    </span><span class="kw">let </span>flags = MAP_PRIVATE | MAP_ANON;
 <a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>sigstack_size = sigstack_size();
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">let </span>page_size = PAGE_SIZE.load(Ordering::Relaxed);
+<a href=#169 id=169 data-nosnippet>169</a>    <span class="kw">let </span>sigstack_size = <a href="#274-281">sigstack_size</a>();
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">let </span>page_size = <a href="#88">PAGE_SIZE</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#171 id=171 data-nosnippet>171</a>
 <a href=#172 id=172 data-nosnippet>172</a>    <span class="comment">// SAFETY: this does not unmap any existing pages.
 <a href=#173 id=173 data-nosnippet>173</a>    </span><span class="kw">let </span>stackp = <span class="kw">unsafe </span>{
-<a href=#174 id=174 data-nosnippet>174</a>        mmap64(ptr::null_mut(), sigstack_size + page_size, PROT_READ | PROT_WRITE, flags, -<span class="number">1</span>, <span class="number">0</span>)
+<a href=#174 id=174 data-nosnippet>174</a>        <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.mmap64.html">mmap64</a>(ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>(), <a href="#169">sigstack_size</a> + <a href="#170">page_size</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_READ.html">PROT_READ</a> | <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_WRITE.html">PROT_WRITE</a>, <a href="#160">flags</a>, -<span class="number">1</span>, <span class="number">0</span>)
 <a href=#175 id=175 data-nosnippet>175</a>    };
-<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">if </span>stackp == MAP_FAILED {
-<a href=#177 id=177 data-nosnippet>177</a>        <span class="macro">panic!</span>(<span class="string">"failed to allocate an alternative stack: {}"</span>, io::Error::last_os_error());
+<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">if </span><a href="#173">stackp</a> == <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_FAILED.html">MAP_FAILED</a> {
+<a href=#177 id=177 data-nosnippet>177</a>        <a href="../../../../macros.rs.html#17-23">panic!</a>(<span class="string">"failed to allocate an alternative stack: {}"</span>, io::Error::last_os_error());
 <a href=#178 id=178 data-nosnippet>178</a>    }
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="comment">// SAFETY: this only affects the memory we just allocated.
-<a href=#180 id=180 data-nosnippet>180</a>    </span><span class="kw">let </span>guard_result = <span class="kw">unsafe </span>{ libc::mprotect(stackp, page_size, PROT_NONE) };
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">if </span>guard_result != <span class="number">0 </span>{
-<a href=#182 id=182 data-nosnippet>182</a>        <span class="macro">panic!</span>(<span class="string">"failed to set up alternative stack guard page: {}"</span>, io::Error::last_os_error());
+<a href=#180 id=180 data-nosnippet>180</a>    </span><span class="kw">let </span>guard_result = <span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/fn.mprotect.html">mprotect</a>(<a href="#173">stackp</a>, <a href="#170">page_size</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_NONE.html">PROT_NONE</a>) };
+<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">if </span><a href="#180">guard_result</a> != <span class="number">0 </span>{
+<a href=#182 id=182 data-nosnippet>182</a>        <a href="../../../../macros.rs.html#17-23">panic!</a>(<span class="string">"failed to set up alternative stack guard page: {}"</span>, io::Error::last_os_error());
 <a href=#183 id=183 data-nosnippet>183</a>    }
 <a href=#184 id=184 data-nosnippet>184</a>    <span class="comment">// SAFETY:
 <a href=#185 id=185 data-nosnippet>185</a>    // The region was allocated with a larger size than `page_size`, so this
 <a href=#186 id=186 data-nosnippet>186</a>    // addition is within bounds.
-<a href=#187 id=187 data-nosnippet>187</a>    </span><span class="kw">let </span>stackp = <span class="kw">unsafe </span>{ stackp.add(page_size) };
+<a href=#187 id=187 data-nosnippet>187</a>    </span><span class="kw">let </span>stackp = <span class="kw">unsafe </span>{ <a href="#173">stackp</a>.<a href="../../../../../../core/primitive.pointer.html#method.add">add</a>(<a href="#170">page_size</a>) };
 <a href=#188 id=188 data-nosnippet>188</a>
-<a href=#189 id=189 data-nosnippet>189</a>    libc::stack_t { ss_sp: stackp, ss_flags: <span class="number">0</span>, ss_size: sigstack_size }
+<a href=#189 id=189 data-nosnippet>189</a>    libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/struct.stack_t.html">stack_t</a> { ss_sp: <a href="#187">stackp</a>, ss_flags: <span class="number">0</span>, ss_size: <a href="#169">sigstack_size</a> }
 <a href=#190 id=190 data-nosnippet>190</a>}
 <a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a><span class="kw">pub fn </span>make_handler(main_thread: bool) -&gt; Handler {
-<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">if </span><span class="macro">cfg!</span>(panic = <span class="string">"immediate-abort"</span>) || !NEED_ALTSTACK.load(Ordering::Acquire) {
-<a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">return </span>Handler::null();
+<a href=#192 id=192 data-nosnippet>192</a><span class="kw">pub fn </span>make_handler(main_thread: <a href="../../../../../../std/primitive.bool.html">bool</a>) -&gt; <a href="mod.rs.html#51-53">Handler</a> {
+<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) || !<a href="#96">NEED_ALTSTACK</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Acquire</a>) {
+<a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">return </span><a href="mod.rs.html#51-53">Handler</a>::<a href="mod.rs.html#66-68">null</a>();
 <a href=#195 id=195 data-nosnippet>195</a>    }
 <a href=#196 id=196 data-nosnippet>196</a>
-<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">if </span>!main_thread {
-<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(guard_page_range) = current_guard() {
-<a href=#199 id=199 data-nosnippet>199</a>            set_current_info(guard_page_range);
+<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">if </span>!<a href="#192">main_thread</a> {
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">if let </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(guard_page_range) = <a href="#572-648">current_guard</a>() {
+<a href=#199 id=199 data-nosnippet>199</a>            <a href="thread_info.rs.html#112-123">set_current_info</a>(<a href="#198">guard_page_range</a>);
 <a href=#200 id=200 data-nosnippet>200</a>        }
 <a href=#201 id=201 data-nosnippet>201</a>    }
 <a href=#202 id=202 data-nosnippet>202</a>
@@ -204,13 +204,13 @@
 <a href=#204 id=204 data-nosnippet>204</a>    // our own.
 <a href=#205 id=205 data-nosnippet>205</a>    //
 <a href=#206 id=206 data-nosnippet>206</a>    // SAFETY: C structures are always zero-initializable.
-<a href=#207 id=207 data-nosnippet>207</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stack = <span class="kw">unsafe </span>{ mem::zeroed() };
+<a href=#207 id=207 data-nosnippet>207</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>stack = <span class="kw">unsafe </span>{ mem::<a href="../../../../../../std/mem/fn.zeroed.html">zeroed</a>() };
 <a href=#208 id=208 data-nosnippet>208</a>    <span class="comment">// SAFETY: `&amp;mut stack` is valid for writing a `stack_t`.
-<a href=#209 id=209 data-nosnippet>209</a>    </span><span class="kw">unsafe </span>{ sigaltstack(ptr::null(), <span class="kw-2">&amp;mut </span>stack) };
+<a href=#209 id=209 data-nosnippet>209</a>    </span><span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/fn.sigaltstack.html">sigaltstack</a>(ptr::<a href="../../../../../../std/ptr/fn.null.html">null</a>(), <span class="kw-2">&amp;mut </span><a href="#207">stack</a>) };
 <a href=#210 id=210 data-nosnippet>210</a>
 <a href=#211 id=211 data-nosnippet>211</a>    <span class="comment">// Configure alternate signal stack, if one is not already set.
-<a href=#212 id=212 data-nosnippet>212</a>    </span><span class="kw">if </span>stack.ss_flags &amp; SS_DISABLE != <span class="number">0 </span>{
-<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw">let </span>stack = get_stack();
+<a href=#212 id=212 data-nosnippet>212</a>    </span><span class="kw">if </span><a href="#207">stack</a>.ss_flags &amp; <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.SS_DISABLE.html">SS_DISABLE</a> != <span class="number">0 </span>{
+<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw">let </span>stack = <a href="#150-190">get_stack</a>();
 <a href=#214 id=214 data-nosnippet>214</a>        <span class="comment">// SAFETY:
 <a href=#215 id=215 data-nosnippet>215</a>        // `stack_t` is a freshly allocated stack that's not used anywhere
 <a href=#216 id=216 data-nosnippet>216</a>        // else. It contains a guard page, so stack overflows in signal
@@ -224,28 +224,28 @@
 <a href=#224 id=224 data-nosnippet>224</a>        // accessed and thus initialized in the thread if the stack overflow
 <a href=#225 id=225 data-nosnippet>225</a>        // signal was successfully delivered). Such assumptions in other
 <a href=#226 id=226 data-nosnippet>226</a>        // libraries are fundamentally flawed, so we pay no regard to them.
-<a href=#227 id=227 data-nosnippet>227</a>        </span><span class="kw">unsafe </span>{ sigaltstack(<span class="kw-2">&amp;</span>stack, ptr::null_mut()) };
-<a href=#228 id=228 data-nosnippet>228</a>        Handler { data: stack.ss_sp <span class="kw">as </span><span class="kw-2">*mut </span>libc::c_void }
+<a href=#227 id=227 data-nosnippet>227</a>        </span><span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/fn.sigaltstack.html">sigaltstack</a>(<span class="kw-2">&amp;</span><a href="#213">stack</a>, ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>()) };
+<a href=#228 id=228 data-nosnippet>228</a>        <a href="mod.rs.html#51-53">Handler</a> { data: <a href="#213">stack</a>.ss_sp <span class="kw">as </span><span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a> }
 <a href=#229 id=229 data-nosnippet>229</a>    } <span class="kw">else </span>{
-<a href=#230 id=230 data-nosnippet>230</a>        Handler::null()
+<a href=#230 id=230 data-nosnippet>230</a>        <a href="mod.rs.html#51-53">Handler</a>::<a href="mod.rs.html#66-68">null</a>()
 <a href=#231 id=231 data-nosnippet>231</a>    }
 <a href=#232 id=232 data-nosnippet>232</a>}
 <a href=#233 id=233 data-nosnippet>233</a>
 <a href=#234 id=234 data-nosnippet>234</a><span class="doccomment">/// # Safety
 <a href=#235 id=235 data-nosnippet>235</a>/// Must only be called with a pointer returned by `make_handler`, and only
 <a href=#236 id=236 data-nosnippet>236</a>/// once per `Handler`.
-<a href=#237 id=237 data-nosnippet>237</a></span><span class="kw">pub unsafe fn </span>drop_handler(data: <span class="kw-2">*mut </span>libc::c_void) {
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">if </span>!data.is_null() {
-<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>sigstack_size = sigstack_size();
-<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">let </span>page_size = PAGE_SIZE.load(Ordering::Relaxed);
-<a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>disabling_stack = libc::stack_t {
-<a href=#242 id=242 data-nosnippet>242</a>            ss_sp: ptr::null_mut(),
-<a href=#243 id=243 data-nosnippet>243</a>            ss_flags: SS_DISABLE,
+<a href=#237 id=237 data-nosnippet>237</a></span><span class="kw">pub unsafe fn </span>drop_handler(data: <span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>) {
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">if </span>!<a href="#237">data</a>.<a href="../../../../../../core/primitive.pointer.html#method.is_null">is_null</a>() {
+<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>sigstack_size = <a href="#274-281">sigstack_size</a>();
+<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">let </span>page_size = <a href="#88">PAGE_SIZE</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
+<a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>disabling_stack = libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/struct.stack_t.html">stack_t</a> {
+<a href=#242 id=242 data-nosnippet>242</a>            ss_sp: ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>(),
+<a href=#243 id=243 data-nosnippet>243</a>            ss_flags: <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.SS_DISABLE.html">SS_DISABLE</a>,
 <a href=#244 id=244 data-nosnippet>244</a>            <span class="comment">// Workaround for bug in macOS implementation of sigaltstack
 <a href=#245 id=245 data-nosnippet>245</a>            // UNIX2003 which returns ENOMEM when disabling a stack while
 <a href=#246 id=246 data-nosnippet>246</a>            // passing ss_size smaller than MINSIGSTKSZ. According to POSIX
 <a href=#247 id=247 data-nosnippet>247</a>            // both ss_sp and ss_size should be ignored in this case.
-<a href=#248 id=248 data-nosnippet>248</a>            </span>ss_size: sigstack_size,
+<a href=#248 id=248 data-nosnippet>248</a>            </span>ss_size: <a href="#239">sigstack_size</a>,
 <a href=#249 id=249 data-nosnippet>249</a>        };
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="comment">// SAFETY:
 <a href=#251 id=251 data-nosnippet>251</a>        // We assume that disabling the alternate signal stack is always
@@ -255,7 +255,7 @@
 <a href=#255 id=255 data-nosnippet>255</a>        // the signal information to the guard page.
 <a href=#256 id=256 data-nosnippet>256</a>        //
 <a href=#257 id=257 data-nosnippet>257</a>        // FIXME: detect if the stack has changed, and only uninstall if it hasn't.
-<a href=#258 id=258 data-nosnippet>258</a>        </span><span class="kw">unsafe </span>{ sigaltstack(<span class="kw-2">&amp;</span>disabling_stack, ptr::null_mut()) };
+<a href=#258 id=258 data-nosnippet>258</a>        </span><span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/fn.sigaltstack.html">sigaltstack</a>(<span class="kw-2">&amp;</span><a href="#241">disabling_stack</a>, ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>()) };
 <a href=#259 id=259 data-nosnippet>259</a>        <span class="comment">// The stack returned by `get_stack` is part of a mapping that
 <a href=#260 id=260 data-nosnippet>260</a>        // started one page earlier, so walk back a page and unmap from
 <a href=#261 id=261 data-nosnippet>261</a>        // there.
@@ -263,21 +263,21 @@
 <a href=#263 id=263 data-nosnippet>263</a>        // SAFETY:
 <a href=#264 id=264 data-nosnippet>264</a>        // This allocation was created by us in `get_stack` and, as the
 <a href=#265 id=265 data-nosnippet>265</a>        // alternate signal stack is now disabled, is no longer in use.
-<a href=#266 id=266 data-nosnippet>266</a>        </span><span class="kw">unsafe </span>{ munmap(data.sub(page_size), sigstack_size + page_size) };
+<a href=#266 id=266 data-nosnippet>266</a>        </span><span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/unix/fn.munmap.html">munmap</a>(<a href="#237">data</a>.<a href="../../../../../../core/primitive.pointer.html#method.sub">sub</a>(<a href="#240">page_size</a>), <a href="#239">sigstack_size</a> + <a href="#240">page_size</a>) };
 <a href=#267 id=267 data-nosnippet>267</a>    }
 <a href=#268 id=268 data-nosnippet>268</a>
-<a href=#269 id=269 data-nosnippet>269</a>    delete_current_info();
+<a href=#269 id=269 data-nosnippet>269</a>    <a href="thread_info.rs.html#125-133">delete_current_info</a>();
 <a href=#270 id=270 data-nosnippet>270</a>}
 <a href=#271 id=271 data-nosnippet>271</a>
 <a href=#272 id=272 data-nosnippet>272</a><span class="doccomment">/// Modern kernels on modern hardware can have dynamic signal stack sizes.
 <a href=#273 id=273 data-nosnippet>273</a></span><span class="attr">#[cfg(all(any(target_os = <span class="string">"linux"</span>, target_os = <span class="string">"android"</span>), not(target_env = <span class="string">"uclibc"</span>)))]
-<a href=#274 id=274 data-nosnippet>274</a></span><span class="kw">fn </span>sigstack_size() -&gt; usize {
+<a href=#274 id=274 data-nosnippet>274</a></span><span class="kw">fn </span>sigstack_size() -&gt; <a href="../../../../../../std/primitive.usize.html">usize</a> {
 <a href=#275 id=275 data-nosnippet>275</a>    <span class="comment">// SAFETY: `getauxval` is always safe to call.
-<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">let </span>dynamic_sigstksz = <span class="kw">unsafe </span>{ libc::getauxval(libc::AT_MINSIGSTKSZ) };
+<a href=#276 id=276 data-nosnippet>276</a>    </span><span class="kw">let </span>dynamic_sigstksz = <span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/fn.getauxval.html">getauxval</a>(libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.AT_MINSIGSTKSZ.html">AT_MINSIGSTKSZ</a>) };
 <a href=#277 id=277 data-nosnippet>277</a>    <span class="comment">// If getauxval couldn't find the entry, it returns 0,
 <a href=#278 id=278 data-nosnippet>278</a>    // so take the higher of the "constant" and auxval.
 <a href=#279 id=279 data-nosnippet>279</a>    // This transparently supports older kernels which don't provide AT_MINSIGSTKSZ
-<a href=#280 id=280 data-nosnippet>280</a>    </span>libc::SIGSTKSZ.max(dynamic_sigstksz <span class="kw">as _</span>)
+<a href=#280 id=280 data-nosnippet>280</a>    </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.SIGSTKSZ.html">SIGSTKSZ</a>.<a href="../../../../../../std/cmp/trait.Ord.html">max</a>(<a href="#276">dynamic_sigstksz</a> <span class="kw">as _</span>)
 <a href=#281 id=281 data-nosnippet>281</a>}
 <a href=#282 id=282 data-nosnippet>282</a>
 <a href=#283 id=283 data-nosnippet>283</a><span class="doccomment">/// Not all OS support hardware where this is needed.
@@ -338,18 +338,18 @@
 <a href=#338 id=338 data-nosnippet>338</a>    target_os = <span class="string">"linux"</span>,
 <a href=#339 id=339 data-nosnippet>339</a>    target_os = <span class="string">"l4re"
 <a href=#340 id=340 data-nosnippet>340</a></span>))]
-<a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">fn </span>get_stack_start() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*mut </span>libc::c_void&gt; {
-<a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">use </span><span class="kw">crate</span>::pin::pin;
-<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::helpers::COpaque;
+<a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">fn </span>get_stack_start() -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>&gt; {
+<a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">use </span><a href="../../../../../../std/pin/macro.pin.html"><span class="kw">crate</span>::pin::pin</a>;
+<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">use </span><a href="../../../helpers/c_opaque.rs.html#48-50"><span class="kw">crate</span>::sys::helpers::COpaque</a>;
 <a href=#344 id=344 data-nosnippet>344</a>
-<a href=#345 id=345 data-nosnippet>345</a>    <span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="prelude-val">None</span>;
-<a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">let </span><span class="kw-2">mut </span>attr: COpaque&lt;libc::pthread_attr_t&gt; = COpaque::uninit();
-<a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">if </span>!<span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
-<a href=#348 id=348 data-nosnippet>348</a>        attr = COpaque::zeroed();
+<a href=#345 id=345 data-nosnippet>345</a>    <span class="kw">let </span><span class="kw-2">mut </span>ret = <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>;
+<a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">let </span><span class="kw-2">mut </span>attr: <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>&lt;libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/struct.pthread_attr_t.html">pthread_attr_t</a>&gt; = <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>::<a href="../../../helpers/c_opaque.rs.html#63-65">uninit</a>();
+<a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">if </span>!<a href="../../../../../../std/macro.cfg.html">cfg!</a>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#348 id=348 data-nosnippet>348</a>        <a href="#346">attr</a> = <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>::<a href="../../../helpers/c_opaque.rs.html#77-79">zeroed</a>();
 <a href=#349 id=349 data-nosnippet>349</a>    }
-<a href=#350 id=350 data-nosnippet>350</a>    <span class="kw">let </span>attr = <span class="macro">pin!</span>(attr);
+<a href=#350 id=350 data-nosnippet>350</a>    <span class="kw">let </span>attr = <a href="../../../../../../std/pin/macro.pin.html">pin!</a>(attr);
 <a href=#351 id=351 data-nosnippet>351</a>    <span class="comment">// FIXME(pin-ergonomics): remove the next line.
-<a href=#352 id=352 data-nosnippet>352</a>    </span><span class="kw">let </span>attr = attr.into_ref();
+<a href=#352 id=352 data-nosnippet>352</a>    </span><span class="kw">let </span>attr = <a href="#350">attr</a>.<a href="../../../../../../std/pin/struct.Pin.html#method.into_ref">into_ref</a>();
 <a href=#353 id=353 data-nosnippet>353</a>
 <a href=#354 id=354 data-nosnippet>354</a>    <span class="comment">// SAFETY:
 <a href=#355 id=355 data-nosnippet>355</a>    // The attributes object has not been initialized yet and will not be
@@ -365,31 +365,31 @@
 <a href=#365 id=365 data-nosnippet>365</a>    // * calling `pthread_self` is always valid and returns a valid `pthread_t`
 <a href=#366 id=366 data-nosnippet>366</a>    // * `attr` can be written to, and will be initialized by this call.
 <a href=#367 id=367 data-nosnippet>367</a>    </span><span class="attr">#[cfg(not(target_os = <span class="string">"freebsd"</span>))]
-<a href=#368 id=368 data-nosnippet>368</a>    </span><span class="kw">let </span>e = <span class="kw">unsafe </span>{ libc::pthread_getattr_np(libc::pthread_self(), attr.get()) };
-<a href=#369 id=369 data-nosnippet>369</a>    <span class="kw">if </span>e == <span class="number">0 </span>{
-<a href=#370 id=370 data-nosnippet>370</a>        <span class="kw">let </span><span class="kw-2">mut </span>stackaddr = <span class="kw">crate</span>::ptr::null_mut();
+<a href=#368 id=368 data-nosnippet>368</a>    </span><span class="kw">let </span>e = <span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/new/common/linux_like/pthread/fn.pthread_getattr_np.html">pthread_getattr_np</a>(libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.pthread_self.html">pthread_self</a>(), <a href="#352">attr</a>.<a href="../../../helpers/c_opaque.rs.html#98-100">get</a>()) };
+<a href=#369 id=369 data-nosnippet>369</a>    <span class="kw">if </span><a href="#368">e</a> == <span class="number">0 </span>{
+<a href=#370 id=370 data-nosnippet>370</a>        <span class="kw">let </span><span class="kw-2">mut </span>stackaddr = <span class="kw">crate</span>::ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>();
 <a href=#371 id=371 data-nosnippet>371</a>        <span class="kw">let </span><span class="kw-2">mut </span>stacksize = <span class="number">0</span>;
 <a href=#372 id=372 data-nosnippet>372</a>        <span class="comment">// SAFETY:
 <a href=#373 id=373 data-nosnippet>373</a>        // `attr` is an initialized attribute object and both the pointers
 <a href=#374 id=374 data-nosnippet>374</a>        // are valid for writing.
-<a href=#375 id=375 data-nosnippet>375</a>        </span><span class="macro">assert_eq!</span>(
+<a href=#375 id=375 data-nosnippet>375</a>        </span><a href="../../../../../../std/macro.assert_eq.html">assert_eq!</a>(
 <a href=#376 id=376 data-nosnippet>376</a>            <span class="kw">unsafe </span>{ libc::pthread_attr_getstack(attr.get(), <span class="kw-2">&amp;mut </span>stackaddr, <span class="kw-2">&amp;mut </span>stacksize) },
 <a href=#377 id=377 data-nosnippet>377</a>            <span class="number">0
 <a href=#378 id=378 data-nosnippet>378</a>        </span>);
-<a href=#379 id=379 data-nosnippet>379</a>        ret = <span class="prelude-val">Some</span>(stackaddr);
+<a href=#379 id=379 data-nosnippet>379</a>        <a href="#345">ret</a> = <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(<a href="#370">stackaddr</a>);
 <a href=#380 id=380 data-nosnippet>380</a>    }
-<a href=#381 id=381 data-nosnippet>381</a>    <span class="kw">if </span>e == <span class="number">0 </span>|| <span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#381 id=381 data-nosnippet>381</a>    <span class="kw">if </span><a href="#368">e</a> == <span class="number">0 </span>|| <a href="../../../../../../std/macro.cfg.html">cfg!</a>(target_os = <span class="string">"freebsd"</span>) {
 <a href=#382 id=382 data-nosnippet>382</a>        <span class="comment">// SAFETY:
 <a href=#383 id=383 data-nosnippet>383</a>        // `attr` was initialized either by `pthread_attr_init` (FreeBSD) or
 <a href=#384 id=384 data-nosnippet>384</a>        // by `pthread_attr_get_np`, and is not used after this point.
-<a href=#385 id=385 data-nosnippet>385</a>        </span><span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ libc::pthread_attr_destroy(attr.get()) }, <span class="number">0</span>);
+<a href=#385 id=385 data-nosnippet>385</a>        </span><a href="../../../../../../std/macro.assert_eq.html">assert_eq!</a>(<span class="kw">unsafe </span>{ libc::pthread_attr_destroy(attr.get()) }, <span class="number">0</span>);
 <a href=#386 id=386 data-nosnippet>386</a>    }
-<a href=#387 id=387 data-nosnippet>387</a>    ret
+<a href=#387 id=387 data-nosnippet>387</a>    <a href="#345">ret</a>
 <a href=#388 id=388 data-nosnippet>388</a>}
 <a href=#389 id=389 data-nosnippet>389</a>
-<a href=#390 id=390 data-nosnippet>390</a><span class="kw">fn </span>stack_start_aligned(page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*mut </span>libc::c_void&gt; {
+<a href=#390 id=390 data-nosnippet>390</a><span class="kw">fn </span>stack_start_aligned(page_size: <a href="../../../../../../std/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<span class="kw-2">*mut </span>libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>&gt; {
 <a href=#391 id=391 data-nosnippet>391</a>    <span class="kw">let </span>stackptr = get_stack_start()<span class="question-mark">?</span>;
-<a href=#392 id=392 data-nosnippet>392</a>    <span class="kw">let </span>stackaddr = stackptr.addr();
+<a href=#392 id=392 data-nosnippet>392</a>    <span class="kw">let </span>stackaddr = <a href="#391">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>();
 <a href=#393 id=393 data-nosnippet>393</a>
 <a href=#394 id=394 data-nosnippet>394</a>    <span class="comment">// Ensure stackaddr is page aligned! A parent process might
 <a href=#395 id=395 data-nosnippet>395</a>    // have reset RLIMIT_STACK to be non-page aligned. The
@@ -397,44 +397,44 @@
 <a href=#397 id=397 data-nosnippet>397</a>    // stackaddr &lt; stackaddr + stacksize, so if stackaddr is not
 <a href=#398 id=398 data-nosnippet>398</a>    // page-aligned, calculate the fix such that stackaddr &lt;
 <a href=#399 id=399 data-nosnippet>399</a>    // new_page_aligned_stackaddr &lt; stackaddr + stacksize
-<a href=#400 id=400 data-nosnippet>400</a>    </span><span class="kw">let </span>remainder = stackaddr % page_size;
-<a href=#401 id=401 data-nosnippet>401</a>    <span class="prelude-val">Some</span>(<span class="kw">if </span>remainder == <span class="number">0 </span>{
-<a href=#402 id=402 data-nosnippet>402</a>        stackptr
+<a href=#400 id=400 data-nosnippet>400</a>    </span><span class="kw">let </span>remainder = <a href="#392">stackaddr</a> % <a href="#390">page_size</a>;
+<a href=#401 id=401 data-nosnippet>401</a>    <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(<span class="kw">if </span><a href="#400">remainder</a> == <span class="number">0 </span>{
+<a href=#402 id=402 data-nosnippet>402</a>        <a href="#391">stackptr</a>
 <a href=#403 id=403 data-nosnippet>403</a>    } <span class="kw">else </span>{
-<a href=#404 id=404 data-nosnippet>404</a>        stackptr.with_addr(stackaddr + page_size - remainder)
+<a href=#404 id=404 data-nosnippet>404</a>        <a href="#391">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.with_addr">with_addr</a>(<a href="#392">stackaddr</a> + <a href="#390">page_size</a> - <a href="#400">remainder</a>)
 <a href=#405 id=405 data-nosnippet>405</a>    })
 <a href=#406 id=406 data-nosnippet>406</a>}
 <a href=#407 id=407 data-nosnippet>407</a>
 <a href=#408 id=408 data-nosnippet>408</a><span class="doccomment">/// # Safety
 <a href=#409 id=409 data-nosnippet>409</a>/// This function must only be called from the main thread, and there must
 <a href=#410 id=410 data-nosnippet>410</a>/// be sufficient stack space remaining to place a stack guard.
-<a href=#411 id=411 data-nosnippet>411</a></span><span class="kw">unsafe fn </span>install_main_guard() -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
-<a href=#412 id=412 data-nosnippet>412</a>    <span class="kw">let </span>page_size = PAGE_SIZE.load(Ordering::Relaxed);
+<a href=#411 id=411 data-nosnippet>411</a></span><span class="kw">unsafe fn </span>install_main_guard() -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
+<a href=#412 id=412 data-nosnippet>412</a>    <span class="kw">let </span>page_size = <a href="#88">PAGE_SIZE</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#413 id=413 data-nosnippet>413</a>
 <a href=#414 id=414 data-nosnippet>414</a>    <span class="comment">// this way someone on any unix-y OS can check that all these compile
-<a href=#415 id=415 data-nosnippet>415</a>    </span><span class="kw">if </span><span class="macro">cfg!</span>(all(target_os = <span class="string">"linux"</span>, not(target_env = <span class="string">"musl"</span>))) {
-<a href=#416 id=416 data-nosnippet>416</a>        install_main_guard_linux(page_size)
-<a href=#417 id=417 data-nosnippet>417</a>    } <span class="kw">else if </span><span class="macro">cfg!</span>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
-<a href=#418 id=418 data-nosnippet>418</a>        install_main_guard_linux_musl(page_size)
-<a href=#419 id=419 data-nosnippet>419</a>    } <span class="kw">else if </span><span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#415 id=415 data-nosnippet>415</a>    </span><span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(all(target_os = <span class="string">"linux"</span>, not(target_env = <span class="string">"musl"</span>))) {
+<a href=#416 id=416 data-nosnippet>416</a>        <a href="#433-452">install_main_guard_linux</a>(<a href="#412">page_size</a>)
+<a href=#417 id=417 data-nosnippet>417</a>    } <span class="kw">else if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
+<a href=#418 id=418 data-nosnippet>418</a>        <a href="#454-460">install_main_guard_linux_musl</a>(<a href="#412">page_size</a>)
+<a href=#419 id=419 data-nosnippet>419</a>    } <span class="kw">else if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(target_os = <span class="string">"freebsd"</span>) {
 <a href=#420 id=420 data-nosnippet>420</a>        <span class="attr">#[cfg(not(target_os = <span class="string">"freebsd"</span>))]
-<a href=#421 id=421 data-nosnippet>421</a>        </span><span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#421 id=421 data-nosnippet>421</a>        </span><span class="kw">return </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>;
 <a href=#422 id=422 data-nosnippet>422</a>        <span class="comment">// The FreeBSD code cannot be checked on non-BSDs.
 <a href=#423 id=423 data-nosnippet>423</a>        </span><span class="attr">#[cfg(target_os = <span class="string">"freebsd"</span>)]
 <a href=#424 id=424 data-nosnippet>424</a>        </span>install_main_guard_freebsd(page_size)
-<a href=#425 id=425 data-nosnippet>425</a>    } <span class="kw">else if </span><span class="macro">cfg!</span>(any(target_os = <span class="string">"netbsd"</span>, target_os = <span class="string">"openbsd"</span>)) {
-<a href=#426 id=426 data-nosnippet>426</a>        install_main_guard_bsds(page_size)
+<a href=#425 id=425 data-nosnippet>425</a>    } <span class="kw">else if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(any(target_os = <span class="string">"netbsd"</span>, target_os = <span class="string">"openbsd"</span>)) {
+<a href=#426 id=426 data-nosnippet>426</a>        <a href="#489-504">install_main_guard_bsds</a>(<a href="#412">page_size</a>)
 <a href=#427 id=427 data-nosnippet>427</a>    } <span class="kw">else </span>{
 <a href=#428 id=428 data-nosnippet>428</a>        <span class="comment">// SAFETY: guaranteed by caller.
-<a href=#429 id=429 data-nosnippet>429</a>        </span><span class="kw">unsafe </span>{ install_main_guard_default(page_size) }
+<a href=#429 id=429 data-nosnippet>429</a>        </span><span class="kw">unsafe </span>{ <a href="#509-550">install_main_guard_default</a>(<a href="#412">page_size</a>) }
 <a href=#430 id=430 data-nosnippet>430</a>    }
 <a href=#431 id=431 data-nosnippet>431</a>}
 <a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a><span class="kw">fn </span>install_main_guard_linux(page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
+<a href=#433 id=433 data-nosnippet>433</a><span class="kw">fn </span>install_main_guard_linux(page_size: <a href="../../../../../../std/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
 <a href=#434 id=434 data-nosnippet>434</a>    <span class="comment">// See the corresponding conditional in init().
 <a href=#435 id=435 data-nosnippet>435</a>    // Avoid stack_start_aligned, which makes slow syscalls to read /proc/self/maps
-<a href=#436 id=436 data-nosnippet>436</a>    </span><span class="kw">if </span><span class="macro">cfg!</span>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#437 id=437 data-nosnippet>437</a>        <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#436 id=436 data-nosnippet>436</a>    </span><span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
+<a href=#437 id=437 data-nosnippet>437</a>        <span class="kw">return </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>;
 <a href=#438 id=438 data-nosnippet>438</a>    }
 <a href=#439 id=439 data-nosnippet>439</a>    <span class="comment">// Linux doesn't allocate the whole stack right away, and
 <a href=#440 id=440 data-nosnippet>440</a>    // the kernel has its own stack-guard mechanism to fault
@@ -447,17 +447,17 @@
 <a href=#447 id=447 data-nosnippet>447</a>    // faulting, so our handler can report "stack overflow", and
 <a href=#448 id=448 data-nosnippet>448</a>    // trust that the kernel's own stack guard will work.
 <a href=#449 id=449 data-nosnippet>449</a>    </span><span class="kw">let </span>stackptr = stack_start_aligned(page_size)<span class="question-mark">?</span>;
-<a href=#450 id=450 data-nosnippet>450</a>    <span class="kw">let </span>stackaddr = stackptr.addr();
-<a href=#451 id=451 data-nosnippet>451</a>    <span class="prelude-val">Some</span>(stackaddr - page_size..stackaddr)
+<a href=#450 id=450 data-nosnippet>450</a>    <span class="kw">let </span>stackaddr = <a href="#449">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>();
+<a href=#451 id=451 data-nosnippet>451</a>    <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr - page_size..stackaddr)
 <a href=#452 id=452 data-nosnippet>452</a>}
 <a href=#453 id=453 data-nosnippet>453</a>
-<a href=#454 id=454 data-nosnippet>454</a><span class="kw">fn </span>install_main_guard_linux_musl(_page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
+<a href=#454 id=454 data-nosnippet>454</a><span class="kw">fn </span>install_main_guard_linux_musl(_page_size: <a href="../../../../../../std/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
 <a href=#455 id=455 data-nosnippet>455</a>    <span class="comment">// For the main thread, the musl's pthread_attr_getstack
 <a href=#456 id=456 data-nosnippet>456</a>    // returns the current stack size, rather than maximum size
 <a href=#457 id=457 data-nosnippet>457</a>    // it can eventually grow to. It cannot be used to determine
 <a href=#458 id=458 data-nosnippet>458</a>    // the position of kernel's stack guard.
-<a href=#459 id=459 data-nosnippet>459</a>    </span><span class="prelude-val">None
-<a href=#460 id=460 data-nosnippet>460</a></span>}
+<a href=#459 id=459 data-nosnippet>459</a>    </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>
+<a href=#460 id=460 data-nosnippet>460</a>}
 <a href=#461 id=461 data-nosnippet>461</a>
 <a href=#462 id=462 data-nosnippet>462</a><span class="attr">#[cfg(target_os = <span class="string">"freebsd"</span>)]
 <a href=#463 id=463 data-nosnippet>463</a></span><span class="kw">fn </span>install_main_guard_freebsd(page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
@@ -486,10 +486,10 @@
 <a href=#486 id=486 data-nosnippet>486</a>    <span class="prelude-val">Some</span>(guardaddr..guardaddr + pages * page_size)
 <a href=#487 id=487 data-nosnippet>487</a>}
 <a href=#488 id=488 data-nosnippet>488</a>
-<a href=#489 id=489 data-nosnippet>489</a><span class="kw">fn </span>install_main_guard_bsds(page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
+<a href=#489 id=489 data-nosnippet>489</a><span class="kw">fn </span>install_main_guard_bsds(page_size: <a href="../../../../../../std/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
 <a href=#490 id=490 data-nosnippet>490</a>    <span class="comment">// See the corresponding conditional in install_main_guard_linux().
-<a href=#491 id=491 data-nosnippet>491</a>    </span><span class="kw">if </span><span class="macro">cfg!</span>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#492 id=492 data-nosnippet>492</a>        <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#491 id=491 data-nosnippet>491</a>    </span><span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
+<a href=#492 id=492 data-nosnippet>492</a>        <span class="kw">return </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>;
 <a href=#493 id=493 data-nosnippet>493</a>    }
 <a href=#494 id=494 data-nosnippet>494</a>    <span class="comment">// OpenBSD stack already includes a guard page, and stack is
 <a href=#495 id=495 data-nosnippet>495</a>    // immutable.
@@ -499,14 +499,14 @@
 <a href=#499 id=499 data-nosnippet>499</a>    // faulting, so our handler can report "stack overflow", and
 <a href=#500 id=500 data-nosnippet>500</a>    // trust that the kernel's own stack guard will work.
 <a href=#501 id=501 data-nosnippet>501</a>    </span><span class="kw">let </span>stackptr = stack_start_aligned(page_size)<span class="question-mark">?</span>;
-<a href=#502 id=502 data-nosnippet>502</a>    <span class="kw">let </span>stackaddr = stackptr.addr();
-<a href=#503 id=503 data-nosnippet>503</a>    <span class="prelude-val">Some</span>(stackaddr - page_size..stackaddr)
+<a href=#502 id=502 data-nosnippet>502</a>    <span class="kw">let </span>stackaddr = <a href="#501">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>();
+<a href=#503 id=503 data-nosnippet>503</a>    <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr - page_size..stackaddr)
 <a href=#504 id=504 data-nosnippet>504</a>}
 <a href=#505 id=505 data-nosnippet>505</a>
 <a href=#506 id=506 data-nosnippet>506</a><span class="doccomment">/// # Safety
 <a href=#507 id=507 data-nosnippet>507</a>/// This function must only be called from the main thread, and there must
 <a href=#508 id=508 data-nosnippet>508</a>/// be sufficient stack space remaining to place a stack guard.
-<a href=#509 id=509 data-nosnippet>509</a></span><span class="kw">unsafe fn </span>install_main_guard_default(page_size: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
+<a href=#509 id=509 data-nosnippet>509</a></span><span class="kw">unsafe fn </span>install_main_guard_default(page_size: <a href="../../../../../../std/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
 <a href=#510 id=510 data-nosnippet>510</a>    <span class="comment">// Reallocate the last page of the stack.
 <a href=#511 id=511 data-nosnippet>511</a>    // This ensures SIGBUS will be raised on
 <a href=#512 id=512 data-nosnippet>512</a>    // stack overflow.
@@ -522,31 +522,31 @@
 <a href=#522 id=522 data-nosnippet>522</a>    // is sufficient stack space, which means that this will not overwrite
 <a href=#523 id=523 data-nosnippet>523</a>    // any existing allocations.
 <a href=#524 id=524 data-nosnippet>524</a>    </span><span class="kw">let </span>result = <span class="kw">unsafe </span>{
-<a href=#525 id=525 data-nosnippet>525</a>        mmap64(
-<a href=#526 id=526 data-nosnippet>526</a>            stackptr,
-<a href=#527 id=527 data-nosnippet>527</a>            page_size,
-<a href=#528 id=528 data-nosnippet>528</a>            PROT_READ | PROT_WRITE,
-<a href=#529 id=529 data-nosnippet>529</a>            MAP_PRIVATE | MAP_ANON | MAP_FIXED,
+<a href=#525 id=525 data-nosnippet>525</a>        <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/fn.mmap64.html">mmap64</a>(
+<a href=#526 id=526 data-nosnippet>526</a>            <a href="#518">stackptr</a>,
+<a href=#527 id=527 data-nosnippet>527</a>            <a href="#509">page_size</a>,
+<a href=#528 id=528 data-nosnippet>528</a>            <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_READ.html">PROT_READ</a> | <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_WRITE.html">PROT_WRITE</a>,
+<a href=#529 id=529 data-nosnippet>529</a>            <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_PRIVATE.html">MAP_PRIVATE</a> | <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/constant.MAP_ANON.html">MAP_ANON</a> | <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_FIXED.html">MAP_FIXED</a>,
 <a href=#530 id=530 data-nosnippet>530</a>            -<span class="number">1</span>,
 <a href=#531 id=531 data-nosnippet>531</a>            <span class="number">0</span>,
 <a href=#532 id=532 data-nosnippet>532</a>        )
 <a href=#533 id=533 data-nosnippet>533</a>    };
-<a href=#534 id=534 data-nosnippet>534</a>    <span class="kw">if </span>result != stackptr || result == MAP_FAILED {
-<a href=#535 id=535 data-nosnippet>535</a>        <span class="macro">panic!</span>(<span class="string">"failed to allocate a guard page: {}"</span>, io::Error::last_os_error());
+<a href=#534 id=534 data-nosnippet>534</a>    <span class="kw">if </span><a href="#524">result</a> != <a href="#518">stackptr</a> || <a href="#524">result</a> == <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.MAP_FAILED.html">MAP_FAILED</a> {
+<a href=#535 id=535 data-nosnippet>535</a>        <a href="../../../../macros.rs.html#17-23">panic!</a>(<span class="string">"failed to allocate a guard page: {}"</span>, io::Error::last_os_error());
 <a href=#536 id=536 data-nosnippet>536</a>    }
 <a href=#537 id=537 data-nosnippet>537</a>
 <a href=#538 id=538 data-nosnippet>538</a>    <span class="comment">// SAFETY:
 <a href=#539 id=539 data-nosnippet>539</a>    // Since this function is only called on the main thread, the stack will
 <a href=#540 id=540 data-nosnippet>540</a>    // not be reused until program exit, so the runtime will never observe
 <a href=#541 id=541 data-nosnippet>541</a>    // that part of the stack has been made unusable in this way.
-<a href=#542 id=542 data-nosnippet>542</a>    </span><span class="kw">let </span>result = <span class="kw">unsafe </span>{ mprotect(stackptr, page_size, PROT_NONE) };
-<a href=#543 id=543 data-nosnippet>543</a>    <span class="kw">if </span>result != <span class="number">0 </span>{
-<a href=#544 id=544 data-nosnippet>544</a>        <span class="macro">panic!</span>(<span class="string">"failed to protect the guard page: {}"</span>, io::Error::last_os_error());
+<a href=#542 id=542 data-nosnippet>542</a>    </span><span class="kw">let </span>result = <span class="kw">unsafe </span>{ <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/fn.mprotect.html">mprotect</a>(<a href="#518">stackptr</a>, <a href="#509">page_size</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.PROT_NONE.html">PROT_NONE</a>) };
+<a href=#543 id=543 data-nosnippet>543</a>    <span class="kw">if </span><a href="#542">result</a> != <span class="number">0 </span>{
+<a href=#544 id=544 data-nosnippet>544</a>        <a href="../../../../macros.rs.html#17-23">panic!</a>(<span class="string">"failed to protect the guard page: {}"</span>, io::Error::last_os_error());
 <a href=#545 id=545 data-nosnippet>545</a>    }
 <a href=#546 id=546 data-nosnippet>546</a>
-<a href=#547 id=547 data-nosnippet>547</a>    <span class="kw">let </span>guardaddr = stackptr.addr();
+<a href=#547 id=547 data-nosnippet>547</a>    <span class="kw">let </span>guardaddr = <a href="#518">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>();
 <a href=#548 id=548 data-nosnippet>548</a>
-<a href=#549 id=549 data-nosnippet>549</a>    <span class="prelude-val">Some</span>(guardaddr..guardaddr + page_size)
+<a href=#549 id=549 data-nosnippet>549</a>    <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(guardaddr..guardaddr + page_size)
 <a href=#550 id=550 data-nosnippet>550</a>}
 <a href=#551 id=551 data-nosnippet>551</a>
 <a href=#552 id=552 data-nosnippet>552</a><span class="attr">#[cfg(any(
@@ -569,19 +569,19 @@
 <a href=#569 id=569 data-nosnippet>569</a>    target_os = <span class="string">"netbsd"</span>,
 <a href=#570 id=570 data-nosnippet>570</a>    target_os = <span class="string">"l4re"
 <a href=#571 id=571 data-nosnippet>571</a></span>))]
-<a href=#572 id=572 data-nosnippet>572</a></span><span class="kw">fn </span>current_guard() -&gt; <span class="prelude-ty">Option</span>&lt;Range&lt;usize&gt;&gt; {
-<a href=#573 id=573 data-nosnippet>573</a>    <span class="kw">use </span><span class="kw">crate</span>::pin::pin;
-<a href=#574 id=574 data-nosnippet>574</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::helpers::COpaque;
+<a href=#572 id=572 data-nosnippet>572</a></span><span class="kw">fn </span>current_guard() -&gt; <a class="prelude-ty" href="../../../../../../std/option/enum.Option.html">Option</a>&lt;<a href="../../../../../../std/ops/struct.Range.html">Range</a>&lt;<a href="../../../../../../std/primitive.usize.html">usize</a>&gt;&gt; {
+<a href=#573 id=573 data-nosnippet>573</a>    <span class="kw">use </span><a href="../../../../../../std/pin/macro.pin.html"><span class="kw">crate</span>::pin::pin</a>;
+<a href=#574 id=574 data-nosnippet>574</a>    <span class="kw">use </span><a href="../../../helpers/c_opaque.rs.html#48-50"><span class="kw">crate</span>::sys::helpers::COpaque</a>;
 <a href=#575 id=575 data-nosnippet>575</a>
-<a href=#576 id=576 data-nosnippet>576</a>    <span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="prelude-val">None</span>;
+<a href=#576 id=576 data-nosnippet>576</a>    <span class="kw">let </span><span class="kw-2">mut </span>ret = <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">None</a>;
 <a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a>    <span class="kw">let </span><span class="kw-2">mut </span>attr: COpaque&lt;libc::pthread_attr_t&gt; = COpaque::uninit();
-<a href=#579 id=579 data-nosnippet>579</a>    <span class="kw">if </span>!<span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
-<a href=#580 id=580 data-nosnippet>580</a>        attr = COpaque::zeroed();
+<a href=#578 id=578 data-nosnippet>578</a>    <span class="kw">let </span><span class="kw-2">mut </span>attr: <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>&lt;libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux/gnu/b64/x86_64/struct.pthread_attr_t.html">pthread_attr_t</a>&gt; = <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>::<a href="../../../helpers/c_opaque.rs.html#63-65">uninit</a>();
+<a href=#579 id=579 data-nosnippet>579</a>    <span class="kw">if </span>!<a href="../../../../../../std/macro.cfg.html">cfg!</a>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#580 id=580 data-nosnippet>580</a>        <a href="#578">attr</a> = <a href="../../../helpers/c_opaque.rs.html#48-50">COpaque</a>::<a href="../../../helpers/c_opaque.rs.html#77-79">zeroed</a>();
 <a href=#581 id=581 data-nosnippet>581</a>    }
-<a href=#582 id=582 data-nosnippet>582</a>    <span class="kw">let </span>attr = <span class="macro">pin!</span>(attr);
+<a href=#582 id=582 data-nosnippet>582</a>    <span class="kw">let </span>attr = <a href="../../../../../../std/pin/macro.pin.html">pin!</a>(attr);
 <a href=#583 id=583 data-nosnippet>583</a>    <span class="comment">// FIXME(pin-ergonomics): remove the next line.
-<a href=#584 id=584 data-nosnippet>584</a>    </span><span class="kw">let </span>attr = attr.into_ref();
+<a href=#584 id=584 data-nosnippet>584</a>    </span><span class="kw">let </span>attr = <a href="#582">attr</a>.<a href="../../../../../../std/pin/struct.Pin.html#method.into_ref">into_ref</a>();
 <a href=#585 id=585 data-nosnippet>585</a>
 <a href=#586 id=586 data-nosnippet>586</a>    <span class="comment">// SAFETY:
 <a href=#587 id=587 data-nosnippet>587</a>    // The attributes object has not been initialized yet and will not be
@@ -597,53 +597,53 @@
 <a href=#597 id=597 data-nosnippet>597</a>    // * calling `pthread_self` is always valid and returns a valid `pthread_t`
 <a href=#598 id=598 data-nosnippet>598</a>    // * `attr` can be written to, and will be initialized by this call.
 <a href=#599 id=599 data-nosnippet>599</a>    </span><span class="attr">#[cfg(not(target_os = <span class="string">"freebsd"</span>))]
-<a href=#600 id=600 data-nosnippet>600</a>    </span><span class="kw">let </span>e = <span class="kw">unsafe </span>{ libc::pthread_getattr_np(libc::pthread_self(), attr.get()) };
-<a href=#601 id=601 data-nosnippet>601</a>    <span class="kw">if </span>e == <span class="number">0 </span>{
+<a href=#600 id=600 data-nosnippet>600</a>    </span><span class="kw">let </span>e = <span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/new/common/linux_like/pthread/fn.pthread_getattr_np.html">pthread_getattr_np</a>(libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.pthread_self.html">pthread_self</a>(), <a href="#584">attr</a>.<a href="../../../helpers/c_opaque.rs.html#98-100">get</a>()) };
+<a href=#601 id=601 data-nosnippet>601</a>    <span class="kw">if </span><a href="#600">e</a> == <span class="number">0 </span>{
 <a href=#602 id=602 data-nosnippet>602</a>        <span class="kw">let </span><span class="kw-2">mut </span>guardsize = <span class="number">0</span>;
 <a href=#603 id=603 data-nosnippet>603</a>        <span class="comment">// SAFETY:
 <a href=#604 id=604 data-nosnippet>604</a>        // `attr` is an initialized attribute object and the pointer is valid
 <a href=#605 id=605 data-nosnippet>605</a>        // for writing.
-<a href=#606 id=606 data-nosnippet>606</a>        </span><span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ libc::pthread_attr_getguardsize(attr.get(), <span class="kw-2">&amp;mut </span>guardsize) }, <span class="number">0</span>);
-<a href=#607 id=607 data-nosnippet>607</a>        <span class="kw">if </span>guardsize == <span class="number">0 </span>{
-<a href=#608 id=608 data-nosnippet>608</a>            <span class="kw">if </span><span class="macro">cfg!</span>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
+<a href=#606 id=606 data-nosnippet>606</a>        </span><a href="../../../../../../std/macro.assert_eq.html">assert_eq!</a>(<span class="kw">unsafe </span>{ libc::pthread_attr_getguardsize(attr.get(), <span class="kw-2">&amp;mut </span>guardsize) }, <span class="number">0</span>);
+<a href=#607 id=607 data-nosnippet>607</a>        <span class="kw">if </span><a href="#602">guardsize</a> == <span class="number">0 </span>{
+<a href=#608 id=608 data-nosnippet>608</a>            <span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
 <a href=#609 id=609 data-nosnippet>609</a>                <span class="comment">// musl versions before 1.1.19 always reported guard
 <a href=#610 id=610 data-nosnippet>610</a>                // size obtained from pthread_attr_get_np as zero.
 <a href=#611 id=611 data-nosnippet>611</a>                // Use page size as a fallback.
-<a href=#612 id=612 data-nosnippet>612</a>                </span>guardsize = PAGE_SIZE.load(Ordering::Relaxed);
+<a href=#612 id=612 data-nosnippet>612</a>                </span><a href="#602">guardsize</a> = <a href="#88">PAGE_SIZE</a>.<a href="../../../../../../std/sync/atomic/struct.Atomic.html#method.load">load</a>(Ordering::<a href="../../../../../../std/sync/atomic/enum.Ordering.html">Relaxed</a>);
 <a href=#613 id=613 data-nosnippet>613</a>            } <span class="kw">else </span>{
-<a href=#614 id=614 data-nosnippet>614</a>                <span class="macro">panic!</span>(<span class="string">"there is no guard page"</span>);
+<a href=#614 id=614 data-nosnippet>614</a>                <a href="../../../../macros.rs.html#17-23">panic!</a>(<span class="string">"there is no guard page"</span>);
 <a href=#615 id=615 data-nosnippet>615</a>            }
 <a href=#616 id=616 data-nosnippet>616</a>        }
-<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">let </span><span class="kw-2">mut </span>stackptr = <span class="kw">crate</span>::ptr::null_mut::&lt;libc::c_void&gt;();
+<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">let </span><span class="kw-2">mut </span>stackptr = <span class="kw">crate</span>::ptr::<a href="../../../../../../std/ptr/fn.null_mut.html">null_mut</a>::&lt;libc::<a href="../../../../../../std/ffi/enum.c_void.html">c_void</a>&gt;();
 <a href=#618 id=618 data-nosnippet>618</a>        <span class="kw">let </span><span class="kw-2">mut </span>size = <span class="number">0</span>;
 <a href=#619 id=619 data-nosnippet>619</a>        <span class="comment">// SAFETY:
 <a href=#620 id=620 data-nosnippet>620</a>        // `attr` is an initialized attribute object and both the pointers
 <a href=#621 id=621 data-nosnippet>621</a>        // are valid for writing.
-<a href=#622 id=622 data-nosnippet>622</a>        </span><span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ libc::pthread_attr_getstack(attr.get(), <span class="kw-2">&amp;mut </span>stackptr, <span class="kw-2">&amp;mut </span>size) }, <span class="number">0</span>);
+<a href=#622 id=622 data-nosnippet>622</a>        </span><a href="../../../../../../std/macro.assert_eq.html">assert_eq!</a>(<span class="kw">unsafe </span>{ libc::pthread_attr_getstack(attr.get(), <span class="kw-2">&amp;mut </span>stackptr, <span class="kw-2">&amp;mut </span>size) }, <span class="number">0</span>);
 <a href=#623 id=623 data-nosnippet>623</a>
-<a href=#624 id=624 data-nosnippet>624</a>        <span class="kw">let </span>stackaddr = stackptr.addr();
-<a href=#625 id=625 data-nosnippet>625</a>        ret = <span class="kw">if </span><span class="macro">cfg!</span>(any(target_os = <span class="string">"freebsd"</span>, target_os = <span class="string">"netbsd"</span>, target_os = <span class="string">"hurd"</span>)) {
-<a href=#626 id=626 data-nosnippet>626</a>            <span class="prelude-val">Some</span>(stackaddr - guardsize..stackaddr)
-<a href=#627 id=627 data-nosnippet>627</a>        } <span class="kw">else if </span><span class="macro">cfg!</span>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
-<a href=#628 id=628 data-nosnippet>628</a>            <span class="prelude-val">Some</span>(stackaddr - guardsize..stackaddr)
-<a href=#629 id=629 data-nosnippet>629</a>        } <span class="kw">else if </span><span class="macro">cfg!</span>(all(target_os = <span class="string">"linux"</span>, any(target_env = <span class="string">"gnu"</span>, target_env = <span class="string">"uclibc"</span>))) {
+<a href=#624 id=624 data-nosnippet>624</a>        <span class="kw">let </span>stackaddr = <a href="#617">stackptr</a>.<a href="../../../../../../core/primitive.pointer.html#method.addr">addr</a>();
+<a href=#625 id=625 data-nosnippet>625</a>        <a href="#576">ret</a> = <span class="kw">if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(any(target_os = <span class="string">"freebsd"</span>, target_os = <span class="string">"netbsd"</span>, target_os = <span class="string">"hurd"</span>)) {
+<a href=#626 id=626 data-nosnippet>626</a>            <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr - guardsize..stackaddr)
+<a href=#627 id=627 data-nosnippet>627</a>        } <span class="kw">else if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(all(target_os = <span class="string">"linux"</span>, target_env = <span class="string">"musl"</span>)) {
+<a href=#628 id=628 data-nosnippet>628</a>            <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr - guardsize..stackaddr)
+<a href=#629 id=629 data-nosnippet>629</a>        } <span class="kw">else if </span><a href="../../../../../../std/macro.cfg.html">cfg!</a>(all(target_os = <span class="string">"linux"</span>, any(target_env = <span class="string">"gnu"</span>, target_env = <span class="string">"uclibc"</span>))) {
 <a href=#630 id=630 data-nosnippet>630</a>            <span class="comment">// glibc used to include the guard area within the stack, as noted in the BUGS
 <a href=#631 id=631 data-nosnippet>631</a>            // section of `man pthread_attr_getguardsize`. This has been corrected starting
 <a href=#632 id=632 data-nosnippet>632</a>            // with glibc 2.27, and in some distro backports, so the guard is now placed at the
 <a href=#633 id=633 data-nosnippet>633</a>            // end (below) the stack. There's no easy way for us to know which we have at
 <a href=#634 id=634 data-nosnippet>634</a>            // runtime, so we'll just match any fault in the range right above or below the
 <a href=#635 id=635 data-nosnippet>635</a>            // stack base to call that fault a stack overflow.
-<a href=#636 id=636 data-nosnippet>636</a>            </span><span class="prelude-val">Some</span>(stackaddr - guardsize..stackaddr + guardsize)
+<a href=#636 id=636 data-nosnippet>636</a>            </span><a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr - guardsize..stackaddr + guardsize)
 <a href=#637 id=637 data-nosnippet>637</a>        } <span class="kw">else </span>{
-<a href=#638 id=638 data-nosnippet>638</a>            <span class="prelude-val">Some</span>(stackaddr..stackaddr + guardsize)
+<a href=#638 id=638 data-nosnippet>638</a>            <a class="prelude-val" href="../../../../../../std/option/enum.Option.html">Some</a>(stackaddr..stackaddr + guardsize)
 <a href=#639 id=639 data-nosnippet>639</a>        };
 <a href=#640 id=640 data-nosnippet>640</a>    }
-<a href=#641 id=641 data-nosnippet>641</a>    <span class="kw">if </span>e == <span class="number">0 </span>|| <span class="macro">cfg!</span>(target_os = <span class="string">"freebsd"</span>) {
+<a href=#641 id=641 data-nosnippet>641</a>    <span class="kw">if </span><a href="#600">e</a> == <span class="number">0 </span>|| <a href="../../../../../../std/macro.cfg.html">cfg!</a>(target_os = <span class="string">"freebsd"</span>) {
 <a href=#642 id=642 data-nosnippet>642</a>        <span class="comment">// SAFETY:
 <a href=#643 id=643 data-nosnippet>643</a>        // `attr` was initialized either by `pthread_attr_init` (FreeBSD) or
 <a href=#644 id=644 data-nosnippet>644</a>        // by `pthread_attr_get_np`, and is not used after this point.
-<a href=#645 id=645 data-nosnippet>645</a>        </span><span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ libc::pthread_attr_destroy(attr.get()) }, <span class="number">0</span>);
+<a href=#645 id=645 data-nosnippet>645</a>        </span><a href="../../../../../../std/macro.assert_eq.html">assert_eq!</a>(<span class="kw">unsafe </span>{ libc::pthread_attr_destroy(attr.get()) }, <span class="number">0</span>);
 <a href=#646 id=646 data-nosnippet>646</a>    }
-<a href=#647 id=647 data-nosnippet>647</a>    ret
+<a href=#647 id=647 data-nosnippet>647</a>    <a href="#576">ret</a>
 <a href=#648 id=648 data-nosnippet>648</a>}
 </code></pre></div></section></main></body></html>

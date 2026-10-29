@@ -1,7 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell/lazy.rs`."><title>lazy.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/cell/</div>lazy.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">super</span>::UnsafeCell;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::hint::unreachable_unchecked;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::ops::{Deref, DerefMut};
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{fmt, mem};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell/lazy.rs`."><title>lazy.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/cell/</div>lazy.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../cell.rs.html#2311-2313"><span class="kw">super</span>::UnsafeCell</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../hint.rs.html#103-112"><span class="kw">crate</span>::hint::unreachable_unchecked</a>;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a href="../ops/deref.rs.html#139-151">Deref</a>, <a href="../ops/deref.rs.html#270-275">DerefMut</a>};
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#325">fmt</a>, <a href="../lib.rs.html#269">mem</a>};
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">enum </span>State&lt;T, F&gt; {
 <a href=#7 id=7 data-nosnippet>7</a>    Uninit(F),
@@ -51,14 +51,14 @@
 <a href=#51 id=51 data-nosnippet>51</a>/// //   92
 <a href=#52 id=52 data-nosnippet>52</a>/// ```
 <a href=#53 id=53 data-nosnippet>53</a></span><span class="attr">#[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#54 id=54 data-nosnippet>54</a></span><span class="kw">pub struct </span>LazyCell&lt;
+<a href=#54 id=54 data-nosnippet>54</a></span><span class="kw">pub struct </span><a href="../../../core/cell/struct.LazyCell.html">LazyCell</a>&lt;
 <a href=#55 id=55 data-nosnippet>55</a>    <span class="attr">#[rustc_assert_variance(invariant)] </span>T,
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="attr">#[rustc_assert_variance(invariant)] </span>F = <span class="kw">fn</span>() -&gt; T,
 <a href=#57 id=57 data-nosnippet>57</a>&gt; {
-<a href=#58 id=58 data-nosnippet>58</a>    state: UnsafeCell&lt;State&lt;T, F&gt;&gt;,
+<a href=#58 id=58 data-nosnippet>58</a>    state: <a href="../cell.rs.html#2311-2313">UnsafeCell</a>&lt;<a href="#6-10">State</a>&lt;T, F&gt;&gt;,
 <a href=#59 id=59 data-nosnippet>59</a>}
 <a href=#60 id=60 data-nosnippet>60</a>
-<a href=#61 id=61 data-nosnippet>61</a><span class="kw">impl</span>&lt;T, F: FnOnce() -&gt; T&gt; LazyCell&lt;T, F&gt; {
+<a href=#61 id=61 data-nosnippet>61</a><span class="kw">impl</span>&lt;T, F: <a href="../ops/function.rs.html#242-251">FnOnce</a>() -&gt; T&gt; <a href="#54-59">LazyCell</a>&lt;T, F&gt; {
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// Creates a new lazy value with the given initializing function.
 <a href=#63 id=63 data-nosnippet>63</a>    ///
 <a href=#64 id=64 data-nosnippet>64</a>    /// # Examples
@@ -75,8 +75,8 @@
 <a href=#75 id=75 data-nosnippet>75</a>    </span><span class="attr">#[inline]
 <a href=#76 id=76 data-nosnippet>76</a>    #[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
 <a href=#77 id=77 data-nosnippet>77</a>    #[rustc_const_stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#78 id=78 data-nosnippet>78</a>    </span><span class="kw">pub const fn </span>new(f: F) -&gt; LazyCell&lt;T, F&gt; {
-<a href=#79 id=79 data-nosnippet>79</a>        LazyCell { state: UnsafeCell::new(State::Uninit(f)) }
+<a href=#78 id=78 data-nosnippet>78</a>    </span><span class="kw">pub const fn </span>new(f: F) -&gt; <a href="#54-59">LazyCell</a>&lt;T, F&gt; {
+<a href=#79 id=79 data-nosnippet>79</a>        <a href="#54-59">LazyCell</a> { state: <a href="../cell.rs.html#2311-2313">UnsafeCell</a>::<a href="../cell.rs.html#2334-2336">new</a>(State::<a href="#7">Uninit</a>(<a href="#78">f</a>)) }
 <a href=#80 id=80 data-nosnippet>80</a>    }
 <a href=#81 id=81 data-nosnippet>81</a>
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="doccomment">/// Consumes this `LazyCell` returning the stored value.
@@ -103,11 +103,11 @@
 <a href=#103 id=103 data-nosnippet>103</a>    /// ```
 <a href=#104 id=104 data-nosnippet>104</a>    </span><span class="attr">#[unstable(feature = <span class="string">"lazy_cell_into_inner"</span>, issue = <span class="string">"125623"</span>)]
 <a href=#105 id=105 data-nosnippet>105</a>    #[rustc_const_unstable(feature = <span class="string">"lazy_cell_into_inner"</span>, issue = <span class="string">"125623"</span>)]
-<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub const fn </span>into_inner(this: <span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, F&gt; {
-<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">match </span>this.state.into_inner() {
-<a href=#108 id=108 data-nosnippet>108</a>            State::Init(data) =&gt; <span class="prelude-val">Ok</span>(data),
-<a href=#109 id=109 data-nosnippet>109</a>            State::Uninit(f) =&gt; <span class="prelude-val">Err</span>(f),
-<a href=#110 id=110 data-nosnippet>110</a>            State::Poisoned =&gt; panic_poisoned(),
+<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub const fn </span>into_inner(this: <span class="self">Self</span>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;T, F&gt; {
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">match </span><a href="#106">this</a>.state.<a href="../cell.rs.html#2353-2355">into_inner</a>() {
+<a href=#108 id=108 data-nosnippet>108</a>            State::<a href="#8">Init</a>(data) =&gt; <a class="prelude-val" href="../result.rs.html#562">Ok</a>(<a href="#108">data</a>),
+<a href=#109 id=109 data-nosnippet>109</a>            State::<a href="#7">Uninit</a>(f) =&gt; <a class="prelude-val" href="../result.rs.html#567">Err</a>(<a href="#109">f</a>),
+<a href=#110 id=110 data-nosnippet>110</a>            State::<a href="#9">Poisoned</a> =&gt; <a href="#385-387">panic_poisoned</a>(),
 <a href=#111 id=111 data-nosnippet>111</a>        }
 <a href=#112 id=112 data-nosnippet>112</a>    }
 <a href=#113 id=113 data-nosnippet>113</a>
@@ -138,18 +138,18 @@
 <a href=#138 id=138 data-nosnippet>138</a>    </span><span class="attr">#[inline]
 <a href=#139 id=139 data-nosnippet>139</a>    #[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
 <a href=#140 id=140 data-nosnippet>140</a>    #[rustc_should_not_be_called_on_const_items]
-<a href=#141 id=141 data-nosnippet>141</a>    </span><span class="kw">pub fn </span>force(this: <span class="kw-2">&amp;</span>LazyCell&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#141 id=141 data-nosnippet>141</a>    </span><span class="kw">pub fn </span>force(this: <span class="kw-2">&amp;</span><a href="#54-59">LazyCell</a>&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;</span>T {
 <a href=#142 id=142 data-nosnippet>142</a>        <span class="comment">// SAFETY:
 <a href=#143 id=143 data-nosnippet>143</a>        // This invalidates any mutable references to the data. The resulting
 <a href=#144 id=144 data-nosnippet>144</a>        // reference lives either until the end of the borrow of `this` (in the
 <a href=#145 id=145 data-nosnippet>145</a>        // initialized case) or is invalidated in `really_init` (in the
 <a href=#146 id=146 data-nosnippet>146</a>        // uninitialized case; `really_init` will create and return a fresh reference).
-<a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>this.state.get() };
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">match </span>state {
-<a href=#149 id=149 data-nosnippet>149</a>            State::Init(data) =&gt; data,
+<a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a href="#141">this</a>.state.<a href="../cell.rs.html#2434-2438">get</a>() };
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">match </span><a href="#147">state</a> {
+<a href=#149 id=149 data-nosnippet>149</a>            State::<a href="#8">Init</a>(data) =&gt; <a href="#149">data</a>,
 <a href=#150 id=150 data-nosnippet>150</a>            <span class="comment">// SAFETY: The state is uninitialized.
-<a href=#151 id=151 data-nosnippet>151</a>            </span>State::Uninit(<span class="kw">_</span>) =&gt; <span class="kw">unsafe </span>{ LazyCell::really_init(this) },
-<a href=#152 id=152 data-nosnippet>152</a>            State::Poisoned =&gt; panic_poisoned(),
+<a href=#151 id=151 data-nosnippet>151</a>            </span>State::<a href="#7">Uninit</a>(<span class="kw">_</span>) =&gt; <span class="kw">unsafe </span>{ <a href="#54-59">LazyCell</a>::<a href="#232-259">really_init</a>(<a href="#141">this</a>) },
+<a href=#152 id=152 data-nosnippet>152</a>            State::<a href="#9">Poisoned</a> =&gt; <a href="#385-387">panic_poisoned</a>(),
 <a href=#153 id=153 data-nosnippet>153</a>        }
 <a href=#154 id=154 data-nosnippet>154</a>    }
 <a href=#155 id=155 data-nosnippet>155</a>
@@ -179,67 +179,67 @@
 <a href=#179 id=179 data-nosnippet>179</a>    /// ```
 <a href=#180 id=180 data-nosnippet>180</a>    </span><span class="attr">#[inline]
 <a href=#181 id=181 data-nosnippet>181</a>    #[stable(feature = <span class="string">"lazy_get"</span>, since = <span class="string">"1.94.0"</span>)]
-<a href=#182 id=182 data-nosnippet>182</a>    </span><span class="kw">pub fn </span>force_mut(this: <span class="kw-2">&amp;mut </span>LazyCell&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#182 id=182 data-nosnippet>182</a>    </span><span class="kw">pub fn </span>force_mut(this: <span class="kw-2">&amp;mut </span><a href="#54-59">LazyCell</a>&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;mut </span>T {
 <a href=#183 id=183 data-nosnippet>183</a>        <span class="attr">#[cold]
 <a href=#184 id=184 data-nosnippet>184</a>        </span><span class="doccomment">/// # Safety
 <a href=#185 id=185 data-nosnippet>185</a>        /// May only be called when the state is `Uninit`.
-<a href=#186 id=186 data-nosnippet>186</a>        </span><span class="kw">unsafe fn </span>really_init_mut&lt;T, F: FnOnce() -&gt; T&gt;(state: <span class="kw-2">&amp;mut </span>State&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#186 id=186 data-nosnippet>186</a>        </span><span class="kw">unsafe fn </span>really_init_mut&lt;T, F: <a href="../ops/function.rs.html#242-251">FnOnce</a>() -&gt; T&gt;(state: <span class="kw-2">&amp;mut </span><a href="#6-10">State</a>&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;mut </span>T {
 <a href=#187 id=187 data-nosnippet>187</a>            <span class="comment">// INVARIANT: Always valid, but the value may not be dropped.
-<a href=#188 id=188 data-nosnippet>188</a>            </span><span class="kw">struct </span>PoisonOnPanic&lt;T, F&gt;(<span class="kw-2">*mut </span>State&lt;T, F&gt;);
-<a href=#189 id=189 data-nosnippet>189</a>            <span class="kw">impl</span>&lt;T, F&gt; Drop <span class="kw">for </span>PoisonOnPanic&lt;T, F&gt; {
+<a href=#188 id=188 data-nosnippet>188</a>            </span><span class="kw">struct </span>PoisonOnPanic&lt;T, F&gt;(<span class="kw-2">*mut </span><a href="#6-10">State</a>&lt;T, F&gt;);
+<a href=#189 id=189 data-nosnippet>189</a>            <span class="kw">impl</span>&lt;T, F&gt; <a href="../ops/drop.rs.html#209-268">Drop</a> <span class="kw">for </span><a href="#188">PoisonOnPanic</a>&lt;T, F&gt; {
 <a href=#190 id=190 data-nosnippet>190</a>                <span class="attr">#[inline]
 <a href=#191 id=191 data-nosnippet>191</a>                </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
 <a href=#192 id=192 data-nosnippet>192</a>                    <span class="comment">// SAFETY: Invariant states it is valid, and we don't drop the old value.
 <a href=#193 id=193 data-nosnippet>193</a>                    </span><span class="kw">unsafe </span>{
-<a href=#194 id=194 data-nosnippet>194</a>                        <span class="self">self</span>.<span class="number">0</span>.write(State::Poisoned);
+<a href=#194 id=194 data-nosnippet>194</a>                        <a class="self" href="#191">self</a>.<span class="number">0</span>.<a href="../ptr/mut_ptr.rs.html#1397-1403">write</a>(State::<a href="#9">Poisoned</a>);
 <a href=#195 id=195 data-nosnippet>195</a>                    }
 <a href=#196 id=196 data-nosnippet>196</a>                }
 <a href=#197 id=197 data-nosnippet>197</a>            }
 <a href=#198 id=198 data-nosnippet>198</a>
-<a href=#199 id=199 data-nosnippet>199</a>            <span class="kw">let </span>State::Uninit(f) = state <span class="kw">else </span>{
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="kw">let </span>State::<a href="#7">Uninit</a>(f) = <a href="#186">state</a> <span class="kw">else </span>{
 <a href=#200 id=200 data-nosnippet>200</a>                <span class="comment">// `unreachable!()` here won't optimize out because the function is cold.
 <a href=#201 id=201 data-nosnippet>201</a>                // SAFETY: Precondition.
-<a href=#202 id=202 data-nosnippet>202</a>                </span><span class="kw">unsafe </span>{ unreachable_unchecked() };
+<a href=#202 id=202 data-nosnippet>202</a>                </span><span class="kw">unsafe </span>{ <a href="../hint.rs.html#103-112">unreachable_unchecked</a>() };
 <a href=#203 id=203 data-nosnippet>203</a>            };
 <a href=#204 id=204 data-nosnippet>204</a>            <span class="comment">// SAFETY: We never drop the state after we read `f`, and we write a valid value back
 <a href=#205 id=205 data-nosnippet>205</a>            // in any case, panic or success. `f` can't access the `LazyCell` because it is mutably
 <a href=#206 id=206 data-nosnippet>206</a>            // borrowed.
-<a href=#207 id=207 data-nosnippet>207</a>            </span><span class="kw">let </span>f = <span class="kw">unsafe </span>{ core::ptr::read(f) };
+<a href=#207 id=207 data-nosnippet>207</a>            </span><span class="kw">let </span>f = <span class="kw">unsafe </span>{ core::ptr::<a href="../ptr/mod.rs.html#1715-1756">read</a>(<a href="#199">f</a>) };
 <a href=#208 id=208 data-nosnippet>208</a>            <span class="comment">// INVARIANT: Initiated from mutable reference, don't drop because we read it.
-<a href=#209 id=209 data-nosnippet>209</a>            </span><span class="kw">let </span>guard = PoisonOnPanic(state);
-<a href=#210 id=210 data-nosnippet>210</a>            <span class="kw">let </span>data = f();
+<a href=#209 id=209 data-nosnippet>209</a>            </span><span class="kw">let </span>guard = <a href="#188">PoisonOnPanic</a>(<a href="#186">state</a>);
+<a href=#210 id=210 data-nosnippet>210</a>            <span class="kw">let </span>data = <a href="#207">f</a>();
 <a href=#211 id=211 data-nosnippet>211</a>            <span class="comment">// SAFETY: `PoisonOnPanic` invariant, and we don't drop the old value.
 <a href=#212 id=212 data-nosnippet>212</a>            </span><span class="kw">unsafe </span>{
-<a href=#213 id=213 data-nosnippet>213</a>                core::ptr::write(guard.<span class="number">0</span>, State::Init(data));
+<a href=#213 id=213 data-nosnippet>213</a>                core::ptr::<a href="../ptr/mod.rs.html#1939-1964">write</a>(<a href="#209">guard</a>.<span class="number">0</span>, State::<a href="#8">Init</a>(<a href="#210">data</a>));
 <a href=#214 id=214 data-nosnippet>214</a>            }
-<a href=#215 id=215 data-nosnippet>215</a>            core::mem::forget(guard);
-<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">let </span>State::Init(data) = state <span class="kw">else </span>{ <span class="macro">unreachable!</span>() };
-<a href=#217 id=217 data-nosnippet>217</a>            data
+<a href=#215 id=215 data-nosnippet>215</a>            core::mem::<a href="../mem/mod.rs.html#191-193">forget</a>(<a href="#209">guard</a>);
+<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">let </span>State::<a href="#8">Init</a>(data) = <a href="#186">state</a> <span class="kw">else </span>{ <a href="../macros/mod.rs.html#716-722">unreachable!</a>() };
+<a href=#217 id=217 data-nosnippet>217</a>            <a href="#216">data</a>
 <a href=#218 id=218 data-nosnippet>218</a>        }
 <a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>state = this.state.get_mut();
-<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">match </span>state {
-<a href=#222 id=222 data-nosnippet>222</a>            State::Init(data) =&gt; data,
+<a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>state = <a href="#182">this</a>.state.<a href="../cell.rs.html#2458-2460">get_mut</a>();
+<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">match </span><a href="#220">state</a> {
+<a href=#222 id=222 data-nosnippet>222</a>            State::<a href="#8">Init</a>(data) =&gt; <a href="#222">data</a>,
 <a href=#223 id=223 data-nosnippet>223</a>            <span class="comment">// SAFETY: `state` is `Uninit`.
-<a href=#224 id=224 data-nosnippet>224</a>            </span>State::Uninit(<span class="kw">_</span>) =&gt; <span class="kw">unsafe </span>{ really_init_mut(state) },
-<a href=#225 id=225 data-nosnippet>225</a>            State::Poisoned =&gt; panic_poisoned(),
+<a href=#224 id=224 data-nosnippet>224</a>            </span>State::<a href="#7">Uninit</a>(<span class="kw">_</span>) =&gt; <span class="kw">unsafe </span>{ <a href="#186-218">really_init_mut</a>(<a href="#220">state</a>) },
+<a href=#225 id=225 data-nosnippet>225</a>            State::<a href="#9">Poisoned</a> =&gt; <a href="#385-387">panic_poisoned</a>(),
 <a href=#226 id=226 data-nosnippet>226</a>        }
 <a href=#227 id=227 data-nosnippet>227</a>    }
 <a href=#228 id=228 data-nosnippet>228</a>
 <a href=#229 id=229 data-nosnippet>229</a>    <span class="doccomment">/// # Safety
 <a href=#230 id=230 data-nosnippet>230</a>    /// May only be called when the state is `Uninit`.
 <a href=#231 id=231 data-nosnippet>231</a>    </span><span class="attr">#[cold]
-<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">unsafe fn </span>really_init(this: <span class="kw-2">&amp;</span>LazyCell&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">unsafe fn </span>really_init(this: <span class="kw-2">&amp;</span><a href="#54-59">LazyCell</a>&lt;T, F&gt;) -&gt; <span class="kw-2">&amp;</span>T {
 <a href=#233 id=233 data-nosnippet>233</a>        <span class="comment">// SAFETY:
 <a href=#234 id=234 data-nosnippet>234</a>        // This function is only called when the state is uninitialized,
 <a href=#235 id=235 data-nosnippet>235</a>        // so no references to `state` can exist except for the reference
 <a href=#236 id=236 data-nosnippet>236</a>        // in `force`, which is invalidated here and not accessed again.
-<a href=#237 id=237 data-nosnippet>237</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>this.state.get() };
+<a href=#237 id=237 data-nosnippet>237</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><a href="#232">this</a>.state.<a href="../cell.rs.html#2434-2438">get</a>() };
 <a href=#238 id=238 data-nosnippet>238</a>        <span class="comment">// Temporarily mark the state as poisoned. This prevents reentrant
 <a href=#239 id=239 data-nosnippet>239</a>        // accesses and correctly poisons the cell if the closure panicked.
-<a href=#240 id=240 data-nosnippet>240</a>        </span><span class="kw">let </span>State::Uninit(f) = mem::replace(state, State::Poisoned) <span class="kw">else </span>{ <span class="macro">unreachable!</span>() };
+<a href=#240 id=240 data-nosnippet>240</a>        </span><span class="kw">let </span>State::<a href="#7">Uninit</a>(f) = mem::<a href="../mem/mod.rs.html#963-981">replace</a>(<a href="#237">state</a>, State::<a href="#9">Poisoned</a>) <span class="kw">else </span>{ <a href="../macros/mod.rs.html#716-722">unreachable!</a>() };
 <a href=#241 id=241 data-nosnippet>241</a>
-<a href=#242 id=242 data-nosnippet>242</a>        <span class="kw">let </span>data = f();
+<a href=#242 id=242 data-nosnippet>242</a>        <span class="kw">let </span>data = <a href="#240">f</a>();
 <a href=#243 id=243 data-nosnippet>243</a>
 <a href=#244 id=244 data-nosnippet>244</a>        <span class="comment">// SAFETY:
 <a href=#245 id=245 data-nosnippet>245</a>        // If the closure accessed the cell through something like a reentrant
@@ -248,18 +248,18 @@
 <a href=#248 id=248 data-nosnippet>248</a>        // go through the `UnsafeCell` pointer here. The state can only be
 <a href=#249 id=249 data-nosnippet>249</a>        // poisoned at this point, so using `write` to skip the destructor
 <a href=#250 id=250 data-nosnippet>250</a>        // of `State` should help the optimizer.
-<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="kw">unsafe </span>{ this.state.get().write(State::Init(data)) };
+<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="kw">unsafe </span>{ <a href="#232">this</a>.state.<a href="../cell.rs.html#2434-2438">get</a>().<a href="../ptr/mut_ptr.rs.html#1397-1403">write</a>(State::<a href="#8">Init</a>(<a href="#242">data</a>)) };
 <a href=#252 id=252 data-nosnippet>252</a>
 <a href=#253 id=253 data-nosnippet>253</a>        <span class="comment">// SAFETY:
 <a href=#254 id=254 data-nosnippet>254</a>        // The previous references were invalidated by the `write` call above,
 <a href=#255 id=255 data-nosnippet>255</a>        // so do a new shared borrow of the state instead.
-<a href=#256 id=256 data-nosnippet>256</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>this.state.get() };
-<a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">let </span>State::Init(data) = state <span class="kw">else </span>{ <span class="macro">unreachable!</span>() };
-<a href=#258 id=258 data-nosnippet>258</a>        data
+<a href=#256 id=256 data-nosnippet>256</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a href="#232">this</a>.state.<a href="../cell.rs.html#2434-2438">get</a>() };
+<a href=#257 id=257 data-nosnippet>257</a>        <span class="kw">let </span>State::<a href="#8">Init</a>(data) = <a href="#256">state</a> <span class="kw">else </span>{ <a href="../macros/mod.rs.html#716-722">unreachable!</a>() };
+<a href=#258 id=258 data-nosnippet>258</a>        <a href="#257">data</a>
 <a href=#259 id=259 data-nosnippet>259</a>    }
 <a href=#260 id=260 data-nosnippet>260</a>}
 <a href=#261 id=261 data-nosnippet>261</a>
-<a href=#262 id=262 data-nosnippet>262</a><span class="kw">impl</span>&lt;T, F&gt; LazyCell&lt;T, F&gt; {
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">impl</span>&lt;T, F&gt; <a href="#54-59">LazyCell</a>&lt;T, F&gt; {
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="doccomment">/// Returns a mutable reference to the value if initialized. Otherwise (if uninitialized or
 <a href=#264 id=264 data-nosnippet>264</a>    /// poisoned), returns `None`.
 <a href=#265 id=265 data-nosnippet>265</a>    ///
@@ -277,11 +277,11 @@
 <a href=#277 id=277 data-nosnippet>277</a>    /// ```
 <a href=#278 id=278 data-nosnippet>278</a>    </span><span class="attr">#[inline]
 <a href=#279 id=279 data-nosnippet>279</a>    #[stable(feature = <span class="string">"lazy_get"</span>, since = <span class="string">"1.94.0"</span>)]
-<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">pub fn </span>get_mut(this: <span class="kw-2">&amp;mut </span>LazyCell&lt;T, F&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>state = this.state.get_mut();
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">match </span>state {
-<a href=#283 id=283 data-nosnippet>283</a>            State::Init(data) =&gt; <span class="prelude-val">Some</span>(data),
-<a href=#284 id=284 data-nosnippet>284</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">pub fn </span>get_mut(this: <span class="kw-2">&amp;mut </span><a href="#54-59">LazyCell</a>&lt;T, F&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>state = <a href="#280">this</a>.state.<a href="../cell.rs.html#2458-2460">get_mut</a>();
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">match </span><a href="#281">state</a> {
+<a href=#283 id=283 data-nosnippet>283</a>            State::<a href="#8">Init</a>(data) =&gt; <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#283">data</a>),
+<a href=#284 id=284 data-nosnippet>284</a>            <span class="kw">_ </span>=&gt; <a class="prelude-val" href="../option.rs.html#602">None</a>,
 <a href=#285 id=285 data-nosnippet>285</a>        }
 <a href=#286 id=286 data-nosnippet>286</a>    }
 <a href=#287 id=287 data-nosnippet>287</a>
@@ -301,21 +301,21 @@
 <a href=#301 id=301 data-nosnippet>301</a>    /// ```
 <a href=#302 id=302 data-nosnippet>302</a>    </span><span class="attr">#[inline]
 <a href=#303 id=303 data-nosnippet>303</a>    #[stable(feature = <span class="string">"lazy_get"</span>, since = <span class="string">"1.94.0"</span>)]
-<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">pub fn </span>get(this: <span class="kw-2">&amp;</span>LazyCell&lt;T, F&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt; {
+<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">pub fn </span>get(this: <span class="kw-2">&amp;</span><a href="#54-59">LazyCell</a>&lt;T, F&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>T&gt; {
 <a href=#305 id=305 data-nosnippet>305</a>        <span class="comment">// SAFETY:
 <a href=#306 id=306 data-nosnippet>306</a>        // This is sound for the same reason as in `force`: once the state is
 <a href=#307 id=307 data-nosnippet>307</a>        // initialized, it will not be mutably accessed again, so this reference
 <a href=#308 id=308 data-nosnippet>308</a>        // will stay valid for the duration of the borrow to `self`.
-<a href=#309 id=309 data-nosnippet>309</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>this.state.get() };
-<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">match </span>state {
-<a href=#311 id=311 data-nosnippet>311</a>            State::Init(data) =&gt; <span class="prelude-val">Some</span>(data),
-<a href=#312 id=312 data-nosnippet>312</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#309 id=309 data-nosnippet>309</a>        </span><span class="kw">let </span>state = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a href="#304">this</a>.state.<a href="../cell.rs.html#2434-2438">get</a>() };
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">match </span><a href="#309">state</a> {
+<a href=#311 id=311 data-nosnippet>311</a>            State::<a href="#8">Init</a>(data) =&gt; <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#311">data</a>),
+<a href=#312 id=312 data-nosnippet>312</a>            <span class="kw">_ </span>=&gt; <a class="prelude-val" href="../option.rs.html#602">None</a>,
 <a href=#313 id=313 data-nosnippet>313</a>        }
 <a href=#314 id=314 data-nosnippet>314</a>    }
 <a href=#315 id=315 data-nosnippet>315</a>}
 <a href=#316 id=316 data-nosnippet>316</a>
 <a href=#317 id=317 data-nosnippet>317</a><span class="attr">#[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#318 id=318 data-nosnippet>318</a></span><span class="kw">impl</span>&lt;T, F: FnOnce() -&gt; T&gt; Deref <span class="kw">for </span>LazyCell&lt;T, F&gt; {
+<a href=#318 id=318 data-nosnippet>318</a></span><span class="kw">impl</span>&lt;T, F: <a href="../ops/function.rs.html#242-251">FnOnce</a>() -&gt; T&gt; <a href="../ops/deref.rs.html#139-151">Deref</a> <span class="kw">for </span><a href="#54-59">LazyCell</a>&lt;T, F&gt; {
 <a href=#319 id=319 data-nosnippet>319</a>    <span class="kw">type </span>Target = T;
 <a href=#320 id=320 data-nosnippet>320</a>
 <a href=#321 id=321 data-nosnippet>321</a>    <span class="doccomment">/// # Panics
@@ -328,12 +328,12 @@
 <a href=#328 id=328 data-nosnippet>328</a>    /// [`force()`]: LazyCell::force
 <a href=#329 id=329 data-nosnippet>329</a>    </span><span class="attr">#[inline]
 <a href=#330 id=330 data-nosnippet>330</a>    </span><span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#331 id=331 data-nosnippet>331</a>        LazyCell::force(<span class="self">self</span>)
+<a href=#331 id=331 data-nosnippet>331</a>        <a href="#54-59">LazyCell</a>::<a href="#141-154">force</a>(<a class="self" href="#330">self</a>)
 <a href=#332 id=332 data-nosnippet>332</a>    }
 <a href=#333 id=333 data-nosnippet>333</a>}
 <a href=#334 id=334 data-nosnippet>334</a>
 <a href=#335 id=335 data-nosnippet>335</a><span class="attr">#[stable(feature = <span class="string">"lazy_deref_mut"</span>, since = <span class="string">"1.89.0"</span>)]
-<a href=#336 id=336 data-nosnippet>336</a></span><span class="kw">impl</span>&lt;T, F: FnOnce() -&gt; T&gt; DerefMut <span class="kw">for </span>LazyCell&lt;T, F&gt; {
+<a href=#336 id=336 data-nosnippet>336</a></span><span class="kw">impl</span>&lt;T, F: <a href="../ops/function.rs.html#242-251">FnOnce</a>() -&gt; T&gt; <a href="../ops/deref.rs.html#270-275">DerefMut</a> <span class="kw">for </span><a href="#54-59">LazyCell</a>&lt;T, F&gt; {
 <a href=#337 id=337 data-nosnippet>337</a>    <span class="doccomment">/// # Panics
 <a href=#338 id=338 data-nosnippet>338</a>    ///
 <a href=#339 id=339 data-nosnippet>339</a>    /// If the initialization closure panics (the one that is passed to the [`new()`] method), the
@@ -344,45 +344,45 @@
 <a href=#344 id=344 data-nosnippet>344</a>    /// [`force()`]: LazyCell::force
 <a href=#345 id=345 data-nosnippet>345</a>    </span><span class="attr">#[inline]
 <a href=#346 id=346 data-nosnippet>346</a>    </span><span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#347 id=347 data-nosnippet>347</a>        LazyCell::force_mut(<span class="self">self</span>)
+<a href=#347 id=347 data-nosnippet>347</a>        <a href="#54-59">LazyCell</a>::<a href="#182-227">force_mut</a>(<a class="self" href="#346">self</a>)
 <a href=#348 id=348 data-nosnippet>348</a>    }
 <a href=#349 id=349 data-nosnippet>349</a>}
 <a href=#350 id=350 data-nosnippet>350</a>
 <a href=#351 id=351 data-nosnippet>351</a><span class="attr">#[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
 <a href=#352 id=352 data-nosnippet>352</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
-<a href=#353 id=353 data-nosnippet>353</a></span><span class="kw">const impl</span>&lt;T: Default&gt; Default <span class="kw">for </span>LazyCell&lt;T&gt; {
+<a href=#353 id=353 data-nosnippet>353</a></span><span class="kw">const impl</span>&lt;T: <a href="../default.rs.html#107-140">Default</a>&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><a href="#54-59">LazyCell</a>&lt;T&gt; {
 <a href=#354 id=354 data-nosnippet>354</a>    <span class="doccomment">/// Creates a new lazy value using `Default` as the initializing function.
 <a href=#355 id=355 data-nosnippet>355</a>    </span><span class="attr">#[inline]
-<a href=#356 id=356 data-nosnippet>356</a>    </span><span class="kw">fn </span>default() -&gt; LazyCell&lt;T&gt; {
-<a href=#357 id=357 data-nosnippet>357</a>        LazyCell::new(T::default)
+<a href=#356 id=356 data-nosnippet>356</a>    </span><span class="kw">fn </span>default() -&gt; <a href="#54-59">LazyCell</a>&lt;T&gt; {
+<a href=#357 id=357 data-nosnippet>357</a>        <a href="#54-59">LazyCell</a>::<a href="#78-80">new</a>(T::<a href="../default.rs.html#139">default</a>)
 <a href=#358 id=358 data-nosnippet>358</a>    }
 <a href=#359 id=359 data-nosnippet>359</a>}
 <a href=#360 id=360 data-nosnippet>360</a>
 <a href=#361 id=361 data-nosnippet>361</a><span class="attr">#[stable(feature = <span class="string">"lazy_cell"</span>, since = <span class="string">"1.80.0"</span>)]
-<a href=#362 id=362 data-nosnippet>362</a></span><span class="kw">impl</span>&lt;T: fmt::Debug, F&gt; fmt::Debug <span class="kw">for </span>LazyCell&lt;T, F&gt; {
-<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = f.debug_tuple(<span class="string">"LazyCell"</span>);
-<a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">match </span>LazyCell::get(<span class="self">self</span>) {
-<a href=#366 id=366 data-nosnippet>366</a>            <span class="prelude-val">Some</span>(data) =&gt; d.field(data),
-<a href=#367 id=367 data-nosnippet>367</a>            <span class="prelude-val">None </span>=&gt; d.field(<span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"&lt;uninit&gt;"</span>)),
+<a href=#362 id=362 data-nosnippet>362</a></span><span class="kw">impl</span>&lt;T: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>, F&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#54-59">LazyCell</a>&lt;T, F&gt; {
+<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#364 id=364 data-nosnippet>364</a>        <span class="kw">let </span><span class="kw-2">mut </span>d = <a href="#363">f</a>.<a href="../fmt/mod.rs.html#2662-2664">debug_tuple</a>(<span class="string">"LazyCell"</span>);
+<a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">match </span><a href="#54-59">LazyCell</a>::<a href="#304-314">get</a>(<a class="self" href="#363">self</a>) {
+<a href=#366 id=366 data-nosnippet>366</a>            <a class="prelude-val" href="../option.rs.html#606">Some</a>(data) =&gt; <a href="#364">d</a>.<a href="../fmt/builders.rs.html#380-400">field</a>(<a href="#366">data</a>),
+<a href=#367 id=367 data-nosnippet>367</a>            <a class="prelude-val" href="../option.rs.html#602">None</a> =&gt; <a href="#364">d</a>.<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a href="../macros/mod.rs.html#1004-1007">format_args!</a>(<span class="string">"&lt;uninit&gt;"</span>)),
 <a href=#368 id=368 data-nosnippet>368</a>        };
-<a href=#369 id=369 data-nosnippet>369</a>        d.finish()
+<a href=#369 id=369 data-nosnippet>369</a>        <a href="#364">d</a>.<a href="../fmt/builders.rs.html#505-515">finish</a>()
 <a href=#370 id=370 data-nosnippet>370</a>    }
 <a href=#371 id=371 data-nosnippet>371</a>}
 <a href=#372 id=372 data-nosnippet>372</a>
 <a href=#373 id=373 data-nosnippet>373</a><span class="attr">#[stable(feature = <span class="string">"from_wrapper_impls"</span>, since = <span class="string">"1.96.0"</span>)]
-<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">impl</span>&lt;T, F&gt; From&lt;T&gt; <span class="kw">for </span>LazyCell&lt;T, F&gt; {
+<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">impl</span>&lt;T, F&gt; <a href="../convert/mod.rs.html#588-595">From</a>&lt;T&gt; <span class="kw">for </span><a href="#54-59">LazyCell</a>&lt;T, F&gt; {
 <a href=#375 id=375 data-nosnippet>375</a>    <span class="doccomment">/// Constructs a `LazyCell` that starts already initialized
 <a href=#376 id=376 data-nosnippet>376</a>    /// with the provided value.
 <a href=#377 id=377 data-nosnippet>377</a>    </span><span class="attr">#[inline]
 <a href=#378 id=378 data-nosnippet>378</a>    </span><span class="kw">fn </span>from(value: T) -&gt; <span class="self">Self </span>{
-<a href=#379 id=379 data-nosnippet>379</a>        <span class="self">Self </span>{ state: UnsafeCell::new(State::Init(value)) }
+<a href=#379 id=379 data-nosnippet>379</a>        <span class="self">Self </span>{ state: <a href="../cell.rs.html#2311-2313">UnsafeCell</a>::<a href="../cell.rs.html#2334-2336">new</a>(State::<a href="#8">Init</a>(<a href="#378">value</a>)) }
 <a href=#380 id=380 data-nosnippet>380</a>    }
 <a href=#381 id=381 data-nosnippet>381</a>}
 <a href=#382 id=382 data-nosnippet>382</a>
 <a href=#383 id=383 data-nosnippet>383</a><span class="attr">#[cold]
 <a href=#384 id=384 data-nosnippet>384</a>#[inline(never)]
 <a href=#385 id=385 data-nosnippet>385</a></span><span class="kw">const fn </span>panic_poisoned() -&gt; ! {
-<a href=#386 id=386 data-nosnippet>386</a>    <span class="macro">panic!</span>(<span class="string">"LazyCell instance has previously been poisoned"</span>)
+<a href=#386 id=386 data-nosnippet>386</a>    <a href="../macros/mod.rs.html#7-13">panic!</a>(<span class="string">"LazyCell instance has previously been poisoned"</span>)
 <a href=#387 id=387 data-nosnippet>387</a>}
 </code></pre></div></section></main></body></html>

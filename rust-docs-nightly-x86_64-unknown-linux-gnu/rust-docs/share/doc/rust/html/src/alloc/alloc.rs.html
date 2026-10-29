@@ -1,13 +1,13 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/alloc.rs`."><title>alloc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>alloc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Memory allocation APIs
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="attr">#![stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a>#[stable(feature = <span class="string">"alloc_module"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#6 id=6 data-nosnippet>6</a>#[doc(inline)]
-<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub use </span>core::alloc::<span class="kw-2">*</span>;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core::mem::Alignment;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core::ptr::{<span class="self">self</span>, NonNull};
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>core::{cmp, hint};
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub use </span><a href="../../core/alloc/index.html">core::alloc</a>::<span class="kw-2">*</span>;
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="../../core/mem/alignment/struct.Alignment.html">core::mem::Alignment</a>;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core::ptr::{<a class="self" href="../../core/ptr/index.html">self</a>, <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>core::{<a href="../../core/cmp/index.html">cmp</a>, <a href="../../core/hint/index.html">hint</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">unsafe extern </span><span class="string">"Rust" </span>{
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="comment">// These are the magic symbols to call the global allocator. rustc generates
@@ -19,24 +19,24 @@
 <a href=#19 id=19 data-nosnippet>19</a>    #[rustc_nounwind]
 <a href=#20 id=20 data-nosnippet>20</a>    #[rustc_std_internal_symbol]
 <a href=#21 id=21 data-nosnippet>21</a>    #[rustc_allocator_zeroed_variant = <span class="string">"__rust_alloc_zeroed"</span>]
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">fn </span>__rust_alloc(size: usize, align: Alignment) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">fn </span>__rust_alloc(size: <a href="../../core/primitive.usize.html">usize</a>, align: <a href="../../core/mem/alignment/struct.Alignment.html">Alignment</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>;
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="attr">#[rustc_deallocator]
 <a href=#24 id=24 data-nosnippet>24</a>    #[rustc_nounwind]
 <a href=#25 id=25 data-nosnippet>25</a>    #[rustc_std_internal_symbol]
-<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">fn </span>__rust_dealloc(ptr: NonNull&lt;u8&gt;, size: usize, align: Alignment);
+<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">fn </span>__rust_dealloc(ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, size: <a href="../../core/primitive.usize.html">usize</a>, align: <a href="../../core/mem/alignment/struct.Alignment.html">Alignment</a>);
 <a href=#27 id=27 data-nosnippet>27</a>    <span class="attr">#[rustc_reallocator]
 <a href=#28 id=28 data-nosnippet>28</a>    #[rustc_nounwind]
 <a href=#29 id=29 data-nosnippet>29</a>    #[rustc_std_internal_symbol]
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">fn </span>__rust_realloc(
-<a href=#31 id=31 data-nosnippet>31</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#32 id=32 data-nosnippet>32</a>        old_size: usize,
-<a href=#33 id=33 data-nosnippet>33</a>        align: Alignment,
-<a href=#34 id=34 data-nosnippet>34</a>        new_size: usize,
-<a href=#35 id=35 data-nosnippet>35</a>    ) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#31 id=31 data-nosnippet>31</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#32 id=32 data-nosnippet>32</a>        old_size: <a href="../../core/primitive.usize.html">usize</a>,
+<a href=#33 id=33 data-nosnippet>33</a>        align: <a href="../../core/mem/alignment/struct.Alignment.html">Alignment</a>,
+<a href=#34 id=34 data-nosnippet>34</a>        new_size: <a href="../../core/primitive.usize.html">usize</a>,
+<a href=#35 id=35 data-nosnippet>35</a>    ) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>;
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="attr">#[rustc_allocator_zeroed]
 <a href=#37 id=37 data-nosnippet>37</a>    #[rustc_nounwind]
 <a href=#38 id=38 data-nosnippet>38</a>    #[rustc_std_internal_symbol]
-<a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">fn </span>__rust_alloc_zeroed(size: usize, align: Alignment) -&gt; <span class="kw-2">*mut </span>u8;
+<a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">fn </span>__rust_alloc_zeroed(size: <a href="../../core/primitive.usize.html">usize</a>, align: <a href="../../core/mem/alignment/struct.Alignment.html">Alignment</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>;
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a>    <span class="attr">#[rustc_nounwind]
 <a href=#42 id=42 data-nosnippet>42</a>    #[rustc_std_internal_symbol]
@@ -79,17 +79,17 @@
 <a href=#79 id=79 data-nosnippet>79</a>///
 <a href=#80 id=80 data-nosnippet>80</a>/// [*equivalent*]: Allocator#equivalent-allocators
 <a href=#81 id=81 data-nosnippet>81</a></span><span class="attr">#[stable(feature = <span class="string">"allocator_api"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#82 id=82 data-nosnippet>82</a>#[derive(Copy, Debug)]
-<a href=#83 id=83 data-nosnippet>83</a>#[derive_const(Clone, Default)]
+<a href=#82 id=82 data-nosnippet>82</a>#[derive(<a href="../../core/marker/derive.Copy.html">Copy</a>, <a href="../../alloc/fmt/derive.Debug.html">Debug</a>)]
+<a href=#83 id=83 data-nosnippet>83</a>#[derive_const(<a href="../../core/clone/derive.Clone.html">Clone</a>, <a href="../../core/default/derive.Default.html">Default</a>)]
 <a href=#84 id=84 data-nosnippet>84</a></span><span class="comment">// the compiler needs to know when a Box uses the global allocator vs a custom one
 <a href=#85 id=85 data-nosnippet>85</a></span><span class="attr">#[lang = <span class="string">"global_alloc_ty"</span>]
-<a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">pub struct </span>Global;
+<a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">pub struct </span><a href="../../alloc/alloc/struct.Global.html">Global</a>;
 <a href=#87 id=87 data-nosnippet>87</a>
 <a href=#88 id=88 data-nosnippet>88</a><span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
-<a href=#89 id=89 data-nosnippet>89</a></span><span class="kw">unsafe impl </span>core::alloc::AllocatorClone <span class="kw">for </span>Global {}
+<a href=#89 id=89 data-nosnippet>89</a></span><span class="kw">unsafe impl </span><a href="../../alloc/alloc/trait.AllocatorClone.html">core::alloc::AllocatorClone</a> <span class="kw">for </span><a href="#86">Global</a> {}
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a><span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
-<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">unsafe impl </span>core::alloc::StaticAllocator <span class="kw">for </span>Global {}
+<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">unsafe impl </span><a href="../../alloc/alloc/trait.StaticAllocator.html">core::alloc::StaticAllocator</a> <span class="kw">for </span><a href="#86">Global</a> {}
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a><span class="doccomment">/// Allocates memory with the global allocator.
 <a href=#95 id=95 data-nosnippet>95</a>///
@@ -148,14 +148,14 @@
 <a href=#148 id=148 data-nosnippet>148</a>#[must_use = <span class="string">"losing the pointer will leak memory"</span>]
 <a href=#149 id=149 data-nosnippet>149</a>#[inline]
 <a href=#150 id=150 data-nosnippet>150</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#151 id=151 data-nosnippet>151</a></span><span class="kw">pub unsafe fn </span>alloc(layout: Layout) -&gt; <span class="kw-2">*mut </span>u8 {
+<a href=#151 id=151 data-nosnippet>151</a></span><span class="kw">pub unsafe fn </span><a href="../../alloc/alloc/fn.alloc.html">alloc</a>(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a> {
 <a href=#152 id=152 data-nosnippet>152</a>    <span class="comment">// SAFETY: Upheld by caller.
 <a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">unsafe </span>{
 <a href=#154 id=154 data-nosnippet>154</a>        <span class="comment">// Make sure we don't accidentally allow omitting the allocator shim in
 <a href=#155 id=155 data-nosnippet>155</a>        // stable code until it is actually stabilized.
-<a href=#156 id=156 data-nosnippet>156</a>        </span>__rust_no_alloc_shim_is_unstable_v2();
+<a href=#156 id=156 data-nosnippet>156</a>        </span><a href="#43">__rust_no_alloc_shim_is_unstable_v2</a>();
 <a href=#157 id=157 data-nosnippet>157</a>
-<a href=#158 id=158 data-nosnippet>158</a>        __rust_alloc(layout.size(), layout.alignment())
+<a href=#158 id=158 data-nosnippet>158</a>        <a href="#22">__rust_alloc</a>(<a href="#151">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#151">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.alignment">alignment</a>())
 <a href=#159 id=159 data-nosnippet>159</a>    }
 <a href=#160 id=160 data-nosnippet>160</a>}
 <a href=#161 id=161 data-nosnippet>161</a>
@@ -192,17 +192,17 @@
 <a href=#192 id=192 data-nosnippet>192</a></span><span class="attr">#[stable(feature = <span class="string">"global_alloc"</span>, since = <span class="string">"1.28.0"</span>)]
 <a href=#193 id=193 data-nosnippet>193</a>#[inline]
 <a href=#194 id=194 data-nosnippet>194</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#195 id=195 data-nosnippet>195</a></span><span class="kw">pub unsafe fn </span>dealloc(ptr: <span class="kw-2">*mut </span>u8, layout: Layout) {
+<a href=#195 id=195 data-nosnippet>195</a></span><span class="kw">pub unsafe fn </span><a href="../../alloc/alloc/fn.dealloc.html">dealloc</a>(ptr: <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
 <a href=#196 id=196 data-nosnippet>196</a>    <span class="comment">// SAFETY: Upheld by caller.
-<a href=#197 id=197 data-nosnippet>197</a>    </span><span class="kw">unsafe </span>{ dealloc_nonnull(NonNull::new_unchecked(ptr), layout) }
+<a href=#197 id=197 data-nosnippet>197</a>    </span><span class="kw">unsafe </span>{ <a href="#203-206">dealloc_nonnull</a>(<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>::<a href="../../core/ptr/non_null/struct.NonNull.html#method.new_unchecked">new_unchecked</a>(<a href="#195">ptr</a>), <a href="#195">layout</a>) }
 <a href=#198 id=198 data-nosnippet>198</a>}
 <a href=#199 id=199 data-nosnippet>199</a>
 <a href=#200 id=200 data-nosnippet>200</a><span class="doccomment">/// Same as [`dealloc`] but when you already have a non-null pointer
 <a href=#201 id=201 data-nosnippet>201</a></span><span class="attr">#[inline]
 <a href=#202 id=202 data-nosnippet>202</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#203 id=203 data-nosnippet>203</a></span><span class="kw">unsafe fn </span>dealloc_nonnull(ptr: NonNull&lt;u8&gt;, layout: Layout) {
+<a href=#203 id=203 data-nosnippet>203</a></span><span class="kw">unsafe fn </span>dealloc_nonnull(ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
 <a href=#204 id=204 data-nosnippet>204</a>    <span class="comment">// SAFETY: Upheld by caller.
-<a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">unsafe </span>{ __rust_dealloc(ptr, layout.size(), layout.alignment()) }
+<a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">unsafe </span>{ <a href="#26">__rust_dealloc</a>(<a href="#203">ptr</a>, <a href="#203">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#203">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.alignment">alignment</a>()) }
 <a href=#206 id=206 data-nosnippet>206</a>}
 <a href=#207 id=207 data-nosnippet>207</a>
 <a href=#208 id=208 data-nosnippet>208</a><span class="doccomment">/// Reallocates memory with the global allocator.
@@ -247,17 +247,17 @@
 <a href=#247 id=247 data-nosnippet>247</a>#[must_use = <span class="string">"losing the pointer will leak memory"</span>]
 <a href=#248 id=248 data-nosnippet>248</a>#[inline]
 <a href=#249 id=249 data-nosnippet>249</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#250 id=250 data-nosnippet>250</a></span><span class="kw">pub unsafe fn </span>realloc(ptr: <span class="kw-2">*mut </span>u8, layout: Layout, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8 {
+<a href=#250 id=250 data-nosnippet>250</a></span><span class="kw">pub unsafe fn </span><a href="../../alloc/alloc/fn.realloc.html">realloc</a>(ptr: <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>, new_size: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a> {
 <a href=#251 id=251 data-nosnippet>251</a>    <span class="comment">// SAFETY: Upheld by caller.
-<a href=#252 id=252 data-nosnippet>252</a>    </span><span class="kw">unsafe </span>{ realloc_nonnull(NonNull::new_unchecked(ptr), layout, new_size) }
+<a href=#252 id=252 data-nosnippet>252</a>    </span><span class="kw">unsafe </span>{ <a href="#258-261">realloc_nonnull</a>(<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>::<a href="../../core/ptr/non_null/struct.NonNull.html#method.new_unchecked">new_unchecked</a>(<a href="#250">ptr</a>), <a href="#250">layout</a>, <a href="#250">new_size</a>) }
 <a href=#253 id=253 data-nosnippet>253</a>}
 <a href=#254 id=254 data-nosnippet>254</a>
 <a href=#255 id=255 data-nosnippet>255</a><span class="doccomment">/// Same as [`realloc`] but when you already have a non-null pointer
 <a href=#256 id=256 data-nosnippet>256</a></span><span class="attr">#[inline]
 <a href=#257 id=257 data-nosnippet>257</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#258 id=258 data-nosnippet>258</a></span><span class="kw">unsafe fn </span>realloc_nonnull(ptr: NonNull&lt;u8&gt;, layout: Layout, new_size: usize) -&gt; <span class="kw-2">*mut </span>u8 {
+<a href=#258 id=258 data-nosnippet>258</a></span><span class="kw">unsafe fn </span>realloc_nonnull(ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>, new_size: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a> {
 <a href=#259 id=259 data-nosnippet>259</a>    <span class="comment">// SAFETY: Upheld by caller.
-<a href=#260 id=260 data-nosnippet>260</a>    </span><span class="kw">unsafe </span>{ __rust_realloc(ptr, layout.size(), layout.alignment(), new_size) }
+<a href=#260 id=260 data-nosnippet>260</a>    </span><span class="kw">unsafe </span>{ <a href="#30-35">__rust_realloc</a>(<a href="#258">ptr</a>, <a href="#258">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#258">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.alignment">alignment</a>(), <a href="#258">new_size</a>) }
 <a href=#261 id=261 data-nosnippet>261</a>}
 <a href=#262 id=262 data-nosnippet>262</a>
 <a href=#263 id=263 data-nosnippet>263</a><span class="doccomment">/// Allocates zero-initialized memory with the global allocator.
@@ -313,36 +313,36 @@
 <a href=#313 id=313 data-nosnippet>313</a>#[must_use = <span class="string">"losing the pointer will leak memory"</span>]
 <a href=#314 id=314 data-nosnippet>314</a>#[inline]
 <a href=#315 id=315 data-nosnippet>315</a>#[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#316 id=316 data-nosnippet>316</a></span><span class="kw">pub unsafe fn </span>alloc_zeroed(layout: Layout) -&gt; <span class="kw-2">*mut </span>u8 {
+<a href=#316 id=316 data-nosnippet>316</a></span><span class="kw">pub unsafe fn </span><a href="../../alloc/alloc/fn.alloc_zeroed.html">alloc_zeroed</a>(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a> {
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="comment">// SAFETY: Upheld by caller.
 <a href=#318 id=318 data-nosnippet>318</a>    </span><span class="kw">unsafe </span>{
 <a href=#319 id=319 data-nosnippet>319</a>        <span class="comment">// Make sure we don't accidentally allow omitting the allocator shim in
 <a href=#320 id=320 data-nosnippet>320</a>        // stable code until it is actually stabilized.
-<a href=#321 id=321 data-nosnippet>321</a>        </span>__rust_no_alloc_shim_is_unstable_v2();
+<a href=#321 id=321 data-nosnippet>321</a>        </span><a href="#43">__rust_no_alloc_shim_is_unstable_v2</a>();
 <a href=#322 id=322 data-nosnippet>322</a>
-<a href=#323 id=323 data-nosnippet>323</a>        __rust_alloc_zeroed(layout.size(), layout.alignment())
+<a href=#323 id=323 data-nosnippet>323</a>        <a href="#39">__rust_alloc_zeroed</a>(<a href="#316">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#316">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.alignment">alignment</a>())
 <a href=#324 id=324 data-nosnippet>324</a>    }
 <a href=#325 id=325 data-nosnippet>325</a>}
 <a href=#326 id=326 data-nosnippet>326</a>
-<a href=#327 id=327 data-nosnippet>327</a><span class="kw">impl </span>Global {
+<a href=#327 id=327 data-nosnippet>327</a><span class="kw">impl </span><a href="#86">Global</a> {
 <a href=#328 id=328 data-nosnippet>328</a>    <span class="attr">#[inline]
 <a href=#329 id=329 data-nosnippet>329</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#330 id=330 data-nosnippet>330</a>    </span><span class="kw">fn </span>alloc_impl_runtime(layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#331 id=331 data-nosnippet>331</a>        <span class="kw">match </span>layout.size() {
-<a href=#332 id=332 data-nosnippet>332</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(layout.dangling_ptr().cast_slice(<span class="number">0</span>)),
+<a href=#330 id=330 data-nosnippet>330</a>    </span><span class="kw">fn </span>alloc_impl_runtime(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>, zeroed: <a href="../../core/primitive.bool.html">bool</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#331 id=331 data-nosnippet>331</a>        <span class="kw">match </span><a href="#330">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() {
+<a href=#332 id=332 data-nosnippet>332</a>            <span class="number">0 </span>=&gt; <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#330">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.dangling_ptr">dangling_ptr</a>().<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<span class="number">0</span>)),
 <a href=#333 id=333 data-nosnippet>333</a>            <span class="comment">// SAFETY: `layout` is non-zero in size,
 <a href=#334 id=334 data-nosnippet>334</a>            </span>size =&gt; <span class="kw">unsafe </span>{
-<a href=#335 id=335 data-nosnippet>335</a>                <span class="kw">let </span>raw_ptr = <span class="kw">if </span>zeroed { alloc_zeroed(layout) } <span class="kw">else </span>{ alloc(layout) };
+<a href=#335 id=335 data-nosnippet>335</a>                <span class="kw">let </span>raw_ptr = <span class="kw">if </span><a href="#330">zeroed</a> { <a href="#316-325">alloc_zeroed</a>(<a href="#330">layout</a>) } <span class="kw">else </span>{ <a href="#151-160">alloc</a>(<a href="#330">layout</a>) };
 <a href=#336 id=336 data-nosnippet>336</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#337 id=337 data-nosnippet>337</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(size))
+<a href=#337 id=337 data-nosnippet>337</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#336">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<a href="#334">size</a>))
 <a href=#338 id=338 data-nosnippet>338</a>            },
 <a href=#339 id=339 data-nosnippet>339</a>        }
 <a href=#340 id=340 data-nosnippet>340</a>    }
 <a href=#341 id=341 data-nosnippet>341</a>
 <a href=#342 id=342 data-nosnippet>342</a>    <span class="attr">#[inline]
 <a href=#343 id=343 data-nosnippet>343</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#344 id=344 data-nosnippet>344</a>    </span><span class="kw">fn </span>deallocate_impl_runtime(ptr: NonNull&lt;u8&gt;, layout: Layout) {
-<a href=#345 id=345 data-nosnippet>345</a>        <span class="kw">if </span>layout.size() != <span class="number">0 </span>{
+<a href=#344 id=344 data-nosnippet>344</a>    </span><span class="kw">fn </span>deallocate_impl_runtime(ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
+<a href=#345 id=345 data-nosnippet>345</a>        <span class="kw">if </span><a href="#344">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() != <span class="number">0 </span>{
 <a href=#346 id=346 data-nosnippet>346</a>            <span class="comment">// SAFETY:
 <a href=#347 id=347 data-nosnippet>347</a>            // * We have checked that `layout` is non-zero in size.
 <a href=#348 id=348 data-nosnippet>348</a>            // * The caller is obligated to provide a layout that "fits", and in this case,
@@ -351,7 +351,7 @@
 <a href=#351 id=351 data-nosnippet>351</a>            //   allocation than requested.
 <a href=#352 id=352 data-nosnippet>352</a>            // * Other conditions must be upheld by the caller, as per `Allocator::deallocate()`'s
 <a href=#353 id=353 data-nosnippet>353</a>            //   safety documentation.
-<a href=#354 id=354 data-nosnippet>354</a>            </span><span class="kw">unsafe </span>{ dealloc_nonnull(ptr, layout) }
+<a href=#354 id=354 data-nosnippet>354</a>            </span><span class="kw">unsafe </span>{ <a href="#203-206">dealloc_nonnull</a>(<a href="#344">ptr</a>, <a href="#344">layout</a>) }
 <a href=#355 id=355 data-nosnippet>355</a>        }
 <a href=#356 id=356 data-nosnippet>356</a>    }
 <a href=#357 id=357 data-nosnippet>357</a>
@@ -360,33 +360,33 @@
 <a href=#360 id=360 data-nosnippet>360</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#361 id=361 data-nosnippet>361</a>    </span><span class="kw">fn </span>grow_impl_runtime(
 <a href=#362 id=362 data-nosnippet>362</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#363 id=363 data-nosnippet>363</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#364 id=364 data-nosnippet>364</a>        old_layout: Layout,
-<a href=#365 id=365 data-nosnippet>365</a>        new_layout: Layout,
-<a href=#366 id=366 data-nosnippet>366</a>        zeroed: bool,
-<a href=#367 id=367 data-nosnippet>367</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#368 id=368 data-nosnippet>368</a>        <span class="macro">debug_assert!</span>(
+<a href=#363 id=363 data-nosnippet>363</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#364 id=364 data-nosnippet>364</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#365 id=365 data-nosnippet>365</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#366 id=366 data-nosnippet>366</a>        zeroed: <a href="../../core/primitive.bool.html">bool</a>,
+<a href=#367 id=367 data-nosnippet>367</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#368 id=368 data-nosnippet>368</a>        <a href="../../core/macro.debug_assert.html">debug_assert!</a>(
 <a href=#369 id=369 data-nosnippet>369</a>            new_layout.size() &gt;= old_layout.size(),
 <a href=#370 id=370 data-nosnippet>370</a>            <span class="string">"`new_layout.size()` must be greater than or equal to `old_layout.size()`"
 <a href=#371 id=371 data-nosnippet>371</a>        </span>);
 <a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>        <span class="kw">match </span>old_layout.size() {
-<a href=#374 id=374 data-nosnippet>374</a>            <span class="number">0 </span>=&gt; <span class="self">self</span>.alloc_impl(new_layout, zeroed),
+<a href=#373 id=373 data-nosnippet>373</a>        <span class="kw">match </span><a href="#364">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() {
+<a href=#374 id=374 data-nosnippet>374</a>            <span class="number">0 </span>=&gt; <a class="self" href="#362">self</a>.<a href="#456-462">alloc_impl</a>(<a href="#365">new_layout</a>, <a href="#366">zeroed</a>),
 <a href=#375 id=375 data-nosnippet>375</a>
 <a href=#376 id=376 data-nosnippet>376</a>            <span class="comment">// SAFETY: `new_size` is non-zero as `old_size` is greater than or equal to `new_size`
 <a href=#377 id=377 data-nosnippet>377</a>            // as required by safety conditions. Other conditions must be upheld by the caller
-<a href=#378 id=378 data-nosnippet>378</a>            </span>old_size <span class="kw">if </span>old_layout.align() == new_layout.align() =&gt; <span class="kw">unsafe </span>{
-<a href=#379 id=379 data-nosnippet>379</a>                <span class="kw">let </span>new_size = new_layout.size();
+<a href=#378 id=378 data-nosnippet>378</a>            </span>old_size <span class="kw">if </span><a href="#364">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>() == <a href="#365">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>() =&gt; <span class="kw">unsafe </span>{
+<a href=#379 id=379 data-nosnippet>379</a>                <span class="kw">let </span>new_size = <a href="#365">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>();
 <a href=#380 id=380 data-nosnippet>380</a>
 <a href=#381 id=381 data-nosnippet>381</a>                <span class="comment">// `realloc` probably checks for `new_size &gt;= old_layout.size()` or something similar.
-<a href=#382 id=382 data-nosnippet>382</a>                </span>hint::assert_unchecked(new_size &gt;= old_layout.size());
+<a href=#382 id=382 data-nosnippet>382</a>                </span>hint::<a href="../../core/hint/fn.assert_unchecked.html">assert_unchecked</a>(<a href="#379">new_size</a> &gt;= <a href="#364">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>());
 <a href=#383 id=383 data-nosnippet>383</a>
-<a href=#384 id=384 data-nosnippet>384</a>                <span class="kw">let </span>raw_ptr = realloc_nonnull(ptr, old_layout, new_size);
+<a href=#384 id=384 data-nosnippet>384</a>                <span class="kw">let </span>raw_ptr = <a href="#258-261">realloc_nonnull</a>(<a href="#363">ptr</a>, <a href="#364">old_layout</a>, <a href="#379">new_size</a>);
 <a href=#385 id=385 data-nosnippet>385</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#386 id=386 data-nosnippet>386</a>                <span class="kw">if </span>zeroed {
-<a href=#387 id=387 data-nosnippet>387</a>                    raw_ptr.add(old_size).write_bytes(<span class="number">0</span>, new_size - old_size);
+<a href=#386 id=386 data-nosnippet>386</a>                <span class="kw">if </span><a href="#366">zeroed</a> {
+<a href=#387 id=387 data-nosnippet>387</a>                    <a href="#384">raw_ptr</a>.<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#378">old_size</a>).<a href="../../core/primitive.pointer.html#method.write_bytes">write_bytes</a>(<span class="number">0</span>, <a href="#379">new_size</a> - <a href="#378">old_size</a>);
 <a href=#388 id=388 data-nosnippet>388</a>                }
-<a href=#389 id=389 data-nosnippet>389</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
+<a href=#389 id=389 data-nosnippet>389</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#385">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<a href="#379">new_size</a>))
 <a href=#390 id=390 data-nosnippet>390</a>            },
 <a href=#391 id=391 data-nosnippet>391</a>
 <a href=#392 id=392 data-nosnippet>392</a>            <span class="comment">// SAFETY: because `new_layout.size()` must be greater than or equal to `old_size`,
@@ -396,9 +396,9 @@
 <a href=#396 id=396 data-nosnippet>396</a>            // for `dealloc` must be upheld by the caller.
 <a href=#397 id=397 data-nosnippet>397</a>            </span>old_size =&gt; <span class="kw">unsafe </span>{
 <a href=#398 id=398 data-nosnippet>398</a>                <span class="kw">let </span>new_ptr = <span class="self">self</span>.alloc_impl(new_layout, zeroed)<span class="question-mark">?</span>;
-<a href=#399 id=399 data-nosnippet>399</a>                ptr::copy_nonoverlapping(ptr.as_ptr(), new_ptr.as_mut_ptr(), old_size);
-<a href=#400 id=400 data-nosnippet>400</a>                <span class="self">self</span>.deallocate(ptr, old_layout);
-<a href=#401 id=401 data-nosnippet>401</a>                <span class="prelude-val">Ok</span>(new_ptr)
+<a href=#399 id=399 data-nosnippet>399</a>                ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#363">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_ptr">as_ptr</a>(), <a href="#398">new_ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_mut_ptr">as_mut_ptr</a>(), <a href="#397">old_size</a>);
+<a href=#400 id=400 data-nosnippet>400</a>                <a class="self" href="#362">self</a>.<a href="../../alloc/alloc/trait.Allocator.html">deallocate</a>(<a href="#363">ptr</a>, <a href="#364">old_layout</a>);
+<a href=#401 id=401 data-nosnippet>401</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#398">new_ptr</a>)
 <a href=#402 id=402 data-nosnippet>402</a>            },
 <a href=#403 id=403 data-nosnippet>403</a>        }
 <a href=#404 id=404 data-nosnippet>404</a>    }
@@ -408,31 +408,31 @@
 <a href=#408 id=408 data-nosnippet>408</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#409 id=409 data-nosnippet>409</a>    </span><span class="kw">fn </span>shrink_impl_runtime(
 <a href=#410 id=410 data-nosnippet>410</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#411 id=411 data-nosnippet>411</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#412 id=412 data-nosnippet>412</a>        old_layout: Layout,
-<a href=#413 id=413 data-nosnippet>413</a>        new_layout: Layout,
-<a href=#414 id=414 data-nosnippet>414</a>        _zeroed: bool,
-<a href=#415 id=415 data-nosnippet>415</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#416 id=416 data-nosnippet>416</a>        <span class="macro">debug_assert!</span>(
+<a href=#411 id=411 data-nosnippet>411</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#412 id=412 data-nosnippet>412</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#413 id=413 data-nosnippet>413</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#414 id=414 data-nosnippet>414</a>        _zeroed: <a href="../../core/primitive.bool.html">bool</a>,
+<a href=#415 id=415 data-nosnippet>415</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#416 id=416 data-nosnippet>416</a>        <a href="../../core/macro.debug_assert.html">debug_assert!</a>(
 <a href=#417 id=417 data-nosnippet>417</a>            new_layout.size() &lt;= old_layout.size(),
 <a href=#418 id=418 data-nosnippet>418</a>            <span class="string">"`new_layout.size()` must be smaller than or equal to `old_layout.size()`"
 <a href=#419 id=419 data-nosnippet>419</a>        </span>);
 <a href=#420 id=420 data-nosnippet>420</a>
-<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">match </span>new_layout.size() {
+<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">match </span><a href="#413">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() {
 <a href=#422 id=422 data-nosnippet>422</a>            <span class="comment">// SAFETY: conditions must be upheld by the caller
 <a href=#423 id=423 data-nosnippet>423</a>            </span><span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{
-<a href=#424 id=424 data-nosnippet>424</a>                <span class="self">self</span>.deallocate(ptr, old_layout);
-<a href=#425 id=425 data-nosnippet>425</a>                <span class="prelude-val">Ok</span>(new_layout.dangling_ptr().cast_slice(<span class="number">0</span>))
+<a href=#424 id=424 data-nosnippet>424</a>                <a class="self" href="#410">self</a>.<a href="../../alloc/alloc/trait.Allocator.html">deallocate</a>(<a href="#411">ptr</a>, <a href="#412">old_layout</a>);
+<a href=#425 id=425 data-nosnippet>425</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#413">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.dangling_ptr">dangling_ptr</a>().<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<span class="number">0</span>))
 <a href=#426 id=426 data-nosnippet>426</a>            },
 <a href=#427 id=427 data-nosnippet>427</a>
 <a href=#428 id=428 data-nosnippet>428</a>            <span class="comment">// SAFETY: `new_size` is non-zero. Other conditions must be upheld by the caller
-<a href=#429 id=429 data-nosnippet>429</a>            </span>new_size <span class="kw">if </span>old_layout.align() == new_layout.align() =&gt; <span class="kw">unsafe </span>{
+<a href=#429 id=429 data-nosnippet>429</a>            </span>new_size <span class="kw">if </span><a href="#412">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>() == <a href="#413">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>() =&gt; <span class="kw">unsafe </span>{
 <a href=#430 id=430 data-nosnippet>430</a>                <span class="comment">// `realloc` probably checks for `new_size &lt;= old_layout.size()` or something similar.
-<a href=#431 id=431 data-nosnippet>431</a>                </span>hint::assert_unchecked(new_size &lt;= old_layout.size());
+<a href=#431 id=431 data-nosnippet>431</a>                </span>hint::<a href="../../core/hint/fn.assert_unchecked.html">assert_unchecked</a>(<a href="#429">new_size</a> &lt;= <a href="#412">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>());
 <a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a>                <span class="kw">let </span>raw_ptr = realloc_nonnull(ptr, old_layout, new_size);
+<a href=#433 id=433 data-nosnippet>433</a>                <span class="kw">let </span>raw_ptr = <a href="#258-261">realloc_nonnull</a>(<a href="#411">ptr</a>, <a href="#412">old_layout</a>, <a href="#429">new_size</a>);
 <a href=#434 id=434 data-nosnippet>434</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#435 id=435 data-nosnippet>435</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(new_size))
+<a href=#435 id=435 data-nosnippet>435</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#434">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<a href="#429">new_size</a>))
 <a href=#436 id=436 data-nosnippet>436</a>            },
 <a href=#437 id=437 data-nosnippet>437</a>
 <a href=#438 id=438 data-nosnippet>438</a>            <span class="comment">// SAFETY: because `new_size` must be smaller than or equal to `old_layout.size()`,
@@ -442,9 +442,9 @@
 <a href=#442 id=442 data-nosnippet>442</a>            // for `dealloc` must be upheld by the caller.
 <a href=#443 id=443 data-nosnippet>443</a>            </span>new_size =&gt; <span class="kw">unsafe </span>{
 <a href=#444 id=444 data-nosnippet>444</a>                <span class="kw">let </span>new_ptr = <span class="self">self</span>.allocate(new_layout)<span class="question-mark">?</span>;
-<a href=#445 id=445 data-nosnippet>445</a>                ptr::copy_nonoverlapping(ptr.as_ptr(), new_ptr.as_mut_ptr(), new_size);
-<a href=#446 id=446 data-nosnippet>446</a>                <span class="self">self</span>.deallocate(ptr, old_layout);
-<a href=#447 id=447 data-nosnippet>447</a>                <span class="prelude-val">Ok</span>(new_ptr)
+<a href=#445 id=445 data-nosnippet>445</a>                ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#411">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_ptr">as_ptr</a>(), <a href="#444">new_ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_mut_ptr">as_mut_ptr</a>(), <a href="#443">new_size</a>);
+<a href=#446 id=446 data-nosnippet>446</a>                <a class="self" href="#410">self</a>.<a href="../../alloc/alloc/trait.Allocator.html">deallocate</a>(<a href="#411">ptr</a>, <a href="#412">old_layout</a>);
+<a href=#447 id=447 data-nosnippet>447</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#444">new_ptr</a>)
 <a href=#448 id=448 data-nosnippet>448</a>            },
 <a href=#449 id=449 data-nosnippet>449</a>        }
 <a href=#450 id=450 data-nosnippet>450</a>    }
@@ -453,11 +453,11 @@
 <a href=#453 id=453 data-nosnippet>453</a>    </span><span class="attr">#[inline]
 <a href=#454 id=454 data-nosnippet>454</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#455 id=455 data-nosnippet>455</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#456 id=456 data-nosnippet>456</a>    </span><span class="kw">const fn </span>alloc_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#457 id=457 data-nosnippet>457</a>        core::intrinsics::const_eval_select(
-<a href=#458 id=458 data-nosnippet>458</a>            (layout, zeroed),
-<a href=#459 id=459 data-nosnippet>459</a>            Global::alloc_impl_const,
-<a href=#460 id=460 data-nosnippet>460</a>            Global::alloc_impl_runtime,
+<a href=#456 id=456 data-nosnippet>456</a>    </span><span class="kw">const fn </span>alloc_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>, zeroed: <a href="../../core/primitive.bool.html">bool</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#457 id=457 data-nosnippet>457</a>        core::intrinsics::<a href="../../core/intrinsics/fn.const_eval_select.html">const_eval_select</a>(
+<a href=#458 id=458 data-nosnippet>458</a>            (<a href="#456">layout</a>, <a href="#456">zeroed</a>),
+<a href=#459 id=459 data-nosnippet>459</a>            <a href="#86">Global</a>::<a href="#514-528">alloc_impl_const</a>,
+<a href=#460 id=460 data-nosnippet>460</a>            <a href="#86">Global</a>::<a href="#330-340">alloc_impl_runtime</a>,
 <a href=#461 id=461 data-nosnippet>461</a>        )
 <a href=#462 id=462 data-nosnippet>462</a>    }
 <a href=#463 id=463 data-nosnippet>463</a>
@@ -465,11 +465,11 @@
 <a href=#465 id=465 data-nosnippet>465</a>    </span><span class="attr">#[inline]
 <a href=#466 id=466 data-nosnippet>466</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#467 id=467 data-nosnippet>467</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#468 id=468 data-nosnippet>468</a>    </span><span class="kw">const unsafe fn </span>deallocate_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
-<a href=#469 id=469 data-nosnippet>469</a>        core::intrinsics::const_eval_select(
-<a href=#470 id=470 data-nosnippet>470</a>            (ptr, layout),
-<a href=#471 id=471 data-nosnippet>471</a>            Global::deallocate_impl_const,
-<a href=#472 id=472 data-nosnippet>472</a>            Global::deallocate_impl_runtime,
+<a href=#468 id=468 data-nosnippet>468</a>    </span><span class="kw">const unsafe fn </span>deallocate_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
+<a href=#469 id=469 data-nosnippet>469</a>        core::intrinsics::<a href="../../core/intrinsics/fn.const_eval_select.html">const_eval_select</a>(
+<a href=#470 id=470 data-nosnippet>470</a>            (<a href="#468">ptr</a>, <a href="#468">layout</a>),
+<a href=#471 id=471 data-nosnippet>471</a>            <a href="#86">Global</a>::<a href="#533-540">deallocate_impl_const</a>,
+<a href=#472 id=472 data-nosnippet>472</a>            <a href="#86">Global</a>::<a href="#344-356">deallocate_impl_runtime</a>,
 <a href=#473 id=473 data-nosnippet>473</a>        )
 <a href=#474 id=474 data-nosnippet>474</a>    }
 <a href=#475 id=475 data-nosnippet>475</a>
@@ -479,15 +479,15 @@
 <a href=#479 id=479 data-nosnippet>479</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
 <a href=#480 id=480 data-nosnippet>480</a>    </span><span class="kw">const unsafe fn </span>grow_impl(
 <a href=#481 id=481 data-nosnippet>481</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#482 id=482 data-nosnippet>482</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#483 id=483 data-nosnippet>483</a>        old_layout: Layout,
-<a href=#484 id=484 data-nosnippet>484</a>        new_layout: Layout,
-<a href=#485 id=485 data-nosnippet>485</a>        zeroed: bool,
-<a href=#486 id=486 data-nosnippet>486</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#487 id=487 data-nosnippet>487</a>        core::intrinsics::const_eval_select(
-<a href=#488 id=488 data-nosnippet>488</a>            (<span class="self">self</span>, ptr, old_layout, new_layout, zeroed),
-<a href=#489 id=489 data-nosnippet>489</a>            Global::grow_shrink_impl_const,
-<a href=#490 id=490 data-nosnippet>490</a>            Global::grow_impl_runtime,
+<a href=#482 id=482 data-nosnippet>482</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#483 id=483 data-nosnippet>483</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#484 id=484 data-nosnippet>484</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#485 id=485 data-nosnippet>485</a>        zeroed: <a href="../../core/primitive.bool.html">bool</a>,
+<a href=#486 id=486 data-nosnippet>486</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#487 id=487 data-nosnippet>487</a>        core::intrinsics::<a href="../../core/intrinsics/fn.const_eval_select.html">const_eval_select</a>(
+<a href=#488 id=488 data-nosnippet>488</a>            (<a class="self" href="#481">self</a>, <a href="#482">ptr</a>, <a href="#483">old_layout</a>, <a href="#484">new_layout</a>, <a href="#485">zeroed</a>),
+<a href=#489 id=489 data-nosnippet>489</a>            <a href="#86">Global</a>::<a href="#545-566">grow_shrink_impl_const</a>,
+<a href=#490 id=490 data-nosnippet>490</a>            <a href="#86">Global</a>::<a href="#361-404">grow_impl_runtime</a>,
 <a href=#491 id=491 data-nosnippet>491</a>        )
 <a href=#492 id=492 data-nosnippet>492</a>    }
 <a href=#493 id=493 data-nosnippet>493</a>
@@ -497,32 +497,32 @@
 <a href=#497 id=497 data-nosnippet>497</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
 <a href=#498 id=498 data-nosnippet>498</a>    </span><span class="kw">const unsafe fn </span>shrink_impl(
 <a href=#499 id=499 data-nosnippet>499</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#500 id=500 data-nosnippet>500</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#501 id=501 data-nosnippet>501</a>        old_layout: Layout,
-<a href=#502 id=502 data-nosnippet>502</a>        new_layout: Layout,
-<a href=#503 id=503 data-nosnippet>503</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#504 id=504 data-nosnippet>504</a>        core::intrinsics::const_eval_select(
-<a href=#505 id=505 data-nosnippet>505</a>            (<span class="self">self</span>, ptr, old_layout, new_layout, <span class="bool-val">false</span>),
-<a href=#506 id=506 data-nosnippet>506</a>            Global::grow_shrink_impl_const,
-<a href=#507 id=507 data-nosnippet>507</a>            Global::shrink_impl_runtime,
+<a href=#500 id=500 data-nosnippet>500</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#501 id=501 data-nosnippet>501</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#502 id=502 data-nosnippet>502</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#503 id=503 data-nosnippet>503</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#504 id=504 data-nosnippet>504</a>        core::intrinsics::<a href="../../core/intrinsics/fn.const_eval_select.html">const_eval_select</a>(
+<a href=#505 id=505 data-nosnippet>505</a>            (<a class="self" href="#499">self</a>, <a href="#500">ptr</a>, <a href="#501">old_layout</a>, <a href="#502">new_layout</a>, <span class="bool-val">false</span>),
+<a href=#506 id=506 data-nosnippet>506</a>            <a href="#86">Global</a>::<a href="#545-566">grow_shrink_impl_const</a>,
+<a href=#507 id=507 data-nosnippet>507</a>            <a href="#86">Global</a>::<a href="#409-450">shrink_impl_runtime</a>,
 <a href=#508 id=508 data-nosnippet>508</a>        )
 <a href=#509 id=509 data-nosnippet>509</a>    }
 <a href=#510 id=510 data-nosnippet>510</a>
 <a href=#511 id=511 data-nosnippet>511</a>    <span class="attr">#[inline]
 <a href=#512 id=512 data-nosnippet>512</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#513 id=513 data-nosnippet>513</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#514 id=514 data-nosnippet>514</a>    </span><span class="kw">const fn </span>alloc_impl_const(layout: Layout, zeroed: bool) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#515 id=515 data-nosnippet>515</a>        <span class="kw">match </span>layout.size() {
-<a href=#516 id=516 data-nosnippet>516</a>            <span class="number">0 </span>=&gt; <span class="prelude-val">Ok</span>(layout.dangling_ptr().cast_slice(<span class="number">0</span>)),
+<a href=#514 id=514 data-nosnippet>514</a>    </span><span class="kw">const fn </span>alloc_impl_const(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>, zeroed: <a href="../../core/primitive.bool.html">bool</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#515 id=515 data-nosnippet>515</a>        <span class="kw">match </span><a href="#514">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() {
+<a href=#516 id=516 data-nosnippet>516</a>            <span class="number">0 </span>=&gt; <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#514">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.dangling_ptr">dangling_ptr</a>().<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<span class="number">0</span>)),
 <a href=#517 id=517 data-nosnippet>517</a>            <span class="comment">// SAFETY: `layout` is non-zero in size,
 <a href=#518 id=518 data-nosnippet>518</a>            </span>size =&gt; <span class="kw">unsafe </span>{
-<a href=#519 id=519 data-nosnippet>519</a>                <span class="kw">let </span>raw_ptr = core::intrinsics::const_allocate(layout.size(), layout.align());
+<a href=#519 id=519 data-nosnippet>519</a>                <span class="kw">let </span>raw_ptr = core::intrinsics::<a href="../../core/intrinsics/fn.const_allocate.html">const_allocate</a>(<a href="#514">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#514">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>());
 <a href=#520 id=520 data-nosnippet>520</a>                <span class="kw">let </span>ptr = NonNull::new(raw_ptr).ok_or(AllocError)<span class="question-mark">?</span>;
-<a href=#521 id=521 data-nosnippet>521</a>                <span class="kw">if </span>zeroed {
+<a href=#521 id=521 data-nosnippet>521</a>                <span class="kw">if </span><a href="#514">zeroed</a> {
 <a href=#522 id=522 data-nosnippet>522</a>                    <span class="comment">// SAFETY: the pointer returned by `const_allocate` is valid to write to.
-<a href=#523 id=523 data-nosnippet>523</a>                    </span>ptr.write_bytes(<span class="number">0</span>, size);
+<a href=#523 id=523 data-nosnippet>523</a>                    </span><a href="#520">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.write_bytes">write_bytes</a>(<span class="number">0</span>, <a href="#518">size</a>);
 <a href=#524 id=524 data-nosnippet>524</a>                }
-<a href=#525 id=525 data-nosnippet>525</a>                <span class="prelude-val">Ok</span>(ptr.cast_slice(size))
+<a href=#525 id=525 data-nosnippet>525</a>                <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#520">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.cast_slice">cast_slice</a>(<a href="#518">size</a>))
 <a href=#526 id=526 data-nosnippet>526</a>            },
 <a href=#527 id=527 data-nosnippet>527</a>        }
 <a href=#528 id=528 data-nosnippet>528</a>    }
@@ -530,11 +530,11 @@
 <a href=#530 id=530 data-nosnippet>530</a>    <span class="attr">#[inline]
 <a href=#531 id=531 data-nosnippet>531</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#532 id=532 data-nosnippet>532</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#533 id=533 data-nosnippet>533</a>    </span><span class="kw">const fn </span>deallocate_impl_const(ptr: NonNull&lt;u8&gt;, layout: Layout) {
-<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">if </span>layout.size() != <span class="number">0 </span>{
+<a href=#533 id=533 data-nosnippet>533</a>    </span><span class="kw">const fn </span>deallocate_impl_const(ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
+<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">if </span><a href="#533">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>() != <span class="number">0 </span>{
 <a href=#535 id=535 data-nosnippet>535</a>            <span class="comment">// SAFETY: We checked for nonzero size; other preconditions must be upheld by caller.
 <a href=#536 id=536 data-nosnippet>536</a>            </span><span class="kw">unsafe </span>{
-<a href=#537 id=537 data-nosnippet>537</a>                core::intrinsics::const_deallocate(ptr.as_ptr(), layout.size(), layout.align());
+<a href=#537 id=537 data-nosnippet>537</a>                core::intrinsics::<a href="../../core/intrinsics/fn.const_deallocate.html">const_deallocate</a>(<a href="#533">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_ptr">as_ptr</a>(), <a href="#533">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#533">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>());
 <a href=#538 id=538 data-nosnippet>538</a>            }
 <a href=#539 id=539 data-nosnippet>539</a>        }
 <a href=#540 id=540 data-nosnippet>540</a>    }
@@ -544,84 +544,84 @@
 <a href=#544 id=544 data-nosnippet>544</a>    </span><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
 <a href=#545 id=545 data-nosnippet>545</a>    </span><span class="kw">const fn </span>grow_shrink_impl_const(
 <a href=#546 id=546 data-nosnippet>546</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#547 id=547 data-nosnippet>547</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#548 id=548 data-nosnippet>548</a>        old_layout: Layout,
-<a href=#549 id=549 data-nosnippet>549</a>        new_layout: Layout,
-<a href=#550 id=550 data-nosnippet>550</a>        zeroed: bool,
-<a href=#551 id=551 data-nosnippet>551</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#547 id=547 data-nosnippet>547</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#548 id=548 data-nosnippet>548</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#549 id=549 data-nosnippet>549</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#550 id=550 data-nosnippet>550</a>        zeroed: <a href="../../core/primitive.bool.html">bool</a>,
+<a href=#551 id=551 data-nosnippet>551</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
 <a href=#552 id=552 data-nosnippet>552</a>        <span class="kw">let </span>new_ptr = <span class="self">self</span>.alloc_impl(new_layout, zeroed)<span class="question-mark">?</span>;
 <a href=#553 id=553 data-nosnippet>553</a>        <span class="comment">// SAFETY: both pointers are valid and this operations is in bounds.
 <a href=#554 id=554 data-nosnippet>554</a>        </span><span class="kw">unsafe </span>{
-<a href=#555 id=555 data-nosnippet>555</a>            ptr::copy_nonoverlapping(
-<a href=#556 id=556 data-nosnippet>556</a>                ptr.as_ptr(),
-<a href=#557 id=557 data-nosnippet>557</a>                new_ptr.as_mut_ptr(),
-<a href=#558 id=558 data-nosnippet>558</a>                cmp::min(old_layout.size(), new_layout.size()),
+<a href=#555 id=555 data-nosnippet>555</a>            ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(
+<a href=#556 id=556 data-nosnippet>556</a>                <a href="#547">ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_ptr">as_ptr</a>(),
+<a href=#557 id=557 data-nosnippet>557</a>                <a href="#552">new_ptr</a>.<a href="../../core/ptr/non_null/struct.NonNull.html#method.as_mut_ptr">as_mut_ptr</a>(),
+<a href=#558 id=558 data-nosnippet>558</a>                cmp::<a href="../../core/cmp/fn.min.html">min</a>(<a href="#548">old_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#549">new_layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>()),
 <a href=#559 id=559 data-nosnippet>559</a>            );
 <a href=#560 id=560 data-nosnippet>560</a>        }
 <a href=#561 id=561 data-nosnippet>561</a>        <span class="comment">// SAFETY: Caller ensures the ptr &amp; layout are correct.
 <a href=#562 id=562 data-nosnippet>562</a>        </span><span class="kw">unsafe </span>{
-<a href=#563 id=563 data-nosnippet>563</a>            <span class="self">self</span>.deallocate_impl(ptr, old_layout);
+<a href=#563 id=563 data-nosnippet>563</a>            <a class="self" href="#546">self</a>.<a href="#468-474">deallocate_impl</a>(<a href="#547">ptr</a>, <a href="#548">old_layout</a>);
 <a href=#564 id=564 data-nosnippet>564</a>        }
-<a href=#565 id=565 data-nosnippet>565</a>        <span class="prelude-val">Ok</span>(new_ptr)
+<a href=#565 id=565 data-nosnippet>565</a>        <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#552">new_ptr</a>)
 <a href=#566 id=566 data-nosnippet>566</a>    }
 <a href=#567 id=567 data-nosnippet>567</a>}
 <a href=#568 id=568 data-nosnippet>568</a>
 <a href=#569 id=569 data-nosnippet>569</a><span class="attr">#[stable(feature = <span class="string">"allocator_api"</span>, since = <span class="string">"1.100.0"</span>)]
 <a href=#570 id=570 data-nosnippet>570</a>#[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
-<a href=#571 id=571 data-nosnippet>571</a></span><span class="kw">const unsafe impl </span>Allocator <span class="kw">for </span>Global {
+<a href=#571 id=571 data-nosnippet>571</a></span><span class="kw">const unsafe impl </span><a href="../../alloc/alloc/trait.Allocator.html">Allocator</a> <span class="kw">for </span><a href="#86">Global</a> {
 <a href=#572 id=572 data-nosnippet>572</a>    <span class="attr">#[inline]
 <a href=#573 id=573 data-nosnippet>573</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#574 id=574 data-nosnippet>574</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#575 id=575 data-nosnippet>575</a>        <span class="self">self</span>.alloc_impl(layout, <span class="bool-val">false</span>)
+<a href=#574 id=574 data-nosnippet>574</a>    </span><span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#575 id=575 data-nosnippet>575</a>        <a class="self" href="#574">self</a>.<a href="#456-462">alloc_impl</a>(<a href="#574">layout</a>, <span class="bool-val">false</span>)
 <a href=#576 id=576 data-nosnippet>576</a>    }
 <a href=#577 id=577 data-nosnippet>577</a>
 <a href=#578 id=578 data-nosnippet>578</a>    <span class="attr">#[inline]
 <a href=#579 id=579 data-nosnippet>579</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#580 id=580 data-nosnippet>580</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: Layout) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
-<a href=#581 id=581 data-nosnippet>581</a>        <span class="self">self</span>.alloc_impl(layout, <span class="bool-val">true</span>)
+<a href=#580 id=580 data-nosnippet>580</a>    </span><span class="kw">fn </span>allocate_zeroed(<span class="kw-2">&amp;</span><span class="self">self</span>, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
+<a href=#581 id=581 data-nosnippet>581</a>        <a class="self" href="#580">self</a>.<a href="#456-462">alloc_impl</a>(<a href="#580">layout</a>, <span class="bool-val">true</span>)
 <a href=#582 id=582 data-nosnippet>582</a>    }
 <a href=#583 id=583 data-nosnippet>583</a>
 <a href=#584 id=584 data-nosnippet>584</a>    <span class="attr">#[inline]
 <a href=#585 id=585 data-nosnippet>585</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#586 id=586 data-nosnippet>586</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: NonNull&lt;u8&gt;, layout: Layout) {
+<a href=#586 id=586 data-nosnippet>586</a>    </span><span class="kw">unsafe fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;, layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) {
 <a href=#587 id=587 data-nosnippet>587</a>        <span class="comment">// SAFETY: all conditions must be upheld by the caller
-<a href=#588 id=588 data-nosnippet>588</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.deallocate_impl(ptr, layout) }
+<a href=#588 id=588 data-nosnippet>588</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#586">self</a>.<a href="#468-474">deallocate_impl</a>(<a href="#586">ptr</a>, <a href="#586">layout</a>) }
 <a href=#589 id=589 data-nosnippet>589</a>    }
 <a href=#590 id=590 data-nosnippet>590</a>
 <a href=#591 id=591 data-nosnippet>591</a>    <span class="attr">#[inline]
 <a href=#592 id=592 data-nosnippet>592</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#593 id=593 data-nosnippet>593</a>    </span><span class="kw">unsafe fn </span>grow(
 <a href=#594 id=594 data-nosnippet>594</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#595 id=595 data-nosnippet>595</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#596 id=596 data-nosnippet>596</a>        old_layout: Layout,
-<a href=#597 id=597 data-nosnippet>597</a>        new_layout: Layout,
-<a href=#598 id=598 data-nosnippet>598</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#595 id=595 data-nosnippet>595</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#596 id=596 data-nosnippet>596</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#597 id=597 data-nosnippet>597</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#598 id=598 data-nosnippet>598</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
 <a href=#599 id=599 data-nosnippet>599</a>        <span class="comment">// SAFETY: all conditions must be upheld by the caller
-<a href=#600 id=600 data-nosnippet>600</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.grow_impl(ptr, old_layout, new_layout, <span class="bool-val">false</span>) }
+<a href=#600 id=600 data-nosnippet>600</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#594">self</a>.<a href="#480-492">grow_impl</a>(<a href="#595">ptr</a>, <a href="#596">old_layout</a>, <a href="#597">new_layout</a>, <span class="bool-val">false</span>) }
 <a href=#601 id=601 data-nosnippet>601</a>    }
 <a href=#602 id=602 data-nosnippet>602</a>
 <a href=#603 id=603 data-nosnippet>603</a>    <span class="attr">#[inline]
 <a href=#604 id=604 data-nosnippet>604</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#605 id=605 data-nosnippet>605</a>    </span><span class="kw">unsafe fn </span>grow_zeroed(
 <a href=#606 id=606 data-nosnippet>606</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#607 id=607 data-nosnippet>607</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#608 id=608 data-nosnippet>608</a>        old_layout: Layout,
-<a href=#609 id=609 data-nosnippet>609</a>        new_layout: Layout,
-<a href=#610 id=610 data-nosnippet>610</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#607 id=607 data-nosnippet>607</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#608 id=608 data-nosnippet>608</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#609 id=609 data-nosnippet>609</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#610 id=610 data-nosnippet>610</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
 <a href=#611 id=611 data-nosnippet>611</a>        <span class="comment">// SAFETY: all conditions must be upheld by the caller
-<a href=#612 id=612 data-nosnippet>612</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.grow_impl(ptr, old_layout, new_layout, <span class="bool-val">true</span>) }
+<a href=#612 id=612 data-nosnippet>612</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#606">self</a>.<a href="#480-492">grow_impl</a>(<a href="#607">ptr</a>, <a href="#608">old_layout</a>, <a href="#609">new_layout</a>, <span class="bool-val">true</span>) }
 <a href=#613 id=613 data-nosnippet>613</a>    }
 <a href=#614 id=614 data-nosnippet>614</a>
 <a href=#615 id=615 data-nosnippet>615</a>    <span class="attr">#[inline]
 <a href=#616 id=616 data-nosnippet>616</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
 <a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">unsafe fn </span>shrink(
 <a href=#618 id=618 data-nosnippet>618</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#619 id=619 data-nosnippet>619</a>        ptr: NonNull&lt;u8&gt;,
-<a href=#620 id=620 data-nosnippet>620</a>        old_layout: Layout,
-<a href=#621 id=621 data-nosnippet>621</a>        new_layout: Layout,
-<a href=#622 id=622 data-nosnippet>622</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NonNull&lt;[u8]&gt;, AllocError&gt; {
+<a href=#619 id=619 data-nosnippet>619</a>        ptr: <a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#620 id=620 data-nosnippet>620</a>        old_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#621 id=621 data-nosnippet>621</a>        new_layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>,
+<a href=#622 id=622 data-nosnippet>622</a>    ) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="../../core/ptr/non_null/struct.NonNull.html">NonNull</a>&lt;[<a href="../../core/primitive.u8.html">u8</a>]&gt;, <a href="../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
 <a href=#623 id=623 data-nosnippet>623</a>        <span class="comment">// SAFETY: all conditions must be upheld by the caller
-<a href=#624 id=624 data-nosnippet>624</a>        </span><span class="kw">unsafe </span>{ <span class="self">self</span>.shrink_impl(ptr, old_layout, new_layout) }
+<a href=#624 id=624 data-nosnippet>624</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#618">self</a>.<a href="#498-509">shrink_impl</a>(<a href="#619">ptr</a>, <a href="#620">old_layout</a>, <a href="#621">new_layout</a>) }
 <a href=#625 id=625 data-nosnippet>625</a>    }
 <a href=#626 id=626 data-nosnippet>626</a>}
 <a href=#627 id=627 data-nosnippet>627</a>
@@ -633,7 +633,7 @@
 <a href=#633 id=633 data-nosnippet>633</a>    // it to call `__rg_oom` if there is a `#[alloc_error_handler]`, or to call the
 <a href=#634 id=634 data-nosnippet>634</a>    // default implementations below (`__rdl_alloc_error_handler`) otherwise.
 <a href=#635 id=635 data-nosnippet>635</a>    </span><span class="attr">#[rustc_std_internal_symbol]
-<a href=#636 id=636 data-nosnippet>636</a>    </span><span class="kw">fn </span>__rust_alloc_error_handler(size: usize, align: usize) -&gt; !;
+<a href=#636 id=636 data-nosnippet>636</a>    </span><span class="kw">fn </span>__rust_alloc_error_handler(size: <a href="../../core/primitive.usize.html">usize</a>, align: <a href="../../core/primitive.usize.html">usize</a>) -&gt; !;
 <a href=#637 id=637 data-nosnippet>637</a>}
 <a href=#638 id=638 data-nosnippet>638</a>
 <a href=#639 id=639 data-nosnippet>639</a><span class="doccomment">/// Signals a memory allocation error.
@@ -666,22 +666,22 @@
 <a href=#666 id=666 data-nosnippet>666</a>#[cfg(not(no_global_oom_handling))]
 <a href=#667 id=667 data-nosnippet>667</a>#[cold]
 <a href=#668 id=668 data-nosnippet>668</a>#[optimize(size)]
-<a href=#669 id=669 data-nosnippet>669</a></span><span class="kw">pub const fn </span>handle_alloc_error(layout: Layout) -&gt; ! {
-<a href=#670 id=670 data-nosnippet>670</a>    <span class="kw">const fn </span>ct_error(<span class="kw">_</span>: Layout) -&gt; ! {
-<a href=#671 id=671 data-nosnippet>671</a>        <span class="macro">panic!</span>(<span class="string">"allocation failed"</span>);
+<a href=#669 id=669 data-nosnippet>669</a></span><span class="kw">pub const fn </span><a href="../../alloc/alloc/fn.handle_alloc_error.html">handle_alloc_error</a>(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; ! {
+<a href=#670 id=670 data-nosnippet>670</a>    <span class="kw">const fn </span>ct_error(<span class="kw">_</span>: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; ! {
+<a href=#671 id=671 data-nosnippet>671</a>        <a href="../../core/macro.panic.html">panic!</a>(<span class="string">"allocation failed"</span>);
 <a href=#672 id=672 data-nosnippet>672</a>    }
 <a href=#673 id=673 data-nosnippet>673</a>
 <a href=#674 id=674 data-nosnippet>674</a>    <span class="attr">#[inline]
-<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>rt_error(layout: Layout) -&gt; ! {
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>rt_error(layout: <a href="../../alloc/alloc/struct.Layout.html">Layout</a>) -&gt; ! {
 <a href=#676 id=676 data-nosnippet>676</a>        <span class="comment">// SAFETY: Safe to call; we control this function.
 <a href=#677 id=677 data-nosnippet>677</a>        </span><span class="kw">unsafe </span>{
-<a href=#678 id=678 data-nosnippet>678</a>            __rust_alloc_error_handler(layout.size(), layout.align());
+<a href=#678 id=678 data-nosnippet>678</a>            <a href="#636">__rust_alloc_error_handler</a>(<a href="#675">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.size">size</a>(), <a href="#675">layout</a>.<a href="../../alloc/alloc/struct.Layout.html#method.align">align</a>());
 <a href=#679 id=679 data-nosnippet>679</a>        }
 <a href=#680 id=680 data-nosnippet>680</a>    }
 <a href=#681 id=681 data-nosnippet>681</a>
 <a href=#682 id=682 data-nosnippet>682</a>    <span class="attr">#[cfg(not(panic = <span class="string">"immediate-abort"</span>))]
 <a href=#683 id=683 data-nosnippet>683</a>    </span>{
-<a href=#684 id=684 data-nosnippet>684</a>        core::intrinsics::const_eval_select((layout,), ct_error, rt_error)
+<a href=#684 id=684 data-nosnippet>684</a>        core::intrinsics::<a href="../../core/intrinsics/fn.const_eval_select.html">const_eval_select</a>((<a href="#669">layout</a>,), <a href="#670-672">ct_error</a>, <a href="#675-680">rt_error</a>)
 <a href=#685 id=685 data-nosnippet>685</a>    }
 <a href=#686 id=686 data-nosnippet>686</a>
 <a href=#687 id=687 data-nosnippet>687</a>    <span class="attr">#[cfg(panic = <span class="string">"immediate-abort"</span>)]
@@ -695,14 +695,14 @@
 <a href=#695 id=695 data-nosnippet>695</a>    <span class="comment">// called via generated `__rust_alloc_error_handler` if there is no
 <a href=#696 id=696 data-nosnippet>696</a>    // `#[alloc_error_handler]`.
 <a href=#697 id=697 data-nosnippet>697</a>    </span><span class="attr">#[rustc_std_internal_symbol]
-<a href=#698 id=698 data-nosnippet>698</a>    </span><span class="kw">pub unsafe fn </span>__rdl_alloc_error_handler(size: usize, _align: usize) -&gt; ! {
-<a href=#699 id=699 data-nosnippet>699</a>        core::panicking::panic_nounwind_fmt(
-<a href=#700 id=700 data-nosnippet>700</a>            <span class="macro">format_args!</span>(<span class="string">"memory allocation of {size} bytes failed"</span>),
+<a href=#698 id=698 data-nosnippet>698</a>    </span><span class="kw">pub unsafe fn </span>__rdl_alloc_error_handler(size: <a href="../../core/primitive.usize.html">usize</a>, _align: <a href="../../core/primitive.usize.html">usize</a>) -&gt; ! {
+<a href=#699 id=699 data-nosnippet>699</a>        core::panicking::<a href="../../core/panicking/fn.panic_nounwind_fmt.html">panic_nounwind_fmt</a>(
+<a href=#700 id=700 data-nosnippet>700</a>            <a href="../../core/macro.format_args.html">format_args!</a>(<span class="string">"memory allocation of {size} bytes failed"</span>),
 <a href=#701 id=701 data-nosnippet>701</a>            <span class="comment">/* force_no_backtrace */ </span><span class="bool-val">false</span>,
 <a href=#702 id=702 data-nosnippet>702</a>        )
 <a href=#703 id=703 data-nosnippet>703</a>    }
 <a href=#704 id=704 data-nosnippet>704</a>}
 <a href=#705 id=705 data-nosnippet>705</a>
 <a href=#706 id=706 data-nosnippet>706</a><span class="attr">#[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
-<a href=#707 id=707 data-nosnippet>707</a></span><span class="kw">impl </span>AllocatorNightly <span class="kw">for </span>Global {}
+<a href=#707 id=707 data-nosnippet>707</a></span><span class="kw">impl </span><a href="../../alloc/alloc/trait.AllocatorNightly.html">AllocatorNightly</a> <span class="kw">for </span><a href="#86">Global</a> {}
 </code></pre></div></section></main></body></html>

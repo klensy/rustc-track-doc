@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/mpsc.rs`."><title>mpsc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (41089d07a 2026-10-27)" data-channel="nightly" data-search-js="search-b167f383.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>mpsc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Multi-producer, single-consumer FIFO queue communication primitives.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/mpsc.rs`."><title>mpsc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92ffebece 2026-10-28)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/</div>mpsc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Multi-producer, single-consumer FIFO queue communication primitives.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module provides message-based communication over channels, concretely
 <a href=#4 id=4 data-nosnippet>4</a>//! defined among three types:
@@ -144,11 +144,11 @@
 <a href=#144 id=144 data-nosnippet>144</a>// not exposed publicly, but if you are curious about the implementation,
 <a href=#145 id=145 data-nosnippet>145</a>// that's where everything is.
 <a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a></span><span class="kw">use </span>core::clone::Share;
+<a href=#147 id=147 data-nosnippet>147</a></span><span class="kw">use </span><a href="../../../std/clone/trait.Share.html">core::clone::Share</a>;
 <a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a><span class="kw">use </span><span class="kw">crate</span>::sync::mpmc;
-<a href=#150 id=150 data-nosnippet>150</a><span class="kw">use </span><span class="kw">crate</span>::time::{Duration, Instant};
-<a href=#151 id=151 data-nosnippet>151</a><span class="kw">use crate</span>::{error, fmt};
+<a href=#149 id=149 data-nosnippet>149</a><span class="kw">use </span><a href="mod.rs.html#193"><span class="kw">crate</span>::sync::mpmc</a>;
+<a href=#150 id=150 data-nosnippet>150</a><span class="kw">use </span><span class="kw">crate</span>::time::{<a href="../../../std/time/struct.Duration.html">Duration</a>, <a href="../time.rs.html#156">Instant</a>};
+<a href=#151 id=151 data-nosnippet>151</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#630">error</a>, <a href="../../../std/fmt/index.html">fmt</a>};
 <a href=#152 id=152 data-nosnippet>152</a>
 <a href=#153 id=153 data-nosnippet>153</a><span class="doccomment">/// The receiving half of Rust's [`channel`] (or [`sync_channel`]) type.
 <a href=#154 id=154 data-nosnippet>154</a>/// This half can only be owned by one thread.
@@ -178,17 +178,17 @@
 <a href=#178 id=178 data-nosnippet>178</a>/// ```
 <a href=#179 id=179 data-nosnippet>179</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#180 id=180 data-nosnippet>180</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"MpscReceiver"</span>)]
-<a href=#181 id=181 data-nosnippet>181</a></span><span class="kw">pub struct </span>Receiver&lt;T&gt; {
-<a href=#182 id=182 data-nosnippet>182</a>    inner: mpmc::Receiver&lt;T&gt;,
+<a href=#181 id=181 data-nosnippet>181</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.Receiver.html">Receiver</a>&lt;T&gt; {
+<a href=#182 id=182 data-nosnippet>182</a>    inner: mpmc::<a href="mpmc/mod.rs.html#734-736">Receiver</a>&lt;T&gt;,
 <a href=#183 id=183 data-nosnippet>183</a>}
 <a href=#184 id=184 data-nosnippet>184</a>
 <a href=#185 id=185 data-nosnippet>185</a><span class="comment">// The receiver port can be sent from place to place, so long as it
 <a href=#186 id=186 data-nosnippet>186</a>// is not used to receive non-sendable things.
 <a href=#187 id=187 data-nosnippet>187</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#188 id=188 data-nosnippet>188</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>Receiver&lt;T&gt; {}
+<a href=#188 id=188 data-nosnippet>188</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Send.html">Send</a> <span class="kw">for </span><a href="#181-183">Receiver</a>&lt;T&gt; {}
 <a href=#189 id=189 data-nosnippet>189</a>
 <a href=#190 id=190 data-nosnippet>190</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">impl</span>&lt;T&gt; !Sync <span class="kw">for </span>Receiver&lt;T&gt; {}
+<a href=#191 id=191 data-nosnippet>191</a></span><span class="kw">impl</span>&lt;T&gt; !<a href="../../../std/marker/trait.Sync.html">Sync</a> <span class="kw">for </span><a href="#181-183">Receiver</a>&lt;T&gt; {}
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a><span class="doccomment">/// An iterator over messages on a [`Receiver`], created by [`iter`].
 <a href=#194 id=194 data-nosnippet>194</a>///
@@ -218,9 +218,9 @@
 <a href=#218 id=218 data-nosnippet>218</a>/// }
 <a href=#219 id=219 data-nosnippet>219</a>/// ```
 <a href=#220 id=220 data-nosnippet>220</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#221 id=221 data-nosnippet>221</a>#[derive(Debug)]
-<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub struct </span>Iter&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
-<a href=#223 id=223 data-nosnippet>223</a>    rx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Receiver&lt;T&gt;,
+<a href=#221 id=221 data-nosnippet>221</a>#[derive(<a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
+<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.Iter.html">Iter</a>&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
+<a href=#223 id=223 data-nosnippet>223</a>    rx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#181-183">Receiver</a>&lt;T&gt;,
 <a href=#224 id=224 data-nosnippet>224</a>}
 <a href=#225 id=225 data-nosnippet>225</a>
 <a href=#226 id=226 data-nosnippet>226</a><span class="doccomment">/// An iterator that attempts to yield all pending values for a [`Receiver`],
@@ -263,9 +263,9 @@
 <a href=#263 id=263 data-nosnippet>263</a>/// }
 <a href=#264 id=264 data-nosnippet>264</a>/// ```
 <a href=#265 id=265 data-nosnippet>265</a></span><span class="attr">#[stable(feature = <span class="string">"receiver_try_iter"</span>, since = <span class="string">"1.15.0"</span>)]
-<a href=#266 id=266 data-nosnippet>266</a>#[derive(Debug)]
-<a href=#267 id=267 data-nosnippet>267</a></span><span class="kw">pub struct </span>TryIter&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
-<a href=#268 id=268 data-nosnippet>268</a>    rx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Receiver&lt;T&gt;,
+<a href=#266 id=266 data-nosnippet>266</a>#[derive(<a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
+<a href=#267 id=267 data-nosnippet>267</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.TryIter.html">TryIter</a>&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; {
+<a href=#268 id=268 data-nosnippet>268</a>    rx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#181-183">Receiver</a>&lt;T&gt;,
 <a href=#269 id=269 data-nosnippet>269</a>}
 <a href=#270 id=270 data-nosnippet>270</a>
 <a href=#271 id=271 data-nosnippet>271</a><span class="doccomment">/// An owning iterator over messages on a [`Receiver`],
@@ -297,9 +297,9 @@
 <a href=#297 id=297 data-nosnippet>297</a>/// }
 <a href=#298 id=298 data-nosnippet>298</a>/// ```
 <a href=#299 id=299 data-nosnippet>299</a></span><span class="attr">#[stable(feature = <span class="string">"receiver_into_iter"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#300 id=300 data-nosnippet>300</a>#[derive(Debug)]
-<a href=#301 id=301 data-nosnippet>301</a></span><span class="kw">pub struct </span>IntoIter&lt;T&gt; {
-<a href=#302 id=302 data-nosnippet>302</a>    rx: Receiver&lt;T&gt;,
+<a href=#300 id=300 data-nosnippet>300</a>#[derive(<a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
+<a href=#301 id=301 data-nosnippet>301</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.IntoIter.html">IntoIter</a>&lt;T&gt; {
+<a href=#302 id=302 data-nosnippet>302</a>    rx: <a href="#181-183">Receiver</a>&lt;T&gt;,
 <a href=#303 id=303 data-nosnippet>303</a>}
 <a href=#304 id=304 data-nosnippet>304</a>
 <a href=#305 id=305 data-nosnippet>305</a><span class="doccomment">/// The sending-half of Rust's asynchronous [`channel`] type.
@@ -337,17 +337,17 @@
 <a href=#337 id=337 data-nosnippet>337</a>/// ```
 <a href=#338 id=338 data-nosnippet>338</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#339 id=339 data-nosnippet>339</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"MpscSender"</span>)]
-<a href=#340 id=340 data-nosnippet>340</a></span><span class="kw">pub struct </span>Sender&lt;T&gt; {
-<a href=#341 id=341 data-nosnippet>341</a>    inner: mpmc::Sender&lt;T&gt;,
+<a href=#340 id=340 data-nosnippet>340</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.Sender.html">Sender</a>&lt;T&gt; {
+<a href=#341 id=341 data-nosnippet>341</a>    inner: mpmc::<a href="mpmc/mod.rs.html#303-305">Sender</a>&lt;T&gt;,
 <a href=#342 id=342 data-nosnippet>342</a>}
 <a href=#343 id=343 data-nosnippet>343</a>
 <a href=#344 id=344 data-nosnippet>344</a><span class="comment">// The send port can be sent from place to place, so long as it
 <a href=#345 id=345 data-nosnippet>345</a>// is not used to send non-sendable things.
 <a href=#346 id=346 data-nosnippet>346</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#347 id=347 data-nosnippet>347</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>Sender&lt;T&gt; {}
+<a href=#347 id=347 data-nosnippet>347</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Send.html">Send</a> <span class="kw">for </span><a href="#340-342">Sender</a>&lt;T&gt; {}
 <a href=#348 id=348 data-nosnippet>348</a>
 <a href=#349 id=349 data-nosnippet>349</a><span class="attr">#[stable(feature = <span class="string">"mpsc_sender_sync"</span>, since = <span class="string">"1.72.0"</span>)]
-<a href=#350 id=350 data-nosnippet>350</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Sync <span class="kw">for </span>Sender&lt;T&gt; {}
+<a href=#350 id=350 data-nosnippet>350</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Sync.html">Sync</a> <span class="kw">for </span><a href="#340-342">Sender</a>&lt;T&gt; {}
 <a href=#351 id=351 data-nosnippet>351</a>
 <a href=#352 id=352 data-nosnippet>352</a><span class="doccomment">/// The sending-half of Rust's synchronous [`sync_channel`] type.
 <a href=#353 id=353 data-nosnippet>353</a>///
@@ -396,12 +396,12 @@
 <a href=#396 id=396 data-nosnippet>396</a>/// println!("message {msg} received");
 <a href=#397 id=397 data-nosnippet>397</a>/// ```
 <a href=#398 id=398 data-nosnippet>398</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#399 id=399 data-nosnippet>399</a></span><span class="kw">pub struct </span>SyncSender&lt;T&gt; {
-<a href=#400 id=400 data-nosnippet>400</a>    inner: mpmc::Sender&lt;T&gt;,
+<a href=#399 id=399 data-nosnippet>399</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.SyncSender.html">SyncSender</a>&lt;T&gt; {
+<a href=#400 id=400 data-nosnippet>400</a>    inner: mpmc::<a href="mpmc/mod.rs.html#303-305">Sender</a>&lt;T&gt;,
 <a href=#401 id=401 data-nosnippet>401</a>}
 <a href=#402 id=402 data-nosnippet>402</a>
 <a href=#403 id=403 data-nosnippet>403</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#404 id=404 data-nosnippet>404</a></span><span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>SyncSender&lt;T&gt; {}
+<a href=#404 id=404 data-nosnippet>404</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../../../std/marker/trait.Send.html">Send</a>&gt; <a href="../../../std/marker/trait.Send.html">Send</a> <span class="kw">for </span><a href="#399-401">SyncSender</a>&lt;T&gt; {}
 <a href=#405 id=405 data-nosnippet>405</a>
 <a href=#406 id=406 data-nosnippet>406</a><span class="doccomment">/// An error returned from the [`Sender::send`] or [`SyncSender::send`]
 <a href=#407 id=407 data-nosnippet>407</a>/// function on **channel**s.
@@ -410,8 +410,8 @@
 <a href=#410 id=410 data-nosnippet>410</a>/// disconnected, implying that the data could never be received. The error
 <a href=#411 id=411 data-nosnippet>411</a>/// contains the data being sent as a payload so it can be recovered.
 <a href=#412 id=412 data-nosnippet>412</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#413 id=413 data-nosnippet>413</a>#[derive(PartialEq, Eq, Clone, Copy)]
-<a href=#414 id=414 data-nosnippet>414</a></span><span class="kw">pub struct </span>SendError&lt;T&gt;(<span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)] </span><span class="kw">pub </span>T);
+<a href=#413 id=413 data-nosnippet>413</a>#[derive(<a href="../../../std/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../std/marker/derive.Copy.html">Copy</a>)]
+<a href=#414 id=414 data-nosnippet>414</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.SendError.html">SendError</a>&lt;T&gt;(<span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)] </span><span class="kw">pub </span>T);
 <a href=#415 id=415 data-nosnippet>415</a>
 <a href=#416 id=416 data-nosnippet>416</a><span class="doccomment">/// An error returned from the [`recv`] function on a [`Receiver`].
 <a href=#417 id=417 data-nosnippet>417</a>///
@@ -420,18 +420,18 @@
 <a href=#420 id=420 data-nosnippet>420</a>/// messages will ever be received.
 <a href=#421 id=421 data-nosnippet>421</a>///
 <a href=#422 id=422 data-nosnippet>422</a>/// [`recv`]: Receiver::recv
-<a href=#423 id=423 data-nosnippet>423</a></span><span class="attr">#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+<a href=#423 id=423 data-nosnippet>423</a></span><span class="attr">#[derive(<a href="../../../std/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../std/marker/derive.Copy.html">Copy</a>, <a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
 <a href=#424 id=424 data-nosnippet>424</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#425 id=425 data-nosnippet>425</a></span><span class="kw">pub struct </span>RecvError;
+<a href=#425 id=425 data-nosnippet>425</a></span><span class="kw">pub struct </span><a href="../../../std/sync/mpsc/struct.RecvError.html">RecvError</a>;
 <a href=#426 id=426 data-nosnippet>426</a>
 <a href=#427 id=427 data-nosnippet>427</a><span class="doccomment">/// This enumeration is the list of the possible reasons that [`try_recv`] could
 <a href=#428 id=428 data-nosnippet>428</a>/// not return data when called. This can occur with both a [`channel`] and
 <a href=#429 id=429 data-nosnippet>429</a>/// a [`sync_channel`].
 <a href=#430 id=430 data-nosnippet>430</a>///
 <a href=#431 id=431 data-nosnippet>431</a>/// [`try_recv`]: Receiver::try_recv
-<a href=#432 id=432 data-nosnippet>432</a></span><span class="attr">#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+<a href=#432 id=432 data-nosnippet>432</a></span><span class="attr">#[derive(<a href="../../../std/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../std/marker/derive.Copy.html">Copy</a>, <a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
 <a href=#433 id=433 data-nosnippet>433</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#434 id=434 data-nosnippet>434</a></span><span class="kw">pub enum </span>TryRecvError {
+<a href=#434 id=434 data-nosnippet>434</a></span><span class="kw">pub enum </span><a href="../../../std/sync/mpsc/enum.TryRecvError.html">TryRecvError</a> {
 <a href=#435 id=435 data-nosnippet>435</a>    <span class="doccomment">/// This **channel** is currently empty, but the **Sender**(s) have not yet
 <a href=#436 id=436 data-nosnippet>436</a>    /// disconnected, so data may yet become available.
 <a href=#437 id=437 data-nosnippet>437</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
@@ -448,9 +448,9 @@
 <a href=#448 id=448 data-nosnippet>448</a>/// a [`sync_channel`].
 <a href=#449 id=449 data-nosnippet>449</a>///
 <a href=#450 id=450 data-nosnippet>450</a>/// [`recv_timeout`]: Receiver::recv_timeout
-<a href=#451 id=451 data-nosnippet>451</a></span><span class="attr">#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+<a href=#451 id=451 data-nosnippet>451</a></span><span class="attr">#[derive(<a href="../../../std/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../std/marker/derive.Copy.html">Copy</a>, <a href="../../../std/fmt/derive.Debug.html">Debug</a>)]
 <a href=#452 id=452 data-nosnippet>452</a>#[stable(feature = <span class="string">"mpsc_recv_timeout"</span>, since = <span class="string">"1.12.0"</span>)]
-<a href=#453 id=453 data-nosnippet>453</a></span><span class="kw">pub enum </span>RecvTimeoutError {
+<a href=#453 id=453 data-nosnippet>453</a></span><span class="kw">pub enum </span><a href="../../../std/sync/mpsc/enum.RecvTimeoutError.html">RecvTimeoutError</a> {
 <a href=#454 id=454 data-nosnippet>454</a>    <span class="doccomment">/// This **channel** is currently empty, but the **Sender**(s) have not yet
 <a href=#455 id=455 data-nosnippet>455</a>    /// disconnected, so data may yet become available.
 <a href=#456 id=456 data-nosnippet>456</a>    </span><span class="attr">#[stable(feature = <span class="string">"mpsc_recv_timeout"</span>, since = <span class="string">"1.12.0"</span>)]
@@ -466,8 +466,8 @@
 <a href=#466 id=466 data-nosnippet>466</a>///
 <a href=#467 id=467 data-nosnippet>467</a>/// [`try_send`]: SyncSender::try_send
 <a href=#468 id=468 data-nosnippet>468</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#469 id=469 data-nosnippet>469</a>#[derive(PartialEq, Eq, Clone, Copy)]
-<a href=#470 id=470 data-nosnippet>470</a></span><span class="kw">pub enum </span>TrySendError&lt;T&gt; {
+<a href=#469 id=469 data-nosnippet>469</a>#[derive(<a href="../../../std/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../../std/cmp/derive.Eq.html">Eq</a>, <a href="../../../std/clone/derive.Clone.html">Clone</a>, <a href="../../../std/marker/derive.Copy.html">Copy</a>)]
+<a href=#470 id=470 data-nosnippet>470</a></span><span class="kw">pub enum </span><a href="../../../std/sync/mpsc/enum.TrySendError.html">TrySendError</a>&lt;T&gt; {
 <a href=#471 id=471 data-nosnippet>471</a>    <span class="doccomment">/// The data could not be sent on the [`sync_channel`] because it would require that
 <a href=#472 id=472 data-nosnippet>472</a>    /// the callee block to send the data.
 <a href=#473 id=473 data-nosnippet>473</a>    ///
@@ -523,9 +523,9 @@
 <a href=#523 id=523 data-nosnippet>523</a>/// ```
 <a href=#524 id=524 data-nosnippet>524</a></span><span class="attr">#[must_use]
 <a href=#525 id=525 data-nosnippet>525</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#526 id=526 data-nosnippet>526</a></span><span class="kw">pub fn </span>channel&lt;T&gt;() -&gt; (Sender&lt;T&gt;, Receiver&lt;T&gt;) {
-<a href=#527 id=527 data-nosnippet>527</a>    <span class="kw">let </span>(tx, rx) = mpmc::channel();
-<a href=#528 id=528 data-nosnippet>528</a>    (Sender { inner: tx }, Receiver { inner: rx })
+<a href=#526 id=526 data-nosnippet>526</a></span><span class="kw">pub fn </span><a href="../../../std/sync/mpsc/fn.channel.html">channel</a>&lt;T&gt;() -&gt; (<a href="#340-342">Sender</a>&lt;T&gt;, <a href="#181-183">Receiver</a>&lt;T&gt;) {
+<a href=#527 id=527 data-nosnippet>527</a>    <span class="kw">let </span>(tx, rx) = mpmc::<a href="mpmc/mod.rs.html#200-205">channel</a>();
+<a href=#528 id=528 data-nosnippet>528</a>    (<a href="#340-342">Sender</a> { inner: <a href="#527">tx</a> }, <a href="#181-183">Receiver</a> { inner: <a href="#527">rx</a> })
 <a href=#529 id=529 data-nosnippet>529</a>}
 <a href=#530 id=530 data-nosnippet>530</a>
 <a href=#531 id=531 data-nosnippet>531</a><span class="doccomment">/// Creates a new synchronous, bounded channel.
@@ -573,16 +573,16 @@
 <a href=#573 id=573 data-nosnippet>573</a>/// ```
 <a href=#574 id=574 data-nosnippet>574</a></span><span class="attr">#[must_use]
 <a href=#575 id=575 data-nosnippet>575</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#576 id=576 data-nosnippet>576</a></span><span class="kw">pub fn </span>sync_channel&lt;T&gt;(bound: usize) -&gt; (SyncSender&lt;T&gt;, Receiver&lt;T&gt;) {
-<a href=#577 id=577 data-nosnippet>577</a>    <span class="kw">let </span>(tx, rx) = mpmc::sync_channel(bound);
-<a href=#578 id=578 data-nosnippet>578</a>    (SyncSender { inner: tx }, Receiver { inner: rx })
+<a href=#576 id=576 data-nosnippet>576</a></span><span class="kw">pub fn </span><a href="../../../std/sync/mpsc/fn.sync_channel.html">sync_channel</a>&lt;T&gt;(bound: <a href="../../../std/primitive.usize.html">usize</a>) -&gt; (<a href="#399-401">SyncSender</a>&lt;T&gt;, <a href="#181-183">Receiver</a>&lt;T&gt;) {
+<a href=#577 id=577 data-nosnippet>577</a>    <span class="kw">let </span>(tx, rx) = mpmc::<a href="mpmc/mod.rs.html#252-264">sync_channel</a>(<a href="#576">bound</a>);
+<a href=#578 id=578 data-nosnippet>578</a>    (<a href="#399-401">SyncSender</a> { inner: <a href="#577">tx</a> }, <a href="#181-183">Receiver</a> { inner: <a href="#577">rx</a> })
 <a href=#579 id=579 data-nosnippet>579</a>}
 <a href=#580 id=580 data-nosnippet>580</a>
 <a href=#581 id=581 data-nosnippet>581</a><span class="comment">////////////////////////////////////////////////////////////////////////////////
 <a href=#582 id=582 data-nosnippet>582</a>// Sender
 <a href=#583 id=583 data-nosnippet>583</a>////////////////////////////////////////////////////////////////////////////////
 <a href=#584 id=584 data-nosnippet>584</a>
-<a href=#585 id=585 data-nosnippet>585</a></span><span class="kw">impl</span>&lt;T&gt; Sender&lt;T&gt; {
+<a href=#585 id=585 data-nosnippet>585</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#340-342">Sender</a>&lt;T&gt; {
 <a href=#586 id=586 data-nosnippet>586</a>    <span class="doccomment">/// Attempts to send a value on this channel, returning it back if it could
 <a href=#587 id=587 data-nosnippet>587</a>    /// not be sent.
 <a href=#588 id=588 data-nosnippet>588</a>    ///
@@ -614,8 +614,8 @@
 <a href=#614 id=614 data-nosnippet>614</a>    /// assert_eq!(tx.send(1).unwrap_err().0, 1);
 <a href=#615 id=615 data-nosnippet>615</a>    /// ```
 <a href=#616 id=616 data-nosnippet>616</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;T&gt;&gt; {
-<a href=#618 id=618 data-nosnippet>618</a>        <span class="self">self</span>.inner.send(t)
+<a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), <a href="#414">SendError</a>&lt;T&gt;&gt; {
+<a href=#618 id=618 data-nosnippet>618</a>        <a class="self" href="#617">self</a>.inner.<a href="mpmc/mod.rs.html#401-411">send</a>(<a href="#617">t</a>)
 <a href=#619 id=619 data-nosnippet>619</a>    }
 <a href=#620 id=620 data-nosnippet>620</a>
 <a href=#621 id=621 data-nosnippet>621</a>    <span class="doccomment">/// Returns `true` if the channel is disconnected.
@@ -637,30 +637,30 @@
 <a href=#637 id=637 data-nosnippet>637</a>    /// assert!(tx.is_disconnected());
 <a href=#638 id=638 data-nosnippet>638</a>    /// ```
 <a href=#639 id=639 data-nosnippet>639</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mpsc_is_disconnected"</span>, issue = <span class="string">"153668"</span>)]
-<a href=#640 id=640 data-nosnippet>640</a>    </span><span class="kw">pub fn </span>is_disconnected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#641 id=641 data-nosnippet>641</a>        <span class="self">self</span>.inner.is_disconnected()
+<a href=#640 id=640 data-nosnippet>640</a>    </span><span class="kw">pub fn </span>is_disconnected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../std/primitive.bool.html">bool</a> {
+<a href=#641 id=641 data-nosnippet>641</a>        <a class="self" href="#640">self</a>.inner.<a href="mpmc/mod.rs.html#654-660">is_disconnected</a>()
 <a href=#642 id=642 data-nosnippet>642</a>    }
 <a href=#643 id=643 data-nosnippet>643</a>}
 <a href=#644 id=644 data-nosnippet>644</a>
 <a href=#645 id=645 data-nosnippet>645</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#646 id=646 data-nosnippet>646</a></span><span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Sender&lt;T&gt; {
+<a href=#646 id=646 data-nosnippet>646</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/clone/trait.Clone.html">Clone</a> <span class="kw">for </span><a href="#340-342">Sender</a>&lt;T&gt; {
 <a href=#647 id=647 data-nosnippet>647</a>    <span class="doccomment">/// Clone a sender to send to other threads.
 <a href=#648 id=648 data-nosnippet>648</a>    ///
 <a href=#649 id=649 data-nosnippet>649</a>    /// Note, be aware of the lifetime of the sender because all senders
 <a href=#650 id=650 data-nosnippet>650</a>    /// (including the original) need to be dropped in order for
 <a href=#651 id=651 data-nosnippet>651</a>    /// [`Receiver::recv`] to stop blocking.
-<a href=#652 id=652 data-nosnippet>652</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;T&gt; {
-<a href=#653 id=653 data-nosnippet>653</a>        Sender { inner: <span class="self">self</span>.inner.clone() }
+<a href=#652 id=652 data-nosnippet>652</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#340-342">Sender</a>&lt;T&gt; {
+<a href=#653 id=653 data-nosnippet>653</a>        <a href="#340-342">Sender</a> { inner: <a class="self" href="#652">self</a>.inner.<a href="../../../std/clone/trait.Clone.html">clone</a>() }
 <a href=#654 id=654 data-nosnippet>654</a>    }
 <a href=#655 id=655 data-nosnippet>655</a>}
 <a href=#656 id=656 data-nosnippet>656</a>
 <a href=#657 id=657 data-nosnippet>657</a><span class="attr">#[unstable(feature = <span class="string">"share_trait"</span>, issue = <span class="string">"156756"</span>)]
-<a href=#658 id=658 data-nosnippet>658</a></span><span class="kw">impl</span>&lt;T&gt; Share <span class="kw">for </span>Sender&lt;T&gt; {}
+<a href=#658 id=658 data-nosnippet>658</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/clone/trait.Share.html">Share</a> <span class="kw">for </span><a href="#340-342">Sender</a>&lt;T&gt; {}
 <a href=#659 id=659 data-nosnippet>659</a>
 <a href=#660 id=660 data-nosnippet>660</a><span class="attr">#[stable(feature = <span class="string">"mpsc_debug"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#661 id=661 data-nosnippet>661</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Sender&lt;T&gt; {
-<a href=#662 id=662 data-nosnippet>662</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#663 id=663 data-nosnippet>663</a>        f.debug_struct(<span class="string">"Sender"</span>).finish_non_exhaustive()
+<a href=#661 id=661 data-nosnippet>661</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#340-342">Sender</a>&lt;T&gt; {
+<a href=#662 id=662 data-nosnippet>662</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#663 id=663 data-nosnippet>663</a>        <a href="#662">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_struct">debug_struct</a>(<span class="string">"Sender"</span>).<a href="../../../std/fmt/struct.DebugStruct.html#method.finish_non_exhaustive">finish_non_exhaustive</a>()
 <a href=#664 id=664 data-nosnippet>664</a>    }
 <a href=#665 id=665 data-nosnippet>665</a>}
 <a href=#666 id=666 data-nosnippet>666</a>
@@ -668,7 +668,7 @@
 <a href=#668 id=668 data-nosnippet>668</a>// SyncSender
 <a href=#669 id=669 data-nosnippet>669</a>////////////////////////////////////////////////////////////////////////////////
 <a href=#670 id=670 data-nosnippet>670</a>
-<a href=#671 id=671 data-nosnippet>671</a></span><span class="kw">impl</span>&lt;T&gt; SyncSender&lt;T&gt; {
+<a href=#671 id=671 data-nosnippet>671</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#399-401">SyncSender</a>&lt;T&gt; {
 <a href=#672 id=672 data-nosnippet>672</a>    <span class="doccomment">/// Sends a value on this synchronous channel.
 <a href=#673 id=673 data-nosnippet>673</a>    ///
 <a href=#674 id=674 data-nosnippet>674</a>    /// This function will *block* until space in the internal buffer becomes
@@ -706,8 +706,8 @@
 <a href=#706 id=706 data-nosnippet>706</a>    /// assert_eq!(1, msg);
 <a href=#707 id=707 data-nosnippet>707</a>    /// ```
 <a href=#708 id=708 data-nosnippet>708</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;T&gt;&gt; {
-<a href=#710 id=710 data-nosnippet>710</a>        <span class="self">self</span>.inner.send(t)
+<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), <a href="#414">SendError</a>&lt;T&gt;&gt; {
+<a href=#710 id=710 data-nosnippet>710</a>        <a class="self" href="#709">self</a>.inner.<a href="mpmc/mod.rs.html#401-411">send</a>(<a href="#709">t</a>)
 <a href=#711 id=711 data-nosnippet>711</a>    }
 <a href=#712 id=712 data-nosnippet>712</a>
 <a href=#713 id=713 data-nosnippet>713</a>    <span class="doccomment">/// Attempts to send a value on this channel without blocking.
@@ -764,8 +764,8 @@
 <a href=#764 id=764 data-nosnippet>764</a>    /// handle2.join().unwrap();
 <a href=#765 id=765 data-nosnippet>765</a>    /// ```
 <a href=#766 id=766 data-nosnippet>766</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#767 id=767 data-nosnippet>767</a>    </span><span class="kw">pub fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), TrySendError&lt;T&gt;&gt; {
-<a href=#768 id=768 data-nosnippet>768</a>        <span class="self">self</span>.inner.try_send(t)
+<a href=#767 id=767 data-nosnippet>767</a>    </span><span class="kw">pub fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), <a href="#470-484">TrySendError</a>&lt;T&gt;&gt; {
+<a href=#768 id=768 data-nosnippet>768</a>        <a class="self" href="#767">self</a>.inner.<a href="mpmc/mod.rs.html#350-356">try_send</a>(<a href="#767">t</a>)
 <a href=#769 id=769 data-nosnippet>769</a>    }
 <a href=#770 id=770 data-nosnippet>770</a>
 <a href=#771 id=771 data-nosnippet>771</a>    <span class="comment">// Attempts to send for a value on this receiver, returning an error if the
@@ -774,25 +774,25 @@
 <a href=#774 id=774 data-nosnippet>774</a>    // This method is currently only used for tests.
 <a href=#775 id=775 data-nosnippet>775</a>    </span><span class="attr">#[unstable(issue = <span class="string">"none"</span>, feature = <span class="string">"std_internals"</span>)]
 <a href=#776 id=776 data-nosnippet>776</a>    #[doc(hidden)]
-<a href=#777 id=777 data-nosnippet>777</a>    </span><span class="kw">pub fn </span>send_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T, timeout: Duration) -&gt; <span class="prelude-ty">Result</span>&lt;(), mpmc::SendTimeoutError&lt;T&gt;&gt; {
-<a href=#778 id=778 data-nosnippet>778</a>        <span class="self">self</span>.inner.send_timeout(t, timeout)
+<a href=#777 id=777 data-nosnippet>777</a>    </span><span class="kw">pub fn </span>send_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T, timeout: <a href="../../../std/time/struct.Duration.html">Duration</a>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;(), mpmc::<a href="mpmc/error.rs.html#11-20">SendTimeoutError</a>&lt;T&gt;&gt; {
+<a href=#778 id=778 data-nosnippet>778</a>        <a class="self" href="#777">self</a>.inner.<a href="mpmc/mod.rs.html#437-443">send_timeout</a>(<a href="#777">t</a>, <a href="#777">timeout</a>)
 <a href=#779 id=779 data-nosnippet>779</a>    }
 <a href=#780 id=780 data-nosnippet>780</a>}
 <a href=#781 id=781 data-nosnippet>781</a>
 <a href=#782 id=782 data-nosnippet>782</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#783 id=783 data-nosnippet>783</a></span><span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>SyncSender&lt;T&gt; {
-<a href=#784 id=784 data-nosnippet>784</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SyncSender&lt;T&gt; {
-<a href=#785 id=785 data-nosnippet>785</a>        SyncSender { inner: <span class="self">self</span>.inner.clone() }
+<a href=#783 id=783 data-nosnippet>783</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/clone/trait.Clone.html">Clone</a> <span class="kw">for </span><a href="#399-401">SyncSender</a>&lt;T&gt; {
+<a href=#784 id=784 data-nosnippet>784</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#399-401">SyncSender</a>&lt;T&gt; {
+<a href=#785 id=785 data-nosnippet>785</a>        <a href="#399-401">SyncSender</a> { inner: <a class="self" href="#784">self</a>.inner.<a href="../../../std/clone/trait.Clone.html">clone</a>() }
 <a href=#786 id=786 data-nosnippet>786</a>    }
 <a href=#787 id=787 data-nosnippet>787</a>}
 <a href=#788 id=788 data-nosnippet>788</a>
 <a href=#789 id=789 data-nosnippet>789</a><span class="attr">#[unstable(feature = <span class="string">"share_trait"</span>, issue = <span class="string">"156756"</span>)]
-<a href=#790 id=790 data-nosnippet>790</a></span><span class="kw">impl</span>&lt;T&gt; Share <span class="kw">for </span>SyncSender&lt;T&gt; {}
+<a href=#790 id=790 data-nosnippet>790</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/clone/trait.Share.html">Share</a> <span class="kw">for </span><a href="#399-401">SyncSender</a>&lt;T&gt; {}
 <a href=#791 id=791 data-nosnippet>791</a>
 <a href=#792 id=792 data-nosnippet>792</a><span class="attr">#[stable(feature = <span class="string">"mpsc_debug"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#793 id=793 data-nosnippet>793</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>SyncSender&lt;T&gt; {
-<a href=#794 id=794 data-nosnippet>794</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#795 id=795 data-nosnippet>795</a>        f.debug_struct(<span class="string">"SyncSender"</span>).finish_non_exhaustive()
+<a href=#793 id=793 data-nosnippet>793</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#399-401">SyncSender</a>&lt;T&gt; {
+<a href=#794 id=794 data-nosnippet>794</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#795 id=795 data-nosnippet>795</a>        <a href="#794">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_struct">debug_struct</a>(<span class="string">"SyncSender"</span>).<a href="../../../std/fmt/struct.DebugStruct.html#method.finish_non_exhaustive">finish_non_exhaustive</a>()
 <a href=#796 id=796 data-nosnippet>796</a>    }
 <a href=#797 id=797 data-nosnippet>797</a>}
 <a href=#798 id=798 data-nosnippet>798</a>
@@ -800,7 +800,7 @@
 <a href=#800 id=800 data-nosnippet>800</a>// Receiver
 <a href=#801 id=801 data-nosnippet>801</a>////////////////////////////////////////////////////////////////////////////////
 <a href=#802 id=802 data-nosnippet>802</a>
-<a href=#803 id=803 data-nosnippet>803</a></span><span class="kw">impl</span>&lt;T&gt; Receiver&lt;T&gt; {
+<a href=#803 id=803 data-nosnippet>803</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#181-183">Receiver</a>&lt;T&gt; {
 <a href=#804 id=804 data-nosnippet>804</a>    <span class="doccomment">/// Attempts to return a pending value on this receiver without blocking.
 <a href=#805 id=805 data-nosnippet>805</a>    ///
 <a href=#806 id=806 data-nosnippet>806</a>    /// This method will never block the caller in order to wait for data to
@@ -827,8 +827,8 @@
 <a href=#827 id=827 data-nosnippet>827</a>    /// assert!(receiver.try_recv().is_err());
 <a href=#828 id=828 data-nosnippet>828</a>    /// ```
 <a href=#829 id=829 data-nosnippet>829</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#830 id=830 data-nosnippet>830</a>    </span><span class="kw">pub fn </span>try_recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, TryRecvError&gt; {
-<a href=#831 id=831 data-nosnippet>831</a>        <span class="self">self</span>.inner.try_recv()
+<a href=#830 id=830 data-nosnippet>830</a>    </span><span class="kw">pub fn </span>try_recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, <a href="#434-444">TryRecvError</a>&gt; {
+<a href=#831 id=831 data-nosnippet>831</a>        <a class="self" href="#830">self</a>.inner.<a href="mpmc/mod.rs.html#956-962">try_recv</a>()
 <a href=#832 id=832 data-nosnippet>832</a>    }
 <a href=#833 id=833 data-nosnippet>833</a>
 <a href=#834 id=834 data-nosnippet>834</a>    <span class="doccomment">/// Attempts to wait for a value on this receiver, returning an error if the
@@ -886,8 +886,8 @@
 <a href=#886 id=886 data-nosnippet>886</a>    /// assert_eq!(Err(RecvError), recv.recv());
 <a href=#887 id=887 data-nosnippet>887</a>    /// ```
 <a href=#888 id=888 data-nosnippet>888</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#889 id=889 data-nosnippet>889</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, RecvError&gt; {
-<a href=#890 id=890 data-nosnippet>890</a>        <span class="self">self</span>.inner.recv()
+<a href=#889 id=889 data-nosnippet>889</a>    </span><span class="kw">pub fn </span>recv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, <a href="#425">RecvError</a>&gt; {
+<a href=#890 id=890 data-nosnippet>890</a>        <a class="self" href="#889">self</a>.inner.<a href="mpmc/mod.rs.html#1022-1029">recv</a>()
 <a href=#891 id=891 data-nosnippet>891</a>    }
 <a href=#892 id=892 data-nosnippet>892</a>
 <a href=#893 id=893 data-nosnippet>893</a>    <span class="doccomment">/// Attempts to wait for a value on this receiver, returning an error if the
@@ -946,8 +946,8 @@
 <a href=#946 id=946 data-nosnippet>946</a>    /// );
 <a href=#947 id=947 data-nosnippet>947</a>    /// ```
 <a href=#948 id=948 data-nosnippet>948</a>    </span><span class="attr">#[stable(feature = <span class="string">"mpsc_recv_timeout"</span>, since = <span class="string">"1.12.0"</span>)]
-<a href=#949 id=949 data-nosnippet>949</a>    </span><span class="kw">pub fn </span>recv_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, timeout: Duration) -&gt; <span class="prelude-ty">Result</span>&lt;T, RecvTimeoutError&gt; {
-<a href=#950 id=950 data-nosnippet>950</a>        <span class="self">self</span>.inner.recv_timeout(timeout)
+<a href=#949 id=949 data-nosnippet>949</a>    </span><span class="kw">pub fn </span>recv_timeout(<span class="kw-2">&amp;</span><span class="self">self</span>, timeout: <a href="../../../std/time/struct.Duration.html">Duration</a>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, <a href="#453-462">RecvTimeoutError</a>&gt; {
+<a href=#950 id=950 data-nosnippet>950</a>        <a class="self" href="#949">self</a>.inner.<a href="mpmc/mod.rs.html#1090-1096">recv_timeout</a>(<a href="#949">timeout</a>)
 <a href=#951 id=951 data-nosnippet>951</a>    }
 <a href=#952 id=952 data-nosnippet>952</a>
 <a href=#953 id=953 data-nosnippet>953</a>    <span class="doccomment">/// Attempts to wait for a value on this receiver, returning an error if the
@@ -1007,8 +1007,8 @@
 <a href=#1007 id=1007 data-nosnippet>1007</a>    /// );
 <a href=#1008 id=1008 data-nosnippet>1008</a>    /// ```
 <a href=#1009 id=1009 data-nosnippet>1009</a>    </span><span class="attr">#[unstable(feature = <span class="string">"deadline_api"</span>, issue = <span class="string">"46316"</span>)]
-<a href=#1010 id=1010 data-nosnippet>1010</a>    </span><span class="kw">pub fn </span>recv_deadline(<span class="kw-2">&amp;</span><span class="self">self</span>, deadline: Instant) -&gt; <span class="prelude-ty">Result</span>&lt;T, RecvTimeoutError&gt; {
-<a href=#1011 id=1011 data-nosnippet>1011</a>        <span class="self">self</span>.inner.recv_deadline(deadline)
+<a href=#1010 id=1010 data-nosnippet>1010</a>    </span><span class="kw">pub fn </span>recv_deadline(<span class="kw-2">&amp;</span><span class="self">self</span>, deadline: <a href="../time.rs.html#156">Instant</a>) -&gt; <a class="prelude-ty" href="../../../std/result/enum.Result.html">Result</a>&lt;T, <a href="#453-462">RecvTimeoutError</a>&gt; {
+<a href=#1011 id=1011 data-nosnippet>1011</a>        <a class="self" href="#1010">self</a>.inner.<a href="mpmc/mod.rs.html#1157-1163">recv_deadline</a>(<a href="#1010">deadline</a>)
 <a href=#1012 id=1012 data-nosnippet>1012</a>    }
 <a href=#1013 id=1013 data-nosnippet>1013</a>
 <a href=#1014 id=1014 data-nosnippet>1014</a>    <span class="doccomment">/// Returns an iterator that will block waiting for messages, but never
@@ -1035,8 +1035,8 @@
 <a href=#1035 id=1035 data-nosnippet>1035</a>    /// assert_eq!(iter.next(), None);
 <a href=#1036 id=1036 data-nosnippet>1036</a>    /// ```
 <a href=#1037 id=1037 data-nosnippet>1037</a>    </span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1038 id=1038 data-nosnippet>1038</a>    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#1039 id=1039 data-nosnippet>1039</a>        Iter { rx: <span class="self">self </span>}
+<a href=#1038 id=1038 data-nosnippet>1038</a>    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#222-224">Iter</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#1039 id=1039 data-nosnippet>1039</a>        <a href="#222-224">Iter</a> { rx: <a class="self" href="#1038">self</a> }
 <a href=#1040 id=1040 data-nosnippet>1040</a>    }
 <a href=#1041 id=1041 data-nosnippet>1041</a>
 <a href=#1042 id=1042 data-nosnippet>1042</a>    <span class="doccomment">/// Returns an iterator that will attempt to yield all pending values.
@@ -1076,8 +1076,8 @@
 <a href=#1076 id=1076 data-nosnippet>1076</a>    /// assert_eq!(iter.next(), None);
 <a href=#1077 id=1077 data-nosnippet>1077</a>    /// ```
 <a href=#1078 id=1078 data-nosnippet>1078</a>    </span><span class="attr">#[stable(feature = <span class="string">"receiver_try_iter"</span>, since = <span class="string">"1.15.0"</span>)]
-<a href=#1079 id=1079 data-nosnippet>1079</a>    </span><span class="kw">pub fn </span>try_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TryIter&lt;<span class="lifetime">'_</span>, T&gt; {
-<a href=#1080 id=1080 data-nosnippet>1080</a>        TryIter { rx: <span class="self">self </span>}
+<a href=#1079 id=1079 data-nosnippet>1079</a>    </span><span class="kw">pub fn </span>try_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#267-269">TryIter</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#1080 id=1080 data-nosnippet>1080</a>        <a href="#267-269">TryIter</a> { rx: <a class="self" href="#1079">self</a> }
 <a href=#1081 id=1081 data-nosnippet>1081</a>    }
 <a href=#1082 id=1082 data-nosnippet>1082</a>
 <a href=#1083 id=1083 data-nosnippet>1083</a>    <span class="doccomment">/// Returns `true` if the channel is disconnected.
@@ -1099,180 +1099,180 @@
 <a href=#1099 id=1099 data-nosnippet>1099</a>    /// assert!(rx.is_disconnected());
 <a href=#1100 id=1100 data-nosnippet>1100</a>    /// ```
 <a href=#1101 id=1101 data-nosnippet>1101</a>    </span><span class="attr">#[unstable(feature = <span class="string">"mpsc_is_disconnected"</span>, issue = <span class="string">"153668"</span>)]
-<a href=#1102 id=1102 data-nosnippet>1102</a>    </span><span class="kw">pub fn </span>is_disconnected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#1103 id=1103 data-nosnippet>1103</a>        <span class="self">self</span>.inner.is_disconnected()
+<a href=#1102 id=1102 data-nosnippet>1102</a>    </span><span class="kw">pub fn </span>is_disconnected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../std/primitive.bool.html">bool</a> {
+<a href=#1103 id=1103 data-nosnippet>1103</a>        <a class="self" href="#1102">self</a>.inner.<a href="mpmc/mod.rs.html#1412-1418">is_disconnected</a>()
 <a href=#1104 id=1104 data-nosnippet>1104</a>    }
 <a href=#1105 id=1105 data-nosnippet>1105</a>}
 <a href=#1106 id=1106 data-nosnippet>1106</a>
 <a href=#1107 id=1107 data-nosnippet>1107</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1108 id=1108 data-nosnippet>1108</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>Iter&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#1108 id=1108 data-nosnippet>1108</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="../../../std/iter/trait.Iterator.html">Iterator</a> <span class="kw">for </span><a href="#222-224">Iter</a>&lt;<span class="lifetime">'a</span>, T&gt; {
 <a href=#1109 id=1109 data-nosnippet>1109</a>    <span class="kw">type </span>Item = T;
 <a href=#1110 id=1110 data-nosnippet>1110</a>
-<a href=#1111 id=1111 data-nosnippet>1111</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
-<a href=#1112 id=1112 data-nosnippet>1112</a>        <span class="self">self</span>.rx.recv().ok()
+<a href=#1111 id=1111 data-nosnippet>1111</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;T&gt; {
+<a href=#1112 id=1112 data-nosnippet>1112</a>        <a class="self" href="#1111">self</a>.rx.<a href="#889-891">recv</a>().<a href="../../../std/result/enum.Result.html#method.ok">ok</a>()
 <a href=#1113 id=1113 data-nosnippet>1113</a>    }
 <a href=#1114 id=1114 data-nosnippet>1114</a>}
 <a href=#1115 id=1115 data-nosnippet>1115</a>
 <a href=#1116 id=1116 data-nosnippet>1116</a><span class="attr">#[stable(feature = <span class="string">"receiver_try_iter"</span>, since = <span class="string">"1.15.0"</span>)]
-<a href=#1117 id=1117 data-nosnippet>1117</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>TryIter&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#1117 id=1117 data-nosnippet>1117</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="../../../std/iter/trait.Iterator.html">Iterator</a> <span class="kw">for </span><a href="#267-269">TryIter</a>&lt;<span class="lifetime">'a</span>, T&gt; {
 <a href=#1118 id=1118 data-nosnippet>1118</a>    <span class="kw">type </span>Item = T;
 <a href=#1119 id=1119 data-nosnippet>1119</a>
-<a href=#1120 id=1120 data-nosnippet>1120</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
-<a href=#1121 id=1121 data-nosnippet>1121</a>        <span class="self">self</span>.rx.try_recv().ok()
+<a href=#1120 id=1120 data-nosnippet>1120</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;T&gt; {
+<a href=#1121 id=1121 data-nosnippet>1121</a>        <a class="self" href="#1120">self</a>.rx.<a href="#830-832">try_recv</a>().<a href="../../../std/result/enum.Result.html#method.ok">ok</a>()
 <a href=#1122 id=1122 data-nosnippet>1122</a>    }
 <a href=#1123 id=1123 data-nosnippet>1123</a>}
 <a href=#1124 id=1124 data-nosnippet>1124</a>
 <a href=#1125 id=1125 data-nosnippet>1125</a><span class="attr">#[stable(feature = <span class="string">"receiver_into_iter"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1126 id=1126 data-nosnippet>1126</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; IntoIterator <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Receiver&lt;T&gt; {
+<a href=#1126 id=1126 data-nosnippet>1126</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; <a href="../../../std/iter/trait.IntoIterator.html">IntoIterator</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#181-183">Receiver</a>&lt;T&gt; {
 <a href=#1127 id=1127 data-nosnippet>1127</a>    <span class="kw">type </span>Item = T;
-<a href=#1128 id=1128 data-nosnippet>1128</a>    <span class="kw">type </span>IntoIter = Iter&lt;<span class="lifetime">'a</span>, T&gt;;
+<a href=#1128 id=1128 data-nosnippet>1128</a>    <span class="kw">type </span>IntoIter = <a href="#222-224">Iter</a>&lt;<span class="lifetime">'a</span>, T&gt;;
 <a href=#1129 id=1129 data-nosnippet>1129</a>
-<a href=#1130 id=1130 data-nosnippet>1130</a>    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; Iter&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#1131 id=1131 data-nosnippet>1131</a>        <span class="self">self</span>.iter()
+<a href=#1130 id=1130 data-nosnippet>1130</a>    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <a href="#222-224">Iter</a>&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#1131 id=1131 data-nosnippet>1131</a>        <a class="self" href="#1130">self</a>.<a href="#1038-1040">iter</a>()
 <a href=#1132 id=1132 data-nosnippet>1132</a>    }
 <a href=#1133 id=1133 data-nosnippet>1133</a>}
 <a href=#1134 id=1134 data-nosnippet>1134</a>
 <a href=#1135 id=1135 data-nosnippet>1135</a><span class="attr">#[stable(feature = <span class="string">"receiver_into_iter"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1136 id=1136 data-nosnippet>1136</a></span><span class="kw">impl</span>&lt;T&gt; Iterator <span class="kw">for </span>IntoIter&lt;T&gt; {
+<a href=#1136 id=1136 data-nosnippet>1136</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/iter/trait.Iterator.html">Iterator</a> <span class="kw">for </span><a href="#301-303">IntoIter</a>&lt;T&gt; {
 <a href=#1137 id=1137 data-nosnippet>1137</a>    <span class="kw">type </span>Item = T;
-<a href=#1138 id=1138 data-nosnippet>1138</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
-<a href=#1139 id=1139 data-nosnippet>1139</a>        <span class="self">self</span>.rx.recv().ok()
+<a href=#1138 id=1138 data-nosnippet>1138</a>    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../../std/option/enum.Option.html">Option</a>&lt;T&gt; {
+<a href=#1139 id=1139 data-nosnippet>1139</a>        <a class="self" href="#1138">self</a>.rx.<a href="#889-891">recv</a>().<a href="../../../std/result/enum.Result.html#method.ok">ok</a>()
 <a href=#1140 id=1140 data-nosnippet>1140</a>    }
 <a href=#1141 id=1141 data-nosnippet>1141</a>}
 <a href=#1142 id=1142 data-nosnippet>1142</a>
 <a href=#1143 id=1143 data-nosnippet>1143</a><span class="attr">#[stable(feature = <span class="string">"receiver_into_iter"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1144 id=1144 data-nosnippet>1144</a></span><span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>Receiver&lt;T&gt; {
+<a href=#1144 id=1144 data-nosnippet>1144</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/iter/trait.IntoIterator.html">IntoIterator</a> <span class="kw">for </span><a href="#181-183">Receiver</a>&lt;T&gt; {
 <a href=#1145 id=1145 data-nosnippet>1145</a>    <span class="kw">type </span>Item = T;
-<a href=#1146 id=1146 data-nosnippet>1146</a>    <span class="kw">type </span>IntoIter = IntoIter&lt;T&gt;;
+<a href=#1146 id=1146 data-nosnippet>1146</a>    <span class="kw">type </span>IntoIter = <a href="#301-303">IntoIter</a>&lt;T&gt;;
 <a href=#1147 id=1147 data-nosnippet>1147</a>
-<a href=#1148 id=1148 data-nosnippet>1148</a>    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; IntoIter&lt;T&gt; {
-<a href=#1149 id=1149 data-nosnippet>1149</a>        IntoIter { rx: <span class="self">self </span>}
+<a href=#1148 id=1148 data-nosnippet>1148</a>    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <a href="#301-303">IntoIter</a>&lt;T&gt; {
+<a href=#1149 id=1149 data-nosnippet>1149</a>        <a href="#301-303">IntoIter</a> { rx: <a class="self" href="#1148">self</a> }
 <a href=#1150 id=1150 data-nosnippet>1150</a>    }
 <a href=#1151 id=1151 data-nosnippet>1151</a>}
 <a href=#1152 id=1152 data-nosnippet>1152</a>
 <a href=#1153 id=1153 data-nosnippet>1153</a><span class="attr">#[stable(feature = <span class="string">"mpsc_debug"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#1154 id=1154 data-nosnippet>1154</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Receiver&lt;T&gt; {
-<a href=#1155 id=1155 data-nosnippet>1155</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1156 id=1156 data-nosnippet>1156</a>        f.debug_struct(<span class="string">"Receiver"</span>).finish_non_exhaustive()
+<a href=#1154 id=1154 data-nosnippet>1154</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#181-183">Receiver</a>&lt;T&gt; {
+<a href=#1155 id=1155 data-nosnippet>1155</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1156 id=1156 data-nosnippet>1156</a>        <a href="#1155">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_struct">debug_struct</a>(<span class="string">"Receiver"</span>).<a href="../../../std/fmt/struct.DebugStruct.html#method.finish_non_exhaustive">finish_non_exhaustive</a>()
 <a href=#1157 id=1157 data-nosnippet>1157</a>    }
 <a href=#1158 id=1158 data-nosnippet>1158</a>}
 <a href=#1159 id=1159 data-nosnippet>1159</a>
 <a href=#1160 id=1160 data-nosnippet>1160</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1161 id=1161 data-nosnippet>1161</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>SendError&lt;T&gt; {
-<a href=#1162 id=1162 data-nosnippet>1162</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1163 id=1163 data-nosnippet>1163</a>        f.debug_struct(<span class="string">"SendError"</span>).finish_non_exhaustive()
+<a href=#1161 id=1161 data-nosnippet>1161</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#414">SendError</a>&lt;T&gt; {
+<a href=#1162 id=1162 data-nosnippet>1162</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1163 id=1163 data-nosnippet>1163</a>        <a href="#1162">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_struct">debug_struct</a>(<span class="string">"SendError"</span>).<a href="../../../std/fmt/struct.DebugStruct.html#method.finish_non_exhaustive">finish_non_exhaustive</a>()
 <a href=#1164 id=1164 data-nosnippet>1164</a>    }
 <a href=#1165 id=1165 data-nosnippet>1165</a>}
 <a href=#1166 id=1166 data-nosnippet>1166</a>
 <a href=#1167 id=1167 data-nosnippet>1167</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1168 id=1168 data-nosnippet>1168</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Display <span class="kw">for </span>SendError&lt;T&gt; {
-<a href=#1169 id=1169 data-nosnippet>1169</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1170 id=1170 data-nosnippet>1170</a>        <span class="string">"sending on a closed channel"</span>.fmt(f)
+<a href=#1168 id=1168 data-nosnippet>1168</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#414">SendError</a>&lt;T&gt; {
+<a href=#1169 id=1169 data-nosnippet>1169</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1170 id=1170 data-nosnippet>1170</a>        <span class="string">"sending on a closed channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1169">f</a>)
 <a href=#1171 id=1171 data-nosnippet>1171</a>    }
 <a href=#1172 id=1172 data-nosnippet>1172</a>}
 <a href=#1173 id=1173 data-nosnippet>1173</a>
 <a href=#1174 id=1174 data-nosnippet>1174</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;T&gt; error::Error <span class="kw">for </span>SendError&lt;T&gt; {}
+<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/error/trait.Error.html">error::Error</a> <span class="kw">for </span><a href="#414">SendError</a>&lt;T&gt; {}
 <a href=#1176 id=1176 data-nosnippet>1176</a>
 <a href=#1177 id=1177 data-nosnippet>1177</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1178 id=1178 data-nosnippet>1178</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>TrySendError&lt;T&gt; {
-<a href=#1179 id=1179 data-nosnippet>1179</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1180 id=1180 data-nosnippet>1180</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#1181 id=1181 data-nosnippet>1181</a>            TrySendError::Full(..) =&gt; f.debug_tuple(<span class="string">"TrySendError::Full"</span>).finish_non_exhaustive(),
-<a href=#1182 id=1182 data-nosnippet>1182</a>            TrySendError::Disconnected(..) =&gt; {
-<a href=#1183 id=1183 data-nosnippet>1183</a>                f.debug_tuple(<span class="string">"TrySendError::Disconnected"</span>).finish_non_exhaustive()
+<a href=#1178 id=1178 data-nosnippet>1178</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Debug.html">fmt::Debug</a> <span class="kw">for </span><a href="#470-484">TrySendError</a>&lt;T&gt; {
+<a href=#1179 id=1179 data-nosnippet>1179</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1180 id=1180 data-nosnippet>1180</a>        <span class="kw">match </span><span class="kw-2">*</span><a class="self" href="#1179">self</a> {
+<a href=#1181 id=1181 data-nosnippet>1181</a>            TrySendError::<a href="#478">Full</a>(..) =&gt; <a href="#1179">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_tuple">debug_tuple</a>(<span class="string">"TrySendError::Full"</span>).<a href="../../../std/fmt/struct.DebugTuple.html#method.finish_non_exhaustive">finish_non_exhaustive</a>(),
+<a href=#1182 id=1182 data-nosnippet>1182</a>            TrySendError::<a href="#483">Disconnected</a>(..) =&gt; {
+<a href=#1183 id=1183 data-nosnippet>1183</a>                <a href="#1179">f</a>.<a href="../../../std/fmt/struct.Formatter.html#method.debug_tuple">debug_tuple</a>(<span class="string">"TrySendError::Disconnected"</span>).<a href="../../../std/fmt/struct.DebugTuple.html#method.finish_non_exhaustive">finish_non_exhaustive</a>()
 <a href=#1184 id=1184 data-nosnippet>1184</a>            }
 <a href=#1185 id=1185 data-nosnippet>1185</a>        }
 <a href=#1186 id=1186 data-nosnippet>1186</a>    }
 <a href=#1187 id=1187 data-nosnippet>1187</a>}
 <a href=#1188 id=1188 data-nosnippet>1188</a>
 <a href=#1189 id=1189 data-nosnippet>1189</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1190 id=1190 data-nosnippet>1190</a></span><span class="kw">impl</span>&lt;T&gt; fmt::Display <span class="kw">for </span>TrySendError&lt;T&gt; {
-<a href=#1191 id=1191 data-nosnippet>1191</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1192 id=1192 data-nosnippet>1192</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#1193 id=1193 data-nosnippet>1193</a>            TrySendError::Full(..) =&gt; <span class="string">"sending on a full channel"</span>.fmt(f),
-<a href=#1194 id=1194 data-nosnippet>1194</a>            TrySendError::Disconnected(..) =&gt; <span class="string">"sending on a closed channel"</span>.fmt(f),
+<a href=#1190 id=1190 data-nosnippet>1190</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#470-484">TrySendError</a>&lt;T&gt; {
+<a href=#1191 id=1191 data-nosnippet>1191</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1192 id=1192 data-nosnippet>1192</a>        <span class="kw">match </span><span class="kw-2">*</span><a class="self" href="#1191">self</a> {
+<a href=#1193 id=1193 data-nosnippet>1193</a>            TrySendError::<a href="#478">Full</a>(..) =&gt; <span class="string">"sending on a full channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1191">f</a>),
+<a href=#1194 id=1194 data-nosnippet>1194</a>            TrySendError::<a href="#483">Disconnected</a>(..) =&gt; <span class="string">"sending on a closed channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1191">f</a>),
 <a href=#1195 id=1195 data-nosnippet>1195</a>        }
 <a href=#1196 id=1196 data-nosnippet>1196</a>    }
 <a href=#1197 id=1197 data-nosnippet>1197</a>}
 <a href=#1198 id=1198 data-nosnippet>1198</a>
 <a href=#1199 id=1199 data-nosnippet>1199</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1200 id=1200 data-nosnippet>1200</a></span><span class="kw">impl</span>&lt;T&gt; error::Error <span class="kw">for </span>TrySendError&lt;T&gt; {}
+<a href=#1200 id=1200 data-nosnippet>1200</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/error/trait.Error.html">error::Error</a> <span class="kw">for </span><a href="#470-484">TrySendError</a>&lt;T&gt; {}
 <a href=#1201 id=1201 data-nosnippet>1201</a>
 <a href=#1202 id=1202 data-nosnippet>1202</a><span class="attr">#[stable(feature = <span class="string">"mpsc_error_conversions"</span>, since = <span class="string">"1.24.0"</span>)]
-<a href=#1203 id=1203 data-nosnippet>1203</a></span><span class="kw">impl</span>&lt;T&gt; From&lt;SendError&lt;T&gt;&gt; <span class="kw">for </span>TrySendError&lt;T&gt; {
+<a href=#1203 id=1203 data-nosnippet>1203</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../../../std/convert/trait.From.html">From</a>&lt;<a href="#414">SendError</a>&lt;T&gt;&gt; <span class="kw">for </span><a href="#470-484">TrySendError</a>&lt;T&gt; {
 <a href=#1204 id=1204 data-nosnippet>1204</a>    <span class="doccomment">/// Converts a `SendError&lt;T&gt;` into a `TrySendError&lt;T&gt;`.
 <a href=#1205 id=1205 data-nosnippet>1205</a>    ///
 <a href=#1206 id=1206 data-nosnippet>1206</a>    /// This conversion always returns a `TrySendError::Disconnected` containing the data in the `SendError&lt;T&gt;`.
 <a href=#1207 id=1207 data-nosnippet>1207</a>    ///
 <a href=#1208 id=1208 data-nosnippet>1208</a>    /// No data is allocated on the heap.
-<a href=#1209 id=1209 data-nosnippet>1209</a>    </span><span class="kw">fn </span>from(err: SendError&lt;T&gt;) -&gt; TrySendError&lt;T&gt; {
-<a href=#1210 id=1210 data-nosnippet>1210</a>        <span class="kw">match </span>err {
-<a href=#1211 id=1211 data-nosnippet>1211</a>            SendError(t) =&gt; TrySendError::Disconnected(t),
+<a href=#1209 id=1209 data-nosnippet>1209</a>    </span><span class="kw">fn </span>from(err: <a href="#414">SendError</a>&lt;T&gt;) -&gt; <a href="#470-484">TrySendError</a>&lt;T&gt; {
+<a href=#1210 id=1210 data-nosnippet>1210</a>        <span class="kw">match </span><a href="#1209">err</a> {
+<a href=#1211 id=1211 data-nosnippet>1211</a>            <a href="#414">SendError</a>(t) =&gt; TrySendError::<a href="#483">Disconnected</a>(<a href="#1211">t</a>),
 <a href=#1212 id=1212 data-nosnippet>1212</a>        }
 <a href=#1213 id=1213 data-nosnippet>1213</a>    }
 <a href=#1214 id=1214 data-nosnippet>1214</a>}
 <a href=#1215 id=1215 data-nosnippet>1215</a>
 <a href=#1216 id=1216 data-nosnippet>1216</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1217 id=1217 data-nosnippet>1217</a></span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>RecvError {
-<a href=#1218 id=1218 data-nosnippet>1218</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1219 id=1219 data-nosnippet>1219</a>        <span class="string">"receiving on a closed channel"</span>.fmt(f)
+<a href=#1217 id=1217 data-nosnippet>1217</a></span><span class="kw">impl </span><a href="../../../std/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#425">RecvError</a> {
+<a href=#1218 id=1218 data-nosnippet>1218</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1219 id=1219 data-nosnippet>1219</a>        <span class="string">"receiving on a closed channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1218">f</a>)
 <a href=#1220 id=1220 data-nosnippet>1220</a>    }
 <a href=#1221 id=1221 data-nosnippet>1221</a>}
 <a href=#1222 id=1222 data-nosnippet>1222</a>
 <a href=#1223 id=1223 data-nosnippet>1223</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1224 id=1224 data-nosnippet>1224</a></span><span class="kw">impl </span>error::Error <span class="kw">for </span>RecvError {}
+<a href=#1224 id=1224 data-nosnippet>1224</a></span><span class="kw">impl </span><a href="../../../std/error/trait.Error.html">error::Error</a> <span class="kw">for </span><a href="#425">RecvError</a> {}
 <a href=#1225 id=1225 data-nosnippet>1225</a>
 <a href=#1226 id=1226 data-nosnippet>1226</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1227 id=1227 data-nosnippet>1227</a></span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>TryRecvError {
-<a href=#1228 id=1228 data-nosnippet>1228</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1229 id=1229 data-nosnippet>1229</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#1230 id=1230 data-nosnippet>1230</a>            TryRecvError::Empty =&gt; <span class="string">"receiving on an empty channel"</span>.fmt(f),
-<a href=#1231 id=1231 data-nosnippet>1231</a>            TryRecvError::Disconnected =&gt; <span class="string">"receiving on a closed channel"</span>.fmt(f),
+<a href=#1227 id=1227 data-nosnippet>1227</a></span><span class="kw">impl </span><a href="../../../std/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#434-444">TryRecvError</a> {
+<a href=#1228 id=1228 data-nosnippet>1228</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1229 id=1229 data-nosnippet>1229</a>        <span class="kw">match </span><span class="kw-2">*</span><a class="self" href="#1228">self</a> {
+<a href=#1230 id=1230 data-nosnippet>1230</a>            TryRecvError::<a href="#438">Empty</a> =&gt; <span class="string">"receiving on an empty channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1228">f</a>),
+<a href=#1231 id=1231 data-nosnippet>1231</a>            TryRecvError::<a href="#443">Disconnected</a> =&gt; <span class="string">"receiving on a closed channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1228">f</a>),
 <a href=#1232 id=1232 data-nosnippet>1232</a>        }
 <a href=#1233 id=1233 data-nosnippet>1233</a>    }
 <a href=#1234 id=1234 data-nosnippet>1234</a>}
 <a href=#1235 id=1235 data-nosnippet>1235</a>
 <a href=#1236 id=1236 data-nosnippet>1236</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1237 id=1237 data-nosnippet>1237</a></span><span class="kw">impl </span>error::Error <span class="kw">for </span>TryRecvError {}
+<a href=#1237 id=1237 data-nosnippet>1237</a></span><span class="kw">impl </span><a href="../../../std/error/trait.Error.html">error::Error</a> <span class="kw">for </span><a href="#434-444">TryRecvError</a> {}
 <a href=#1238 id=1238 data-nosnippet>1238</a>
 <a href=#1239 id=1239 data-nosnippet>1239</a><span class="attr">#[stable(feature = <span class="string">"mpsc_error_conversions"</span>, since = <span class="string">"1.24.0"</span>)]
-<a href=#1240 id=1240 data-nosnippet>1240</a></span><span class="kw">impl </span>From&lt;RecvError&gt; <span class="kw">for </span>TryRecvError {
+<a href=#1240 id=1240 data-nosnippet>1240</a></span><span class="kw">impl </span><a href="../../../std/convert/trait.From.html">From</a>&lt;<a href="#425">RecvError</a>&gt; <span class="kw">for </span><a href="#434-444">TryRecvError</a> {
 <a href=#1241 id=1241 data-nosnippet>1241</a>    <span class="doccomment">/// Converts a `RecvError` into a `TryRecvError`.
 <a href=#1242 id=1242 data-nosnippet>1242</a>    ///
 <a href=#1243 id=1243 data-nosnippet>1243</a>    /// This conversion always returns `TryRecvError::Disconnected`.
 <a href=#1244 id=1244 data-nosnippet>1244</a>    ///
 <a href=#1245 id=1245 data-nosnippet>1245</a>    /// No data is allocated on the heap.
-<a href=#1246 id=1246 data-nosnippet>1246</a>    </span><span class="kw">fn </span>from(err: RecvError) -&gt; TryRecvError {
-<a href=#1247 id=1247 data-nosnippet>1247</a>        <span class="kw">match </span>err {
-<a href=#1248 id=1248 data-nosnippet>1248</a>            RecvError =&gt; TryRecvError::Disconnected,
+<a href=#1246 id=1246 data-nosnippet>1246</a>    </span><span class="kw">fn </span>from(err: <a href="#425">RecvError</a>) -&gt; <a href="#434-444">TryRecvError</a> {
+<a href=#1247 id=1247 data-nosnippet>1247</a>        <span class="kw">match </span><a href="#1246">err</a> {
+<a href=#1248 id=1248 data-nosnippet>1248</a>            <a href="#425">RecvError</a> =&gt; TryRecvError::<a href="#443">Disconnected</a>,
 <a href=#1249 id=1249 data-nosnippet>1249</a>        }
 <a href=#1250 id=1250 data-nosnippet>1250</a>    }
 <a href=#1251 id=1251 data-nosnippet>1251</a>}
 <a href=#1252 id=1252 data-nosnippet>1252</a>
 <a href=#1253 id=1253 data-nosnippet>1253</a><span class="attr">#[stable(feature = <span class="string">"mpsc_recv_timeout_error"</span>, since = <span class="string">"1.15.0"</span>)]
-<a href=#1254 id=1254 data-nosnippet>1254</a></span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>RecvTimeoutError {
-<a href=#1255 id=1255 data-nosnippet>1255</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#1256 id=1256 data-nosnippet>1256</a>        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
-<a href=#1257 id=1257 data-nosnippet>1257</a>            RecvTimeoutError::Timeout =&gt; <span class="string">"timed out waiting on channel"</span>.fmt(f),
-<a href=#1258 id=1258 data-nosnippet>1258</a>            RecvTimeoutError::Disconnected =&gt; <span class="string">"channel is empty and sending half is closed"</span>.fmt(f),
+<a href=#1254 id=1254 data-nosnippet>1254</a></span><span class="kw">impl </span><a href="../../../std/fmt/trait.Display.html">fmt::Display</a> <span class="kw">for </span><a href="#453-462">RecvTimeoutError</a> {
+<a href=#1255 id=1255 data-nosnippet>1255</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../../std/fmt/type.Result.html">Result</a> {
+<a href=#1256 id=1256 data-nosnippet>1256</a>        <span class="kw">match </span><span class="kw-2">*</span><a class="self" href="#1255">self</a> {
+<a href=#1257 id=1257 data-nosnippet>1257</a>            RecvTimeoutError::<a href="#457">Timeout</a> =&gt; <span class="string">"timed out waiting on channel"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1255">f</a>),
+<a href=#1258 id=1258 data-nosnippet>1258</a>            RecvTimeoutError::<a href="#461">Disconnected</a> =&gt; <span class="string">"channel is empty and sending half is closed"</span>.<a href="../../../std/fmt/trait.Display.html">fmt</a>(<a href="#1255">f</a>),
 <a href=#1259 id=1259 data-nosnippet>1259</a>        }
 <a href=#1260 id=1260 data-nosnippet>1260</a>    }
 <a href=#1261 id=1261 data-nosnippet>1261</a>}
 <a href=#1262 id=1262 data-nosnippet>1262</a>
 <a href=#1263 id=1263 data-nosnippet>1263</a><span class="attr">#[stable(feature = <span class="string">"mpsc_recv_timeout_error"</span>, since = <span class="string">"1.15.0"</span>)]
-<a href=#1264 id=1264 data-nosnippet>1264</a></span><span class="kw">impl </span>error::Error <span class="kw">for </span>RecvTimeoutError {}
+<a href=#1264 id=1264 data-nosnippet>1264</a></span><span class="kw">impl </span><a href="../../../std/error/trait.Error.html">error::Error</a> <span class="kw">for </span><a href="#453-462">RecvTimeoutError</a> {}
 <a href=#1265 id=1265 data-nosnippet>1265</a>
 <a href=#1266 id=1266 data-nosnippet>1266</a><span class="attr">#[stable(feature = <span class="string">"mpsc_error_conversions"</span>, since = <span class="string">"1.24.0"</span>)]
-<a href=#1267 id=1267 data-nosnippet>1267</a></span><span class="kw">impl </span>From&lt;RecvError&gt; <span class="kw">for </span>RecvTimeoutError {
+<a href=#1267 id=1267 data-nosnippet>1267</a></span><span class="kw">impl </span><a href="../../../std/convert/trait.From.html">From</a>&lt;<a href="#425">RecvError</a>&gt; <span class="kw">for </span><a href="#453-462">RecvTimeoutError</a> {
 <a href=#1268 id=1268 data-nosnippet>1268</a>    <span class="doccomment">/// Converts a `RecvError` into a `RecvTimeoutError`.
 <a href=#1269 id=1269 data-nosnippet>1269</a>    ///
 <a href=#1270 id=1270 data-nosnippet>1270</a>    /// This conversion always returns `RecvTimeoutError::Disconnected`.
 <a href=#1271 id=1271 data-nosnippet>1271</a>    ///
 <a href=#1272 id=1272 data-nosnippet>1272</a>    /// No data is allocated on the heap.
-<a href=#1273 id=1273 data-nosnippet>1273</a>    </span><span class="kw">fn </span>from(err: RecvError) -&gt; RecvTimeoutError {
-<a href=#1274 id=1274 data-nosnippet>1274</a>        <span class="kw">match </span>err {
-<a href=#1275 id=1275 data-nosnippet>1275</a>            RecvError =&gt; RecvTimeoutError::Disconnected,
+<a href=#1273 id=1273 data-nosnippet>1273</a>    </span><span class="kw">fn </span>from(err: <a href="#425">RecvError</a>) -&gt; <a href="#453-462">RecvTimeoutError</a> {
+<a href=#1274 id=1274 data-nosnippet>1274</a>        <span class="kw">match </span><a href="#1273">err</a> {
+<a href=#1275 id=1275 data-nosnippet>1275</a>            <a href="#425">RecvError</a> =&gt; RecvTimeoutError::<a href="#461">Disconnected</a>,
 <a href=#1276 id=1276 data-nosnippet>1276</a>        }
 <a href=#1277 id=1277 data-nosnippet>1277</a>    }
 <a href=#1278 id=1278 data-nosnippet>1278</a>}
