@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/net/ip_addr.rs`."><title>ip_addr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92b5b8c87 2026-10-29)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/net/</div>ip_addr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="display_buffer.rs.html#5-8"><span class="kw">super</span>::display_buffer::DisplayBuffer</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/net/ip_addr.rs`."><title>ip_addr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (f9ceb4a4d 2026-10-31)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/net/</div>ip_addr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="display_buffer.rs.html#5-8"><span class="kw">super</span>::display_buffer::DisplayBuffer</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../cmp.rs.html#420-430"><span class="kw">crate</span>::cmp::Ordering</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#325">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::hash::{<a href="../hash/mod.rs.html#250-252">Hash</a>, <a href="../hash/mod.rs.html#312-554">Hasher</a>};
@@ -81,7 +81,7 @@
 <a href=#81 id=81 data-nosnippet>81</a>        <span class="comment">// Hashers are often more efficient at hashing a fixed-width integer
 <a href=#82 id=82 data-nosnippet>82</a>        // than a bytestring, so convert before hashing. We don't use to_bits()
 <a href=#83 id=83 data-nosnippet>83</a>        // here as that may involve a byteswap which is unnecessary.
-<a href=#84 id=84 data-nosnippet>84</a>        </span><a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1298-1322">from_ne_bytes</a>(<a class="self" href="#80">self</a>.octets).<a href="../hash/mod.rs.html#198">hash</a>(<a href="#80">state</a>);
+<a href=#84 id=84 data-nosnippet>84</a>        </span><a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1299-1323">from_ne_bytes</a>(<a class="self" href="#80">self</a>.octets).<a href="../hash/mod.rs.html#198">hash</a>(<a href="#80">state</a>);
 <a href=#85 id=85 data-nosnippet>85</a>    }
 <a href=#86 id=86 data-nosnippet>86</a>}
 <a href=#87 id=87 data-nosnippet>87</a>
@@ -175,7 +175,7 @@
 <a href=#175 id=175 data-nosnippet>175</a>        <span class="comment">// Hashers are often more efficient at hashing a fixed-width integer
 <a href=#176 id=176 data-nosnippet>176</a>        // than a bytestring, so convert before hashing. We don't use to_bits()
 <a href=#177 id=177 data-nosnippet>177</a>        // here as that may involve unnecessary byteswaps.
-<a href=#178 id=178 data-nosnippet>178</a>        </span><a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_ne_bytes</a>(<a class="self" href="#174">self</a>.octets).<a href="../hash/mod.rs.html#198">hash</a>(<a href="#174">state</a>);
+<a href=#178 id=178 data-nosnippet>178</a>        </span><a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_ne_bytes</a>(<a class="self" href="#174">self</a>.octets).<a href="../hash/mod.rs.html#198">hash</a>(<a href="#174">state</a>);
 <a href=#179 id=179 data-nosnippet>179</a>    }
 <a href=#180 id=180 data-nosnippet>180</a>}
 <a href=#181 id=181 data-nosnippet>181</a>
@@ -615,7 +615,7 @@
 <a href=#615 id=615 data-nosnippet>615</a>    #[must_use]
 <a href=#616 id=616 data-nosnippet>616</a>    #[inline]
 <a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">pub const fn </span>to_bits(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.u32.html">u32</a> {
-<a href=#618 id=618 data-nosnippet>618</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1298-1322">from_be_bytes</a>(<a class="self" href="#617">self</a>.octets)
+<a href=#618 id=618 data-nosnippet>618</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1299-1323">from_be_bytes</a>(<a class="self" href="#617">self</a>.octets)
 <a href=#619 id=619 data-nosnippet>619</a>    }
 <a href=#620 id=620 data-nosnippet>620</a>
 <a href=#621 id=621 data-nosnippet>621</a>    <span class="doccomment">/// Converts a native byte order `u32` into an IPv4 address.
@@ -635,7 +635,7 @@
 <a href=#635 id=635 data-nosnippet>635</a>    #[must_use]
 <a href=#636 id=636 data-nosnippet>636</a>    #[inline]
 <a href=#637 id=637 data-nosnippet>637</a>    </span><span class="kw">pub const fn </span>from_bits(bits: <a href="../../../core/primitive.u32.html">u32</a>) -&gt; <a href="#74-76">Ipv4Addr</a> {
-<a href=#638 id=638 data-nosnippet>638</a>        <a href="#74-76">Ipv4Addr</a> { octets: <a href="#637">bits</a>.<a href="../num/mod.rs.html#1298-1322">to_be_bytes</a>() }
+<a href=#638 id=638 data-nosnippet>638</a>        <a href="#74-76">Ipv4Addr</a> { octets: <a href="#637">bits</a>.<a href="../num/mod.rs.html#1299-1323">to_be_bytes</a>() }
 <a href=#639 id=639 data-nosnippet>639</a>    }
 <a href=#640 id=640 data-nosnippet>640</a>
 <a href=#641 id=641 data-nosnippet>641</a>    <span class="doccomment">/// An IPv4 address with the address pointing to localhost: `127.0.0.1`
@@ -755,7 +755,7 @@
 <a href=#755 id=755 data-nosnippet>755</a>    #[must_use]
 <a href=#756 id=756 data-nosnippet>756</a>    #[inline]
 <a href=#757 id=757 data-nosnippet>757</a>    </span><span class="kw">pub const fn </span>is_unspecified(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#758 id=758 data-nosnippet>758</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1298-1322">from_be_bytes</a>(<a class="self" href="#757">self</a>.octets) == <span class="number">0
+<a href=#758 id=758 data-nosnippet>758</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1299-1323">from_be_bytes</a>(<a class="self" href="#757">self</a>.octets) == <span class="number">0
 <a href=#759 id=759 data-nosnippet>759</a>    </span>}
 <a href=#760 id=760 data-nosnippet>760</a>
 <a href=#761 id=761 data-nosnippet>761</a>    <span class="doccomment">/// Returns [`true`] if this is a loopback address (`127.0.0.0/8`).
@@ -1061,7 +1061,7 @@
 <a href=#1061 id=1061 data-nosnippet>1061</a>    #[must_use]
 <a href=#1062 id=1062 data-nosnippet>1062</a>    #[inline]
 <a href=#1063 id=1063 data-nosnippet>1063</a>    </span><span class="kw">pub const fn </span>is_broadcast(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#1064 id=1064 data-nosnippet>1064</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1298-1322">from_be_bytes</a>(<a class="self" href="#1063">self</a>.<a href="#697-699">octets</a>()) == <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1298-1322">from_be_bytes</a>(<span class="self">Self</span>::<a href="#681">BROADCAST</a>.<a href="#697-699">octets</a>())
+<a href=#1064 id=1064 data-nosnippet>1064</a>        <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1299-1323">from_be_bytes</a>(<a class="self" href="#1063">self</a>.<a href="#697-699">octets</a>()) == <a href="../../../core/primitive.u32.html">u32</a>::<a href="../num/mod.rs.html#1299-1323">from_be_bytes</a>(<span class="self">Self</span>::<a href="#681">BROADCAST</a>.<a href="#697-699">octets</a>())
 <a href=#1065 id=1065 data-nosnippet>1065</a>    }
 <a href=#1066 id=1066 data-nosnippet>1066</a>
 <a href=#1067 id=1067 data-nosnippet>1067</a>    <span class="doccomment">/// Returns [`true`] if this address is in a range designated for documentation.
@@ -1378,14 +1378,14 @@
 <a href=#1378 id=1378 data-nosnippet>1378</a>    #[inline]
 <a href=#1379 id=1379 data-nosnippet>1379</a>    </span><span class="kw">pub const fn </span>new(a: <a href="../../../core/primitive.u16.html">u16</a>, b: <a href="../../../core/primitive.u16.html">u16</a>, c: <a href="../../../core/primitive.u16.html">u16</a>, d: <a href="../../../core/primitive.u16.html">u16</a>, e: <a href="../../../core/primitive.u16.html">u16</a>, f: <a href="../../../core/primitive.u16.html">u16</a>, g: <a href="../../../core/primitive.u16.html">u16</a>, h: <a href="../../../core/primitive.u16.html">u16</a>) -&gt; <a href="#168-170">Ipv6Addr</a> {
 <a href=#1380 id=1380 data-nosnippet>1380</a>        <span class="kw">let </span>addr16 = [
-<a href=#1381 id=1381 data-nosnippet>1381</a>            <a href="#1379">a</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1382 id=1382 data-nosnippet>1382</a>            <a href="#1379">b</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1383 id=1383 data-nosnippet>1383</a>            <a href="#1379">c</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1384 id=1384 data-nosnippet>1384</a>            <a href="#1379">d</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1385 id=1385 data-nosnippet>1385</a>            <a href="#1379">e</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1386 id=1386 data-nosnippet>1386</a>            <a href="#1379">f</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1387 id=1387 data-nosnippet>1387</a>            <a href="#1379">g</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
-<a href=#1388 id=1388 data-nosnippet>1388</a>            <a href="#1379">h</a>.<a href="../num/mod.rs.html#1242-1266">to_be</a>(),
+<a href=#1381 id=1381 data-nosnippet>1381</a>            <a href="#1379">a</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1382 id=1382 data-nosnippet>1382</a>            <a href="#1379">b</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1383 id=1383 data-nosnippet>1383</a>            <a href="#1379">c</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1384 id=1384 data-nosnippet>1384</a>            <a href="#1379">d</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1385 id=1385 data-nosnippet>1385</a>            <a href="#1379">e</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1386 id=1386 data-nosnippet>1386</a>            <a href="#1379">f</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1387 id=1387 data-nosnippet>1387</a>            <a href="#1379">g</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
+<a href=#1388 id=1388 data-nosnippet>1388</a>            <a href="#1379">h</a>.<a href="../num/mod.rs.html#1243-1267">to_be</a>(),
 <a href=#1389 id=1389 data-nosnippet>1389</a>        ];
 <a href=#1390 id=1390 data-nosnippet>1390</a>        <a href="#168-170">Ipv6Addr</a> {
 <a href=#1391 id=1391 data-nosnippet>1391</a>            <span class="comment">// All elements in `addr16` are big endian.
@@ -1447,7 +1447,7 @@
 <a href=#1447 id=1447 data-nosnippet>1447</a>    #[must_use]
 <a href=#1448 id=1448 data-nosnippet>1448</a>    #[inline]
 <a href=#1449 id=1449 data-nosnippet>1449</a>    </span><span class="kw">pub const fn </span>to_bits(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.u128.html">u128</a> {
-<a href=#1450 id=1450 data-nosnippet>1450</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1449">self</a>.octets)
+<a href=#1450 id=1450 data-nosnippet>1450</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1449">self</a>.octets)
 <a href=#1451 id=1451 data-nosnippet>1451</a>    }
 <a href=#1452 id=1452 data-nosnippet>1452</a>
 <a href=#1453 id=1453 data-nosnippet>1453</a>    <span class="doccomment">/// Converts a native byte order `u128` into an IPv6 address.
@@ -1472,7 +1472,7 @@
 <a href=#1472 id=1472 data-nosnippet>1472</a>    #[must_use]
 <a href=#1473 id=1473 data-nosnippet>1473</a>    #[inline]
 <a href=#1474 id=1474 data-nosnippet>1474</a>    </span><span class="kw">pub const fn </span>from_bits(bits: <a href="../../../core/primitive.u128.html">u128</a>) -&gt; <a href="#168-170">Ipv6Addr</a> {
-<a href=#1475 id=1475 data-nosnippet>1475</a>        <a href="#168-170">Ipv6Addr</a> { octets: <a href="#1474">bits</a>.<a href="../num/mod.rs.html#1362-1388">to_be_bytes</a>() }
+<a href=#1475 id=1475 data-nosnippet>1475</a>        <a href="#168-170">Ipv6Addr</a> { octets: <a href="#1474">bits</a>.<a href="../num/mod.rs.html#1363-1389">to_be_bytes</a>() }
 <a href=#1476 id=1476 data-nosnippet>1476</a>    }
 <a href=#1477 id=1477 data-nosnippet>1477</a>
 <a href=#1478 id=1478 data-nosnippet>1478</a>    <span class="doccomment">/// An IPv6 address representing localhost: `::1`.
@@ -1530,14 +1530,14 @@
 <a href=#1530 id=1530 data-nosnippet>1530</a>        </span><span class="kw">let </span>[a, b, c, d, e, f, g, h] = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="kw">_</span>, [<a href="../../../core/primitive.u16.html">u16</a>; <span class="number">8</span>]&gt;(<a class="self" href="#1527">self</a>.octets) };
 <a href=#1531 id=1531 data-nosnippet>1531</a>        <span class="comment">// We want native endian u16
 <a href=#1532 id=1532 data-nosnippet>1532</a>        </span>[
-<a href=#1533 id=1533 data-nosnippet>1533</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">a</a>),
-<a href=#1534 id=1534 data-nosnippet>1534</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">b</a>),
-<a href=#1535 id=1535 data-nosnippet>1535</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">c</a>),
-<a href=#1536 id=1536 data-nosnippet>1536</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">d</a>),
-<a href=#1537 id=1537 data-nosnippet>1537</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">e</a>),
-<a href=#1538 id=1538 data-nosnippet>1538</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">f</a>),
-<a href=#1539 id=1539 data-nosnippet>1539</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">g</a>),
-<a href=#1540 id=1540 data-nosnippet>1540</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1242-1266">from_be</a>(<a href="#1530">h</a>),
+<a href=#1533 id=1533 data-nosnippet>1533</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">a</a>),
+<a href=#1534 id=1534 data-nosnippet>1534</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">b</a>),
+<a href=#1535 id=1535 data-nosnippet>1535</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">c</a>),
+<a href=#1536 id=1536 data-nosnippet>1536</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">d</a>),
+<a href=#1537 id=1537 data-nosnippet>1537</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">e</a>),
+<a href=#1538 id=1538 data-nosnippet>1538</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">f</a>),
+<a href=#1539 id=1539 data-nosnippet>1539</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">g</a>),
+<a href=#1540 id=1540 data-nosnippet>1540</a>            <a href="../../../core/primitive.u16.html">u16</a>::<a href="../num/mod.rs.html#1243-1267">from_be</a>(<a href="#1530">h</a>),
 <a href=#1541 id=1541 data-nosnippet>1541</a>        ]
 <a href=#1542 id=1542 data-nosnippet>1542</a>    }
 <a href=#1543 id=1543 data-nosnippet>1543</a>
@@ -1588,7 +1588,7 @@
 <a href=#1588 id=1588 data-nosnippet>1588</a>    #[must_use]
 <a href=#1589 id=1589 data-nosnippet>1589</a>    #[inline]
 <a href=#1590 id=1590 data-nosnippet>1590</a>    </span><span class="kw">pub const fn </span>is_unspecified(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#1591 id=1591 data-nosnippet>1591</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1590">self</a>.<a href="#2118-2120">octets</a>()) == <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a href="#168-170">Ipv6Addr</a>::<a href="#1511">UNSPECIFIED</a>.<a href="#2118-2120">octets</a>())
+<a href=#1591 id=1591 data-nosnippet>1591</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1590">self</a>.<a href="#2118-2120">octets</a>()) == <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a href="#168-170">Ipv6Addr</a>::<a href="#1511">UNSPECIFIED</a>.<a href="#2118-2120">octets</a>())
 <a href=#1592 id=1592 data-nosnippet>1592</a>    }
 <a href=#1593 id=1593 data-nosnippet>1593</a>
 <a href=#1594 id=1594 data-nosnippet>1594</a>    <span class="doccomment">/// Returns [`true`] if this is the [loopback address] (`::1`),
@@ -1612,7 +1612,7 @@
 <a href=#1612 id=1612 data-nosnippet>1612</a>    #[must_use]
 <a href=#1613 id=1613 data-nosnippet>1613</a>    #[inline]
 <a href=#1614 id=1614 data-nosnippet>1614</a>    </span><span class="kw">pub const fn </span>is_loopback(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#1615 id=1615 data-nosnippet>1615</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1614">self</a>.<a href="#2118-2120">octets</a>()) == <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a href="#168-170">Ipv6Addr</a>::<a href="#1494">LOCALHOST</a>.<a href="#2118-2120">octets</a>())
+<a href=#1615 id=1615 data-nosnippet>1615</a>        <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1614">self</a>.<a href="#2118-2120">octets</a>()) == <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a href="#168-170">Ipv6Addr</a>::<a href="#1494">LOCALHOST</a>.<a href="#2118-2120">octets</a>())
 <a href=#1616 id=1616 data-nosnippet>1616</a>    }
 <a href=#1617 id=1617 data-nosnippet>1617</a>
 <a href=#1618 id=1618 data-nosnippet>1618</a>    <span class="doccomment">/// Returns [`true`] if the address appears to be globally reachable
@@ -1698,11 +1698,11 @@
 <a href=#1698 id=1698 data-nosnippet>1698</a>            </span>|| (<a href="../macros/mod.rs.html#431-439">matches!</a>(<span class="self">self</span>.segments(), [<span class="number">0x2001</span>, b, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>] <span class="kw">if </span>b &lt; <span class="number">0x200</span>)
 <a href=#1699 id=1699 data-nosnippet>1699</a>                &amp;&amp; !(
 <a href=#1700 id=1700 data-nosnippet>1700</a>                    <span class="comment">// Port Control Protocol Anycast (`2001:1::1`)
-<a href=#1701 id=1701 data-nosnippet>1701</a>                    </span><a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0001
+<a href=#1701 id=1701 data-nosnippet>1701</a>                    </span><a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0001
 <a href=#1702 id=1702 data-nosnippet>1702</a>                    </span><span class="comment">// Traversal Using Relays around NAT Anycast (`2001:1::2`)
-<a href=#1703 id=1703 data-nosnippet>1703</a>                    </span>|| <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0002
+<a href=#1703 id=1703 data-nosnippet>1703</a>                    </span>|| <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0002
 <a href=#1704 id=1704 data-nosnippet>1704</a>                    </span><span class="comment">// DNS-SD Service Registration Protocol Anycast (`2001:1::3`)
-<a href=#1705 id=1705 data-nosnippet>1705</a>                    </span>|| <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1362-1388">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0003
+<a href=#1705 id=1705 data-nosnippet>1705</a>                    </span>|| <a href="../../../core/primitive.u128.html">u128</a>::<a href="../num/mod.rs.html#1363-1389">from_be_bytes</a>(<a class="self" href="#1686">self</a>.<a href="#2118-2120">octets</a>()) == <span class="number">0x2001_0001_0000_0000_0000_0000_0000_0003
 <a href=#1706 id=1706 data-nosnippet>1706</a>                    </span><span class="comment">// AMT (`2001:3::/32`)
 <a href=#1707 id=1707 data-nosnippet>1707</a>                    </span>|| <a href="../macros/mod.rs.html#431-439">matches!</a>(<span class="self">self</span>.segments(), [<span class="number">0x2001</span>, <span class="number">3</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>])
 <a href=#1708 id=1708 data-nosnippet>1708</a>                    <span class="comment">// AS112-v6 (`2001:4:112::/48`)
@@ -2072,8 +2072,8 @@
 <a href=#2072 id=2072 data-nosnippet>2072</a>    #[inline]
 <a href=#2073 id=2073 data-nosnippet>2073</a>    </span><span class="kw">pub const fn </span>to_ipv4(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="#74-76">Ipv4Addr</a>&gt; {
 <a href=#2074 id=2074 data-nosnippet>2074</a>        <span class="kw">if let </span>[<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0 </span>| <span class="number">0xffff</span>, ab, cd] = <a class="self" href="#2073">self</a>.<a href="#1527-1542">segments</a>() {
-<a href=#2075 id=2075 data-nosnippet>2075</a>            <span class="kw">let </span>[a, b] = <a href="#2074">ab</a>.<a href="../num/mod.rs.html#1242-1266">to_be_bytes</a>();
-<a href=#2076 id=2076 data-nosnippet>2076</a>            <span class="kw">let </span>[c, d] = <a href="#2074">cd</a>.<a href="../num/mod.rs.html#1242-1266">to_be_bytes</a>();
+<a href=#2075 id=2075 data-nosnippet>2075</a>            <span class="kw">let </span>[a, b] = <a href="#2074">ab</a>.<a href="../num/mod.rs.html#1243-1267">to_be_bytes</a>();
+<a href=#2076 id=2076 data-nosnippet>2076</a>            <span class="kw">let </span>[c, d] = <a href="#2074">cd</a>.<a href="../num/mod.rs.html#1243-1267">to_be_bytes</a>();
 <a href=#2077 id=2077 data-nosnippet>2077</a>            <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#74-76">Ipv4Addr</a>::<a href="#572-574">new</a>(<a href="#2075">a</a>, <a href="#2075">b</a>, <a href="#2076">c</a>, <a href="#2076">d</a>))
 <a href=#2078 id=2078 data-nosnippet>2078</a>        } <span class="kw">else </span>{
 <a href=#2079 id=2079 data-nosnippet>2079</a>            <a class="prelude-val" href="../option.rs.html#602">None</a>

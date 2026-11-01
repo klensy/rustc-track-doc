@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (92b5b8c87 2026-10-29)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (f9ceb4a4d 2026-10-31)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::pattern::{<a href="pattern.rs.html#362">DoubleEndedSearcher</a>, <a href="pattern.rs.html#99-168">Pattern</a>, <a href="pattern.rs.html#290-339">ReverseSearcher</a>, <a href="pattern.rs.html#213-274">Searcher</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::validations::{<a href="validations.rs.html#35-69">next_code_point</a>, <a href="validations.rs.html#78-112">next_code_point_reverse</a>};
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use super</span>::{
-<a href=#6 id=6 data-nosnippet>6</a>    <a href="mod.rs.html#3304-3352">BytesIsNotEmpty</a>, <a href="mod.rs.html#3304-3352">CharEscapeDebug</a>, <a href="mod.rs.html#3304-3352">CharEscapeDefault</a>, <a href="mod.rs.html#3304-3352">CharEscapeUnicode</a>, <a href="mod.rs.html#3304-3352">IsAsciiWhitespace</a>,
-<a href=#7 id=7 data-nosnippet>7</a>    <a href="mod.rs.html#3304-3352">IsNotEmpty</a>, <a href="mod.rs.html#3304-3352">IsWhitespace</a>, <a href="mod.rs.html#3304-3352">LinesMap</a>, <a href="mod.rs.html#3304-3352">UnsafeBytesToStr</a>, <a href="converts.rs.html#178-182">from_utf8_unchecked</a>,
+<a href=#6 id=6 data-nosnippet>6</a>    <a href="mod.rs.html#3306-3354">BytesIsNotEmpty</a>, <a href="mod.rs.html#3306-3354">CharEscapeDebug</a>, <a href="mod.rs.html#3306-3354">CharEscapeDefault</a>, <a href="mod.rs.html#3306-3354">CharEscapeUnicode</a>, <a href="mod.rs.html#3306-3354">IsAsciiWhitespace</a>,
+<a href=#7 id=7 data-nosnippet>7</a>    <a href="mod.rs.html#3306-3354">IsNotEmpty</a>, <a href="mod.rs.html#3306-3354">IsWhitespace</a>, <a href="mod.rs.html#3306-3354">LinesMap</a>, <a href="mod.rs.html#3306-3354">UnsafeBytesToStr</a>, <a href="converts.rs.html#178-182">from_utf8_unchecked</a>,
 <a href=#8 id=8 data-nosnippet>8</a>};
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../lib.rs.html#301"><span class="kw">crate</span>::char</a> <span class="kw">as </span>char_mod;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#325">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
@@ -99,7 +99,7 @@
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="attr">#[inline]
 <a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<a href="../../../core/primitive.usize.html">usize</a>, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) {
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>len = <a class="self" href="#100">self</a>.iter.<a href="../iter/traits/exact_size.rs.html#116-124">len</a>();
-<a href=#102 id=102 data-nosnippet>102</a>        (<a href="#101">len</a>.<a href="../num/mod.rs.html#1460-1484">div_ceil</a>(<span class="number">4</span>), <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#101">len</a>))
+<a href=#102 id=102 data-nosnippet>102</a>        (<a href="#101">len</a>.<a href="../num/mod.rs.html#1461-1485">div_ceil</a>(<span class="number">4</span>), <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#101">len</a>))
 <a href=#103 id=103 data-nosnippet>103</a>    }
 <a href=#104 id=104 data-nosnippet>104</a>
 <a href=#105 id=105 data-nosnippet>105</a>    <span class="attr">#[inline]
@@ -645,7 +645,7 @@
 <a href=#645 id=645 data-nosnippet>645</a>
 <a href=#646 id=646 data-nosnippet>646</a>            <span class="kw">if </span><a class="self" href="#642">self</a>.allow_trailing_empty || <a class="self" href="#642">self</a>.end - <a class="self" href="#642">self</a>.start &gt; <span class="number">0 </span>{
 <a href=#647 id=647 data-nosnippet>647</a>                <span class="comment">// SAFETY: `self.start` and `self.end` always lie on unicode boundaries.
-<a href=#648 id=648 data-nosnippet>648</a>                </span><span class="kw">let </span>string = <span class="kw">unsafe </span>{ <a class="self" href="#642">self</a>.matcher.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end) };
+<a href=#648 id=648 data-nosnippet>648</a>                </span><span class="kw">let </span>string = <span class="kw">unsafe </span>{ <a class="self" href="#642">self</a>.matcher.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end) };
 <a href=#649 id=649 data-nosnippet>649</a>                <span class="kw">return </span><a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#648">string</a>);
 <a href=#650 id=650 data-nosnippet>650</a>            }
 <a href=#651 id=651 data-nosnippet>651</a>        }
@@ -663,7 +663,7 @@
 <a href=#663 id=663 data-nosnippet>663</a>        <span class="kw">match </span><a class="self" href="#657">self</a>.matcher.<a href="pattern.rs.html#249-257">next_match</a>() {
 <a href=#664 id=664 data-nosnippet>664</a>            <span class="comment">// SAFETY: `Searcher` guarantees that `a` and `b` lie on unicode boundaries.
 <a href=#665 id=665 data-nosnippet>665</a>            </span><a class="prelude-val" href="../option.rs.html#606">Some</a>((a, b)) =&gt; <span class="kw">unsafe </span>{
-<a href=#666 id=666 data-nosnippet>666</a>                <span class="kw">let </span>elt = <a href="#662">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..a);
+<a href=#666 id=666 data-nosnippet>666</a>                <span class="kw">let </span>elt = <a href="#662">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..a);
 <a href=#667 id=667 data-nosnippet>667</a>                <a class="self" href="#657">self</a>.start = <a href="#665">b</a>;
 <a href=#668 id=668 data-nosnippet>668</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#666">elt</a>)
 <a href=#669 id=669 data-nosnippet>669</a>            },
@@ -683,7 +683,7 @@
 <a href=#683 id=683 data-nosnippet>683</a>            // and self.start is either the start of the original string,
 <a href=#684 id=684 data-nosnippet>684</a>            // or `b` was assigned to it, so it also lies on unicode boundary.
 <a href=#685 id=685 data-nosnippet>685</a>            </span><a class="prelude-val" href="../option.rs.html#606">Some</a>((<span class="kw">_</span>, b)) =&gt; <span class="kw">unsafe </span>{
-<a href=#686 id=686 data-nosnippet>686</a>                <span class="kw">let </span>elt = <a href="#680">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..b);
+<a href=#686 id=686 data-nosnippet>686</a>                <span class="kw">let </span>elt = <a href="#680">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..b);
 <a href=#687 id=687 data-nosnippet>687</a>                <a class="self" href="#675">self</a>.start = <a href="#685">b</a>;
 <a href=#688 id=688 data-nosnippet>688</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#686">elt</a>)
 <a href=#689 id=689 data-nosnippet>689</a>            },
@@ -716,14 +716,14 @@
 <a href=#716 id=716 data-nosnippet>716</a>        <span class="kw">match </span><a class="self" href="#695">self</a>.matcher.<a href="pattern.rs.html#317-325">next_match_back</a>() {
 <a href=#717 id=717 data-nosnippet>717</a>            <span class="comment">// SAFETY: `Searcher` guarantees that `a` and `b` lie on unicode boundaries.
 <a href=#718 id=718 data-nosnippet>718</a>            </span><a class="prelude-val" href="../option.rs.html#606">Some</a>((a, b)) =&gt; <span class="kw">unsafe </span>{
-<a href=#719 id=719 data-nosnippet>719</a>                <span class="kw">let </span>elt = <a href="#715">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(b..<span class="self">self</span>.end);
+<a href=#719 id=719 data-nosnippet>719</a>                <span class="kw">let </span>elt = <a href="#715">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(b..<span class="self">self</span>.end);
 <a href=#720 id=720 data-nosnippet>720</a>                <a class="self" href="#695">self</a>.end = <a href="#718">a</a>;
 <a href=#721 id=721 data-nosnippet>721</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#719">elt</a>)
 <a href=#722 id=722 data-nosnippet>722</a>            },
 <a href=#723 id=723 data-nosnippet>723</a>            <span class="comment">// SAFETY: `self.start` and `self.end` always lie on unicode boundaries.
 <a href=#724 id=724 data-nosnippet>724</a>            </span><a class="prelude-val" href="../option.rs.html#602">None</a> =&gt; <span class="kw">unsafe </span>{
 <a href=#725 id=725 data-nosnippet>725</a>                <a class="self" href="#695">self</a>.finished = <span class="bool-val">true</span>;
-<a href=#726 id=726 data-nosnippet>726</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#715">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end))
+<a href=#726 id=726 data-nosnippet>726</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#715">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end))
 <a href=#727 id=727 data-nosnippet>727</a>            },
 <a href=#728 id=728 data-nosnippet>728</a>        }
 <a href=#729 id=729 data-nosnippet>729</a>    }
@@ -755,7 +755,7 @@
 <a href=#755 id=755 data-nosnippet>755</a>            // and self.end is either the end of the original string,
 <a href=#756 id=756 data-nosnippet>756</a>            // or `b` was assigned to it, so it also lies on unicode boundary.
 <a href=#757 id=757 data-nosnippet>757</a>            </span><a class="prelude-val" href="../option.rs.html#606">Some</a>((<span class="kw">_</span>, b)) =&gt; <span class="kw">unsafe </span>{
-<a href=#758 id=758 data-nosnippet>758</a>                <span class="kw">let </span>elt = <a href="#752">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(b..<span class="self">self</span>.end);
+<a href=#758 id=758 data-nosnippet>758</a>                <span class="kw">let </span>elt = <a href="#752">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(b..<span class="self">self</span>.end);
 <a href=#759 id=759 data-nosnippet>759</a>                <a class="self" href="#732">self</a>.end = <a href="#757">b</a>;
 <a href=#760 id=760 data-nosnippet>760</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#758">elt</a>)
 <a href=#761 id=761 data-nosnippet>761</a>            },
@@ -766,7 +766,7 @@
 <a href=#766 id=766 data-nosnippet>766</a>            // or `b` was assigned to it, so it also lies on unicode boundary.
 <a href=#767 id=767 data-nosnippet>767</a>            </span><a class="prelude-val" href="../option.rs.html#602">None</a> =&gt; <span class="kw">unsafe </span>{
 <a href=#768 id=768 data-nosnippet>768</a>                <a class="self" href="#732">self</a>.finished = <span class="bool-val">true</span>;
-<a href=#769 id=769 data-nosnippet>769</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#752">haystack</a>.<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end))
+<a href=#769 id=769 data-nosnippet>769</a>                <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#752">haystack</a>.<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end))
 <a href=#770 id=770 data-nosnippet>770</a>            },
 <a href=#771 id=771 data-nosnippet>771</a>        }
 <a href=#772 id=772 data-nosnippet>772</a>    }
@@ -779,7 +779,7 @@
 <a href=#779 id=779 data-nosnippet>779</a>        }
 <a href=#780 id=780 data-nosnippet>780</a>
 <a href=#781 id=781 data-nosnippet>781</a>        <span class="comment">// SAFETY: `self.start` and `self.end` always lie on unicode boundaries.
-<a href=#782 id=782 data-nosnippet>782</a>        </span><a class="prelude-val" href="../option.rs.html#606">Some</a>(<span class="kw">unsafe </span>{ <a class="self" href="#775">self</a>.matcher.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end) })
+<a href=#782 id=782 data-nosnippet>782</a>        </span><a class="prelude-val" href="../option.rs.html#606">Some</a>(<span class="kw">unsafe </span>{ <a class="self" href="#775">self</a>.matcher.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(<span class="self">self</span>.start..<span class="self">self</span>.end) })
 <a href=#783 id=783 data-nosnippet>783</a>    }
 <a href=#784 id=784 data-nosnippet>784</a>}
 <a href=#785 id=785 data-nosnippet>785</a>
@@ -1060,7 +1060,7 @@
 <a href=#1060 id=1060 data-nosnippet>1060</a>        <a class="self" href="#1059">self</a>.<span class="number">0
 <a href=#1061 id=1061 data-nosnippet>1061</a>            </span>.<a href="pattern.rs.html#249-257">next_match</a>()
 <a href=#1062 id=1062 data-nosnippet>1062</a>            <span class="comment">// SAFETY: `Searcher` guarantees that `start` and `end` lie on unicode boundaries.
-<a href=#1063 id=1063 data-nosnippet>1063</a>            </span>.<a href="../option.rs.html#1160-1168">map</a>(|(start, end)| <span class="kw">unsafe </span>{ (<a href="#1063">start</a>, <a class="self" href="#1059">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(start..end)) })
+<a href=#1063 id=1063 data-nosnippet>1063</a>            </span>.<a href="../option.rs.html#1160-1168">map</a>(|(start, end)| <span class="kw">unsafe </span>{ (<a href="#1063">start</a>, <a class="self" href="#1059">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(start..end)) })
 <a href=#1064 id=1064 data-nosnippet>1064</a>    }
 <a href=#1065 id=1065 data-nosnippet>1065</a>
 <a href=#1066 id=1066 data-nosnippet>1066</a>    <span class="attr">#[inline]
@@ -1071,7 +1071,7 @@
 <a href=#1071 id=1071 data-nosnippet>1071</a>        <a class="self" href="#1067">self</a>.<span class="number">0
 <a href=#1072 id=1072 data-nosnippet>1072</a>            </span>.<a href="pattern.rs.html#317-325">next_match_back</a>()
 <a href=#1073 id=1073 data-nosnippet>1073</a>            <span class="comment">// SAFETY: `Searcher` guarantees that `start` and `end` lie on unicode boundaries.
-<a href=#1074 id=1074 data-nosnippet>1074</a>            </span>.<a href="../option.rs.html#1160-1168">map</a>(|(start, end)| <span class="kw">unsafe </span>{ (<a href="#1074">start</a>, <a class="self" href="#1067">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(start..end)) })
+<a href=#1074 id=1074 data-nosnippet>1074</a>            </span>.<a href="../option.rs.html#1160-1168">map</a>(|(start, end)| <span class="kw">unsafe </span>{ (<a href="#1074">start</a>, <a class="self" href="#1067">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(start..end)) })
 <a href=#1075 id=1075 data-nosnippet>1075</a>    }
 <a href=#1076 id=1076 data-nosnippet>1076</a>}
 <a href=#1077 id=1077 data-nosnippet>1077</a>
@@ -1115,7 +1115,7 @@
 <a href=#1115 id=1115 data-nosnippet>1115</a>        <span class="comment">// SAFETY: `Searcher` guarantees that `start` and `end` lie on unicode boundaries.
 <a href=#1116 id=1116 data-nosnippet>1116</a>        </span><a class="self" href="#1114">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#249-257">next_match</a>().<a href="../option.rs.html#1160-1168">map</a>(|(a, b)| <span class="kw">unsafe </span>{
 <a href=#1117 id=1117 data-nosnippet>1117</a>            <span class="comment">// Indices are known to be on utf8 boundaries
-<a href=#1118 id=1118 data-nosnippet>1118</a>            </span><a class="self" href="#1114">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(a..b)
+<a href=#1118 id=1118 data-nosnippet>1118</a>            </span><a class="self" href="#1114">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(a..b)
 <a href=#1119 id=1119 data-nosnippet>1119</a>        })
 <a href=#1120 id=1120 data-nosnippet>1120</a>    }
 <a href=#1121 id=1121 data-nosnippet>1121</a>
@@ -1127,7 +1127,7 @@
 <a href=#1127 id=1127 data-nosnippet>1127</a>        <span class="comment">// SAFETY: `Searcher` guarantees that `start` and `end` lie on unicode boundaries.
 <a href=#1128 id=1128 data-nosnippet>1128</a>        </span><a class="self" href="#1123">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#317-325">next_match_back</a>().<a href="../option.rs.html#1160-1168">map</a>(|(a, b)| <span class="kw">unsafe </span>{
 <a href=#1129 id=1129 data-nosnippet>1129</a>            <span class="comment">// Indices are known to be on utf8 boundaries
-<a href=#1130 id=1130 data-nosnippet>1130</a>            </span><a class="self" href="#1123">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#699-704">get_unchecked</a>(a..b)
+<a href=#1130 id=1130 data-nosnippet>1130</a>            </span><a class="self" href="#1123">self</a>.<span class="number">0</span>.<a href="pattern.rs.html#217">haystack</a>().<a href="mod.rs.html#701-706">get_unchecked</a>(a..b)
 <a href=#1131 id=1131 data-nosnippet>1131</a>        })
 <a href=#1132 id=1132 data-nosnippet>1132</a>    }
 <a href=#1133 id=1133 data-nosnippet>1133</a>}
@@ -1159,7 +1159,7 @@
 <a href=#1159 id=1159 data-nosnippet>1159</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1160 id=1160 data-nosnippet>1160</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#1161 id=1161 data-nosnippet>1161</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
-<a href=#1162 id=1162 data-nosnippet>1162</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3304-3352">LinesMap</a>&gt;);
+<a href=#1162 id=1162 data-nosnippet>1162</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3306-3354">LinesMap</a>&gt;);
 <a href=#1163 id=1163 data-nosnippet>1163</a>
 <a href=#1164 id=1164 data-nosnippet>1164</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1165 id=1165 data-nosnippet>1165</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1162">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -1266,7 +1266,7 @@
 <a href=#1266 id=1266 data-nosnippet>1266</a></span><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
 <a href=#1267 id=1267 data-nosnippet>1267</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1268 id=1268 data-nosnippet>1268</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitWhitespace.html">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1269 id=1269 data-nosnippet>1269</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="#786-802">Split</a>&lt;<span class="lifetime">'a</span>, <a href="mod.rs.html#3304-3352">IsWhitespace</a>&gt;, <a href="mod.rs.html#3304-3352">IsNotEmpty</a>&gt;,
+<a href=#1269 id=1269 data-nosnippet>1269</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="#786-802">Split</a>&lt;<span class="lifetime">'a</span>, <a href="mod.rs.html#3306-3354">IsWhitespace</a>&gt;, <a href="mod.rs.html#3306-3354">IsNotEmpty</a>&gt;,
 <a href=#1270 id=1270 data-nosnippet>1270</a>}
 <a href=#1271 id=1271 data-nosnippet>1271</a>
 <a href=#1272 id=1272 data-nosnippet>1272</a><span class="doccomment">/// An iterator over the non-ASCII-whitespace substrings of a string,
@@ -1280,7 +1280,7 @@
 <a href=#1280 id=1280 data-nosnippet>1280</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1281 id=1281 data-nosnippet>1281</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitAsciiWhitespace.html">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1282 id=1282 data-nosnippet>1282</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner:
-<a href=#1283 id=1283 data-nosnippet>1283</a>        <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="../slice/iter.rs.html#399-408">SliceSplit</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>, <a href="mod.rs.html#3304-3352">IsAsciiWhitespace</a>&gt;, <a href="mod.rs.html#3304-3352">BytesIsNotEmpty</a>&gt;, <a href="mod.rs.html#3304-3352">UnsafeBytesToStr</a>&gt;,
+<a href=#1283 id=1283 data-nosnippet>1283</a>        <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="../slice/iter.rs.html#399-408">SliceSplit</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>, <a href="mod.rs.html#3306-3354">IsAsciiWhitespace</a>&gt;, <a href="mod.rs.html#3306-3354">BytesIsNotEmpty</a>&gt;, <a href="mod.rs.html#3306-3354">UnsafeBytesToStr</a>&gt;,
 <a href=#1284 id=1284 data-nosnippet>1284</a>}
 <a href=#1285 id=1285 data-nosnippet>1285</a>
 <a href=#1286 id=1286 data-nosnippet>1286</a><span class="doccomment">/// An iterator over the substrings of a string,
@@ -1526,11 +1526,11 @@
 <a href=#1526 id=1526 data-nosnippet>1526</a>        // many 3-byte sequences as possible. The highest bytes:code units
 <a href=#1527 id=1527 data-nosnippet>1527</a>        // ratio is for 1-byte sequences, so use this for the upper bound.
 <a href=#1528 id=1528 data-nosnippet>1528</a>        </span><span class="kw">if </span><a class="self" href="#1521">self</a>.extra == <span class="number">0 </span>{
-<a href=#1529 id=1529 data-nosnippet>1529</a>            (<a href="#1522">len</a>.<a href="../num/mod.rs.html#1460-1484">div_ceil</a>(<span class="number">3</span>), <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#1522">len</a>))
+<a href=#1529 id=1529 data-nosnippet>1529</a>            (<a href="#1522">len</a>.<a href="../num/mod.rs.html#1461-1485">div_ceil</a>(<span class="number">3</span>), <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#1522">len</a>))
 <a href=#1530 id=1530 data-nosnippet>1530</a>        } <span class="kw">else </span>{
 <a href=#1531 id=1531 data-nosnippet>1531</a>            <span class="comment">// We're in the middle of a surrogate pair, so add the remaining
 <a href=#1532 id=1532 data-nosnippet>1532</a>            // surrogate to the bounds.
-<a href=#1533 id=1533 data-nosnippet>1533</a>            </span>(<a href="#1522">len</a>.<a href="../num/mod.rs.html#1460-1484">div_ceil</a>(<span class="number">3</span>) + <span class="number">1</span>, <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#1522">len</a> + <span class="number">1</span>))
+<a href=#1533 id=1533 data-nosnippet>1533</a>            </span>(<a href="#1522">len</a>.<a href="../num/mod.rs.html#1461-1485">div_ceil</a>(<span class="number">3</span>) + <span class="number">1</span>, <a class="prelude-val" href="../option.rs.html#606">Some</a>(<a href="#1522">len</a> + <span class="number">1</span>))
 <a href=#1534 id=1534 data-nosnippet>1534</a>        }
 <a href=#1535 id=1535 data-nosnippet>1535</a>    }
 <a href=#1536 id=1536 data-nosnippet>1536</a>
@@ -1548,8 +1548,8 @@
 <a href=#1548 id=1548 data-nosnippet>1548</a>        //
 <a href=#1549 id=1549 data-nosnippet>1549</a>        // Because we never map to larger values the result is never larger than
 <a href=#1550 id=1550 data-nosnippet>1550</a>        // `self.chars.as_str().len()` so the sum can never overflow
-<a href=#1551 id=1551 data-nosnippet>1551</a>        </span><a class="self" href="#1538">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#513-516">as_bytes</a>().<a href="../slice/mod.rs.html#1041-1043">iter</a>().<a href="../iter/traits/iterator.rs.html#2674-2684">fold</a>(<a href="#1539">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
-<a href=#1552 id=1552 data-nosnippet>1552</a>            <a href="#1551">acc</a>.<a href="../num/mod.rs.html#1460-1484">wrapping_add</a>({
+<a href=#1551 id=1551 data-nosnippet>1551</a>        </span><a class="self" href="#1538">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#515-518">as_bytes</a>().<a href="../slice/mod.rs.html#1041-1043">iter</a>().<a href="../iter/traits/iterator.rs.html#2674-2684">fold</a>(<a href="#1539">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
+<a href=#1552 id=1552 data-nosnippet>1552</a>            <a href="#1551">acc</a>.<a href="../num/mod.rs.html#1461-1485">wrapping_add</a>({
 <a href=#1553 id=1553 data-nosnippet>1553</a>                <span class="kw">if </span><a href="#1551">byte</a> &lt; <span class="number">0b1000_0000 </span>{
 <a href=#1554 id=1554 data-nosnippet>1554</a>                    <span class="comment">// 0b0xxx_xxxx: ASCII-compatible U+0000 to U+007F
 <a href=#1555 id=1555 data-nosnippet>1555</a>                    </span><span class="number">1
@@ -1579,14 +1579,14 @@
 <a href=#1579 id=1579 data-nosnippet>1579</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
 <a href=#1580 id=1580 data-nosnippet>1580</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1581 id=1581 data-nosnippet>1581</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDebug.html">EscapeDebug</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1582 id=1582 data-nosnippet>1582</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#310">EscapeDebug</a>, <a href="mod.rs.html#3304-3352">CharEscapeDebug</a>&gt;,
+<a href=#1582 id=1582 data-nosnippet>1582</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#310">EscapeDebug</a>, <a href="mod.rs.html#3306-3354">CharEscapeDebug</a>&gt;,
 <a href=#1583 id=1583 data-nosnippet>1583</a>}
 <a href=#1584 id=1584 data-nosnippet>1584</a>
 <a href=#1585 id=1585 data-nosnippet>1585</a><span class="doccomment">/// The return type of [`str::escape_default`].
 <a href=#1586 id=1586 data-nosnippet>1586</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
 <a href=#1587 id=1587 data-nosnippet>1587</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1588 id=1588 data-nosnippet>1588</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDefault.html">EscapeDefault</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1589 id=1589 data-nosnippet>1589</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#233">EscapeDefault</a>, <a href="mod.rs.html#3304-3352">CharEscapeDefault</a>&gt;,
+<a href=#1589 id=1589 data-nosnippet>1589</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#233">EscapeDefault</a>, <a href="mod.rs.html#3306-3354">CharEscapeDefault</a>&gt;,
 <a href=#1590 id=1590 data-nosnippet>1590</a>}
 <a href=#1591 id=1591 data-nosnippet>1591</a>
 <a href=#1592 id=1592 data-nosnippet>1592</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="#1588-1590">EscapeDefault</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -1605,7 +1605,7 @@
 <a href=#1605 id=1605 data-nosnippet>1605</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
 <a href=#1606 id=1606 data-nosnippet>1606</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1607 id=1607 data-nosnippet>1607</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeUnicode.html">EscapeUnicode</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1608 id=1608 data-nosnippet>1608</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#167">EscapeUnicode</a>, <a href="mod.rs.html#3304-3352">CharEscapeUnicode</a>&gt;,
+<a href=#1608 id=1608 data-nosnippet>1608</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#167">EscapeUnicode</a>, <a href="mod.rs.html#3306-3354">CharEscapeUnicode</a>&gt;,
 <a href=#1609 id=1609 data-nosnippet>1609</a>}
 <a href=#1610 id=1610 data-nosnippet>1610</a>
 <a href=#1611 id=1611 data-nosnippet>1611</a><span class="macro">macro_rules!</span> escape_types_impls {
