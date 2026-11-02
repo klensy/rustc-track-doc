@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/io/buffered/bufwriter.rs`."><title>bufwriter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (f9ceb4a4d 2026-10-31)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/io/buffered/</div>bufwriter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::mem::{<a class="self" href="../../../../core/mem/index.html">self</a>, <a href="../../../../core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/io/buffered/bufwriter.rs`."><title>bufwriter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (3e92e1a2d 2026-11-01)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.101.0.js"></script><script defer src="../../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/io/buffered/</div>bufwriter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::mem::{<a class="self" href="../../../../core/mem/index.html">self</a>, <a href="../../../../core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>};
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>core::{<a href="../../../../core/error/index.html">error</a>, <a href="../../../../core/fmt/index.html">fmt</a>, <a href="../../../../core/ptr/index.html">ptr</a>};
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::io::{
-<a href=#5 id=5 data-nosnippet>5</a>    <a class="self" href="../../lib.rs.html#268">self</a>, <a href="../read.rs.html#787-790">DEFAULT_BUF_SIZE</a>, <a href="../../../../alloc/io/enum.ErrorKind.html">ErrorKind</a>, <a href="mod.rs.html#44">IntoInnerError</a>, <a href="../../../../alloc/io/struct.IoSlice.html">IoSlice</a>, <a href="../../../../alloc/io/trait.Seek.html">Seek</a>, <a href="../../../../alloc/io/enum.SeekFrom.html">SeekFrom</a>, <a href="../../../../alloc/io/trait.Write.html">Write</a>,
+<a href=#5 id=5 data-nosnippet>5</a>    <a class="self" href="../../lib.rs.html#269">self</a>, <a href="../read.rs.html#787-790">DEFAULT_BUF_SIZE</a>, <a href="../../../../alloc/io/enum.ErrorKind.html">ErrorKind</a>, <a href="mod.rs.html#44">IntoInnerError</a>, <a href="../../../../alloc/io/struct.IoSlice.html">IoSlice</a>, <a href="../../../../alloc/io/trait.Seek.html">Seek</a>, <a href="../../../../alloc/io/enum.SeekFrom.html">SeekFrom</a>, <a href="../../../../alloc/io/trait.Write.html">Write</a>,
 <a href=#6 id=6 data-nosnippet>6</a>};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../../vec/mod.rs.html#442-445"><span class="kw">crate</span>::vec::Vec</a>;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../../vec/mod.rs.html#448-451"><span class="kw">crate</span>::vec::Vec</a>;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// Wraps a writer and buffers its output.
 <a href=#10 id=10 data-nosnippet>10</a>///
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>    // That is, don't use `buf.push`, `buf.extend_from_slice`, or any other
 <a href=#73 id=73 data-nosnippet>73</a>    // methods that require bounds checking or the like. This makes an enormous
 <a href=#74 id=74 data-nosnippet>74</a>    // difference to performance (we may want to stop using a `Vec` entirely).
-<a href=#75 id=75 data-nosnippet>75</a>    </span>buf: <a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#75 id=75 data-nosnippet>75</a>    </span>buf: <a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#76 id=76 data-nosnippet>76</a>    <span class="comment">// #30888: If the inner writer panics in a call to write, we don't want to
 <a href=#77 id=77 data-nosnippet>77</a>    // write the buffered data a second time in BufWriter's destructor. This
 <a href=#78 id=78 data-nosnippet>78</a>    // flag tells the Drop impl if it should skip the flush.
@@ -129,7 +129,7 @@
 <a href=#129 id=129 data-nosnippet>129</a>    </span><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#130 id=130 data-nosnippet>130</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">pub fn </span>with_capacity(capacity: <a href="../../../../core/primitive.usize.html">usize</a>, inner: W) -&gt; <a href="#70-81">BufWriter</a>&lt;W&gt; {
-<a href=#132 id=132 data-nosnippet>132</a>        <a href="#70-81">BufWriter</a> { <a href="#131">inner</a>, buf: <a href="../../vec/mod.rs.html#442-445">Vec</a>::<a href="../../vec/mod.rs.html#528-530">with_capacity</a>(<a href="#131">capacity</a>), panicked: <span class="bool-val">false </span>}
+<a href=#132 id=132 data-nosnippet>132</a>        <a href="#70-81">BufWriter</a> { <a href="#131">inner</a>, buf: <a href="../../vec/mod.rs.html#448-451">Vec</a>::<a href="../../vec/mod.rs.html#534-536">with_capacity</a>(<a href="#131">capacity</a>), panicked: <span class="bool-val">false </span>}
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
 <a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Unwraps this `BufWriter&lt;W&gt;`, returning the underlying writer.
@@ -183,7 +183,7 @@
 <a href=#183 id=183 data-nosnippet>183</a>    /// assert_eq!(&amp;buffered_data.unwrap(), b"ata");
 <a href=#184 id=184 data-nosnippet>184</a>    /// ```
 <a href=#185 id=185 data-nosnippet>185</a>    </span><span class="attr">#[stable(feature = <span class="string">"bufwriter_into_parts"</span>, since = <span class="string">"1.56.0"</span>)]
-<a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">pub fn </span>into_parts(<span class="self">self</span>) -&gt; (W, <a class="prelude-ty" href="../../../../core/result/enum.Result.html">Result</a>&lt;<a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;, <a href="#520-522">WriterPanicked</a>&gt;) {
+<a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">pub fn </span>into_parts(<span class="self">self</span>) -&gt; (W, <a class="prelude-ty" href="../../../../core/result/enum.Result.html">Result</a>&lt;<a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;, <a href="#520-522">WriterPanicked</a>&gt;) {
 <a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span><span class="kw-2">mut </span>this = <a href="../../../../core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>::<a href="../../../../core/mem/manually_drop/struct.ManuallyDrop.html#method.new">new</a>(<a class="self" href="#186">self</a>);
 <a href=#188 id=188 data-nosnippet>188</a>        <span class="kw">let </span>buf = mem::<a href="../../../../core/mem/fn.take.html">take</a>(<span class="kw-2">&amp;mut </span><a href="#187">this</a>.buf);
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="kw">let </span>buf = <span class="kw">if </span>!<a href="#187">this</a>.panicked { <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#188">buf</a>) } <span class="kw">else </span>{ <a class="prelude-val" href="../../../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="#520-522">WriterPanicked</a> { <a href="#188">buf</a> }) };
@@ -214,12 +214,12 @@
 <a href=#214 id=214 data-nosnippet>214</a>        /// are complete. It tracks the number of written bytes and drains them
 <a href=#215 id=215 data-nosnippet>215</a>        /// all from the front of the buffer when dropped.
 <a href=#216 id=216 data-nosnippet>216</a>        </span><span class="kw">struct </span>BufGuard&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#217 id=217 data-nosnippet>217</a>            buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#217 id=217 data-nosnippet>217</a>            buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#218 id=218 data-nosnippet>218</a>            written: <a href="../../../../core/primitive.usize.html">usize</a>,
 <a href=#219 id=219 data-nosnippet>219</a>        }
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="#216-219">BufGuard</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">fn </span>new(buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <span class="self">Self </span>{
+<a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">fn </span>new(buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;) -&gt; <span class="self">Self </span>{
 <a href=#223 id=223 data-nosnippet>223</a>                <span class="self">Self </span>{ <a href="#222">buffer</a>, written: <span class="number">0 </span>}
 <a href=#224 id=224 data-nosnippet>224</a>            }
 <a href=#225 id=225 data-nosnippet>225</a>
@@ -235,7 +235,7 @@
 <a href=#235 id=235 data-nosnippet>235</a>
 <a href=#236 id=236 data-nosnippet>236</a>            <span class="doccomment">/// true if all of the bytes have been written
 <a href=#237 id=237 data-nosnippet>237</a>            </span><span class="kw">fn </span>done(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.bool.html">bool</a> {
-<a href=#238 id=238 data-nosnippet>238</a>                <a class="self" href="#237">self</a>.written &gt;= <a class="self" href="#237">self</a>.buffer.<a href="../../vec/mod.rs.html#3068-3077">len</a>()
+<a href=#238 id=238 data-nosnippet>238</a>                <a class="self" href="#237">self</a>.written &gt;= <a class="self" href="#237">self</a>.buffer.<a href="../../vec/mod.rs.html#3074-3083">len</a>()
 <a href=#239 id=239 data-nosnippet>239</a>            }
 <a href=#240 id=240 data-nosnippet>240</a>        }
 <a href=#241 id=241 data-nosnippet>241</a>
@@ -244,14 +244,14 @@
 <a href=#244 id=244 data-nosnippet>244</a>                <span class="kw">if </span><a class="self" href="#243">self</a>.written &gt; <span class="number">0 </span>{
 <a href=#245 id=245 data-nosnippet>245</a>                    <span class="comment">// Like `self.buffer.drain(..self.written)` but more obviously
 <a href=#246 id=246 data-nosnippet>246</a>                    // preserving the spare capacity; see note above.
-<a href=#247 id=247 data-nosnippet>247</a>                    </span><span class="kw">let </span>new_len = <a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#3068-3077">len</a>() - <a class="self" href="#243">self</a>.written;
+<a href=#247 id=247 data-nosnippet>247</a>                    </span><span class="kw">let </span>new_len = <a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#3074-3083">len</a>() - <a class="self" href="#243">self</a>.written;
 <a href=#248 id=248 data-nosnippet>248</a>                    <span class="comment">// SAFETY: Assumes `Vec::as_mut_slice` will not
 <a href=#249 id=249 data-nosnippet>249</a>                    // de-initialize any elements of `self.buf`'s spare capacity,
 <a href=#250 id=250 data-nosnippet>250</a>                    // and that `&lt;&amp;mut [u8]&gt;::copy_within` will not do so either.
-<a href=#251 id=251 data-nosnippet>251</a>                    </span><a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#1798-1820">as_mut_slice</a>().<a href="../../../../core/primitive.slice.html#method.copy_within">copy_within</a>(<span class="self">self</span>.written.., <span class="number">0</span>);
+<a href=#251 id=251 data-nosnippet>251</a>                    </span><a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#1804-1826">as_mut_slice</a>().<a href="../../../../core/primitive.slice.html#method.copy_within">copy_within</a>(<span class="self">self</span>.written.., <span class="number">0</span>);
 <a href=#252 id=252 data-nosnippet>252</a>                    <span class="comment">// SAFETY: Assumes `Vec::truncate` will not de-initialize
 <a href=#253 id=253 data-nosnippet>253</a>                    // any elements of `self.buf`'s spare capacity,
-<a href=#254 id=254 data-nosnippet>254</a>                    </span><a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#1725-1745">truncate</a>(<a href="#247">new_len</a>);
+<a href=#254 id=254 data-nosnippet>254</a>                    </span><a class="self" href="#243">self</a>.buffer.<a href="../../vec/mod.rs.html#1731-1751">truncate</a>(<a href="#247">new_len</a>);
 <a href=#255 id=255 data-nosnippet>255</a>                }
 <a href=#256 id=256 data-nosnippet>256</a>            }
 <a href=#257 id=257 data-nosnippet>257</a>        }
@@ -359,7 +359,7 @@
 <a href=#359 id=359 data-nosnippet>359</a>    /// and thus any capacity changes would be unexpected by the user.
 <a href=#360 id=360 data-nosnippet>360</a>    </span><span class="attr">#[doc(hidden)]
 <a href=#361 id=361 data-nosnippet>361</a>    #[unstable(feature = <span class="string">"core_io_internals"</span>, reason = <span class="string">"exposed only for libstd"</span>, issue = <span class="string">"none"</span>)]
-<a href=#362 id=362 data-nosnippet>362</a>    </span><span class="kw">pub fn </span>buffer_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#362 id=362 data-nosnippet>362</a>    </span><span class="kw">pub fn </span>buffer_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#363 id=363 data-nosnippet>363</a>        <span class="kw-2">&amp;mut </span><a class="self" href="#362">self</a>.buf
 <a href=#364 id=364 data-nosnippet>364</a>    }
 <a href=#365 id=365 data-nosnippet>365</a>
@@ -380,7 +380,7 @@
 <a href=#380 id=380 data-nosnippet>380</a>    /// ```
 <a href=#381 id=381 data-nosnippet>381</a>    </span><span class="attr">#[stable(feature = <span class="string">"buffered_io_capacity"</span>, since = <span class="string">"1.46.0"</span>)]
 <a href=#382 id=382 data-nosnippet>382</a>    </span><span class="kw">pub fn </span>capacity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.usize.html">usize</a> {
-<a href=#383 id=383 data-nosnippet>383</a>        <a class="self" href="#382">self</a>.buf.<a href="../../vec/mod.rs.html#1353-1355">capacity</a>()
+<a href=#383 id=383 data-nosnippet>383</a>        <a class="self" href="#382">self</a>.buf.<a href="../../vec/mod.rs.html#1359-1361">capacity</a>()
 <a href=#384 id=384 data-nosnippet>384</a>    }
 <a href=#385 id=385 data-nosnippet>385</a>
 <a href=#386 id=386 data-nosnippet>386</a>    <span class="comment">// Ensure this function does not get inlined into `write`, so that it
@@ -397,7 +397,7 @@
 <a href=#397 id=397 data-nosnippet>397</a>
 <a href=#398 id=398 data-nosnippet>398</a>        <span class="comment">// Why not len &gt; capacity? To avoid a needless trip through the buffer when the input
 <a href=#399 id=399 data-nosnippet>399</a>        // exactly fills it. We'd just need to flush it to the underlying writer anyway.
-<a href=#400 id=400 data-nosnippet>400</a>        </span><span class="kw">if </span><a href="#393">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#393">self</a>.buf.<a href="../../vec/mod.rs.html#1353-1355">capacity</a>() {
+<a href=#400 id=400 data-nosnippet>400</a>        </span><span class="kw">if </span><a href="#393">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#393">self</a>.buf.<a href="../../vec/mod.rs.html#1359-1361">capacity</a>() {
 <a href=#401 id=401 data-nosnippet>401</a>            <a class="self" href="#393">self</a>.panicked = <span class="bool-val">true</span>;
 <a href=#402 id=402 data-nosnippet>402</a>            <span class="kw">let </span>r = <a class="self" href="#393">self</a>.<a href="#330-332">get_mut</a>().<a href="../../../../alloc/io/trait.Write.html">write</a>(<a href="#393">buf</a>);
 <a href=#403 id=403 data-nosnippet>403</a>            <a class="self" href="#393">self</a>.panicked = <span class="bool-val">false</span>;
@@ -439,7 +439,7 @@
 <a href=#439 id=439 data-nosnippet>439</a>
 <a href=#440 id=440 data-nosnippet>440</a>        <span class="comment">// Why not len &gt; capacity? To avoid a needless trip through the buffer when the input
 <a href=#441 id=441 data-nosnippet>441</a>        // exactly fills it. We'd just need to flush it to the underlying writer anyway.
-<a href=#442 id=442 data-nosnippet>442</a>        </span><span class="kw">if </span><a href="#430">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#430">self</a>.buf.<a href="../../vec/mod.rs.html#1353-1355">capacity</a>() {
+<a href=#442 id=442 data-nosnippet>442</a>        </span><span class="kw">if </span><a href="#430">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#430">self</a>.buf.<a href="../../vec/mod.rs.html#1359-1361">capacity</a>() {
 <a href=#443 id=443 data-nosnippet>443</a>            <a class="self" href="#430">self</a>.panicked = <span class="bool-val">true</span>;
 <a href=#444 id=444 data-nosnippet>444</a>            <span class="kw">let </span>r = <a class="self" href="#430">self</a>.<a href="#330-332">get_mut</a>().<a href="../../../../alloc/io/trait.Write.html">write_all</a>(<a href="#430">buf</a>);
 <a href=#445 id=445 data-nosnippet>445</a>            <a class="self" href="#430">self</a>.panicked = <span class="bool-val">false</span>;
@@ -467,20 +467,20 @@
 <a href=#467 id=467 data-nosnippet>467</a>    </span><span class="attr">#[inline]
 <a href=#468 id=468 data-nosnippet>468</a>    </span><span class="kw">unsafe fn </span>write_to_buffer_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[<a href="../../../../core/primitive.u8.html">u8</a>]) {
 <a href=#469 id=469 data-nosnippet>469</a>        <a href="../../../../core/macro.debug_assert.html">debug_assert!</a>(buf.len() &lt;= <span class="self">self</span>.spare_capacity());
-<a href=#470 id=470 data-nosnippet>470</a>        <span class="kw">let </span>old_len = <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#3068-3077">len</a>();
+<a href=#470 id=470 data-nosnippet>470</a>        <span class="kw">let </span>old_len = <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#3074-3083">len</a>();
 <a href=#471 id=471 data-nosnippet>471</a>        <span class="kw">let </span>buf_len = <a href="#468">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>();
 <a href=#472 id=472 data-nosnippet>472</a>        <span class="kw">let </span>src = <a href="#468">buf</a>.<a href="../../../../core/primitive.slice.html#method.as_ptr">as_ptr</a>();
 <a href=#473 id=473 data-nosnippet>473</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
 <a href=#474 id=474 data-nosnippet>474</a>        </span><span class="kw">unsafe </span>{
-<a href=#475 id=475 data-nosnippet>475</a>            <span class="kw">let </span>dst = <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../../../core/primitive.pointer.html#method.add">add</a>(<a href="#470">old_len</a>);
+<a href=#475 id=475 data-nosnippet>475</a>            <span class="kw">let </span>dst = <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../../../core/primitive.pointer.html#method.add">add</a>(<a href="#470">old_len</a>);
 <a href=#476 id=476 data-nosnippet>476</a>            ptr::<a href="../../../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#472">src</a>, <a href="#475">dst</a>, <a href="#471">buf_len</a>);
-<a href=#477 id=477 data-nosnippet>477</a>            <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#2134-2142">set_len</a>(<a href="#470">old_len</a> + <a href="#471">buf_len</a>);
+<a href=#477 id=477 data-nosnippet>477</a>            <a class="self" href="#468">self</a>.buf.<a href="../../vec/mod.rs.html#2140-2148">set_len</a>(<a href="#470">old_len</a> + <a href="#471">buf_len</a>);
 <a href=#478 id=478 data-nosnippet>478</a>        }
 <a href=#479 id=479 data-nosnippet>479</a>    }
 <a href=#480 id=480 data-nosnippet>480</a>
 <a href=#481 id=481 data-nosnippet>481</a>    <span class="attr">#[inline]
 <a href=#482 id=482 data-nosnippet>482</a>    </span><span class="kw">fn </span>spare_capacity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.usize.html">usize</a> {
-<a href=#483 id=483 data-nosnippet>483</a>        <a class="self" href="#482">self</a>.buf.<a href="../../vec/mod.rs.html#1353-1355">capacity</a>() - <a class="self" href="#482">self</a>.buf.<a href="../../vec/mod.rs.html#3068-3077">len</a>()
+<a href=#483 id=483 data-nosnippet>483</a>        <a class="self" href="#482">self</a>.buf.<a href="../../vec/mod.rs.html#1359-1361">capacity</a>() - <a class="self" href="#482">self</a>.buf.<a href="../../vec/mod.rs.html#3074-3083">len</a>()
 <a href=#484 id=484 data-nosnippet>484</a>    }
 <a href=#485 id=485 data-nosnippet>485</a>}
 <a href=#486 id=486 data-nosnippet>486</a>
@@ -518,7 +518,7 @@
 <a href=#518 id=518 data-nosnippet>518</a>/// # fn main() {}
 <a href=#519 id=519 data-nosnippet>519</a>/// ```
 <a href=#520 id=520 data-nosnippet>520</a></span><span class="kw">pub struct </span><a href="../../../../alloc/io/struct.WriterPanicked.html">WriterPanicked</a> {
-<a href=#521 id=521 data-nosnippet>521</a>    buf: <a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#521 id=521 data-nosnippet>521</a>    buf: <a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#522 id=522 data-nosnippet>522</a>}
 <a href=#523 id=523 data-nosnippet>523</a>
 <a href=#524 id=524 data-nosnippet>524</a><span class="kw">impl </span><a href="#520-522">WriterPanicked</a> {
@@ -526,7 +526,7 @@
 <a href=#526 id=526 data-nosnippet>526</a>    /// panicking call(s) to the underlying writer, so simply writing it again is not a good idea.
 <a href=#527 id=527 data-nosnippet>527</a>    </span><span class="attr">#[must_use = <span class="string">"`self` will be dropped if the result is not used"</span>]
 <a href=#528 id=528 data-nosnippet>528</a>    #[stable(feature = <span class="string">"bufwriter_into_parts"</span>, since = <span class="string">"1.56.0"</span>)]
-<a href=#529 id=529 data-nosnippet>529</a>    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; <a href="../../vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#529 id=529 data-nosnippet>529</a>    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; <a href="../../vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#530 id=530 data-nosnippet>530</a>        <a class="self" href="#529">self</a>.buf
 <a href=#531 id=531 data-nosnippet>531</a>    }
 <a href=#532 id=532 data-nosnippet>532</a>}
@@ -633,7 +633,7 @@
 <a href=#633 id=633 data-nosnippet>633</a>                </span><span class="kw">if </span><a href="#630">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt; <a class="self" href="#587">self</a>.<a href="#482-484">spare_capacity</a>() {
 <a href=#634 id=634 data-nosnippet>634</a>                    <span class="self">self</span>.flush_buf()<span class="question-mark">?</span>;
 <a href=#635 id=635 data-nosnippet>635</a>                }
-<a href=#636 id=636 data-nosnippet>636</a>                <span class="kw">if </span><a href="#630">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#587">self</a>.buf.<a href="../../vec/mod.rs.html#1353-1355">capacity</a>() {
+<a href=#636 id=636 data-nosnippet>636</a>                <span class="kw">if </span><a href="#630">buf</a>.<a href="../../../../core/primitive.slice.html#method.len">len</a>() &gt;= <a class="self" href="#587">self</a>.buf.<a href="../../vec/mod.rs.html#1359-1361">capacity</a>() {
 <a href=#637 id=637 data-nosnippet>637</a>                    <span class="comment">// The slice is at least as large as the buffering capacity,
 <a href=#638 id=638 data-nosnippet>638</a>                    // so it's better to write it directly, bypassing the buffer.
 <a href=#639 id=639 data-nosnippet>639</a>                    </span><a class="self" href="#587">self</a>.panicked = <span class="bool-val">true</span>;

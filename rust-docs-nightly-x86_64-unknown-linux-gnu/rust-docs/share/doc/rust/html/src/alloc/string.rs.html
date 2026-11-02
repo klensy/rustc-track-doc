@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/string.rs`."><title>string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (f9ceb4a4d 2026-10-31)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A UTF-8–encoded, growable string.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/string.rs`."><title>string.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (3e92e1a2d 2026-11-01)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>string.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! A UTF-8–encoded, growable string.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module contains the [`String`] type, the [`ToString`] trait for
 <a href=#4 id=4 data-nosnippet>4</a>//! converting to strings, and several error types that may result from
@@ -66,10 +66,10 @@
 <a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">use </span><span class="kw">crate</span>::borrow::{<a href="borrow.rs.html#169-180">Cow</a>, <a href="borrow.rs.html#27-69">ToOwned</a>};
 <a href=#67 id=67 data-nosnippet>67</a><span class="kw">use </span><a href="boxed.rs.html#308-311"><span class="kw">crate</span>::boxed::Box</a>;
 <a href=#68 id=68 data-nosnippet>68</a><span class="kw">use </span><a href="collections/mod.rs.html#71-73"><span class="kw">crate</span>::collections::TryReserveError</a>;
-<a href=#69 id=69 data-nosnippet>69</a><span class="kw">use </span><span class="kw">crate</span>::str::{<a class="self" href="lib.rs.html#271">self</a>, <a href="../../alloc/str/struct.CharIndices.html">CharIndices</a>, <a href="../../alloc/str/struct.Chars.html">Chars</a>, <a href="../../alloc/str/struct.Utf8Error.html">Utf8Error</a>, <a href="../../alloc/str/fn.from_utf8_unchecked_mut.html">from_utf8_unchecked_mut</a>};
+<a href=#69 id=69 data-nosnippet>69</a><span class="kw">use </span><span class="kw">crate</span>::str::{<a class="self" href="lib.rs.html#272">self</a>, <a href="../../alloc/str/struct.CharIndices.html">CharIndices</a>, <a href="../../alloc/str/struct.Chars.html">Chars</a>, <a href="../../alloc/str/struct.Utf8Error.html">Utf8Error</a>, <a href="../../alloc/str/fn.from_utf8_unchecked_mut.html">from_utf8_unchecked_mut</a>};
 <a href=#70 id=70 data-nosnippet>70</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#71 id=71 data-nosnippet>71</a></span><span class="kw">use </span><span class="kw">crate</span>::str::{<a href="../../alloc/str/trait.FromStr.html">FromStr</a>, <a href="str.rs.html#931-934">from_boxed_utf8_unchecked</a>};
-<a href=#72 id=72 data-nosnippet>72</a><span class="kw">use </span><span class="kw">crate</span>::vec::{<a class="self" href="lib.rs.html#277">self</a>, <a href="vec/mod.rs.html#442-445">Vec</a>};
+<a href=#72 id=72 data-nosnippet>72</a><span class="kw">use </span><span class="kw">crate</span>::vec::{<a class="self" href="lib.rs.html#278">self</a>, <a href="vec/mod.rs.html#448-451">Vec</a>};
 <a href=#73 id=73 data-nosnippet>73</a>
 <a href=#74 id=74 data-nosnippet>74</a><span class="doccomment">/// A UTF-8–encoded, growable string.
 <a href=#75 id=75 data-nosnippet>75</a>///
@@ -355,7 +355,7 @@
 <a href=#355 id=355 data-nosnippet>355</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#356 id=356 data-nosnippet>356</a>#[lang = <span class="string">"String"</span>]
 <a href=#357 id=357 data-nosnippet>357</a></span><span class="kw">pub struct </span><a href="../../alloc/string/struct.String.html">String</a> {
-<a href=#358 id=358 data-nosnippet>358</a>    vec: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#358 id=358 data-nosnippet>358</a>    vec: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#359 id=359 data-nosnippet>359</a>}
 <a href=#360 id=360 data-nosnippet>360</a>
 <a href=#361 id=361 data-nosnippet>361</a><span class="doccomment">/// A possible error value when converting a `String` from a UTF-8 byte vector.
@@ -393,7 +393,7 @@
 <a href=#393 id=393 data-nosnippet>393</a>#[cfg_attr(not(no_global_oom_handling), derive(<a href="../../core/clone/derive.Clone.html">Clone</a>))]
 <a href=#394 id=394 data-nosnippet>394</a>#[derive(<a href="../../alloc/fmt/derive.Debug.html">Debug</a>, <a href="../../core/cmp/derive.PartialEq.html">PartialEq</a>, <a href="../../core/cmp/derive.Eq.html">Eq</a>)]
 <a href=#395 id=395 data-nosnippet>395</a></span><span class="kw">pub struct </span><a href="../../alloc/string/struct.FromUtf8Error.html">FromUtf8Error</a> {
-<a href=#396 id=396 data-nosnippet>396</a>    bytes: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#396 id=396 data-nosnippet>396</a>    bytes: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#397 id=397 data-nosnippet>397</a>    error: <a href="../../alloc/str/struct.Utf8Error.html">Utf8Error</a>,
 <a href=#398 id=398 data-nosnippet>398</a>}
 <a href=#399 id=399 data-nosnippet>399</a>
@@ -448,7 +448,7 @@
 <a href=#448 id=448 data-nosnippet>448</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#449 id=449 data-nosnippet>449</a>    #[must_use]
 <a href=#450 id=450 data-nosnippet>450</a>    </span><span class="kw">pub const fn </span>new() -&gt; <a href="#357-359">String</a> {
-<a href=#451 id=451 data-nosnippet>451</a>        <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#467-469">new</a>() }
+<a href=#451 id=451 data-nosnippet>451</a>        <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#473-475">new</a>() }
 <a href=#452 id=452 data-nosnippet>452</a>    }
 <a href=#453 id=453 data-nosnippet>453</a>
 <a href=#454 id=454 data-nosnippet>454</a>    <span class="doccomment">/// Creates a new empty `String` with at least the specified capacity.
@@ -495,7 +495,7 @@
 <a href=#495 id=495 data-nosnippet>495</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#496 id=496 data-nosnippet>496</a>    #[must_use]
 <a href=#497 id=497 data-nosnippet>497</a>    </span><span class="kw">pub fn </span>with_capacity(capacity: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a href="#357-359">String</a> {
-<a href=#498 id=498 data-nosnippet>498</a>        <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#528-530">with_capacity</a>(<a href="#497">capacity</a>) }
+<a href=#498 id=498 data-nosnippet>498</a>        <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#497">capacity</a>) }
 <a href=#499 id=499 data-nosnippet>499</a>    }
 <a href=#500 id=500 data-nosnippet>500</a>
 <a href=#501 id=501 data-nosnippet>501</a>    <span class="doccomment">/// Creates a new empty `String` with at least the specified capacity.
@@ -570,7 +570,7 @@
 <a href=#570 id=570 data-nosnippet>570</a>    </span><span class="attr">#[inline]
 <a href=#571 id=571 data-nosnippet>571</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#572 id=572 data-nosnippet>572</a>    #[rustc_diagnostic_item = <span class="string">"string_from_utf8"</span>]
-<a href=#573 id=573 data-nosnippet>573</a>    </span><span class="kw">pub fn </span>from_utf8(vec: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="#357-359">String</a>, <a href="#395-398">FromUtf8Error</a>&gt; {
+<a href=#573 id=573 data-nosnippet>573</a>    </span><span class="kw">pub fn </span>from_utf8(vec: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<a href="#357-359">String</a>, <a href="#395-398">FromUtf8Error</a>&gt; {
 <a href=#574 id=574 data-nosnippet>574</a>        <span class="kw">match </span>str::<a href="../../alloc/str/fn.from_utf8.html">from_utf8</a>(<span class="kw-2">&amp;</span><a href="#573">vec</a>) {
 <a href=#575 id=575 data-nosnippet>575</a>            <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(..) =&gt; <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Ok">Ok</a>(<a href="#357-359">String</a> { <a href="#573">vec</a> }),
 <a href=#576 id=576 data-nosnippet>576</a>            <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Err">Err</a>(e) =&gt; <a class="prelude-val" href="../../core/result/enum.Result.html#variant.Err">Err</a>(<a href="#395-398">FromUtf8Error</a> { bytes: <a href="#573">vec</a>, error: <a href="#576">e</a> }),
@@ -692,7 +692,7 @@
 <a href=#692 id=692 data-nosnippet>692</a>    </span><span class="attr">#[must_use]
 <a href=#693 id=693 data-nosnippet>693</a>    #[cfg(not(no_global_oom_handling))]
 <a href=#694 id=694 data-nosnippet>694</a>    #[stable(feature = <span class="string">"string_from_utf8_lossy_owned"</span>, since = <span class="string">"1.99.0"</span>)]
-<a href=#695 id=695 data-nosnippet>695</a>    </span><span class="kw">pub fn </span>from_utf8_lossy_owned(v: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a href="#357-359">String</a> {
+<a href=#695 id=695 data-nosnippet>695</a>    </span><span class="kw">pub fn </span>from_utf8_lossy_owned(v: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a href="#357-359">String</a> {
 <a href=#696 id=696 data-nosnippet>696</a>        <span class="kw">if let </span>Cow::<a href="borrow.rs.html#179">Owned</a>(string) = <a href="#357-359">String</a>::<a href="#632-658">from_utf8_lossy</a>(<span class="kw-2">&amp;</span><a href="#695">v</a>) {
 <a href=#697 id=697 data-nosnippet>697</a>            <a href="#696">string</a>
 <a href=#698 id=698 data-nosnippet>698</a>        } <span class="kw">else </span>{
@@ -964,7 +964,7 @@
 <a href=#964 id=964 data-nosnippet>964</a>    #[stable(feature = <span class="string">"vec_into_raw_parts"</span>, since = <span class="string">"1.93.0"</span>)]
 <a href=#965 id=965 data-nosnippet>965</a>    #[inline]
 <a href=#966 id=966 data-nosnippet>966</a>    </span><span class="kw">pub fn </span>into_raw_parts(<span class="self">self</span>) -&gt; (<span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>, <a href="../../core/primitive.usize.html">usize</a>, <a href="../../core/primitive.usize.html">usize</a>) {
-<a href=#967 id=967 data-nosnippet>967</a>        <a class="self" href="#966">self</a>.vec.<a href="vec/mod.rs.html#798-801">into_raw_parts</a>()
+<a href=#967 id=967 data-nosnippet>967</a>        <a class="self" href="#966">self</a>.vec.<a href="vec/mod.rs.html#804-807">into_raw_parts</a>()
 <a href=#968 id=968 data-nosnippet>968</a>    }
 <a href=#969 id=969 data-nosnippet>969</a>
 <a href=#970 id=970 data-nosnippet>970</a>    <span class="doccomment">/// Creates a new `String` from a pointer, a length and a capacity.
@@ -1007,7 +1007,7 @@
 <a href=#1007 id=1007 data-nosnippet>1007</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1008 id=1008 data-nosnippet>1008</a>    </span><span class="kw">pub unsafe fn </span>from_raw_parts(buf: <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>, length: <a href="../../core/primitive.usize.html">usize</a>, capacity: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a href="#357-359">String</a> {
 <a href=#1009 id=1009 data-nosnippet>1009</a>        <span class="comment">// SAFETY: Upheld by caller.
-<a href=#1010 id=1010 data-nosnippet>1010</a>        </span><span class="kw">unsafe </span>{ <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#626-629">from_raw_parts</a>(<a href="#1008">buf</a>, <a href="#1008">length</a>, <a href="#1008">capacity</a>) } }
+<a href=#1010 id=1010 data-nosnippet>1010</a>        </span><span class="kw">unsafe </span>{ <a href="#357-359">String</a> { vec: <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#632-635">from_raw_parts</a>(<a href="#1008">buf</a>, <a href="#1008">length</a>, <a href="#1008">capacity</a>) } }
 <a href=#1011 id=1011 data-nosnippet>1011</a>    }
 <a href=#1012 id=1012 data-nosnippet>1012</a>
 <a href=#1013 id=1013 data-nosnippet>1013</a>    <span class="doccomment">/// Converts a vector of bytes to a `String` without checking that the
@@ -1039,7 +1039,7 @@
 <a href=#1039 id=1039 data-nosnippet>1039</a>    </span><span class="attr">#[inline]
 <a href=#1040 id=1040 data-nosnippet>1040</a>    #[must_use]
 <a href=#1041 id=1041 data-nosnippet>1041</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1042 id=1042 data-nosnippet>1042</a>    </span><span class="kw">pub unsafe fn </span>from_utf8_unchecked(bytes: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a href="#357-359">String</a> {
+<a href=#1042 id=1042 data-nosnippet>1042</a>    </span><span class="kw">pub unsafe fn </span>from_utf8_unchecked(bytes: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a href="#357-359">String</a> {
 <a href=#1043 id=1043 data-nosnippet>1043</a>        <a href="#357-359">String</a> { vec: <a href="#1042">bytes</a> }
 <a href=#1044 id=1044 data-nosnippet>1044</a>    }
 <a href=#1045 id=1045 data-nosnippet>1045</a>
@@ -1060,7 +1060,7 @@
 <a href=#1060 id=1060 data-nosnippet>1060</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1061 id=1061 data-nosnippet>1061</a>    #[rustc_const_stable(feature = <span class="string">"const_vec_string_slice"</span>, since = <span class="string">"1.87.0"</span>)]
 <a href=#1062 id=1062 data-nosnippet>1062</a>    #[rustc_allow_const_fn_unstable(const_precise_live_drops)]
-<a href=#1063 id=1063 data-nosnippet>1063</a>    </span><span class="kw">pub const fn </span>into_bytes(<span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#1063 id=1063 data-nosnippet>1063</a>    </span><span class="kw">pub const fn </span>into_bytes(<span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#1064 id=1064 data-nosnippet>1064</a>        <a class="self" href="#1063">self</a>.vec
 <a href=#1065 id=1065 data-nosnippet>1065</a>    }
 <a href=#1066 id=1066 data-nosnippet>1066</a>
@@ -1081,7 +1081,7 @@
 <a href=#1081 id=1081 data-nosnippet>1081</a>    </span><span class="kw">pub const fn </span>as_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a> {
 <a href=#1082 id=1082 data-nosnippet>1082</a>        <span class="comment">// SAFETY: String contents are stipulated to be valid UTF-8, invalid contents are an error
 <a href=#1083 id=1083 data-nosnippet>1083</a>        // at construction.
-<a href=#1084 id=1084 data-nosnippet>1084</a>        </span><span class="kw">unsafe </span>{ str::<a href="../../alloc/str/fn.from_utf8_unchecked.html">from_utf8_unchecked</a>(<a class="self" href="#1081">self</a>.vec.<a href="vec/mod.rs.html#1762-1781">as_slice</a>()) }
+<a href=#1084 id=1084 data-nosnippet>1084</a>        </span><span class="kw">unsafe </span>{ str::<a href="../../alloc/str/fn.from_utf8_unchecked.html">from_utf8_unchecked</a>(<a class="self" href="#1081">self</a>.vec.<a href="vec/mod.rs.html#1768-1787">as_slice</a>()) }
 <a href=#1085 id=1085 data-nosnippet>1085</a>    }
 <a href=#1086 id=1086 data-nosnippet>1086</a>
 <a href=#1087 id=1087 data-nosnippet>1087</a>    <span class="doccomment">/// Converts a `String` into a mutable string slice.
@@ -1104,7 +1104,7 @@
 <a href=#1104 id=1104 data-nosnippet>1104</a>    </span><span class="kw">pub const fn </span>as_mut_str(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><a href="../../core/primitive.str.html">str</a> {
 <a href=#1105 id=1105 data-nosnippet>1105</a>        <span class="comment">// SAFETY: String contents are stipulated to be valid UTF-8, invalid contents are an error
 <a href=#1106 id=1106 data-nosnippet>1106</a>        // at construction.
-<a href=#1107 id=1107 data-nosnippet>1107</a>        </span><span class="kw">unsafe </span>{ str::<a href="../../alloc/str/fn.from_utf8_unchecked_mut.html">from_utf8_unchecked_mut</a>(<a class="self" href="#1104">self</a>.vec.<a href="vec/mod.rs.html#1798-1820">as_mut_slice</a>()) }
+<a href=#1107 id=1107 data-nosnippet>1107</a>        </span><span class="kw">unsafe </span>{ str::<a href="../../alloc/str/fn.from_utf8_unchecked_mut.html">from_utf8_unchecked_mut</a>(<a class="self" href="#1104">self</a>.vec.<a href="vec/mod.rs.html#1804-1826">as_mut_slice</a>()) }
 <a href=#1108 id=1108 data-nosnippet>1108</a>    }
 <a href=#1109 id=1109 data-nosnippet>1109</a>
 <a href=#1110 id=1110 data-nosnippet>1110</a>    <span class="doccomment">/// Appends a given string slice onto the end of this `String`.
@@ -1128,7 +1128,7 @@
 <a href=#1128 id=1128 data-nosnippet>1128</a>    #[rustc_confusables(<span class="string">"append"</span>, <span class="string">"push"</span>)]
 <a href=#1129 id=1129 data-nosnippet>1129</a>    #[rustc_diagnostic_item = <span class="string">"string_push_str"</span>]
 <a href=#1130 id=1130 data-nosnippet>1130</a>    </span><span class="kw">pub fn </span>push_str(<span class="kw-2">&amp;mut </span><span class="self">self</span>, string: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a>) {
-<a href=#1131 id=1131 data-nosnippet>1131</a>        <a class="self" href="#1130">self</a>.vec.<a href="vec/mod.rs.html#3578-3580">extend_from_slice</a>(<a href="#1130">string</a>.<a href="../../core/primitive.str.html#method.as_bytes">as_bytes</a>())
+<a href=#1131 id=1131 data-nosnippet>1131</a>        <a class="self" href="#1130">self</a>.vec.<a href="vec/mod.rs.html#3584-3586">extend_from_slice</a>(<a href="#1130">string</a>.<a href="../../core/primitive.str.html#method.as_bytes">as_bytes</a>())
 <a href=#1132 id=1132 data-nosnippet>1132</a>    }
 <a href=#1133 id=1133 data-nosnippet>1133</a>
 <a href=#1134 id=1134 data-nosnippet>1134</a>    <span class="doccomment">/// Appends a given string slice onto the end of this `String`, returning
@@ -1141,7 +1141,7 @@
 <a href=#1141 id=1141 data-nosnippet>1141</a>        </span>)
 <a href=#1142 id=1142 data-nosnippet>1142</a>    )]
 <a href=#1143 id=1143 data-nosnippet>1143</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_push_str(<span class="kw-2">&amp;mut </span><span class="self">self</span>, string: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;(), <a href="collections/mod.rs.html#71-73">TryReserveError</a>&gt; {
-<a href=#1144 id=1144 data-nosnippet>1144</a>        <a class="self" href="#1143">self</a>.vec.<a href="vec/mod.rs.html#3632-3638">try_extend_from_slice_of_bytes</a>(<a href="#1143">string</a>.<a href="../../core/primitive.str.html#method.as_bytes">as_bytes</a>())
+<a href=#1144 id=1144 data-nosnippet>1144</a>        <a class="self" href="#1143">self</a>.vec.<a href="vec/mod.rs.html#3638-3644">try_extend_from_slice_of_bytes</a>(<a href="#1143">string</a>.<a href="../../core/primitive.str.html#method.as_bytes">as_bytes</a>())
 <a href=#1145 id=1145 data-nosnippet>1145</a>    }
 <a href=#1146 id=1146 data-nosnippet>1146</a>
 <a href=#1147 id=1147 data-nosnippet>1147</a>    <span class="attr">#[cfg(not(no_global_oom_handling))]
@@ -1197,7 +1197,7 @@
 <a href=#1197 id=1197 data-nosnippet>1197</a>        <a href="../../core/macro.assert.html">assert!</a>(<span class="self">self</span>.is_char_boundary(start));
 <a href=#1198 id=1198 data-nosnippet>1198</a>        <a href="../../core/macro.assert.html">assert!</a>(<span class="self">self</span>.is_char_boundary(end));
 <a href=#1199 id=1199 data-nosnippet>1199</a>
-<a href=#1200 id=1200 data-nosnippet>1200</a>        <a class="self" href="#1191">self</a>.vec.<a href="vec/mod.rs.html#3609-3621">extend_from_within</a>(<a href="#1195">src</a>);
+<a href=#1200 id=1200 data-nosnippet>1200</a>        <a class="self" href="#1191">self</a>.vec.<a href="vec/mod.rs.html#3615-3627">extend_from_within</a>(<a href="#1195">src</a>);
 <a href=#1201 id=1201 data-nosnippet>1201</a>    }
 <a href=#1202 id=1202 data-nosnippet>1202</a>
 <a href=#1203 id=1203 data-nosnippet>1203</a>    <span class="doccomment">/// Returns this `String`'s capacity, in bytes.
@@ -1214,7 +1214,7 @@
 <a href=#1214 id=1214 data-nosnippet>1214</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1215 id=1215 data-nosnippet>1215</a>    #[rustc_const_stable(feature = <span class="string">"const_vec_string_slice"</span>, since = <span class="string">"1.87.0"</span>)]
 <a href=#1216 id=1216 data-nosnippet>1216</a>    </span><span class="kw">pub const fn </span>capacity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../core/primitive.usize.html">usize</a> {
-<a href=#1217 id=1217 data-nosnippet>1217</a>        <a class="self" href="#1216">self</a>.vec.<a href="vec/mod.rs.html#1353-1355">capacity</a>()
+<a href=#1217 id=1217 data-nosnippet>1217</a>        <a class="self" href="#1216">self</a>.vec.<a href="vec/mod.rs.html#1359-1361">capacity</a>()
 <a href=#1218 id=1218 data-nosnippet>1218</a>    }
 <a href=#1219 id=1219 data-nosnippet>1219</a>
 <a href=#1220 id=1220 data-nosnippet>1220</a>    <span class="doccomment">/// Reserves capacity for at least `additional` bytes more than the
@@ -1261,7 +1261,7 @@
 <a href=#1261 id=1261 data-nosnippet>1261</a>    #[inline]
 <a href=#1262 id=1262 data-nosnippet>1262</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1263 id=1263 data-nosnippet>1263</a>    </span><span class="kw">pub fn </span>reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: <a href="../../core/primitive.usize.html">usize</a>) {
-<a href=#1264 id=1264 data-nosnippet>1264</a>        <a class="self" href="#1263">self</a>.vec.<a href="vec/mod.rs.html#1377-1379">reserve</a>(<a href="#1263">additional</a>)
+<a href=#1264 id=1264 data-nosnippet>1264</a>        <a class="self" href="#1263">self</a>.vec.<a href="vec/mod.rs.html#1383-1385">reserve</a>(<a href="#1263">additional</a>)
 <a href=#1265 id=1265 data-nosnippet>1265</a>    }
 <a href=#1266 id=1266 data-nosnippet>1266</a>
 <a href=#1267 id=1267 data-nosnippet>1267</a>    <span class="doccomment">/// Reserves the minimum capacity for at least `additional` bytes more than
@@ -1311,7 +1311,7 @@
 <a href=#1311 id=1311 data-nosnippet>1311</a>    #[inline]
 <a href=#1312 id=1312 data-nosnippet>1312</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1313 id=1313 data-nosnippet>1313</a>    </span><span class="kw">pub fn </span>reserve_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: <a href="../../core/primitive.usize.html">usize</a>) {
-<a href=#1314 id=1314 data-nosnippet>1314</a>        <a class="self" href="#1313">self</a>.vec.<a href="vec/mod.rs.html#1407-1409">reserve_exact</a>(<a href="#1313">additional</a>)
+<a href=#1314 id=1314 data-nosnippet>1314</a>        <a class="self" href="#1313">self</a>.vec.<a href="vec/mod.rs.html#1413-1415">reserve_exact</a>(<a href="#1313">additional</a>)
 <a href=#1315 id=1315 data-nosnippet>1315</a>    }
 <a href=#1316 id=1316 data-nosnippet>1316</a>
 <a href=#1317 id=1317 data-nosnippet>1317</a>    <span class="doccomment">/// Tries to reserve capacity for at least `additional` bytes more than the
@@ -1346,7 +1346,7 @@
 <a href=#1346 id=1346 data-nosnippet>1346</a>    /// ```
 <a href=#1347 id=1347 data-nosnippet>1347</a>    </span><span class="attr">#[stable(feature = <span class="string">"try_reserve"</span>, since = <span class="string">"1.57.0"</span>)]
 <a href=#1348 id=1348 data-nosnippet>1348</a>    </span><span class="kw">pub fn </span>try_reserve(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;(), <a href="collections/mod.rs.html#71-73">TryReserveError</a>&gt; {
-<a href=#1349 id=1349 data-nosnippet>1349</a>        <a class="self" href="#1348">self</a>.vec.<a href="vec/mod.rs.html#1444-1446">try_reserve</a>(<a href="#1348">additional</a>)
+<a href=#1349 id=1349 data-nosnippet>1349</a>        <a class="self" href="#1348">self</a>.vec.<a href="vec/mod.rs.html#1450-1452">try_reserve</a>(<a href="#1348">additional</a>)
 <a href=#1350 id=1350 data-nosnippet>1350</a>    }
 <a href=#1351 id=1351 data-nosnippet>1351</a>
 <a href=#1352 id=1352 data-nosnippet>1352</a>    <span class="doccomment">/// Tries to reserve the minimum capacity for at least `additional` bytes
@@ -1387,7 +1387,7 @@
 <a href=#1387 id=1387 data-nosnippet>1387</a>    /// ```
 <a href=#1388 id=1388 data-nosnippet>1388</a>    </span><span class="attr">#[stable(feature = <span class="string">"try_reserve"</span>, since = <span class="string">"1.57.0"</span>)]
 <a href=#1389 id=1389 data-nosnippet>1389</a>    </span><span class="kw">pub fn </span>try_reserve_exact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, additional: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;(), <a href="collections/mod.rs.html#71-73">TryReserveError</a>&gt; {
-<a href=#1390 id=1390 data-nosnippet>1390</a>        <a class="self" href="#1389">self</a>.vec.<a href="vec/mod.rs.html#1487-1489">try_reserve_exact</a>(<a href="#1389">additional</a>)
+<a href=#1390 id=1390 data-nosnippet>1390</a>        <a class="self" href="#1389">self</a>.vec.<a href="vec/mod.rs.html#1493-1495">try_reserve_exact</a>(<a href="#1389">additional</a>)
 <a href=#1391 id=1391 data-nosnippet>1391</a>    }
 <a href=#1392 id=1392 data-nosnippet>1392</a>
 <a href=#1393 id=1393 data-nosnippet>1393</a>    <span class="doccomment">/// Shrinks the capacity of this `String` to match its length.
@@ -1407,7 +1407,7 @@
 <a href=#1407 id=1407 data-nosnippet>1407</a>    #[inline]
 <a href=#1408 id=1408 data-nosnippet>1408</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1409 id=1409 data-nosnippet>1409</a>    </span><span class="kw">pub fn </span>shrink_to_fit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#1410 id=1410 data-nosnippet>1410</a>        <a class="self" href="#1409">self</a>.vec.<a href="vec/mod.rs.html#1511-1518">shrink_to_fit</a>()
+<a href=#1410 id=1410 data-nosnippet>1410</a>        <a class="self" href="#1409">self</a>.vec.<a href="vec/mod.rs.html#1517-1524">shrink_to_fit</a>()
 <a href=#1411 id=1411 data-nosnippet>1411</a>    }
 <a href=#1412 id=1412 data-nosnippet>1412</a>
 <a href=#1413 id=1413 data-nosnippet>1413</a>    <span class="doccomment">/// Shrinks the capacity of this `String` with a lower bound.
@@ -1434,7 +1434,7 @@
 <a href=#1434 id=1434 data-nosnippet>1434</a>    #[inline]
 <a href=#1435 id=1435 data-nosnippet>1435</a>    #[stable(feature = <span class="string">"shrink_to"</span>, since = <span class="string">"1.56.0"</span>)]
 <a href=#1436 id=1436 data-nosnippet>1436</a>    </span><span class="kw">pub fn </span>shrink_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, min_capacity: <a href="../../core/primitive.usize.html">usize</a>) {
-<a href=#1437 id=1437 data-nosnippet>1437</a>        <a class="self" href="#1436">self</a>.vec.<a href="vec/mod.rs.html#1540-1544">shrink_to</a>(<a href="#1436">min_capacity</a>)
+<a href=#1437 id=1437 data-nosnippet>1437</a>        <a class="self" href="#1436">self</a>.vec.<a href="vec/mod.rs.html#1546-1550">shrink_to</a>(<a href="#1436">min_capacity</a>)
 <a href=#1438 id=1438 data-nosnippet>1438</a>    }
 <a href=#1439 id=1439 data-nosnippet>1439</a>
 <a href=#1440 id=1440 data-nosnippet>1440</a>    <span class="doccomment">/// Appends the given [`char`] to the end of this `String`.
@@ -1464,8 +1464,8 @@
 <a href=#1464 id=1464 data-nosnippet>1464</a>
 <a href=#1465 id=1465 data-nosnippet>1465</a>        <span class="comment">// SAFETY: Just reserved capacity for at least the length needed to encode `ch`.
 <a href=#1466 id=1466 data-nosnippet>1466</a>        </span><span class="kw">unsafe </span>{
-<a href=#1467 id=1467 data-nosnippet>1467</a>            core::char::encode_utf8_raw_unchecked(<a href="#1460">ch</a> <span class="kw">as </span><a href="../../core/primitive.u32.html">u32</a>, <a class="self" href="#1460">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1461">len</a>));
-<a href=#1468 id=1468 data-nosnippet>1468</a>            <a class="self" href="#1460">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1461">len</a> + <a href="#1462">ch_len</a>);
+<a href=#1467 id=1467 data-nosnippet>1467</a>            core::char::encode_utf8_raw_unchecked(<a href="#1460">ch</a> <span class="kw">as </span><a href="../../core/primitive.u32.html">u32</a>, <a class="self" href="#1460">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1461">len</a>));
+<a href=#1468 id=1468 data-nosnippet>1468</a>            <a class="self" href="#1460">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1461">len</a> + <a href="#1462">ch_len</a>);
 <a href=#1469 id=1469 data-nosnippet>1469</a>        }
 <a href=#1470 id=1470 data-nosnippet>1470</a>    }
 <a href=#1471 id=1471 data-nosnippet>1471</a>
@@ -1487,7 +1487,7 @@
 <a href=#1487 id=1487 data-nosnippet>1487</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1488 id=1488 data-nosnippet>1488</a>    #[rustc_const_stable(feature = <span class="string">"const_vec_string_slice"</span>, since = <span class="string">"1.87.0"</span>)]
 <a href=#1489 id=1489 data-nosnippet>1489</a>    </span><span class="kw">pub const fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<a href="../../core/primitive.u8.html">u8</a>] {
-<a href=#1490 id=1490 data-nosnippet>1490</a>        <a class="self" href="#1489">self</a>.vec.<a href="vec/mod.rs.html#1762-1781">as_slice</a>()
+<a href=#1490 id=1490 data-nosnippet>1490</a>        <a class="self" href="#1489">self</a>.vec.<a href="vec/mod.rs.html#1768-1787">as_slice</a>()
 <a href=#1491 id=1491 data-nosnippet>1491</a>    }
 <a href=#1492 id=1492 data-nosnippet>1492</a>
 <a href=#1493 id=1493 data-nosnippet>1493</a>    <span class="doccomment">/// Shortens this `String` to the specified length.
@@ -1519,7 +1519,7 @@
 <a href=#1519 id=1519 data-nosnippet>1519</a>            <span class="kw">return</span>;
 <a href=#1520 id=1520 data-nosnippet>1520</a>        }
 <a href=#1521 id=1521 data-nosnippet>1521</a>        <a href="../../core/macro.assert.html">assert!</a>(<span class="self">self</span>.is_char_boundary(new_len));
-<a href=#1522 id=1522 data-nosnippet>1522</a>        <a class="self" href="#1517">self</a>.vec.<a href="vec/mod.rs.html#1725-1745">truncate</a>(<a href="#1517">new_len</a>)
+<a href=#1522 id=1522 data-nosnippet>1522</a>        <a class="self" href="#1517">self</a>.vec.<a href="vec/mod.rs.html#1731-1751">truncate</a>(<a href="#1517">new_len</a>)
 <a href=#1523 id=1523 data-nosnippet>1523</a>    }
 <a href=#1524 id=1524 data-nosnippet>1524</a>
 <a href=#1525 id=1525 data-nosnippet>1525</a>    <span class="doccomment">/// Removes the last character from the string buffer and returns it.
@@ -1544,7 +1544,7 @@
 <a href=#1544 id=1544 data-nosnippet>1544</a>        <span class="kw">let </span>newlen = <a class="self" href="#1542">self</a>.<a href="#1916-1918">len</a>() - <a href="#1543">ch</a>.<a href="../../core/primitive.char.html#method.len_utf8">len_utf8</a>();
 <a href=#1545 id=1545 data-nosnippet>1545</a>        <span class="comment">// SAFETY: `newlen` is less than old length.
 <a href=#1546 id=1546 data-nosnippet>1546</a>        </span><span class="kw">unsafe </span>{
-<a href=#1547 id=1547 data-nosnippet>1547</a>            <a class="self" href="#1542">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1544">newlen</a>);
+<a href=#1547 id=1547 data-nosnippet>1547</a>            <a class="self" href="#1542">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1544">newlen</a>);
 <a href=#1548 id=1548 data-nosnippet>1548</a>        }
 <a href=#1549 id=1549 data-nosnippet>1549</a>        <a class="prelude-val" href="../../core/option/enum.Option.html#variant.Some">Some</a>(<a href="#1543">ch</a>)
 <a href=#1550 id=1550 data-nosnippet>1550</a>    }
@@ -1587,8 +1587,8 @@
 <a href=#1587 id=1587 data-nosnippet>1587</a>        //   Both pointers are valid for `len - next` bytes.
 <a href=#1588 id=1588 data-nosnippet>1588</a>        // * new length is less than old length.
 <a href=#1589 id=1589 data-nosnippet>1589</a>        </span><span class="kw">unsafe </span>{
-<a href=#1590 id=1590 data-nosnippet>1590</a>            ptr::<a href="../../core/ptr/fn.copy.html">copy</a>(<a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#1881-1885">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1582">next</a>), <a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1576">idx</a>), <a href="#1583">len</a> - <a href="#1582">next</a>);
-<a href=#1591 id=1591 data-nosnippet>1591</a>            <a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1583">len</a> - (<a href="#1582">next</a> - <a href="#1576">idx</a>));
+<a href=#1590 id=1590 data-nosnippet>1590</a>            ptr::<a href="../../core/ptr/fn.copy.html">copy</a>(<a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#1887-1891">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1582">next</a>), <a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1576">idx</a>), <a href="#1583">len</a> - <a href="#1582">next</a>);
+<a href=#1591 id=1591 data-nosnippet>1591</a>            <a class="self" href="#1576">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1583">len</a> - (<a href="#1582">next</a> - <a href="#1576">idx</a>));
 <a href=#1592 id=1592 data-nosnippet>1592</a>        }
 <a href=#1593 id=1593 data-nosnippet>1593</a>        <a href="#1577">ch</a>
 <a href=#1594 id=1594 data-nosnippet>1594</a>    }
@@ -1630,7 +1630,7 @@
 <a href=#1630 id=1630 data-nosnippet>1630</a>            // be more efficient, so we use it here and do some work to invert
 <a href=#1631 id=1631 data-nosnippet>1631</a>            // matches into rejections since that's what we want to copy below.
 <a href=#1632 id=1632 data-nosnippet>1632</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>front = <span class="number">0</span>;
-<a href=#1633 id=1633 data-nosnippet>1633</a>            <span class="kw">let </span>rejections: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<span class="kw">_</span>&gt; = <a href="../../core/iter/sources/from_fn/fn.from_fn.html">from_fn</a>(|| {
+<a href=#1633 id=1633 data-nosnippet>1633</a>            <span class="kw">let </span>rejections: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<span class="kw">_</span>&gt; = <a href="../../core/iter/sources/from_fn/fn.from_fn.html">from_fn</a>(|| {
 <a href=#1634 id=1634 data-nosnippet>1634</a>                <span class="kw">let </span>(start, end) = searcher.next_match()<span class="question-mark">?</span>;
 <a href=#1635 id=1635 data-nosnippet>1635</a>                <span class="kw">let </span>prev_front = <a href="#1632">front</a>;
 <a href=#1636 id=1636 data-nosnippet>1636</a>                <a href="#1632">front</a> = <a href="#1634">end</a>;
@@ -1641,7 +1641,7 @@
 <a href=#1641 id=1641 data-nosnippet>1641</a>        };
 <a href=#1642 id=1642 data-nosnippet>1642</a>
 <a href=#1643 id=1643 data-nosnippet>1643</a>        <span class="kw">let </span><span class="kw-2">mut </span>len = <span class="number">0</span>;
-<a href=#1644 id=1644 data-nosnippet>1644</a>        <span class="kw">let </span>ptr = <a class="self" href="#1618">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>();
+<a href=#1644 id=1644 data-nosnippet>1644</a>        <span class="kw">let </span>ptr = <a class="self" href="#1618">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>();
 <a href=#1645 id=1645 data-nosnippet>1645</a>
 <a href=#1646 id=1646 data-nosnippet>1646</a>        <span class="kw">for </span>(start, end) <span class="kw">in </span>rejections {
 <a href=#1647 id=1647 data-nosnippet>1647</a>            <span class="kw">let </span>count = end - start;
@@ -1661,7 +1661,7 @@
 <a href=#1661 id=1661 data-nosnippet>1661</a>
 <a href=#1662 id=1662 data-nosnippet>1662</a>        <span class="comment">// SAFETY: `len` is less than or equal to the original length of the string.
 <a href=#1663 id=1663 data-nosnippet>1663</a>        </span><span class="kw">unsafe </span>{
-<a href=#1664 id=1664 data-nosnippet>1664</a>            <a class="self" href="#1618">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1643">len</a>);
+<a href=#1664 id=1664 data-nosnippet>1664</a>            <a class="self" href="#1618">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1643">len</a>);
 <a href=#1665 id=1665 data-nosnippet>1665</a>        }
 <a href=#1666 id=1666 data-nosnippet>1666</a>    }
 <a href=#1667 id=1667 data-nosnippet>1667</a>
@@ -1713,7 +1713,7 @@
 <a href=#1713 id=1713 data-nosnippet>1713</a>                <a href="../../core/macro.debug_assert.html">debug_assert!</a>(<span class="self">self</span>.write &lt;= <span class="self">self</span>.s.len());
 <a href=#1714 id=1714 data-nosnippet>1714</a>                <a href="../../core/macro.debug_assert.html">debug_assert!</a>(str::from_utf8(<span class="kw-2">&amp;</span><span class="self">self</span>.s.vec[..<span class="self">self</span>.write]).is_ok());
 <a href=#1715 id=1715 data-nosnippet>1715</a>                <span class="comment">// SAFETY: Restore the string length to the number of bytes written so far.
-<a href=#1716 id=1716 data-nosnippet>1716</a>                </span><span class="kw">unsafe </span>{ <a class="self" href="#1712">self</a>.s.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a class="self" href="#1712">self</a>.write) }
+<a href=#1716 id=1716 data-nosnippet>1716</a>                </span><span class="kw">unsafe </span>{ <a class="self" href="#1712">self</a>.s.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a class="self" href="#1712">self</a>.write) }
 <a href=#1717 id=1717 data-nosnippet>1717</a>            }
 <a href=#1718 id=1718 data-nosnippet>1718</a>        }
 <a href=#1719 id=1719 data-nosnippet>1719</a>
@@ -1791,8 +1791,8 @@
 <a href=#1791 id=1791 data-nosnippet>1791</a>        // is a char boundary.
 <a href=#1792 id=1792 data-nosnippet>1792</a>        </span><span class="kw">unsafe </span>{
 <a href=#1793 id=1793 data-nosnippet>1793</a>            ptr::<a href="../../core/ptr/fn.copy.html">copy</a>(
-<a href=#1794 id=1794 data-nosnippet>1794</a>                <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1881-1885">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a>),
-<a href=#1795 id=1795 data-nosnippet>1795</a>                <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a> + <a href="#1786">ch_len</a>),
+<a href=#1794 id=1794 data-nosnippet>1794</a>                <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1887-1891">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a>),
+<a href=#1795 id=1795 data-nosnippet>1795</a>                <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a> + <a href="#1786">ch_len</a>),
 <a href=#1796 id=1796 data-nosnippet>1796</a>                <a href="#1785">len</a> - <a href="#1782">idx</a>,
 <a href=#1797 id=1797 data-nosnippet>1797</a>            );
 <a href=#1798 id=1798 data-nosnippet>1798</a>        }
@@ -1800,12 +1800,12 @@
 <a href=#1800 id=1800 data-nosnippet>1800</a>        <span class="comment">// SAFETY: Encode the character into the vacated region if `idx != len`,
 <a href=#1801 id=1801 data-nosnippet>1801</a>        // or into the uninitialized spare capacity otherwise.
 <a href=#1802 id=1802 data-nosnippet>1802</a>        </span><span class="kw">unsafe </span>{
-<a href=#1803 id=1803 data-nosnippet>1803</a>            core::char::encode_utf8_raw_unchecked(<a href="#1782">ch</a> <span class="kw">as </span><a href="../../core/primitive.u32.html">u32</a>, <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a>));
+<a href=#1803 id=1803 data-nosnippet>1803</a>            core::char::encode_utf8_raw_unchecked(<a href="#1782">ch</a> <span class="kw">as </span><a href="../../core/primitive.u32.html">u32</a>, <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1782">idx</a>));
 <a href=#1804 id=1804 data-nosnippet>1804</a>        }
 <a href=#1805 id=1805 data-nosnippet>1805</a>
 <a href=#1806 id=1806 data-nosnippet>1806</a>        <span class="comment">// SAFETY: Update the length to include the newly added bytes.
 <a href=#1807 id=1807 data-nosnippet>1807</a>        </span><span class="kw">unsafe </span>{
-<a href=#1808 id=1808 data-nosnippet>1808</a>            <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1785">len</a> + <a href="#1786">ch_len</a>);
+<a href=#1808 id=1808 data-nosnippet>1808</a>            <a class="self" href="#1782">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1785">len</a> + <a href="#1786">ch_len</a>);
 <a href=#1809 id=1809 data-nosnippet>1809</a>        }
 <a href=#1810 id=1810 data-nosnippet>1810</a>    }
 <a href=#1811 id=1811 data-nosnippet>1811</a>
@@ -1847,19 +1847,19 @@
 <a href=#1847 id=1847 data-nosnippet>1847</a>        // ahead. This is safe because sufficient capacity was just reserved, and `idx`
 <a href=#1848 id=1848 data-nosnippet>1848</a>        // is a char boundary.
 <a href=#1849 id=1849 data-nosnippet>1849</a>        </span><span class="kw">unsafe </span>{
-<a href=#1850 id=1850 data-nosnippet>1850</a>            ptr::<a href="../../core/ptr/fn.copy.html">copy</a>(<a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1881-1885">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a>), <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a> + <a href="#1843">amt</a>), <a href="#1842">len</a> - <a href="#1839">idx</a>);
+<a href=#1850 id=1850 data-nosnippet>1850</a>            ptr::<a href="../../core/ptr/fn.copy.html">copy</a>(<a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1887-1891">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a>), <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a> + <a href="#1843">amt</a>), <a href="#1842">len</a> - <a href="#1839">idx</a>);
 <a href=#1851 id=1851 data-nosnippet>1851</a>        }
 <a href=#1852 id=1852 data-nosnippet>1852</a>
 <a href=#1853 id=1853 data-nosnippet>1853</a>        <span class="comment">// SAFETY: Copy the new string slice into the vacated region if `idx != len`,
 <a href=#1854 id=1854 data-nosnippet>1854</a>        // or into the uninitialized spare capacity otherwise. The borrow checker
 <a href=#1855 id=1855 data-nosnippet>1855</a>        // ensures that the source and destination do not overlap.
 <a href=#1856 id=1856 data-nosnippet>1856</a>        </span><span class="kw">unsafe </span>{
-<a href=#1857 id=1857 data-nosnippet>1857</a>            ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#1839">string</a>.<a href="../../core/primitive.str.html#method.as_ptr">as_ptr</a>(), <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1966-1970">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a>), <a href="#1843">amt</a>);
+<a href=#1857 id=1857 data-nosnippet>1857</a>            ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#1839">string</a>.<a href="../../core/primitive.str.html#method.as_ptr">as_ptr</a>(), <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#1972-1976">as_mut_ptr</a>().<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#1839">idx</a>), <a href="#1843">amt</a>);
 <a href=#1858 id=1858 data-nosnippet>1858</a>        }
 <a href=#1859 id=1859 data-nosnippet>1859</a>
 <a href=#1860 id=1860 data-nosnippet>1860</a>        <span class="comment">// SAFETY: Update the length to include the newly added bytes.
 <a href=#1861 id=1861 data-nosnippet>1861</a>        </span><span class="kw">unsafe </span>{
-<a href=#1862 id=1862 data-nosnippet>1862</a>            <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#1842">len</a> + <a href="#1843">amt</a>);
+<a href=#1862 id=1862 data-nosnippet>1862</a>            <a class="self" href="#1839">self</a>.vec.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#1842">len</a> + <a href="#1843">amt</a>);
 <a href=#1863 id=1863 data-nosnippet>1863</a>        }
 <a href=#1864 id=1864 data-nosnippet>1864</a>    }
 <a href=#1865 id=1865 data-nosnippet>1865</a>
@@ -1889,7 +1889,7 @@
 <a href=#1889 id=1889 data-nosnippet>1889</a>    </span><span class="attr">#[inline]
 <a href=#1890 id=1890 data-nosnippet>1890</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1891 id=1891 data-nosnippet>1891</a>    #[rustc_const_stable(feature = <span class="string">"const_vec_string_slice"</span>, since = <span class="string">"1.87.0"</span>)]
-<a href=#1892 id=1892 data-nosnippet>1892</a>    </span><span class="kw">pub const unsafe fn </span>as_mut_vec(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#1892 id=1892 data-nosnippet>1892</a>    </span><span class="kw">pub const unsafe fn </span>as_mut_vec(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#1893 id=1893 data-nosnippet>1893</a>        <span class="kw-2">&amp;mut </span><a class="self" href="#1892">self</a>.vec
 <a href=#1894 id=1894 data-nosnippet>1894</a>    }
 <a href=#1895 id=1895 data-nosnippet>1895</a>
@@ -1914,7 +1914,7 @@
 <a href=#1914 id=1914 data-nosnippet>1914</a>    #[rustc_confusables(<span class="string">"length"</span>, <span class="string">"size"</span>)]
 <a href=#1915 id=1915 data-nosnippet>1915</a>    #[rustc_no_implicit_autorefs]
 <a href=#1916 id=1916 data-nosnippet>1916</a>    </span><span class="kw">pub const fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../core/primitive.usize.html">usize</a> {
-<a href=#1917 id=1917 data-nosnippet>1917</a>        <a class="self" href="#1916">self</a>.vec.<a href="vec/mod.rs.html#3068-3077">len</a>()
+<a href=#1917 id=1917 data-nosnippet>1917</a>        <a class="self" href="#1916">self</a>.vec.<a href="vec/mod.rs.html#3074-3083">len</a>()
 <a href=#1918 id=1918 data-nosnippet>1918</a>    }
 <a href=#1919 id=1919 data-nosnippet>1919</a>
 <a href=#1920 id=1920 data-nosnippet>1920</a>    <span class="doccomment">/// Returns `true` if this `String` has a length of zero, and `false` otherwise.
@@ -1967,7 +1967,7 @@
 <a href=#1967 id=1967 data-nosnippet>1967</a>    #[must_use = <span class="string">"use `.truncate()` if you don't need the other half"</span>]
 <a href=#1968 id=1968 data-nosnippet>1968</a>    </span><span class="kw">pub fn </span>split_off(<span class="kw-2">&amp;mut </span><span class="self">self</span>, at: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a href="#357-359">String</a> {
 <a href=#1969 id=1969 data-nosnippet>1969</a>        <a href="../../core/macro.assert.html">assert!</a>(<span class="self">self</span>.is_char_boundary(at));
-<a href=#1970 id=1970 data-nosnippet>1970</a>        <span class="kw">let </span>other = <a class="self" href="#1968">self</a>.vec.<a href="vec/mod.rs.html#3126-3154">split_off</a>(<a href="#1968">at</a>);
+<a href=#1970 id=1970 data-nosnippet>1970</a>        <span class="kw">let </span>other = <a class="self" href="#1968">self</a>.vec.<a href="vec/mod.rs.html#3132-3160">split_off</a>(<a href="#1968">at</a>);
 <a href=#1971 id=1971 data-nosnippet>1971</a>        <span class="comment">// SAFETY: `other` contains only valid UTF-8 because `at` is on a `UTF-8` code point boundary.
 <a href=#1972 id=1972 data-nosnippet>1972</a>        </span><span class="kw">unsafe </span>{ <a href="#357-359">String</a>::<a href="#1042-1044">from_utf8_unchecked</a>(<a href="#1970">other</a>) }
 <a href=#1973 id=1973 data-nosnippet>1973</a>    }
@@ -1991,7 +1991,7 @@
 <a href=#1991 id=1991 data-nosnippet>1991</a>    </span><span class="attr">#[inline]
 <a href=#1992 id=1992 data-nosnippet>1992</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1993 id=1993 data-nosnippet>1993</a>    </span><span class="kw">pub fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#1994 id=1994 data-nosnippet>1994</a>        <a class="self" href="#1993">self</a>.vec.<a href="vec/mod.rs.html#3036-3053">clear</a>()
+<a href=#1994 id=1994 data-nosnippet>1994</a>        <a class="self" href="#1993">self</a>.vec.<a href="vec/mod.rs.html#3042-3059">clear</a>()
 <a href=#1995 id=1995 data-nosnippet>1995</a>    }
 <a href=#1996 id=1996 data-nosnippet>1996</a>
 <a href=#1997 id=1997 data-nosnippet>1997</a>    <span class="doccomment">/// Removes the specified range from the string in bulk, returning all
@@ -2149,7 +2149,7 @@
 <a href=#2149 id=2149 data-nosnippet>2149</a>        // unwind from `splice` that would leave the string in an invalid state
 <a href=#2150 id=2150 data-nosnippet>2150</a>        // would be from an error growing the allocation, which we protect against
 <a href=#2151 id=2151 data-nosnippet>2151</a>        // by reserving it preemptively.
-<a href=#2152 id=2152 data-nosnippet>2152</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#2128">self</a>.<a href="#1892-1894">as_mut_vec</a>() }.<a href="vec/mod.rs.html#4311-4318">splice</a>(<a href="#2133">checked_range</a>, <a href="#2128">replace_with</a>.<a href="../../core/primitive.str.html#method.bytes">bytes</a>());
+<a href=#2152 id=2152 data-nosnippet>2152</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#2128">self</a>.<a href="#1892-1894">as_mut_vec</a>() }.<a href="vec/mod.rs.html#4292-4299">splice</a>(<a href="#2133">checked_range</a>, <a href="#2128">replace_with</a>.<a href="../../core/primitive.str.html#method.bytes">bytes</a>());
 <a href=#2153 id=2153 data-nosnippet>2153</a>    }
 <a href=#2154 id=2154 data-nosnippet>2154</a>
 <a href=#2155 id=2155 data-nosnippet>2155</a>    <span class="doccomment">/// Replaces the leftmost occurrence of a pattern with another string, in-place.
@@ -2233,7 +2233,7 @@
 <a href=#2233 id=2233 data-nosnippet>2233</a>    #[must_use = <span class="string">"`self` will be dropped if the result is not used"</span>]
 <a href=#2234 id=2234 data-nosnippet>2234</a>    #[inline]
 <a href=#2235 id=2235 data-nosnippet>2235</a>    </span><span class="kw">pub fn </span>into_boxed_str(<span class="self">self</span>) -&gt; <a href="boxed.rs.html#308-311">Box</a>&lt;<a href="../../core/primitive.str.html">str</a>&gt; {
-<a href=#2236 id=2236 data-nosnippet>2236</a>        <span class="kw">let </span>slice = <a class="self" href="#2235">self</a>.vec.<a href="vec/mod.rs.html#1640-1649">into_boxed_slice</a>();
+<a href=#2236 id=2236 data-nosnippet>2236</a>        <span class="kw">let </span>slice = <a class="self" href="#2235">self</a>.vec.<a href="vec/mod.rs.html#1646-1655">into_boxed_slice</a>();
 <a href=#2237 id=2237 data-nosnippet>2237</a>        <span class="comment">// SAFETY: `slice` contains only valid UTF-8 because `String` is guaranteed to be valid UTF-8.
 <a href=#2238 id=2238 data-nosnippet>2238</a>        </span><span class="kw">unsafe </span>{ <a href="str.rs.html#931-934">from_boxed_utf8_unchecked</a>(<a href="#2236">slice</a>) }
 <a href=#2239 id=2239 data-nosnippet>2239</a>    }
@@ -2265,7 +2265,7 @@
 <a href=#2265 id=2265 data-nosnippet>2265</a>    </span><span class="attr">#[stable(feature = <span class="string">"string_leak"</span>, since = <span class="string">"1.72.0"</span>)]
 <a href=#2266 id=2266 data-nosnippet>2266</a>    #[inline]
 <a href=#2267 id=2267 data-nosnippet>2267</a>    </span><span class="kw">pub fn </span>leak&lt;<span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="../../core/primitive.str.html">str</a> {
-<a href=#2268 id=2268 data-nosnippet>2268</a>        <span class="kw">let </span>slice = <a class="self" href="#2267">self</a>.vec.<a href="vec/mod.rs.html#3231-3238">leak</a>();
+<a href=#2268 id=2268 data-nosnippet>2268</a>        <span class="kw">let </span>slice = <a class="self" href="#2267">self</a>.vec.<a href="vec/mod.rs.html#3237-3244">leak</a>();
 <a href=#2269 id=2269 data-nosnippet>2269</a>        <span class="comment">// SAFETY: `slice` contains only valid UTF-8 because `String` is guaranteed to be valid UTF-8.
 <a href=#2270 id=2270 data-nosnippet>2270</a>        </span><span class="kw">unsafe </span>{ <a href="../../alloc/str/fn.from_utf8_unchecked_mut.html">from_utf8_unchecked_mut</a>(<a href="#2268">slice</a>) }
 <a href=#2271 id=2271 data-nosnippet>2271</a>    }
@@ -2331,11 +2331,11 @@
 <a href=#2331 id=2331 data-nosnippet>2331</a>        <span class="kw">const </span>REPLACEMENT: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a> = <span class="string">"\u{FFFD}"</span>;
 <a href=#2332 id=2332 data-nosnippet>2332</a>
 <a href=#2333 id=2333 data-nosnippet>2333</a>        <span class="kw">let </span><span class="kw-2">mut </span>res = {
-<a href=#2334 id=2334 data-nosnippet>2334</a>            <span class="kw">let </span><span class="kw-2">mut </span>v = <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#528-530">with_capacity</a>(<a class="self" href="#2330">self</a>.bytes.<a href="vec/mod.rs.html#3068-3077">len</a>());
+<a href=#2334 id=2334 data-nosnippet>2334</a>            <span class="kw">let </span><span class="kw-2">mut </span>v = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a class="self" href="#2330">self</a>.bytes.<a href="vec/mod.rs.html#3074-3083">len</a>());
 <a href=#2335 id=2335 data-nosnippet>2335</a>
 <a href=#2336 id=2336 data-nosnippet>2336</a>            <span class="comment">// `Utf8Error::valid_up_to` returns the maximum index of validated
 <a href=#2337 id=2337 data-nosnippet>2337</a>            // UTF-8 bytes. Copy the valid bytes into the output buffer.
-<a href=#2338 id=2338 data-nosnippet>2338</a>            </span><a href="#2334">v</a>.<a href="vec/mod.rs.html#3578-3580">extend_from_slice</a>(<span class="kw-2">&amp;</span><a class="self" href="#2330">self</a>.bytes[..<span class="self">self</span>.error.valid_up_to()]);
+<a href=#2338 id=2338 data-nosnippet>2338</a>            </span><a href="#2334">v</a>.<a href="vec/mod.rs.html#3584-3586">extend_from_slice</a>(<span class="kw-2">&amp;</span><a class="self" href="#2330">self</a>.bytes[..<span class="self">self</span>.error.valid_up_to()]);
 <a href=#2339 id=2339 data-nosnippet>2339</a>
 <a href=#2340 id=2340 data-nosnippet>2340</a>            <span class="comment">// SAFETY: This is safe because the only bytes present in the buffer
 <a href=#2341 id=2341 data-nosnippet>2341</a>            // were validated as UTF-8 by the call to `String::from_utf8` which
@@ -2373,7 +2373,7 @@
 <a href=#2373 id=2373 data-nosnippet>2373</a>    /// ```
 <a href=#2374 id=2374 data-nosnippet>2374</a>    </span><span class="attr">#[must_use = <span class="string">"`self` will be dropped if the result is not used"</span>]
 <a href=#2375 id=2375 data-nosnippet>2375</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#2376 id=2376 data-nosnippet>2376</a>    </span><span class="kw">pub fn </span>into_bytes(<span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#2376 id=2376 data-nosnippet>2376</a>    </span><span class="kw">pub fn </span>into_bytes(<span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#2377 id=2377 data-nosnippet>2377</a>        <a class="self" href="#2376">self</a>.bytes
 <a href=#2378 id=2378 data-nosnippet>2378</a>    }
 <a href=#2379 id=2379 data-nosnippet>2379</a>
@@ -2710,7 +2710,7 @@
 <a href=#2710 id=2710 data-nosnippet>2710</a>
 <a href=#2711 id=2711 data-nosnippet>2711</a>    <span class="attr">#[inline]
 <a href=#2712 id=2712 data-nosnippet>2712</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, c: core::ascii::<a href="../../core/ascii/ascii_char/enum.AsciiChar.html">Char</a>) {
-<a href=#2713 id=2713 data-nosnippet>2713</a>        <a class="self" href="#2712">self</a>.vec.<a href="vec/mod.rs.html#959-961">push</a>(<a href="#2712">c</a>.<a href="../../core/ascii/ascii_char/enum.AsciiChar.html#method.to_u8">to_u8</a>());
+<a href=#2713 id=2713 data-nosnippet>2713</a>        <a class="self" href="#2712">self</a>.vec.<a href="vec/mod.rs.html#965-967">push</a>(<a href="#2712">c</a>.<a href="../../core/ascii/ascii_char/enum.AsciiChar.html#method.to_u8">to_u8</a>());
 <a href=#2714 id=2714 data-nosnippet>2714</a>    }
 <a href=#2715 id=2715 data-nosnippet>2715</a>}
 <a href=#2716 id=2716 data-nosnippet>2716</a>
@@ -2724,7 +2724,7 @@
 <a href=#2724 id=2724 data-nosnippet>2724</a>
 <a href=#2725 id=2725 data-nosnippet>2725</a>    <span class="attr">#[inline]
 <a href=#2726 id=2726 data-nosnippet>2726</a>    </span><span class="kw">fn </span>extend_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>, c: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>core::ascii::<a href="../../core/ascii/ascii_char/enum.AsciiChar.html">Char</a>) {
-<a href=#2727 id=2727 data-nosnippet>2727</a>        <a class="self" href="#2726">self</a>.vec.<a href="vec/mod.rs.html#959-961">push</a>(<a href="#2726">c</a>.<a href="../../core/ascii/ascii_char/enum.AsciiChar.html#method.to_u8">to_u8</a>());
+<a href=#2727 id=2727 data-nosnippet>2727</a>        <a class="self" href="#2726">self</a>.vec.<a href="vec/mod.rs.html#965-967">push</a>(<a href="#2726">c</a>.<a href="../../core/ascii/ascii_char/enum.AsciiChar.html#method.to_u8">to_u8</a>());
 <a href=#2728 id=2728 data-nosnippet>2728</a>    }
 <a href=#2729 id=2729 data-nosnippet>2729</a>}
 <a href=#2730 id=2730 data-nosnippet>2730</a>
@@ -3235,25 +3235,25 @@
 <a href=#3235 id=3235 data-nosnippet>3235</a>            /// The caller must initialize the number of bytes returned by the closure.
 <a href=#3236 id=3236 data-nosnippet>3236</a>            </span><span class="attr">#[inline]
 <a href=#3237 id=3237 data-nosnippet>3237</a>            </span><span class="kw">unsafe fn </span>with_spare&lt;<span class="kw">const </span>N: <a href="../../core/primitive.usize.html">usize</a>, T&gt;(
-<a href=#3238 id=3238 data-nosnippet>3238</a>                bytes: <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
+<a href=#3238 id=3238 data-nosnippet>3238</a>                bytes: <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#3239 id=3239 data-nosnippet>3239</a>                then: <span class="kw">impl </span><a href="../../core/ops/function/trait.FnOnce.html">FnOnce</a>(<span class="kw-2">&amp;mut </span>[<a href="../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>&lt;T&gt;; <a href="#3237">N</a>]) -&gt; <a href="../../core/primitive.usize.html">usize</a>,
 <a href=#3240 id=3240 data-nosnippet>3240</a>            ) {
 <a href=#3241 id=3241 data-nosnippet>3241</a>                <span class="kw">const </span>{
 <a href=#3242 id=3242 data-nosnippet>3242</a>                    <a href="../../core/macro.assert.html">assert!</a>(core::mem::size_of::&lt;T&gt;() == <span class="number">1</span>);
 <a href=#3243 id=3243 data-nosnippet>3243</a>                }
-<a href=#3244 id=3244 data-nosnippet>3244</a>                <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#1377-1379">reserve</a>(<a href="#3237">N</a>);
-<a href=#3245 id=3245 data-nosnippet>3245</a>                <span class="kw">let </span>old_len = <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#3068-3077">len</a>();
+<a href=#3244 id=3244 data-nosnippet>3244</a>                <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#1383-1385">reserve</a>(<a href="#3237">N</a>);
+<a href=#3245 id=3245 data-nosnippet>3245</a>                <span class="kw">let </span>old_len = <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#3074-3083">len</a>();
 <a href=#3246 id=3246 data-nosnippet>3246</a>                <span class="comment">// SAFETY: We reserved enough space for the requested number of bytes.
 <a href=#3247 id=3247 data-nosnippet>3247</a>                </span><span class="kw">unsafe </span>{
 <a href=#3248 id=3248 data-nosnippet>3248</a>                    <span class="kw">let </span>spare: <span class="kw-2">&amp;mut </span>[<a href="../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>&lt;T&gt;; <a href="#3237">N</a>] = <a href="#3238">bytes</a>
-<a href=#3249 id=3249 data-nosnippet>3249</a>                        .<a href="vec/mod.rs.html#3271-3282">spare_capacity_mut</a>()
+<a href=#3249 id=3249 data-nosnippet>3249</a>                        .<a href="vec/mod.rs.html#3277-3288">spare_capacity_mut</a>()
 <a href=#3250 id=3250 data-nosnippet>3250</a>                        .<a href="../../core/primitive.slice.html#method.as_mut_ptr">as_mut_ptr</a>()
 <a href=#3251 id=3251 data-nosnippet>3251</a>                        .<a href="../../core/primitive.pointer.html#method.cast">cast</a>::&lt;T&gt;()
 <a href=#3252 id=3252 data-nosnippet>3252</a>                        .<a href="../../core/primitive.pointer.html#method.cast_uninit">cast_uninit</a>()
 <a href=#3253 id=3253 data-nosnippet>3253</a>                        .<a href="../../core/primitive.pointer.html#method.cast_array">cast_array</a>::&lt;<a href="#3237">N</a>&gt;()
 <a href=#3254 id=3254 data-nosnippet>3254</a>                        .<a href="../../core/primitive.pointer.html#method.as_mut_unchecked">as_mut_unchecked</a>();
 <a href=#3255 id=3255 data-nosnippet>3255</a>                    <span class="kw">let </span>written = <a href="#3239">then</a>(<a href="#3248">spare</a>);
-<a href=#3256 id=3256 data-nosnippet>3256</a>                    <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#2134-2142">set_len</a>(<a href="#3245">old_len</a> + <a href="#3255">written</a>);
+<a href=#3256 id=3256 data-nosnippet>3256</a>                    <a href="#3238">bytes</a>.<a href="vec/mod.rs.html#2140-2148">set_len</a>(<a href="#3245">old_len</a> + <a href="#3255">written</a>);
 <a href=#3257 id=3257 data-nosnippet>3257</a>                }
 <a href=#3258 id=3258 data-nosnippet>3258</a>            }
 <a href=#3259 id=3259 data-nosnippet>3259</a>
@@ -3545,7 +3545,7 @@
 <a href=#3545 id=3545 data-nosnippet>3545</a>}
 <a href=#3546 id=3546 data-nosnippet>3546</a>
 <a href=#3547 id=3547 data-nosnippet>3547</a><span class="attr">#[stable(feature = <span class="string">"from_string_for_vec_u8"</span>, since = <span class="string">"1.14.0"</span>)]
-<a href=#3548 id=3548 data-nosnippet>3548</a></span><span class="kw">impl </span><a href="../../core/convert/trait.From.html">From</a>&lt;<a href="#357-359">String</a>&gt; <span class="kw">for </span><a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#3548 id=3548 data-nosnippet>3548</a></span><span class="kw">impl </span><a href="../../core/convert/trait.From.html">From</a>&lt;<a href="#357-359">String</a>&gt; <span class="kw">for </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#3549 id=3549 data-nosnippet>3549</a>    <span class="doccomment">/// Converts the given [`String`] to a vector [`Vec`] that holds values of type [`u8`].
 <a href=#3550 id=3550 data-nosnippet>3550</a>    ///
 <a href=#3551 id=3551 data-nosnippet>3551</a>    /// # Examples
@@ -3558,13 +3558,13 @@
 <a href=#3558 id=3558 data-nosnippet>3558</a>    ///     println!("{b}");
 <a href=#3559 id=3559 data-nosnippet>3559</a>    /// }
 <a href=#3560 id=3560 data-nosnippet>3560</a>    /// ```
-<a href=#3561 id=3561 data-nosnippet>3561</a>    </span><span class="kw">fn </span>from(string: <a href="#357-359">String</a>) -&gt; <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#3561 id=3561 data-nosnippet>3561</a>    </span><span class="kw">fn </span>from(string: <a href="#357-359">String</a>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#3562 id=3562 data-nosnippet>3562</a>        <a href="#3561">string</a>.<a href="#1063-1065">into_bytes</a>()
 <a href=#3563 id=3563 data-nosnippet>3563</a>    }
 <a href=#3564 id=3564 data-nosnippet>3564</a>}
 <a href=#3565 id=3565 data-nosnippet>3565</a>
 <a href=#3566 id=3566 data-nosnippet>3566</a><span class="attr">#[stable(feature = <span class="string">"try_from_vec_u8_for_string"</span>, since = <span class="string">"1.87.0"</span>)]
-<a href=#3567 id=3567 data-nosnippet>3567</a></span><span class="kw">impl </span><a href="../../core/convert/trait.TryFrom.html">TryFrom</a>&lt;<a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;&gt; <span class="kw">for </span><a href="#357-359">String</a> {
+<a href=#3567 id=3567 data-nosnippet>3567</a></span><span class="kw">impl </span><a href="../../core/convert/trait.TryFrom.html">TryFrom</a>&lt;<a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;&gt; <span class="kw">for </span><a href="#357-359">String</a> {
 <a href=#3568 id=3568 data-nosnippet>3568</a>    <span class="kw">type </span>Error = <a href="#395-398">FromUtf8Error</a>;
 <a href=#3569 id=3569 data-nosnippet>3569</a>    <span class="doccomment">/// Converts the given [`Vec&lt;u8&gt;`] into a  [`String`] if it contains valid UTF-8 data.
 <a href=#3570 id=3570 data-nosnippet>3570</a>    ///
@@ -3576,7 +3576,7 @@
 <a href=#3576 id=3576 data-nosnippet>3576</a>    /// assert_eq!(v1, "hello world");
 <a href=#3577 id=3577 data-nosnippet>3577</a>    ///
 <a href=#3578 id=3578 data-nosnippet>3578</a>    /// ```
-<a href=#3579 id=3579 data-nosnippet>3579</a>    </span><span class="kw">fn </span>try_from(bytes: <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+<a href=#3579 id=3579 data-nosnippet>3579</a>    </span><span class="kw">fn </span>try_from(bytes: <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
 <a href=#3580 id=3580 data-nosnippet>3580</a>        <span class="self">Self</span>::<a href="#573-578">from_utf8</a>(<a href="#3579">bytes</a>)
 <a href=#3581 id=3581 data-nosnippet>3581</a>    }
 <a href=#3582 id=3582 data-nosnippet>3582</a>}
@@ -3762,8 +3762,8 @@
 <a href=#3762 id=3762 data-nosnippet>3762</a>        // panic code being inserted again.
 <a href=#3763 id=3763 data-nosnippet>3763</a>        // SAFETY: We only use the returned Vec to call drain.
 <a href=#3764 id=3764 data-nosnippet>3764</a>        </span><span class="kw">let </span>self_vec = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(<span class="kw-2">*</span><a class="self" href="#3760">self</a>.string).<a href="#1892-1894">as_mut_vec</a>() };
-<a href=#3765 id=3765 data-nosnippet>3765</a>        <span class="kw">if </span><a class="self" href="#3760">self</a>.start &lt;= <a class="self" href="#3760">self</a>.end &amp;&amp; <a class="self" href="#3760">self</a>.end &lt;= <a href="#3764">self_vec</a>.<a href="vec/mod.rs.html#3068-3077">len</a>() {
-<a href=#3766 id=3766 data-nosnippet>3766</a>            <a href="#3764">self_vec</a>.<a href="vec/mod.rs.html#2988-3018">drain</a>(<span class="self">self</span>.start..<span class="self">self</span>.end);
+<a href=#3765 id=3765 data-nosnippet>3765</a>        <span class="kw">if </span><a class="self" href="#3760">self</a>.start &lt;= <a class="self" href="#3760">self</a>.end &amp;&amp; <a class="self" href="#3760">self</a>.end &lt;= <a href="#3764">self_vec</a>.<a href="vec/mod.rs.html#3074-3083">len</a>() {
+<a href=#3766 id=3766 data-nosnippet>3766</a>            <a href="#3764">self_vec</a>.<a href="vec/mod.rs.html#2994-3024">drain</a>(<span class="self">self</span>.start..<span class="self">self</span>.end);
 <a href=#3767 id=3767 data-nosnippet>3767</a>        }
 <a href=#3768 id=3768 data-nosnippet>3768</a>    }
 <a href=#3769 id=3769 data-nosnippet>3769</a>}

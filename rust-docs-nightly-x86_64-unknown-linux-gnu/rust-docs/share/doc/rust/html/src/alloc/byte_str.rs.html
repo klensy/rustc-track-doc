@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/byte_str.rs`."><title>byte_str.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-009149e2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (f9ceb4a4d 2026-10-31)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-1814ead3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>byte_str.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `ByteStr` and `ByteString` types and trait implementations.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/byte_str.rs`."><title>byte_str.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (3e92e1a2d 2026-11-01)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>byte_str.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! The `ByteStr` and `ByteString` types and trait implementations.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="comment">// This could be more fine-grained.
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="attr">#![cfg(not(no_global_oom_handling))]
@@ -23,7 +23,7 @@
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><a href="string.rs.html#357-359"><span class="kw">crate</span>::string::String</a>;
 <a href=#24 id=24 data-nosnippet>24</a><span class="attr">#[cfg(all(not(no_rc), not(no_sync), target_has_atomic = <span class="string">"ptr"</span>))]
 <a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">use </span><a href="rcs/arc.rs.html#265-275"><span class="kw">crate</span>::sync::Arc</a>;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><a href="vec/mod.rs.html#442-445"><span class="kw">crate</span>::vec::Vec</a>;
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><a href="vec/mod.rs.html#448-451"><span class="kw">crate</span>::vec::Vec</a>;
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a><span class="doccomment">/// A wrapper for `Vec&lt;u8&gt;` representing a human-readable string that's conventionally, but not
 <a href=#29 id=29 data-nosnippet>29</a>/// always, UTF-8.
@@ -45,7 +45,7 @@
 <a href=#45 id=45 data-nosnippet>45</a>#[repr(transparent)]
 <a href=#46 id=46 data-nosnippet>46</a>#[derive(<a href="../../core/clone/derive.Clone.html">Clone</a>, <a href="../../core/default/derive.Default.html">Default</a>)]
 <a href=#47 id=47 data-nosnippet>47</a>#[doc(alias = <span class="string">"BString"</span>)]
-<a href=#48 id=48 data-nosnippet>48</a></span><span class="kw">pub struct </span><a href="../../alloc/byte_str/struct.ByteString.html">ByteString</a>(<span class="kw">pub </span><a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
+<a href=#48 id=48 data-nosnippet>48</a></span><span class="kw">pub struct </span><a href="../../alloc/byte_str/struct.ByteString.html">ByteString</a>(<span class="kw">pub </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
 <a href=#49 id=49 data-nosnippet>49</a>
 <a href=#50 id=50 data-nosnippet>50</a><span class="kw">impl </span><a href="#48">ByteString</a> {
 <a href=#51 id=51 data-nosnippet>51</a>    <span class="attr">#[inline]
@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>
 <a href=#85 id=85 data-nosnippet>85</a><span class="attr">#[unstable(feature = <span class="string">"byte_str"</span>, issue = <span class="string">"134915"</span>)]
 <a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">impl </span><a href="../../core/ops/deref/trait.Deref.html">Deref</a> <span class="kw">for </span><a href="#48">ByteString</a> {
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">type </span>Target = <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;;
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">type </span>Target = <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;;
 <a href=#88 id=88 data-nosnippet>88</a>
 <a href=#89 id=89 data-nosnippet>89</a>    <span class="attr">#[inline]
 <a href=#90 id=90 data-nosnippet>90</a>    </span><span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a>// }
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a></span><span class="attr">#[unstable(feature = <span class="string">"byte_str"</span>, issue = <span class="string">"134915"</span>)]
-<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl </span><a href="../../core/convert/trait.From.html">From</a>&lt;<a href="#48">ByteString</a>&gt; <span class="kw">for </span><a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">impl </span><a href="../../core/convert/trait.From.html">From</a>&lt;<a href="#48">ByteString</a>&gt; <span class="kw">for </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#227 id=227 data-nosnippet>227</a>    <span class="attr">#[inline]
 <a href=#228 id=228 data-nosnippet>228</a>    </span><span class="kw">fn </span>from(s: <a href="#48">ByteString</a>) -&gt; <span class="self">Self </span>{
 <a href=#229 id=229 data-nosnippet>229</a>        <a href="#228">s</a>.<span class="number">0
@@ -300,7 +300,7 @@
 <a href=#300 id=300 data-nosnippet>300</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../core/iter/traits/collect/trait.FromIterator.html">FromIterator</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<a href="../../core/primitive.u8.html">u8</a>]&gt; <span class="kw">for </span><a href="#48">ByteString</a> {
 <a href=#301 id=301 data-nosnippet>301</a>    <span class="attr">#[inline]
 <a href=#302 id=302 data-nosnippet>302</a>    </span><span class="kw">fn </span>from_iter&lt;I: <a href="../../core/iter/traits/collect/trait.IntoIterator.html">IntoIterator</a>&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<a href="../../core/primitive.u8.html">u8</a>]&gt;&gt;(iter: I) -&gt; <span class="self">Self </span>{
-<a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#467-469">new</a>();
+<a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#473-475">new</a>();
 <a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">for </span>b <span class="kw">in </span>iter {
 <a href=#305 id=305 data-nosnippet>305</a>            buf.extend_from_slice(b);
 <a href=#306 id=306 data-nosnippet>306</a>        }
@@ -312,7 +312,7 @@
 <a href=#312 id=312 data-nosnippet>312</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../../core/iter/traits/collect/trait.FromIterator.html">FromIterator</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>&gt; <span class="kw">for </span><a href="#48">ByteString</a> {
 <a href=#313 id=313 data-nosnippet>313</a>    <span class="attr">#[inline]
 <a href=#314 id=314 data-nosnippet>314</a>    </span><span class="kw">fn </span>from_iter&lt;I: <a href="../../core/iter/traits/collect/trait.IntoIterator.html">IntoIterator</a>&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>&gt;&gt;(iter: I) -&gt; <span class="self">Self </span>{
-<a href=#315 id=315 data-nosnippet>315</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#467-469">new</a>();
+<a href=#315 id=315 data-nosnippet>315</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#473-475">new</a>();
 <a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">for </span>b <span class="kw">in </span>iter {
 <a href=#317 id=317 data-nosnippet>317</a>            buf.extend_from_slice(<span class="kw-2">&amp;</span>b.<span class="number">0</span>);
 <a href=#318 id=318 data-nosnippet>318</a>        }
@@ -324,7 +324,7 @@
 <a href=#324 id=324 data-nosnippet>324</a></span><span class="kw">impl </span><a href="../../core/iter/traits/collect/trait.FromIterator.html">FromIterator</a>&lt;<a href="#48">ByteString</a>&gt; <span class="kw">for </span><a href="#48">ByteString</a> {
 <a href=#325 id=325 data-nosnippet>325</a>    <span class="attr">#[inline]
 <a href=#326 id=326 data-nosnippet>326</a>    </span><span class="kw">fn </span>from_iter&lt;I: <a href="../../core/iter/traits/collect/trait.IntoIterator.html">IntoIterator</a>&lt;Item = <a href="#48">ByteString</a>&gt;&gt;(iter: I) -&gt; <span class="self">Self </span>{
-<a href=#327 id=327 data-nosnippet>327</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#442-445">Vec</a>::<a href="vec/mod.rs.html#467-469">new</a>();
+<a href=#327 id=327 data-nosnippet>327</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#473-475">new</a>();
 <a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">for </span><span class="kw-2">mut </span>b <span class="kw">in </span>iter {
 <a href=#329 id=329 data-nosnippet>329</a>            buf.append(<span class="kw-2">&amp;mut </span>b.<span class="number">0</span>);
 <a href=#330 id=330 data-nosnippet>330</a>        }
@@ -528,7 +528,7 @@
 <a href=#528 id=528 data-nosnippet>528</a>}
 <a href=#529 id=529 data-nosnippet>529</a>
 <a href=#530 id=530 data-nosnippet>530</a><span class="comment">// PartialOrd with `Vec&lt;u8&gt;` omitted to avoid inference failures
-<a href=#531 id=531 data-nosnippet>531</a></span><span class="macro">impl_partial_eq!</span>(<a href="#48">ByteString</a>, <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
+<a href=#531 id=531 data-nosnippet>531</a></span><span class="macro">impl_partial_eq!</span>(<a href="#48">ByteString</a>, <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
 <a href=#532 id=532 data-nosnippet>532</a><span class="comment">// PartialOrd with `[u8]` omitted to avoid inference failures
 <a href=#533 id=533 data-nosnippet>533</a></span><span class="macro">impl_partial_eq!</span>(<a href="#48">ByteString</a>, [<a href="../../core/primitive.u8.html">u8</a>]);
 <a href=#534 id=534 data-nosnippet>534</a><span class="comment">// PartialOrd with `&amp;[u8]` omitted to avoid inference failures
@@ -591,7 +591,7 @@
 <a href=#591 id=591 data-nosnippet>591</a>
 <a href=#592 id=592 data-nosnippet>592</a>    <span class="attr">#[inline]
 <a href=#593 id=593 data-nosnippet>593</a>    </span><span class="kw">fn </span>try_from(s: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#48">ByteString</a>) -&gt; <a class="prelude-ty" href="../../core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-<a href=#594 id=594 data-nosnippet>594</a>        <span class="kw">crate</span>::str::<a href="../../alloc/str/fn.from_utf8.html">from_utf8</a>(<a href="#593">s</a>.<span class="number">0</span>.<a href="vec/mod.rs.html#1762-1781">as_slice</a>())
+<a href=#594 id=594 data-nosnippet>594</a>        <span class="kw">crate</span>::str::<a href="../../alloc/str/fn.from_utf8.html">from_utf8</a>(<a href="#593">s</a>.<span class="number">0</span>.<a href="vec/mod.rs.html#1768-1787">as_slice</a>())
 <a href=#595 id=595 data-nosnippet>595</a>    }
 <a href=#596 id=596 data-nosnippet>596</a>}
 <a href=#597 id=597 data-nosnippet>597</a>
@@ -672,7 +672,7 @@
 <a href=#672 id=672 data-nosnippet>672</a>}
 <a href=#673 id=673 data-nosnippet>673</a>
 <a href=#674 id=674 data-nosnippet>674</a><span class="comment">// PartialOrd with `Vec&lt;u8&gt;` omitted to avoid inference failures
-<a href=#675 id=675 data-nosnippet>675</a></span><span class="macro">impl_partial_eq!</span>(<a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>, <a href="vec/mod.rs.html#442-445">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
+<a href=#675 id=675 data-nosnippet>675</a></span><span class="macro">impl_partial_eq!</span>(<a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>, <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt;);
 <a href=#676 id=676 data-nosnippet>676</a><span class="comment">// PartialOrd with `String` omitted to avoid inference failures
 <a href=#677 id=677 data-nosnippet>677</a></span><span class="macro">impl_partial_eq!</span>(<a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>, <a href="string.rs.html#357-359">String</a>);
 <a href=#678 id=678 data-nosnippet>678</a><a href="#490-528">impl_partial_eq_ord_cow!</a>(<span class="kw-2">&amp;</span><a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>, <a href="borrow.rs.html#169-180">Cow</a>&lt;<span class="lifetime">'_</span>, <a href="../../alloc/byte_str/struct.ByteStr.html">ByteStr</a>&gt;);
