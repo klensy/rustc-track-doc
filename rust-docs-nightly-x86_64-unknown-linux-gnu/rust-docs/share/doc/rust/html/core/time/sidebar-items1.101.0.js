@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Duration","TryFromFloatSecsError"]};
+window.SIDEBAR_ITEMS = {"struct":["DisplaySeconds","Duration","TryFromFloatSecsError"]};
