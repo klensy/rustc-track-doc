@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (708c94ef0 2026-11-03)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (2d20b42b8 2026-11-04)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Rust memory safety is based on this rule: Given an object `T`, it is only possible to
 <a href=#4 id=4 data-nosnippet>4</a>//! have one of the following:
@@ -252,14 +252,14 @@
 <a href=#252 id=252 data-nosnippet>252</a></span><span class="attr">#![stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#253 id=253 data-nosnippet>253</a>
 <a href=#254 id=254 data-nosnippet>254</a></span><span class="kw">use </span><a href="cmp.rs.html#420-430"><span class="kw">crate</span>::cmp::Ordering</a>;
-<a href=#255 id=255 data-nosnippet>255</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#325">self</a>, <a href="fmt/mod.rs.html#1093-1095">Debug</a>, <a href="fmt/mod.rs.html#1187-1213">Display</a>};
+<a href=#255 id=255 data-nosnippet>255</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#331">self</a>, <a href="fmt/mod.rs.html#1093-1095">Debug</a>, <a href="fmt/mod.rs.html#1187-1213">Display</a>};
 <a href=#256 id=256 data-nosnippet>256</a><span class="kw">use </span><span class="kw">crate</span>::marker::{<a href="marker.rs.html#1063">Destruct</a>, <a href="marker.rs.html#811">PhantomData</a>, <a href="marker.rs.html#235-237">Unsize</a>};
-<a href=#257 id=257 data-nosnippet>257</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="lib.rs.html#269">self</a>, <a href="mem/manually_drop.rs.html#156-158">ManuallyDrop</a>};
-<a href=#258 id=258 data-nosnippet>258</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a class="self" href="lib.rs.html#288">self</a>, <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>, <a href="ops/deref.rs.html#139-151">Deref</a>, <a href="ops/deref.rs.html#270-275">DerefMut</a>, <a href="ops/deref.rs.html#297">DerefPure</a>, <a href="ops/unsize.rs.html#122-124">DispatchFromDyn</a>};
+<a href=#257 id=257 data-nosnippet>257</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="lib.rs.html#275">self</a>, <a href="mem/manually_drop.rs.html#156-158">ManuallyDrop</a>};
+<a href=#258 id=258 data-nosnippet>258</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a class="self" href="lib.rs.html#294">self</a>, <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>, <a href="ops/deref.rs.html#139-151">Deref</a>, <a href="ops/deref.rs.html#270-275">DerefMut</a>, <a href="ops/deref.rs.html#297">DerefPure</a>, <a href="ops/unsize.rs.html#122-124">DispatchFromDyn</a>};
 <a href=#259 id=259 data-nosnippet>259</a><span class="kw">use </span><a href="panic.rs.html#133-163"><span class="kw">crate</span>::panic::const_panic</a>;
 <a href=#260 id=260 data-nosnippet>260</a><span class="kw">use </span><a href="pin.rs.html#1899"><span class="kw">crate</span>::pin::PinSafePointer</a>;
-<a href=#261 id=261 data-nosnippet>261</a><span class="kw">use </span><span class="kw">crate</span>::ptr::{<a class="self" href="lib.rs.html#272">self</a>, <a href="ptr/non_null.rs.html#78-80">NonNull</a>};
-<a href=#262 id=262 data-nosnippet>262</a><span class="kw">use </span><a href="lib.rs.html#319"><span class="kw">crate</span>::range</a>;
+<a href=#261 id=261 data-nosnippet>261</a><span class="kw">use </span><span class="kw">crate</span>::ptr::{<a class="self" href="lib.rs.html#278">self</a>, <a href="ptr/non_null.rs.html#78-80">NonNull</a>};
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">use </span><a href="lib.rs.html#325"><span class="kw">crate</span>::range</a>;
 <a href=#263 id=263 data-nosnippet>263</a>
 <a href=#264 id=264 data-nosnippet>264</a><span class="kw">mod </span><a href="cell/covariant_unsafe_cell.rs.html#1-172">covariant_unsafe_cell</a>;
 <a href=#265 id=265 data-nosnippet>265</a><span class="kw">mod </span><a href="cell/lazy.rs.html#1-387">lazy</a>;
@@ -434,7 +434,7 @@
 <a href=#434 id=434 data-nosnippet>434</a>    </span><span class="attr">#[inline]
 <a href=#435 id=435 data-nosnippet>435</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#436 id=436 data-nosnippet>436</a>    #[rustc_const_unstable(feature = <span class="string">"const_cell_traits"</span>, issue = <span class="string">"147787"</span>)]
-<a href=#437 id=437 data-nosnippet>437</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#437 id=437 data-nosnippet>437</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#438 id=438 data-nosnippet>438</a>    </span><span class="kw">pub const fn </span>set(<span class="kw-2">&amp;</span><span class="self">self</span>, val: T)
 <a href=#439 id=439 data-nosnippet>439</a>    <span class="kw">where
 <a href=#440 id=440 data-nosnippet>440</a>        </span>T: [<span class="kw">const</span>] <a href="marker.rs.html#1063">Destruct</a>,
@@ -466,7 +466,7 @@
 <a href=#466 id=466 data-nosnippet>466</a>    /// ```
 <a href=#467 id=467 data-nosnippet>467</a>    </span><span class="attr">#[inline]
 <a href=#468 id=468 data-nosnippet>468</a>    #[stable(feature = <span class="string">"move_cell"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#469 id=469 data-nosnippet>469</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#469 id=469 data-nosnippet>469</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#470 id=470 data-nosnippet>470</a>    </span><span class="kw">pub fn </span>swap(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
 <a href=#471 id=471 data-nosnippet>471</a>        <span class="comment">// This function documents that it *will* panic, and intrinsics::is_nonoverlapping doesn't
 <a href=#472 id=472 data-nosnippet>472</a>        // do the check in const, so trying to use it here would be inviting unnecessary fragility.
@@ -511,7 +511,7 @@
 <a href=#511 id=511 data-nosnippet>511</a>    #[stable(feature = <span class="string">"move_cell"</span>, since = <span class="string">"1.17.0"</span>)]
 <a href=#512 id=512 data-nosnippet>512</a>    #[rustc_const_stable(feature = <span class="string">"const_cell"</span>, since = <span class="string">"1.88.0"</span>)]
 <a href=#513 id=513 data-nosnippet>513</a>    #[rustc_confusables(<span class="string">"swap"</span>)]
-<a href=#514 id=514 data-nosnippet>514</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#514 id=514 data-nosnippet>514</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#515 id=515 data-nosnippet>515</a>    </span><span class="kw">pub const fn </span>replace(<span class="kw-2">&amp;</span><span class="self">self</span>, val: T) -&gt; T {
 <a href=#516 id=516 data-nosnippet>516</a>        <span class="comment">// SAFETY: This can cause data races if called from a separate thread,
 <a href=#517 id=517 data-nosnippet>517</a>        // but `Cell` is `!Sync` so this won't happen.
@@ -553,7 +553,7 @@
 <a href=#553 id=553 data-nosnippet>553</a>    </span><span class="attr">#[inline]
 <a href=#554 id=554 data-nosnippet>554</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#555 id=555 data-nosnippet>555</a>    #[rustc_const_stable(feature = <span class="string">"const_cell"</span>, since = <span class="string">"1.88.0"</span>)]
-<a href=#556 id=556 data-nosnippet>556</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#556 id=556 data-nosnippet>556</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#557 id=557 data-nosnippet>557</a>    </span><span class="kw">pub const fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; T {
 <a href=#558 id=558 data-nosnippet>558</a>        <span class="comment">// SAFETY: This can cause data races if called from a separate thread,
 <a href=#559 id=559 data-nosnippet>559</a>        // but `Cell` is `!Sync` so this won't happen.
@@ -574,7 +574,7 @@
 <a href=#574 id=574 data-nosnippet>574</a>    </span><span class="attr">#[inline]
 <a href=#575 id=575 data-nosnippet>575</a>    #[stable(feature = <span class="string">"cell_update"</span>, since = <span class="string">"1.88.0"</span>)]
 <a href=#576 id=576 data-nosnippet>576</a>    #[rustc_const_unstable(feature = <span class="string">"const_cell_traits"</span>, issue = <span class="string">"147787"</span>)]
-<a href=#577 id=577 data-nosnippet>577</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#577 id=577 data-nosnippet>577</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#578 id=578 data-nosnippet>578</a>    </span><span class="kw">pub const fn </span>update(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>[<span class="kw">const</span>] <a href="ops/function.rs.html#242-251">FnOnce</a>(T) -&gt; T)
 <a href=#579 id=579 data-nosnippet>579</a>    <span class="kw">where
 <a href=#580 id=580 data-nosnippet>580</a>        </span><span class="comment">// FIXME(const-hack): `Copy` should imply `const Destruct`
@@ -600,8 +600,8 @@
 <a href=#600 id=600 data-nosnippet>600</a>    </span><span class="attr">#[inline]
 <a href=#601 id=601 data-nosnippet>601</a>    #[stable(feature = <span class="string">"cell_as_ptr"</span>, since = <span class="string">"1.12.0"</span>)]
 <a href=#602 id=602 data-nosnippet>602</a>    #[rustc_const_stable(feature = <span class="string">"const_cell_as_ptr"</span>, since = <span class="string">"1.32.0"</span>)]
-<a href=#603 id=603 data-nosnippet>603</a>    #[rustc_as_ptr]
-<a href=#604 id=604 data-nosnippet>604</a>    #[rustc_never_returns_null_ptr]
+<a href=#603 id=603 data-nosnippet>603</a>    #[lint::as_ptr]
+<a href=#604 id=604 data-nosnippet>604</a>    #[lint::never_returns_null_ptr]
 <a href=#605 id=605 data-nosnippet>605</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#606 id=606 data-nosnippet>606</a>        <a class="self" href="#605">self</a>.value.<a href="#2436-2440">get</a>()
 <a href=#607 id=607 data-nosnippet>607</a>    }
@@ -1026,7 +1026,7 @@
 <a href=#1026 id=1026 data-nosnippet>1026</a>    #[track_caller]
 <a href=#1027 id=1027 data-nosnippet>1027</a>    #[rustc_confusables(<span class="string">"swap"</span>)]
 <a href=#1028 id=1028 data-nosnippet>1028</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1029 id=1029 data-nosnippet>1029</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1029 id=1029 data-nosnippet>1029</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1030 id=1030 data-nosnippet>1030</a>    </span><span class="kw">pub const fn </span>replace(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) -&gt; T {
 <a href=#1031 id=1031 data-nosnippet>1031</a>        mem::<a href="mem/mod.rs.html#963-981">replace</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#1030">self</a>.<a href="#1226-1231">borrow_mut</a>(), <a href="#1030">t</a>)
 <a href=#1032 id=1032 data-nosnippet>1032</a>    }
@@ -1050,7 +1050,7 @@
 <a href=#1050 id=1050 data-nosnippet>1050</a>    </span><span class="attr">#[inline]
 <a href=#1051 id=1051 data-nosnippet>1051</a>    #[stable(feature = <span class="string">"refcell_replace_swap"</span>, since = <span class="string">"1.35.0"</span>)]
 <a href=#1052 id=1052 data-nosnippet>1052</a>    #[track_caller]
-<a href=#1053 id=1053 data-nosnippet>1053</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1053 id=1053 data-nosnippet>1053</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1054 id=1054 data-nosnippet>1054</a>    </span><span class="kw">pub fn </span>replace_with&lt;F: <a href="ops/function.rs.html#242-251">FnOnce</a>(<span class="kw-2">&amp;mut </span>T) -&gt; T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; T {
 <a href=#1055 id=1055 data-nosnippet>1055</a>        <span class="kw">let </span>mut_borrow = <span class="kw-2">&amp;mut *</span><a class="self" href="#1054">self</a>.<a href="#1226-1231">borrow_mut</a>();
 <a href=#1056 id=1056 data-nosnippet>1056</a>        <span class="kw">let </span>replacement = <a href="#1054">f</a>(<a href="#1055">mut_borrow</a>);
@@ -1080,7 +1080,7 @@
 <a href=#1080 id=1080 data-nosnippet>1080</a>    </span><span class="attr">#[inline]
 <a href=#1081 id=1081 data-nosnippet>1081</a>    #[stable(feature = <span class="string">"refcell_swap"</span>, since = <span class="string">"1.24.0"</span>)]
 <a href=#1082 id=1082 data-nosnippet>1082</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1083 id=1083 data-nosnippet>1083</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1083 id=1083 data-nosnippet>1083</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1084 id=1084 data-nosnippet>1084</a>    </span><span class="kw">pub const fn </span>swap(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
 <a href=#1085 id=1085 data-nosnippet>1085</a>        mem::<a href="mem/mod.rs.html#832-836">swap</a>(<span class="kw-2">&amp;mut *</span><a class="self" href="#1084">self</a>.<a href="#1226-1231">borrow_mut</a>(), <span class="kw-2">&amp;mut *</span><a href="#1084">other</a>.<a href="#1226-1231">borrow_mut</a>())
 <a href=#1086 id=1086 data-nosnippet>1086</a>    }
@@ -1122,7 +1122,7 @@
 <a href=#1122 id=1122 data-nosnippet>1122</a>    #[inline]
 <a href=#1123 id=1123 data-nosnippet>1123</a>    #[track_caller]
 <a href=#1124 id=1124 data-nosnippet>1124</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1125 id=1125 data-nosnippet>1125</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1125 id=1125 data-nosnippet>1125</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1126 id=1126 data-nosnippet>1126</a>    </span><span class="kw">pub const fn </span>borrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#1127 id=1127 data-nosnippet>1127</a>        <span class="kw">match </span><a class="self" href="#1126">self</a>.<a href="#1163-1186">try_borrow</a>() {
 <a href=#1128 id=1128 data-nosnippet>1128</a>            <a class="prelude-val" href="result.rs.html#562">Ok</a>(b) =&gt; <a href="#1128">b</a>,
@@ -1159,7 +1159,7 @@
 <a href=#1159 id=1159 data-nosnippet>1159</a>    #[inline]
 <a href=#1160 id=1160 data-nosnippet>1160</a>    #[cfg_attr(feature = <span class="string">"debug_refcell"</span>, track_caller)]
 <a href=#1161 id=1161 data-nosnippet>1161</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1162 id=1162 data-nosnippet>1162</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1162 id=1162 data-nosnippet>1162</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1163 id=1163 data-nosnippet>1163</a>    </span><span class="kw">pub const fn </span>try_borrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="result.rs.html#558-568">Result</a>&lt;<a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'_</span>, T&gt;, <a href="#869-872">BorrowError</a>&gt; {
 <a href=#1164 id=1164 data-nosnippet>1164</a>        <span class="kw">match </span><a href="#1557-1559">BorrowRef</a>::<a href="#1563-1583">new</a>(<span class="kw-2">&amp;</span><a class="self" href="#1163">self</a>.borrow) {
 <a href=#1165 id=1165 data-nosnippet>1165</a>            <a class="prelude-val" href="option.rs.html#606">Some</a>(b) =&gt; {
@@ -1222,7 +1222,7 @@
 <a href=#1222 id=1222 data-nosnippet>1222</a>    #[inline]
 <a href=#1223 id=1223 data-nosnippet>1223</a>    #[track_caller]
 <a href=#1224 id=1224 data-nosnippet>1224</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1225 id=1225 data-nosnippet>1225</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1225 id=1225 data-nosnippet>1225</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1226 id=1226 data-nosnippet>1226</a>    </span><span class="kw">pub const fn </span>borrow_mut(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#1227 id=1227 data-nosnippet>1227</a>        <span class="kw">match </span><a class="self" href="#1226">self</a>.<a href="#1260-1279">try_borrow_mut</a>() {
 <a href=#1228 id=1228 data-nosnippet>1228</a>            <a class="prelude-val" href="result.rs.html#562">Ok</a>(b) =&gt; <a href="#1228">b</a>,
@@ -1256,7 +1256,7 @@
 <a href=#1256 id=1256 data-nosnippet>1256</a>    #[inline]
 <a href=#1257 id=1257 data-nosnippet>1257</a>    #[cfg_attr(feature = <span class="string">"debug_refcell"</span>, track_caller)]
 <a href=#1258 id=1258 data-nosnippet>1258</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1259 id=1259 data-nosnippet>1259</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1259 id=1259 data-nosnippet>1259</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1260 id=1260 data-nosnippet>1260</a>    </span><span class="kw">pub const fn </span>try_borrow_mut(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="result.rs.html#558-568">Result</a>&lt;<a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'_</span>, T&gt;, <a href="#895-898">BorrowMutError</a>&gt; {
 <a href=#1261 id=1261 data-nosnippet>1261</a>        <span class="kw">match </span><a href="#2050-2052">BorrowRefMut</a>::<a href="#2066-2078">new</a>(<span class="kw-2">&amp;</span><a class="self" href="#1260">self</a>.borrow) {
 <a href=#1262 id=1262 data-nosnippet>1262</a>            <a class="prelude-val" href="option.rs.html#606">Some</a>(b) =&gt; {
@@ -1291,9 +1291,9 @@
 <a href=#1291 id=1291 data-nosnippet>1291</a>    /// ```
 <a href=#1292 id=1292 data-nosnippet>1292</a>    </span><span class="attr">#[inline]
 <a href=#1293 id=1293 data-nosnippet>1293</a>    #[stable(feature = <span class="string">"cell_as_ptr"</span>, since = <span class="string">"1.12.0"</span>)]
-<a href=#1294 id=1294 data-nosnippet>1294</a>    #[rustc_as_ptr]
-<a href=#1295 id=1295 data-nosnippet>1295</a>    #[rustc_never_returns_null_ptr]
-<a href=#1296 id=1296 data-nosnippet>1296</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
+<a href=#1294 id=1294 data-nosnippet>1294</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
+<a href=#1295 id=1295 data-nosnippet>1295</a>    #[lint::as_ptr]
+<a href=#1296 id=1296 data-nosnippet>1296</a>    #[lint::never_returns_null_ptr]
 <a href=#1297 id=1297 data-nosnippet>1297</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#1298 id=1298 data-nosnippet>1298</a>        <a class="self" href="#1297">self</a>.value.<a href="#2436-2440">get</a>()
 <a href=#1299 id=1299 data-nosnippet>1299</a>    }
@@ -2380,7 +2380,7 @@
 <a href=#2380 id=2380 data-nosnippet>2380</a>    </span><span class="attr">#[inline]
 <a href=#2381 id=2381 data-nosnippet>2381</a>    #[stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
 <a href=#2382 id=2382 data-nosnippet>2382</a>    #[rustc_const_stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#2383 id=2383 data-nosnippet>2383</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#2383 id=2383 data-nosnippet>2383</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2384 id=2384 data-nosnippet>2384</a>    </span><span class="kw">pub const unsafe fn </span>replace(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; T {
 <a href=#2385 id=2385 data-nosnippet>2385</a>        <span class="comment">// SAFETY: pointer comes from `&amp;self` so naturally satisfies invariants.
 <a href=#2386 id=2386 data-nosnippet>2386</a>        </span><span class="kw">unsafe </span>{ ptr::<a href="ptr/mod.rs.html#1578-1601">replace</a>(<a class="self" href="#2384">self</a>.<a href="#2436-2440">get</a>(), <a href="#2384">value</a>) }
@@ -2430,9 +2430,9 @@
 <a href=#2430 id=2430 data-nosnippet>2430</a>    </span><span class="attr">#[inline(always)]
 <a href=#2431 id=2431 data-nosnippet>2431</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#2432 id=2432 data-nosnippet>2432</a>    #[rustc_const_stable(feature = <span class="string">"const_unsafecell_get"</span>, since = <span class="string">"1.32.0"</span>)]
-<a href=#2433 id=2433 data-nosnippet>2433</a>    #[rustc_as_ptr]
-<a href=#2434 id=2434 data-nosnippet>2434</a>    #[rustc_never_returns_null_ptr]
-<a href=#2435 id=2435 data-nosnippet>2435</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#2433 id=2433 data-nosnippet>2433</a>    #[lint::as_ptr]
+<a href=#2434 id=2434 data-nosnippet>2434</a>    #[lint::never_returns_null_ptr]
+<a href=#2435 id=2435 data-nosnippet>2435</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2436 id=2436 data-nosnippet>2436</a>    </span><span class="kw">pub const fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2437 id=2437 data-nosnippet>2437</a>        <span class="comment">// We can just cast the pointer from `UnsafeCell&lt;T&gt;` to `T` because of
 <a href=#2438 id=2438 data-nosnippet>2438</a>        // #[repr(transparent)].
@@ -2522,7 +2522,7 @@
 <a href=#2522 id=2522 data-nosnippet>2522</a>    </span><span class="attr">#[inline]
 <a href=#2523 id=2523 data-nosnippet>2523</a>    #[stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
 <a href=#2524 id=2524 data-nosnippet>2524</a>    #[rustc_const_stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#2525 id=2525 data-nosnippet>2525</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#2525 id=2525 data-nosnippet>2525</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2526 id=2526 data-nosnippet>2526</a>    </span><span class="kw">pub const unsafe fn </span>as_ref_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
 <a href=#2527 id=2527 data-nosnippet>2527</a>        <span class="comment">// SAFETY: pointer comes from `&amp;self` so naturally satisfies ptr-to-ref invariants.
 <a href=#2528 id=2528 data-nosnippet>2528</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#2526">self</a>.<a href="#2436-2440">get</a>().<a href="ptr/mut_ptr.rs.html#294-297">as_ref_unchecked</a>() }
@@ -2551,10 +2551,10 @@
 <a href=#2551 id=2551 data-nosnippet>2551</a>    #[stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
 <a href=#2552 id=2552 data-nosnippet>2552</a>    #[rustc_const_stable(feature = <span class="string">"unsafe_cell_access"</span>, since = <span class="string">"1.100.0"</span>)]
 <a href=#2553 id=2553 data-nosnippet>2553</a>    #[allow(clippy::mut_from_ref)]
-<a href=#2554 id=2554 data-nosnippet>2554</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#2554 id=2554 data-nosnippet>2554</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2555 id=2555 data-nosnippet>2555</a>    </span><span class="kw">pub const unsafe fn </span>as_mut_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
 <a href=#2556 id=2556 data-nosnippet>2556</a>        <span class="comment">// SAFETY: pointer comes from `&amp;self` so naturally satisfies ptr-to-ref invariants.
-<a href=#2557 id=2557 data-nosnippet>2557</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#2555">self</a>.<a href="#2436-2440">get</a>().<a href="ptr/mut_ptr.rs.html#621-624">as_mut_unchecked</a>() }
+<a href=#2557 id=2557 data-nosnippet>2557</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#2555">self</a>.<a href="#2436-2440">get</a>().<a href="ptr/mut_ptr.rs.html#624-627">as_mut_unchecked</a>() }
 <a href=#2558 id=2558 data-nosnippet>2558</a>    }
 <a href=#2559 id=2559 data-nosnippet>2559</a>}
 <a href=#2560 id=2560 data-nosnippet>2560</a>
@@ -2637,9 +2637,9 @@
 <a href=#2637 id=2637 data-nosnippet>2637</a>    /// when casting to `&amp;mut T`, and ensure that there are no mutations
 <a href=#2638 id=2638 data-nosnippet>2638</a>    /// or mutable aliases going on when casting to `&amp;T`
 <a href=#2639 id=2639 data-nosnippet>2639</a>    </span><span class="attr">#[inline]
-<a href=#2640 id=2640 data-nosnippet>2640</a>    #[rustc_as_ptr]
-<a href=#2641 id=2641 data-nosnippet>2641</a>    #[rustc_never_returns_null_ptr]
-<a href=#2642 id=2642 data-nosnippet>2642</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#2640 id=2640 data-nosnippet>2640</a>    #[lint::as_ptr]
+<a href=#2641 id=2641 data-nosnippet>2641</a>    #[lint::never_returns_null_ptr]
+<a href=#2642 id=2642 data-nosnippet>2642</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2643 id=2643 data-nosnippet>2643</a>    </span><span class="kw">pub const fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2644 id=2644 data-nosnippet>2644</a>        <a class="self" href="#2643">self</a>.value.<a href="#2436-2440">get</a>()
 <a href=#2645 id=2645 data-nosnippet>2645</a>    }

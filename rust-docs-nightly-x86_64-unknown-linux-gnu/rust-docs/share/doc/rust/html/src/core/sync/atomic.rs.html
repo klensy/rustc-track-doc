@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (708c94ef0 2026-11-03)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5c590327.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (2d20b42b8 2026-11-04)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Atomic types provide primitive shared-memory communication between
 <a href=#4 id=4 data-nosnippet>4</a>//! threads, and are the building blocks of other concurrent
@@ -247,7 +247,7 @@
 <a href=#247 id=247 data-nosnippet>247</a><span class="kw">use </span><a href="../hint.rs.html#270-313"><span class="kw">crate</span>::hint::spin_loop</a>;
 <a href=#248 id=248 data-nosnippet>248</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#108-116"><span class="kw">crate</span>::intrinsics::AtomicOrdering</a> <span class="kw">as </span>AO;
 <a href=#249 id=249 data-nosnippet>249</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#1110"><span class="kw">crate</span>::mem::transmute</a>;
-<a href=#250 id=250 data-nosnippet>250</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#325">fmt</a>, <a href="../lib.rs.html#268">intrinsics</a>};
+<a href=#250 id=250 data-nosnippet>250</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#274">intrinsics</a>};
 <a href=#251 id=251 data-nosnippet>251</a>
 <a href=#252 id=252 data-nosnippet>252</a><span class="attr">#[unstable(
 <a href=#253 id=253 data-nosnippet>253</a>    feature = <span class="string">"atomic_internals"</span>,
@@ -831,7 +831,7 @@
 <a href=#831 id=831 data-nosnippet>831</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#832 id=832 data-nosnippet>832</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#833 id=833 data-nosnippet>833</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#834 id=834 data-nosnippet>834</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#834 id=834 data-nosnippet>834</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#835 id=835 data-nosnippet>835</a>    </span><span class="kw">pub const fn </span>store(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) {
 <a href=#836 id=836 data-nosnippet>836</a>        <span class="comment">// SAFETY: any data races are prevented by atomic intrinsics and the raw
 <a href=#837 id=837 data-nosnippet>837</a>        // pointer passed in is valid because we got it from a reference.
@@ -865,7 +865,7 @@
 <a href=#865 id=865 data-nosnippet>865</a>    #[unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#866 id=866 data-nosnippet>866</a>    #[rustc_const_unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#867 id=867 data-nosnippet>867</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#868 id=868 data-nosnippet>868</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#868 id=868 data-nosnippet>868</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#869 id=869 data-nosnippet>869</a>    </span><span class="kw">pub const unsafe fn </span>store_volatile(<span class="self">self</span>: <span class="kw-2">*const </span><span class="self">Self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) {
 <a href=#870 id=870 data-nosnippet>870</a>        <span class="comment">// SAFETY: follows from our own safety requirements.
 <a href=#871 id=871 data-nosnippet>871</a>        </span><span class="kw">unsafe </span>{
@@ -898,7 +898,7 @@
 <a href=#898 id=898 data-nosnippet>898</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#899 id=899 data-nosnippet>899</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#900 id=900 data-nosnippet>900</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#901 id=901 data-nosnippet>901</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#901 id=901 data-nosnippet>901</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#902 id=902 data-nosnippet>902</a>    </span><span class="kw">pub const fn </span>swap(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#903 id=903 data-nosnippet>903</a>        <span class="kw">if </span><a href="#401-406">EMULATE_ATOMIC_BOOL</a> {
 <a href=#904 id=904 data-nosnippet>904</a>            <span class="kw">if </span><a href="#902">val</a> { <a class="self" href="#902">self</a>.<a href="#1299-1302">fetch_or</a>(<span class="bool-val">true</span>, <a href="#902">order</a>) } <span class="kw">else </span>{ <a class="self" href="#902">self</a>.<a href="#1201-1204">fetch_and</a>(<span class="bool-val">false</span>, <a href="#902">order</a>) }
@@ -967,7 +967,7 @@
 <a href=#967 id=967 data-nosnippet>967</a>    </span>)]
 <a href=#968 id=968 data-nosnippet>968</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#969 id=969 data-nosnippet>969</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#970 id=970 data-nosnippet>970</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#970 id=970 data-nosnippet>970</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#971 id=971 data-nosnippet>971</a>    </span><span class="kw">pub const fn </span>compare_and_swap(<span class="kw-2">&amp;</span><span class="self">self</span>, current: <a href="../../../core/primitive.bool.html">bool</a>, new: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#972 id=972 data-nosnippet>972</a>        <span class="kw">match </span><a class="self" href="#971">self</a>.<a href="#1034-1081">compare_exchange</a>(<a href="#971">current</a>, <a href="#971">new</a>, <a href="#971">order</a>, <a href="#4286-4294">strongest_failure_ordering</a>(<a href="#971">order</a>)) {
 <a href=#973 id=973 data-nosnippet>973</a>            <a class="prelude-val" href="../result.rs.html#562">Ok</a>(x) =&gt; <a href="#973">x</a>,
@@ -1030,7 +1030,7 @@
 <a href=#1030 id=1030 data-nosnippet>1030</a>    #[doc(alias = <span class="string">"compare_and_swap"</span>)]
 <a href=#1031 id=1031 data-nosnippet>1031</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1032 id=1032 data-nosnippet>1032</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1033 id=1033 data-nosnippet>1033</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1033 id=1033 data-nosnippet>1033</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1034 id=1034 data-nosnippet>1034</a>    </span><span class="kw">pub const fn </span>compare_exchange(
 <a href=#1035 id=1035 data-nosnippet>1035</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#1036 id=1036 data-nosnippet>1036</a>        current: <a href="../../../core/primitive.bool.html">bool</a>,
@@ -1133,7 +1133,7 @@
 <a href=#1133 id=1133 data-nosnippet>1133</a>    #[doc(alias = <span class="string">"compare_and_swap"</span>)]
 <a href=#1134 id=1134 data-nosnippet>1134</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1135 id=1135 data-nosnippet>1135</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1136 id=1136 data-nosnippet>1136</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1136 id=1136 data-nosnippet>1136</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1137 id=1137 data-nosnippet>1137</a>    </span><span class="kw">pub const fn </span>compare_exchange_weak(
 <a href=#1138 id=1138 data-nosnippet>1138</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#1139 id=1139 data-nosnippet>1139</a>        current: <a href="../../../core/primitive.bool.html">bool</a>,
@@ -1197,7 +1197,7 @@
 <a href=#1197 id=1197 data-nosnippet>1197</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1198 id=1198 data-nosnippet>1198</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1199 id=1199 data-nosnippet>1199</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1200 id=1200 data-nosnippet>1200</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1200 id=1200 data-nosnippet>1200</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1201 id=1201 data-nosnippet>1201</a>    </span><span class="kw">pub const fn </span>fetch_and(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1202 id=1202 data-nosnippet>1202</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#1203 id=1203 data-nosnippet>1203</a>        </span><span class="kw">unsafe </span>{ <a href="#4520-4531">atomic_and</a>(<a class="self" href="#1201">self</a>.v.<a href="../cell.rs.html#2436-2440">get</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;(), <a href="#1201">val</a> <span class="kw">as </span><a href="../../../core/primitive.u8.html">u8</a>, <a href="#1201">order</a>) != <span class="number">0 </span>}
@@ -1241,7 +1241,7 @@
 <a href=#1241 id=1241 data-nosnippet>1241</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1242 id=1242 data-nosnippet>1242</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1243 id=1243 data-nosnippet>1243</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1244 id=1244 data-nosnippet>1244</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1244 id=1244 data-nosnippet>1244</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1245 id=1245 data-nosnippet>1245</a>    </span><span class="kw">pub const fn </span>fetch_nand(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1246 id=1246 data-nosnippet>1246</a>        <span class="comment">// We can't use atomic_nand here because it can result in a bool with
 <a href=#1247 id=1247 data-nosnippet>1247</a>        // an invalid value. This happens because the atomic operation is done
@@ -1295,7 +1295,7 @@
 <a href=#1295 id=1295 data-nosnippet>1295</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1296 id=1296 data-nosnippet>1296</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1297 id=1297 data-nosnippet>1297</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1298 id=1298 data-nosnippet>1298</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1298 id=1298 data-nosnippet>1298</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1299 id=1299 data-nosnippet>1299</a>    </span><span class="kw">pub const fn </span>fetch_or(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1300 id=1300 data-nosnippet>1300</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#1301 id=1301 data-nosnippet>1301</a>        </span><span class="kw">unsafe </span>{ <a href="#4554-4565">atomic_or</a>(<a class="self" href="#1299">self</a>.v.<a href="../cell.rs.html#2436-2440">get</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;(), <a href="#1299">val</a> <span class="kw">as </span><a href="../../../core/primitive.u8.html">u8</a>, <a href="#1299">order</a>) != <span class="number">0 </span>}
@@ -1338,7 +1338,7 @@
 <a href=#1338 id=1338 data-nosnippet>1338</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1339 id=1339 data-nosnippet>1339</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1340 id=1340 data-nosnippet>1340</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1341 id=1341 data-nosnippet>1341</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1341 id=1341 data-nosnippet>1341</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1342 id=1342 data-nosnippet>1342</a>    </span><span class="kw">pub const fn </span>fetch_xor(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.bool.html">bool</a>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1343 id=1343 data-nosnippet>1343</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#1344 id=1344 data-nosnippet>1344</a>        </span><span class="kw">unsafe </span>{ <a href="#4571-4582">atomic_xor</a>(<a class="self" href="#1342">self</a>.v.<a href="../cell.rs.html#2436-2440">get</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>::&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt;(), <a href="#1342">val</a> <span class="kw">as </span><a href="../../../core/primitive.u8.html">u8</a>, <a href="#1342">order</a>) != <span class="number">0 </span>}
@@ -1377,7 +1377,7 @@
 <a href=#1377 id=1377 data-nosnippet>1377</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1378 id=1378 data-nosnippet>1378</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1379 id=1379 data-nosnippet>1379</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1380 id=1380 data-nosnippet>1380</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1380 id=1380 data-nosnippet>1380</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1381 id=1381 data-nosnippet>1381</a>    </span><span class="kw">pub const fn </span>fetch_not(<span class="kw-2">&amp;</span><span class="self">self</span>, order: <a href="#465-526">Ordering</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1382 id=1382 data-nosnippet>1382</a>        <a class="self" href="#1381">self</a>.<a href="#1342-1345">fetch_xor</a>(<span class="bool-val">true</span>, <a href="#1381">order</a>)
 <a href=#1383 id=1383 data-nosnippet>1383</a>    }
@@ -1415,8 +1415,8 @@
 <a href=#1415 id=1415 data-nosnippet>1415</a>    </span><span class="attr">#[inline]
 <a href=#1416 id=1416 data-nosnippet>1416</a>    #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#1417 id=1417 data-nosnippet>1417</a>    #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#1418 id=1418 data-nosnippet>1418</a>    #[rustc_never_returns_null_ptr]
-<a href=#1419 id=1419 data-nosnippet>1419</a>    #[rustc_should_not_be_called_on_const_items]
+<a href=#1418 id=1418 data-nosnippet>1418</a>    #[lint::never_returns_null_ptr]
+<a href=#1419 id=1419 data-nosnippet>1419</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#1420 id=1420 data-nosnippet>1420</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span><a href="../../../core/primitive.bool.html">bool</a> {
 <a href=#1421 id=1421 data-nosnippet>1421</a>        <a class="self" href="#1420">self</a>.v.<a href="../cell.rs.html#2436-2440">get</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>()
 <a href=#1422 id=1422 data-nosnippet>1422</a>    }
@@ -1426,7 +1426,7 @@
 <a href=#1426 id=1426 data-nosnippet>1426</a>    #[stable(feature = <span class="string">"atomic_fetch_update"</span>, since = <span class="string">"1.53.0"</span>)]
 <a href=#1427 id=1427 data-nosnippet>1427</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1428 id=1428 data-nosnippet>1428</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1429 id=1429 data-nosnippet>1429</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1429 id=1429 data-nosnippet>1429</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1430 id=1430 data-nosnippet>1430</a>    #[deprecated(
 <a href=#1431 id=1431 data-nosnippet>1431</a>        since = <span class="string">"1.99.0"</span>,
 <a href=#1432 id=1432 data-nosnippet>1432</a>        note = <span class="string">"renamed to `try_update` for consistency"</span>,
@@ -1495,7 +1495,7 @@
 <a href=#1495 id=1495 data-nosnippet>1495</a>    #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#1496 id=1496 data-nosnippet>1496</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1497 id=1497 data-nosnippet>1497</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1498 id=1498 data-nosnippet>1498</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1498 id=1498 data-nosnippet>1498</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1499 id=1499 data-nosnippet>1499</a>    </span><span class="kw">pub fn </span>try_update(
 <a href=#1500 id=1500 data-nosnippet>1500</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#1501 id=1501 data-nosnippet>1501</a>        set_order: <a href="#465-526">Ordering</a>,
@@ -1558,7 +1558,7 @@
 <a href=#1558 id=1558 data-nosnippet>1558</a>    #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#1559 id=1559 data-nosnippet>1559</a>    #[cfg(target_has_atomic = <span class="string">"8"</span>)]
 <a href=#1560 id=1560 data-nosnippet>1560</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1561 id=1561 data-nosnippet>1561</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1561 id=1561 data-nosnippet>1561</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1562 id=1562 data-nosnippet>1562</a>    </span><span class="kw">pub fn </span>update(
 <a href=#1563 id=1563 data-nosnippet>1563</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#1564 id=1564 data-nosnippet>1564</a>        set_order: <a href="#465-526">Ordering</a>,
@@ -1946,7 +1946,7 @@
 <a href=#1946 id=1946 data-nosnippet>1946</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1947 id=1947 data-nosnippet>1947</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#1948 id=1948 data-nosnippet>1948</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#1949 id=1949 data-nosnippet>1949</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#1949 id=1949 data-nosnippet>1949</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#1950 id=1950 data-nosnippet>1950</a>    </span><span class="kw">pub const fn </span>store(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: <span class="kw-2">*mut </span>T, order: <a href="#465-526">Ordering</a>) {
 <a href=#1951 id=1951 data-nosnippet>1951</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#1952 id=1952 data-nosnippet>1952</a>        </span><span class="kw">unsafe </span>{
@@ -2007,7 +2007,7 @@
 <a href=#2007 id=2007 data-nosnippet>2007</a>    #[unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#2008 id=2008 data-nosnippet>2008</a>    #[rustc_const_unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#2009 id=2009 data-nosnippet>2009</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2010 id=2010 data-nosnippet>2010</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2010 id=2010 data-nosnippet>2010</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2011 id=2011 data-nosnippet>2011</a>    </span><span class="kw">pub const unsafe fn </span>store_volatile(<span class="self">self</span>: <span class="kw-2">*const </span><span class="self">Self</span>, ptr: <span class="kw-2">*mut </span>T, order: <a href="#465-526">Ordering</a>) {
 <a href=#2012 id=2012 data-nosnippet>2012</a>        <span class="comment">// SAFETY: follows from our own safety requirements.
 <a href=#2013 id=2013 data-nosnippet>2013</a>        </span><span class="kw">unsafe </span>{
@@ -2042,7 +2042,7 @@
 <a href=#2042 id=2042 data-nosnippet>2042</a>    #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#2043 id=2043 data-nosnippet>2043</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2044 id=2044 data-nosnippet>2044</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2045 id=2045 data-nosnippet>2045</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2045 id=2045 data-nosnippet>2045</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2046 id=2046 data-nosnippet>2046</a>    </span><span class="kw">pub const fn </span>swap(<span class="kw-2">&amp;</span><span class="self">self</span>, ptr: <span class="kw-2">*mut </span>T, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2047 id=2047 data-nosnippet>2047</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2048 id=2048 data-nosnippet>2048</a>        </span><span class="kw">unsafe </span>{ <a href="#4332-4343">atomic_swap</a>(<a class="self" href="#2046">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2046">ptr</a>, <a href="#2046">order</a>) }
@@ -2105,7 +2105,7 @@
 <a href=#2105 id=2105 data-nosnippet>2105</a>    </span>)]
 <a href=#2106 id=2106 data-nosnippet>2106</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2107 id=2107 data-nosnippet>2107</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2108 id=2108 data-nosnippet>2108</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2108 id=2108 data-nosnippet>2108</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2109 id=2109 data-nosnippet>2109</a>    </span><span class="kw">pub fn </span>compare_and_swap(<span class="kw-2">&amp;</span><span class="self">self</span>, current: <span class="kw-2">*mut </span>T, new: <span class="kw-2">*mut </span>T, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2110 id=2110 data-nosnippet>2110</a>        <span class="kw">match </span><a class="self" href="#2109">self</a>.<a href="#2164-2173">compare_exchange</a>(<a href="#2109">current</a>, <a href="#2109">new</a>, <a href="#2109">order</a>, <a href="#4286-4294">strongest_failure_ordering</a>(<a href="#2109">order</a>)) {
 <a href=#2111 id=2111 data-nosnippet>2111</a>            <a class="prelude-val" href="../result.rs.html#562">Ok</a>(x) =&gt; <a href="#2111">x</a>,
@@ -2160,7 +2160,7 @@
 <a href=#2160 id=2160 data-nosnippet>2160</a>    #[stable(feature = <span class="string">"extended_compare_and_swap"</span>, since = <span class="string">"1.10.0"</span>)]
 <a href=#2161 id=2161 data-nosnippet>2161</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2162 id=2162 data-nosnippet>2162</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2163 id=2163 data-nosnippet>2163</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2163 id=2163 data-nosnippet>2163</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2164 id=2164 data-nosnippet>2164</a>    </span><span class="kw">pub fn </span>compare_exchange(
 <a href=#2165 id=2165 data-nosnippet>2165</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#2166 id=2166 data-nosnippet>2166</a>        current: <span class="kw-2">*mut </span>T,
@@ -2224,7 +2224,7 @@
 <a href=#2224 id=2224 data-nosnippet>2224</a>    #[stable(feature = <span class="string">"extended_compare_and_swap"</span>, since = <span class="string">"1.10.0"</span>)]
 <a href=#2225 id=2225 data-nosnippet>2225</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2226 id=2226 data-nosnippet>2226</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2227 id=2227 data-nosnippet>2227</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2227 id=2227 data-nosnippet>2227</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2228 id=2228 data-nosnippet>2228</a>    </span><span class="kw">pub fn </span>compare_exchange_weak(
 <a href=#2229 id=2229 data-nosnippet>2229</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#2230 id=2230 data-nosnippet>2230</a>        current: <span class="kw-2">*mut </span>T,
@@ -2244,7 +2244,7 @@
 <a href=#2244 id=2244 data-nosnippet>2244</a>    #[stable(feature = <span class="string">"atomic_fetch_update"</span>, since = <span class="string">"1.53.0"</span>)]
 <a href=#2245 id=2245 data-nosnippet>2245</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2246 id=2246 data-nosnippet>2246</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2247 id=2247 data-nosnippet>2247</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2247 id=2247 data-nosnippet>2247</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2248 id=2248 data-nosnippet>2248</a>    #[deprecated(
 <a href=#2249 id=2249 data-nosnippet>2249</a>        since = <span class="string">"1.99.0"</span>,
 <a href=#2250 id=2250 data-nosnippet>2250</a>        note = <span class="string">"renamed to `try_update` for consistency"</span>,
@@ -2322,7 +2322,7 @@
 <a href=#2322 id=2322 data-nosnippet>2322</a>    #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#2323 id=2323 data-nosnippet>2323</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2324 id=2324 data-nosnippet>2324</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2325 id=2325 data-nosnippet>2325</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2325 id=2325 data-nosnippet>2325</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2326 id=2326 data-nosnippet>2326</a>    </span><span class="kw">pub fn </span>try_update(
 <a href=#2327 id=2327 data-nosnippet>2327</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#2328 id=2328 data-nosnippet>2328</a>        set_order: <a href="#465-526">Ordering</a>,
@@ -2390,7 +2390,7 @@
 <a href=#2390 id=2390 data-nosnippet>2390</a>    #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#2391 id=2391 data-nosnippet>2391</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2392 id=2392 data-nosnippet>2392</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2393 id=2393 data-nosnippet>2393</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2393 id=2393 data-nosnippet>2393</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2394 id=2394 data-nosnippet>2394</a>    </span><span class="kw">pub fn </span>update(
 <a href=#2395 id=2395 data-nosnippet>2395</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#2396 id=2396 data-nosnippet>2396</a>        set_order: <a href="#465-526">Ordering</a>,
@@ -2442,7 +2442,7 @@
 <a href=#2442 id=2442 data-nosnippet>2442</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2443 id=2443 data-nosnippet>2443</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2444 id=2444 data-nosnippet>2444</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2445 id=2445 data-nosnippet>2445</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2445 id=2445 data-nosnippet>2445</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2446 id=2446 data-nosnippet>2446</a>    </span><span class="kw">pub fn </span>fetch_ptr_add(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2447 id=2447 data-nosnippet>2447</a>        <a class="self" href="#2446">self</a>.<a href="#2526-2529">fetch_byte_add</a>(<a href="#2446">val</a>.<a href="../num/mod.rs.html#1461-1485">wrapping_mul</a>(<a href="../mem/mod.rs.html#375-384">size_of</a>::&lt;T&gt;()), <a href="#2446">order</a>)
 <a href=#2448 id=2448 data-nosnippet>2448</a>    }
@@ -2487,7 +2487,7 @@
 <a href=#2487 id=2487 data-nosnippet>2487</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2488 id=2488 data-nosnippet>2488</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2489 id=2489 data-nosnippet>2489</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2490 id=2490 data-nosnippet>2490</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2490 id=2490 data-nosnippet>2490</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2491 id=2491 data-nosnippet>2491</a>    </span><span class="kw">pub fn </span>fetch_ptr_sub(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2492 id=2492 data-nosnippet>2492</a>        <a class="self" href="#2491">self</a>.<a href="#2562-2565">fetch_byte_sub</a>(<a href="#2491">val</a>.<a href="../num/mod.rs.html#1461-1485">wrapping_mul</a>(<a href="../mem/mod.rs.html#375-384">size_of</a>::&lt;T&gt;()), <a href="#2491">order</a>)
 <a href=#2493 id=2493 data-nosnippet>2493</a>    }
@@ -2522,7 +2522,7 @@
 <a href=#2522 id=2522 data-nosnippet>2522</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2523 id=2523 data-nosnippet>2523</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2524 id=2524 data-nosnippet>2524</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2525 id=2525 data-nosnippet>2525</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2525 id=2525 data-nosnippet>2525</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2526 id=2526 data-nosnippet>2526</a>    </span><span class="kw">pub fn </span>fetch_byte_add(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2527 id=2527 data-nosnippet>2527</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2528 id=2528 data-nosnippet>2528</a>        </span><span class="kw">unsafe </span>{ <a href="#4350-4361">atomic_add</a>(<a class="self" href="#2526">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2526">val</a>, <a href="#2526">order</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
@@ -2558,7 +2558,7 @@
 <a href=#2558 id=2558 data-nosnippet>2558</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2559 id=2559 data-nosnippet>2559</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2560 id=2560 data-nosnippet>2560</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2561 id=2561 data-nosnippet>2561</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2561 id=2561 data-nosnippet>2561</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2562 id=2562 data-nosnippet>2562</a>    </span><span class="kw">pub fn </span>fetch_byte_sub(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2563 id=2563 data-nosnippet>2563</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2564 id=2564 data-nosnippet>2564</a>        </span><span class="kw">unsafe </span>{ <a href="#4368-4379">atomic_sub</a>(<a class="self" href="#2562">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2562">val</a>, <a href="#2562">order</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
@@ -2609,7 +2609,7 @@
 <a href=#2609 id=2609 data-nosnippet>2609</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2610 id=2610 data-nosnippet>2610</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2611 id=2611 data-nosnippet>2611</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2612 id=2612 data-nosnippet>2612</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2612 id=2612 data-nosnippet>2612</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2613 id=2613 data-nosnippet>2613</a>    </span><span class="kw">pub fn </span>fetch_or(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2614 id=2614 data-nosnippet>2614</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2615 id=2615 data-nosnippet>2615</a>        </span><span class="kw">unsafe </span>{ <a href="#4554-4565">atomic_or</a>(<a class="self" href="#2613">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2613">val</a>, <a href="#2613">order</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
@@ -2659,7 +2659,7 @@
 <a href=#2659 id=2659 data-nosnippet>2659</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2660 id=2660 data-nosnippet>2660</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2661 id=2661 data-nosnippet>2661</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2662 id=2662 data-nosnippet>2662</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2662 id=2662 data-nosnippet>2662</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2663 id=2663 data-nosnippet>2663</a>    </span><span class="kw">pub fn </span>fetch_and(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2664 id=2664 data-nosnippet>2664</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2665 id=2665 data-nosnippet>2665</a>        </span><span class="kw">unsafe </span>{ <a href="#4520-4531">atomic_and</a>(<a class="self" href="#2663">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2663">val</a>, <a href="#2663">order</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
@@ -2707,7 +2707,7 @@
 <a href=#2707 id=2707 data-nosnippet>2707</a>    #[cfg(target_has_atomic = <span class="string">"ptr"</span>)]
 <a href=#2708 id=2708 data-nosnippet>2708</a>    #[stable(feature = <span class="string">"strict_provenance_atomic_ptr"</span>, since = <span class="string">"1.91.0"</span>)]
 <a href=#2709 id=2709 data-nosnippet>2709</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#2710 id=2710 data-nosnippet>2710</a>    </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#2710 id=2710 data-nosnippet>2710</a>    </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#2711 id=2711 data-nosnippet>2711</a>    </span><span class="kw">pub fn </span>fetch_xor(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <a href="../../../core/primitive.usize.html">usize</a>, order: <a href="#465-526">Ordering</a>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#2712 id=2712 data-nosnippet>2712</a>        <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#2713 id=2713 data-nosnippet>2713</a>        </span><span class="kw">unsafe </span>{ <a href="#4571-4582">atomic_xor</a>(<a class="self" href="#2711">self</a>.<a href="#2751-2753">as_ptr</a>(), <a href="#2711">val</a>, <a href="#2711">order</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
@@ -2747,7 +2747,7 @@
 <a href=#2747 id=2747 data-nosnippet>2747</a>    </span><span class="attr">#[inline]
 <a href=#2748 id=2748 data-nosnippet>2748</a>    #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#2749 id=2749 data-nosnippet>2749</a>    #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#2750 id=2750 data-nosnippet>2750</a>    #[rustc_never_returns_null_ptr]
+<a href=#2750 id=2750 data-nosnippet>2750</a>    #[lint::never_returns_null_ptr]
 <a href=#2751 id=2751 data-nosnippet>2751</a>    </span><span class="kw">pub const fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut *mut </span>T {
 <a href=#2752 id=2752 data-nosnippet>2752</a>        <a class="self" href="#2751">self</a>.v.<a href="../cell.rs.html#2436-2440">get</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>()
 <a href=#2753 id=2753 data-nosnippet>2753</a>    }
@@ -3216,7 +3216,7 @@
 <a href=#3216 id=3216 data-nosnippet>3216</a>            #[<span class="macro-nonterminal">$stable</span>]
 <a href=#3217 id=3217 data-nosnippet>3217</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3218 id=3218 data-nosnippet>3218</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3219 id=3219 data-nosnippet>3219</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3219 id=3219 data-nosnippet>3219</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3220 id=3220 data-nosnippet>3220</a>            </span><span class="kw">pub const fn </span>store(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) {
 <a href=#3221 id=3221 data-nosnippet>3221</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3222 id=3222 data-nosnippet>3222</a>                </span><span class="kw">unsafe </span>{ atomic_store::&lt;<span class="kw">_</span>, <span class="comment">/* VOLATILE */ </span><span class="bool-val">false</span>&gt;(<span class="self">self</span>.as_ptr(), val, order); }
@@ -3261,7 +3261,7 @@
 <a href=#3261 id=3261 data-nosnippet>3261</a>            #[unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#3262 id=3262 data-nosnippet>3262</a>            #[rustc_const_unstable(feature = <span class="string">"atomic_volatile"</span>, issue = <span class="string">"158947"</span>)]
 <a href=#3263 id=3263 data-nosnippet>3263</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3264 id=3264 data-nosnippet>3264</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3264 id=3264 data-nosnippet>3264</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3265 id=3265 data-nosnippet>3265</a>            </span><span class="kw">pub const unsafe fn </span>store_volatile(<span class="self">self</span>: <span class="kw-2">*const </span><span class="self">Self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) {
 <a href=#3266 id=3266 data-nosnippet>3266</a>                <span class="comment">// SAFETY: follows from our own safety requirements.
 <a href=#3267 id=3267 data-nosnippet>3267</a>                </span><span class="kw">unsafe </span>{
@@ -3294,7 +3294,7 @@
 <a href=#3294 id=3294 data-nosnippet>3294</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3295 id=3295 data-nosnippet>3295</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3296 id=3296 data-nosnippet>3296</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3297 id=3297 data-nosnippet>3297</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3297 id=3297 data-nosnippet>3297</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3298 id=3298 data-nosnippet>3298</a>            </span><span class="kw">pub const fn </span>swap(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3299 id=3299 data-nosnippet>3299</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3300 id=3300 data-nosnippet>3300</a>                </span><span class="kw">unsafe </span>{ atomic_swap(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3361,7 +3361,7 @@
 <a href=#3361 id=3361 data-nosnippet>3361</a>            ]
 <a href=#3362 id=3362 data-nosnippet>3362</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3363 id=3363 data-nosnippet>3363</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3364 id=3364 data-nosnippet>3364</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3364 id=3364 data-nosnippet>3364</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3365 id=3365 data-nosnippet>3365</a>            </span><span class="kw">pub const fn </span>compare_and_swap(<span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#3366 id=3366 data-nosnippet>3366</a>                                    current: <span class="macro-nonterminal">$int_type</span>,
 <a href=#3367 id=3367 data-nosnippet>3367</a>                                    new: <span class="macro-nonterminal">$int_type</span>,
@@ -3432,7 +3432,7 @@
 <a href=#3432 id=3432 data-nosnippet>3432</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3433 id=3433 data-nosnippet>3433</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3434 id=3434 data-nosnippet>3434</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3435 id=3435 data-nosnippet>3435</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3435 id=3435 data-nosnippet>3435</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3436 id=3436 data-nosnippet>3436</a>            </span><span class="kw">pub const fn </span>compare_exchange(<span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#3437 id=3437 data-nosnippet>3437</a>                                    current: <span class="macro-nonterminal">$int_type</span>,
 <a href=#3438 id=3438 data-nosnippet>3438</a>                                    new: <span class="macro-nonterminal">$int_type</span>,
@@ -3498,7 +3498,7 @@
 <a href=#3498 id=3498 data-nosnippet>3498</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3499 id=3499 data-nosnippet>3499</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3500 id=3500 data-nosnippet>3500</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3501 id=3501 data-nosnippet>3501</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3501 id=3501 data-nosnippet>3501</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3502 id=3502 data-nosnippet>3502</a>            </span><span class="kw">pub const fn </span>compare_exchange_weak(<span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#3503 id=3503 data-nosnippet>3503</a>                                         current: <span class="macro-nonterminal">$int_type</span>,
 <a href=#3504 id=3504 data-nosnippet>3504</a>                                         new: <span class="macro-nonterminal">$int_type</span>,
@@ -3537,7 +3537,7 @@
 <a href=#3537 id=3537 data-nosnippet>3537</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3538 id=3538 data-nosnippet>3538</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3539 id=3539 data-nosnippet>3539</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3540 id=3540 data-nosnippet>3540</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3540 id=3540 data-nosnippet>3540</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3541 id=3541 data-nosnippet>3541</a>            </span><span class="kw">pub const fn </span>fetch_add(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3542 id=3542 data-nosnippet>3542</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3543 id=3543 data-nosnippet>3543</a>                </span><span class="kw">unsafe </span>{ atomic_add(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3570,7 +3570,7 @@
 <a href=#3570 id=3570 data-nosnippet>3570</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3571 id=3571 data-nosnippet>3571</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3572 id=3572 data-nosnippet>3572</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3573 id=3573 data-nosnippet>3573</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3573 id=3573 data-nosnippet>3573</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3574 id=3574 data-nosnippet>3574</a>            </span><span class="kw">pub const fn </span>fetch_sub(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3575 id=3575 data-nosnippet>3575</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3576 id=3576 data-nosnippet>3576</a>                </span><span class="kw">unsafe </span>{ atomic_sub(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3606,7 +3606,7 @@
 <a href=#3606 id=3606 data-nosnippet>3606</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3607 id=3607 data-nosnippet>3607</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3608 id=3608 data-nosnippet>3608</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3609 id=3609 data-nosnippet>3609</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3609 id=3609 data-nosnippet>3609</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3610 id=3610 data-nosnippet>3610</a>            </span><span class="kw">pub const fn </span>fetch_and(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3611 id=3611 data-nosnippet>3611</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3612 id=3612 data-nosnippet>3612</a>                </span><span class="kw">unsafe </span>{ atomic_and(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3642,7 +3642,7 @@
 <a href=#3642 id=3642 data-nosnippet>3642</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3643 id=3643 data-nosnippet>3643</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3644 id=3644 data-nosnippet>3644</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3645 id=3645 data-nosnippet>3645</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3645 id=3645 data-nosnippet>3645</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3646 id=3646 data-nosnippet>3646</a>            </span><span class="kw">pub const fn </span>fetch_nand(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3647 id=3647 data-nosnippet>3647</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3648 id=3648 data-nosnippet>3648</a>                </span><span class="kw">unsafe </span>{ atomic_nand(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3678,7 +3678,7 @@
 <a href=#3678 id=3678 data-nosnippet>3678</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3679 id=3679 data-nosnippet>3679</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3680 id=3680 data-nosnippet>3680</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3681 id=3681 data-nosnippet>3681</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3681 id=3681 data-nosnippet>3681</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3682 id=3682 data-nosnippet>3682</a>            </span><span class="kw">pub const fn </span>fetch_or(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3683 id=3683 data-nosnippet>3683</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3684 id=3684 data-nosnippet>3684</a>                </span><span class="kw">unsafe </span>{ atomic_or(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3714,7 +3714,7 @@
 <a href=#3714 id=3714 data-nosnippet>3714</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3715 id=3715 data-nosnippet>3715</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3716 id=3716 data-nosnippet>3716</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3717 id=3717 data-nosnippet>3717</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3717 id=3717 data-nosnippet>3717</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3718 id=3718 data-nosnippet>3718</a>            </span><span class="kw">pub const fn </span>fetch_xor(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3719 id=3719 data-nosnippet>3719</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3720 id=3720 data-nosnippet>3720</a>                </span><span class="kw">unsafe </span>{ atomic_xor(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3727,7 +3727,7 @@
 <a href=#3727 id=3727 data-nosnippet>3727</a>            #[stable(feature = <span class="string">"no_more_cas"</span>, since = <span class="string">"1.45.0"</span>)]
 <a href=#3728 id=3728 data-nosnippet>3728</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3729 id=3729 data-nosnippet>3729</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3730 id=3730 data-nosnippet>3730</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3730 id=3730 data-nosnippet>3730</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3731 id=3731 data-nosnippet>3731</a>            #[deprecated(
 <a href=#3732 id=3732 data-nosnippet>3732</a>                since = <span class="string">"1.99.0"</span>,
 <a href=#3733 id=3733 data-nosnippet>3733</a>                note = <span class="string">"renamed to `try_update` for consistency"</span>,
@@ -3793,7 +3793,7 @@
 <a href=#3793 id=3793 data-nosnippet>3793</a>            #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#3794 id=3794 data-nosnippet>3794</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3795 id=3795 data-nosnippet>3795</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3796 id=3796 data-nosnippet>3796</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3796 id=3796 data-nosnippet>3796</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3797 id=3797 data-nosnippet>3797</a>            </span><span class="kw">pub fn </span>try_update(
 <a href=#3798 id=3798 data-nosnippet>3798</a>                <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#3799 id=3799 data-nosnippet>3799</a>                set_order: Ordering,
@@ -3860,7 +3860,7 @@
 <a href=#3860 id=3860 data-nosnippet>3860</a>            #[stable(feature = <span class="string">"atomic_try_update"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#3861 id=3861 data-nosnippet>3861</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3862 id=3862 data-nosnippet>3862</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3863 id=3863 data-nosnippet>3863</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3863 id=3863 data-nosnippet>3863</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3864 id=3864 data-nosnippet>3864</a>            </span><span class="kw">pub fn </span>update(
 <a href=#3865 id=3865 data-nosnippet>3865</a>                <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#3866 id=3866 data-nosnippet>3866</a>                set_order: Ordering,
@@ -3918,7 +3918,7 @@
 <a href=#3918 id=3918 data-nosnippet>3918</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3919 id=3919 data-nosnippet>3919</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3920 id=3920 data-nosnippet>3920</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3921 id=3921 data-nosnippet>3921</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3921 id=3921 data-nosnippet>3921</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3922 id=3922 data-nosnippet>3922</a>            </span><span class="kw">pub const fn </span>fetch_max(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3923 id=3923 data-nosnippet>3923</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3924 id=3924 data-nosnippet>3924</a>                </span><span class="kw">unsafe </span>{ <span class="macro-nonterminal">$max_fn</span>(<span class="self">self</span>.as_ptr(), val, order) }
@@ -3968,7 +3968,7 @@
 <a href=#3968 id=3968 data-nosnippet>3968</a>            #[rustc_const_unstable(feature = <span class="string">"const_atomic"</span>, issue = <span class="string">"160078"</span>)]
 <a href=#3969 id=3969 data-nosnippet>3969</a>            #[cfg(any(<span class="macro-nonterminal">$cfg_cas</span>, doc))]
 <a href=#3970 id=3970 data-nosnippet>3970</a>            #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#3971 id=3971 data-nosnippet>3971</a>            </span><span class="attr">#[rustc_should_not_be_called_on_const_items]
+<a href=#3971 id=3971 data-nosnippet>3971</a>            </span><span class="attr">#[lint::should_not_be_called_on_const_items]
 <a href=#3972 id=3972 data-nosnippet>3972</a>            </span><span class="kw">pub const fn </span>fetch_min(<span class="kw-2">&amp;</span><span class="self">self</span>, val: <span class="macro-nonterminal">$int_type</span>, order: Ordering) -&gt; <span class="macro-nonterminal">$int_type </span>{
 <a href=#3973 id=3973 data-nosnippet>3973</a>                <span class="comment">// SAFETY: data races are prevented by atomic intrinsics.
 <a href=#3974 id=3974 data-nosnippet>3974</a>                </span><span class="kw">unsafe </span>{ <span class="macro-nonterminal">$min_fn</span>(<span class="self">self</span>.as_ptr(), val, order) }
@@ -4009,7 +4009,7 @@
 <a href=#4009 id=4009 data-nosnippet>4009</a>            </span><span class="attr">#[inline]
 <a href=#4010 id=4010 data-nosnippet>4010</a>            #[stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
 <a href=#4011 id=4011 data-nosnippet>4011</a>            #[rustc_const_stable(feature = <span class="string">"atomic_as_ptr"</span>, since = <span class="string">"1.70.0"</span>)]
-<a href=#4012 id=4012 data-nosnippet>4012</a>            #[rustc_never_returns_null_ptr]
+<a href=#4012 id=4012 data-nosnippet>4012</a>            #[lint::never_returns_null_ptr]
 <a href=#4013 id=4013 data-nosnippet>4013</a>            </span><span class="kw">pub const fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span><span class="macro-nonterminal">$int_type </span>{
 <a href=#4014 id=4014 data-nosnippet>4014</a>                <span class="self">self</span>.v.get().cast()
 <a href=#4015 id=4015 data-nosnippet>4015</a>            }
