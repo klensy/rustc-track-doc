@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/panicking.rs`."><title>panicking.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.101.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>panicking.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Panic support for core
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/panicking.rs`."><title>panicking.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>panicking.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Panic support for core
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! In core, panicking is always done with a message, resulting in a `core::panic::PanicInfo`
 <a href=#4 id=4 data-nosnippet>4</a>//! containing a `fmt::Arguments`. In std, however, panicking can be done with panic_any, which
@@ -28,8 +28,8 @@
 <a href=#28 id=28 data-nosnippet>28</a>    issue = <span class="string">"none"
 <a href=#29 id=29 data-nosnippet>29</a></span>)]
 <a href=#30 id=30 data-nosnippet>30</a>
-<a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">use </span><a href="lib.rs.html#331"><span class="kw">crate</span>::fmt</a>;
-<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span><a href="intrinsics/mod.rs.html#2518-2560"><span class="kw">crate</span>::intrinsics::const_eval_select</a>;
+<a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">use </span><a href="lib.rs.html#330"><span class="kw">crate</span>::fmt</a>;
+<a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span><a href="intrinsics/mod.rs.html#2508-2550"><span class="kw">crate</span>::intrinsics::const_eval_select</a>;
 <a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span><span class="kw">crate</span>::panic::{<a href="panic/location.rs.html#39-47">Location</a>, <a href="panic/panic_info.rs.html#14-19">PanicInfo</a>};
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="attr">#[cfg(feature = <span class="string">"panic_immediate_abort"</span>)]
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a></span><span class="attr">#[rustc_const_stable_indirect] </span><span class="comment">// must follow stable const rules since it is exposed to stable
 <a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub const fn </span><a href="../../core/panicking/fn.panic_fmt.html">panic_fmt</a>(fmt: fmt::<a href="fmt/mod.rs.html#716-719">Arguments</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; ! {
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#63 id=63 data-nosnippet>63</a>    }
 <a href=#64 id=64 data-nosnippet>64</a>
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="comment">// NOTE This function never crosses the FFI boundary; it's a Rust-to-Rust call
@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a>#[rustc_const_stable_indirect] </span><span class="comment">// must follow stable const rules since it is exposed to stable
 <a href=#94 id=94 data-nosnippet>94</a></span><span class="attr">#[rustc_allow_const_fn_unstable(const_eval_select)]
 <a href=#95 id=95 data-nosnippet>95</a></span><span class="kw">pub const fn </span><a href="../../core/panicking/fn.panic_nounwind_fmt.html">panic_nounwind_fmt</a>(fmt: fmt::<a href="fmt/mod.rs.html#716-719">Arguments</a>&lt;<span class="lifetime">'_</span>&gt;, force_no_backtrace: <a href="../../core/primitive.bool.html">bool</a>) -&gt; ! {
-<a href=#96 id=96 data-nosnippet>96</a>    <a href="intrinsics/mod.rs.html#2518-2560">const_eval_select!</a>(
+<a href=#96 id=96 data-nosnippet>96</a>    <a href="intrinsics/mod.rs.html#2508-2550">const_eval_select!</a>(
 <a href=#97 id=97 data-nosnippet>97</a>        @capture { fmt: fmt::Arguments&lt;<span class="lifetime">'_</span>&gt;, force_no_backtrace: bool } -&gt; !:
 <a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">if const </span><span class="attr">#[track_caller] </span>{
 <a href=#99 id=99 data-nosnippet>99</a>            <span class="comment">// We don't unwind anyway at compile-time so we can call the regular `panic_fmt`.
@@ -265,7 +265,7 @@
 <a href=#265 id=265 data-nosnippet>265</a>#[lang = <span class="string">"panic_bounds_check"</span>] </span><span class="comment">// needed by codegen for panic on OOB array/slice access
 <a href=#266 id=266 data-nosnippet>266</a></span><span class="kw">fn </span>panic_bounds_check(index: <a href="../../core/primitive.usize.html">usize</a>, len: <a href="../../core/primitive.usize.html">usize</a>) -&gt; ! {
 <a href=#267 id=267 data-nosnippet>267</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#269 id=269 data-nosnippet>269</a>    }
 <a href=#270 id=270 data-nosnippet>270</a>
 <a href=#271 id=271 data-nosnippet>271</a>    <a href="macros/mod.rs.html#7-13">panic!</a>(<span class="string">"index out of bounds: the len is {len} but the index is {index}"</span>)
@@ -278,7 +278,7 @@
 <a href=#278 id=278 data-nosnippet>278</a></span><span class="attr">#[rustc_nounwind] </span><span class="comment">// `CheckAlignment` MIR pass requires this function to never unwind
 <a href=#279 id=279 data-nosnippet>279</a></span><span class="kw">fn </span>panic_misaligned_pointer_dereference(required: <a href="../../core/primitive.usize.html">usize</a>, found: <a href="../../core/primitive.usize.html">usize</a>) -&gt; ! {
 <a href=#280 id=280 data-nosnippet>280</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#282 id=282 data-nosnippet>282</a>    }
 <a href=#283 id=283 data-nosnippet>283</a>
 <a href=#284 id=284 data-nosnippet>284</a>    <a href="#95-125">panic_nounwind_fmt</a>(
@@ -296,7 +296,7 @@
 <a href=#296 id=296 data-nosnippet>296</a></span><span class="attr">#[rustc_nounwind] </span><span class="comment">// `CheckNull` MIR pass requires this function to never unwind
 <a href=#297 id=297 data-nosnippet>297</a></span><span class="kw">fn </span>panic_null_pointer_dereference() -&gt; ! {
 <a href=#298 id=298 data-nosnippet>298</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#300 id=300 data-nosnippet>300</a>    }
 <a href=#301 id=301 data-nosnippet>301</a>
 <a href=#302 id=302 data-nosnippet>302</a>    <a href="#95-125">panic_nounwind_fmt</a>(
@@ -312,7 +312,7 @@
 <a href=#312 id=312 data-nosnippet>312</a></span><span class="attr">#[rustc_nounwind] </span><span class="comment">// `CheckNull` MIR pass requires this function to never unwind
 <a href=#313 id=313 data-nosnippet>313</a></span><span class="kw">fn </span>panic_null_reference_constructed() -&gt; ! {
 <a href=#314 id=314 data-nosnippet>314</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#315 id=315 data-nosnippet>315</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#315 id=315 data-nosnippet>315</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#316 id=316 data-nosnippet>316</a>    }
 <a href=#317 id=317 data-nosnippet>317</a>
 <a href=#318 id=318 data-nosnippet>318</a>    <a href="#95-125">panic_nounwind_fmt</a>(<a href="macros/mod.rs.html#1004-1007">format_args!</a>(<span class="string">"null reference produced"</span>), <span class="comment">/* force_no_backtrace */ </span><span class="bool-val">false</span>)
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a></span><span class="attr">#[rustc_nounwind] </span><span class="comment">// `CheckEnums` MIR pass requires this function to never unwind
 <a href=#326 id=326 data-nosnippet>326</a></span><span class="kw">fn </span>panic_invalid_enum_construction(source: <a href="../../core/primitive.u128.html">u128</a>) -&gt; ! {
 <a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">if </span><a href="macros/mod.rs.html#1424-1428">cfg!</a>(panic = <span class="string">"immediate-abort"</span>) {
-<a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#635">abort_immediate</a>()
+<a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">super</span>::intrinsics::<a href="intrinsics/mod.rs.html#634">abort_immediate</a>()
 <a href=#329 id=329 data-nosnippet>329</a>    }
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>    <a href="#95-125">panic_nounwind_fmt</a>(

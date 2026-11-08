@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/task/wake.rs`."><title>wake.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/task/</div>wake.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/task/wake.rs`."><title>wake.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/task/</div>wake.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><a href="../any.rs.html#117-139"><span class="kw">crate</span>::any::Any</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../marker.rs.html#811"><span class="kw">crate</span>::marker::PhantomData</a>;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../mem/manually_drop.rs.html#156-158">ManuallyDrop</a>, <a href="../intrinsics/mod.rs.html#1110">transmute</a>};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../mem/manually_drop.rs.html#156-158">ManuallyDrop</a>, <a href="../intrinsics/mod.rs.html#1104">transmute</a>};
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../panic/unwind_safe.rs.html#171"><span class="kw">crate</span>::panic::AssertUnwindSafe</a>;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#278">ptr</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#277">ptr</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// A `RawWaker` allows the implementor of a task executor to create a [`Waker`]
 <a href=#10 id=10 data-nosnippet>10</a>/// or a [`LocalWaker`] which provides customized wakeup behavior.
@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>/// be sent across threads.
 <a href=#108 id=108 data-nosnippet>108</a></span><span class="attr">#[stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
 <a href=#109 id=109 data-nosnippet>109</a>#[allow(unpredictable_function_pointer_comparisons)]
-<a href=#110 id=110 data-nosnippet>110</a>#[derive(<a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#110 id=110 data-nosnippet>110</a>#[derive(<a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#111 id=111 data-nosnippet>111</a></span><span class="comment">// For bit-stuffing pointers we guarantee align &gt;= 8.
 <a href=#112 id=112 data-nosnippet>112</a></span><span class="attr">#[repr(align(<span class="number">8</span>))]
 <a href=#113 id=113 data-nosnippet>113</a></span><span class="kw">pub struct </span><a href="../../../core/task/struct.RawWakerVTable.html">RawWakerVTable</a> {
@@ -322,7 +322,7 @@
 <a href=#322 id=322 data-nosnippet>322</a>    #[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
 <a href=#323 id=323 data-nosnippet>323</a>    </span><span class="kw">pub const fn </span>from_waker(waker: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#411-413">Waker</a>) -&gt; <span class="self">Self </span>{
 <a href=#324 id=324 data-nosnippet>324</a>        <span class="comment">// SAFETY: LocalWaker is just Waker without thread safety
-<a href=#325 id=325 data-nosnippet>325</a>        </span><span class="kw">let </span>local_waker = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#323">waker</a>) };
+<a href=#325 id=325 data-nosnippet>325</a>        </span><span class="kw">let </span>local_waker = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#323">waker</a>) };
 <a href=#326 id=326 data-nosnippet>326</a>        <span class="self">Self </span>{
 <a href=#327 id=327 data-nosnippet>327</a>            <a href="#323">waker</a>,
 <a href=#328 id=328 data-nosnippet>328</a>            <a href="#325">local_waker</a>,
@@ -600,8 +600,8 @@
 <a href=#600 id=600 data-nosnippet>600</a>        </span><span class="kw">static </span>VTABLE: <a href="#113-144">RawWakerVTable</a> = <span class="kw">unsafe </span>{
 <a href=#601 id=601 data-nosnippet>601</a>            <a href="#113-144">RawWakerVTable</a>::<a href="#200-207">new</a>(
 <a href=#602 id=602 data-nosnippet>602</a>                |this| <a href="#22-31">RawWaker</a>::<a href="#56-58">new</a>(<a href="#602">this</a>, <span class="kw-2">&amp;</span><a href="#600-607">VTABLE</a>),
-<a href=#603 id=603 data-nosnippet>603</a>                |this| <a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#603">this</a>)(),
-<a href=#604 id=604 data-nosnippet>604</a>                |this| <a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#604">this</a>)(),
+<a href=#603 id=603 data-nosnippet>603</a>                |this| <a href="../intrinsics/mod.rs.html#1104">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#603">this</a>)(),
+<a href=#604 id=604 data-nosnippet>604</a>                |this| <a href="../intrinsics/mod.rs.html#1104">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#604">this</a>)(),
 <a href=#605 id=605 data-nosnippet>605</a>                |<span class="kw">_</span>| {},
 <a href=#606 id=606 data-nosnippet>606</a>            )
 <a href=#607 id=607 data-nosnippet>607</a>        };
@@ -614,7 +614,7 @@
 <a href=#614 id=614 data-nosnippet>614</a>}
 <a href=#615 id=615 data-nosnippet>615</a>
 <a href=#616 id=616 data-nosnippet>616</a><span class="attr">#[stable(feature = <span class="string">"futures_api"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#617 id=617 data-nosnippet>617</a></span><span class="kw">impl </span><a href="../clone.rs.html#194-251">Clone</a> <span class="kw">for </span><a href="#411-413">Waker</a> {
+<a href=#617 id=617 data-nosnippet>617</a></span><span class="kw">impl </span><a href="../clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#411-413">Waker</a> {
 <a href=#618 id=618 data-nosnippet>618</a>    <span class="attr">#[inline]
 <a href=#619 id=619 data-nosnippet>619</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#620 id=620 data-nosnippet>620</a>        <a href="#411-413">Waker</a> {
@@ -918,8 +918,8 @@
 <a href=#918 id=918 data-nosnippet>918</a>        </span><span class="kw">static </span>VTABLE: <a href="#113-144">RawWakerVTable</a> = <span class="kw">unsafe </span>{
 <a href=#919 id=919 data-nosnippet>919</a>            <a href="#113-144">RawWakerVTable</a>::<a href="#200-207">new</a>(
 <a href=#920 id=920 data-nosnippet>920</a>                |this| <a href="#22-31">RawWaker</a>::<a href="#56-58">new</a>(<a href="#920">this</a>, <span class="kw-2">&amp;</span><a href="#918-925">VTABLE</a>),
-<a href=#921 id=921 data-nosnippet>921</a>                |this| <a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#921">this</a>)(),
-<a href=#922 id=922 data-nosnippet>922</a>                |this| <a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#922">this</a>)(),
+<a href=#921 id=921 data-nosnippet>921</a>                |this| <a href="../intrinsics/mod.rs.html#1104">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#921">this</a>)(),
+<a href=#922 id=922 data-nosnippet>922</a>                |this| <a href="../intrinsics/mod.rs.html#1104">transmute</a>::&lt;<span class="kw-2">*const </span>(), <span class="kw">fn</span>()&gt;(<a href="#922">this</a>)(),
 <a href=#923 id=923 data-nosnippet>923</a>                |<span class="kw">_</span>| {},
 <a href=#924 id=924 data-nosnippet>924</a>            )
 <a href=#925 id=925 data-nosnippet>925</a>        };
@@ -931,7 +931,7 @@
 <a href=#931 id=931 data-nosnippet>931</a>    }
 <a href=#932 id=932 data-nosnippet>932</a>}
 <a href=#933 id=933 data-nosnippet>933</a><span class="attr">#[unstable(feature = <span class="string">"local_waker"</span>, issue = <span class="string">"118959"</span>)]
-<a href=#934 id=934 data-nosnippet>934</a></span><span class="kw">impl </span><a href="../clone.rs.html#194-251">Clone</a> <span class="kw">for </span><a href="#745-747">LocalWaker</a> {
+<a href=#934 id=934 data-nosnippet>934</a></span><span class="kw">impl </span><a href="../clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#745-747">LocalWaker</a> {
 <a href=#935 id=935 data-nosnippet>935</a>    <span class="attr">#[inline]
 <a href=#936 id=936 data-nosnippet>936</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#937 id=937 data-nosnippet>937</a>        <a href="#745-747">LocalWaker</a> {
@@ -955,7 +955,7 @@
 <a href=#955 id=955 data-nosnippet>955</a></span><span class="kw">const impl </span><a href="../convert/mod.rs.html#220-224">AsRef</a>&lt;<a href="#745-747">LocalWaker</a>&gt; <span class="kw">for </span><a href="#411-413">Waker</a> {
 <a href=#956 id=956 data-nosnippet>956</a>    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><a href="#745-747">LocalWaker</a> {
 <a href=#957 id=957 data-nosnippet>957</a>        <span class="comment">// SAFETY: LocalWaker is just Waker without thread safety
-<a href=#958 id=958 data-nosnippet>958</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#956">self</a>) }
+<a href=#958 id=958 data-nosnippet>958</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#956">self</a>) }
 <a href=#959 id=959 data-nosnippet>959</a>    }
 <a href=#960 id=960 data-nosnippet>960</a>}
 <a href=#961 id=961 data-nosnippet>961</a>

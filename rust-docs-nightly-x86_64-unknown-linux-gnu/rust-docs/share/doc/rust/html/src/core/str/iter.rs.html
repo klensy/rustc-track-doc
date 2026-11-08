@@ -1,20 +1,20 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::pattern::{<a href="pattern.rs.html#362">DoubleEndedSearcher</a>, <a href="pattern.rs.html#99-168">Pattern</a>, <a href="pattern.rs.html#290-339">ReverseSearcher</a>, <a href="pattern.rs.html#213-274">Searcher</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::validations::{<a href="validations.rs.html#35-69">next_code_point</a>, <a href="validations.rs.html#78-112">next_code_point_reverse</a>};
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use super</span>::{
-<a href=#6 id=6 data-nosnippet>6</a>    <a href="mod.rs.html#3306-3354">BytesIsNotEmpty</a>, <a href="mod.rs.html#3306-3354">CharEscapeDebug</a>, <a href="mod.rs.html#3306-3354">CharEscapeDefault</a>, <a href="mod.rs.html#3306-3354">CharEscapeUnicode</a>, <a href="mod.rs.html#3306-3354">IsAsciiWhitespace</a>,
-<a href=#7 id=7 data-nosnippet>7</a>    <a href="mod.rs.html#3306-3354">IsNotEmpty</a>, <a href="mod.rs.html#3306-3354">IsWhitespace</a>, <a href="mod.rs.html#3306-3354">LinesMap</a>, <a href="mod.rs.html#3306-3354">UnsafeBytesToStr</a>, <a href="converts.rs.html#178-182">from_utf8_unchecked</a>,
+<a href=#6 id=6 data-nosnippet>6</a>    <a href="mod.rs.html#3325-3373">BytesIsNotEmpty</a>, <a href="mod.rs.html#3325-3373">CharEscapeDebug</a>, <a href="mod.rs.html#3325-3373">CharEscapeDefault</a>, <a href="mod.rs.html#3325-3373">CharEscapeUnicode</a>, <a href="mod.rs.html#3325-3373">IsAsciiWhitespace</a>,
+<a href=#7 id=7 data-nosnippet>7</a>    <a href="mod.rs.html#3325-3373">IsNotEmpty</a>, <a href="mod.rs.html#3325-3373">IsWhitespace</a>, <a href="mod.rs.html#3325-3373">LinesMap</a>, <a href="mod.rs.html#3325-3373">UnsafeBytesToStr</a>, <a href="converts.rs.html#178-182">from_utf8_unchecked</a>,
 <a href=#8 id=8 data-nosnippet>8</a>};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../lib.rs.html#307"><span class="kw">crate</span>::char</a> <span class="kw">as </span>char_mod;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#331">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../lib.rs.html#306"><span class="kw">crate</span>::char</a> <span class="kw">as </span>char_mod;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#330">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::iter::{
 <a href=#12 id=12 data-nosnippet>12</a>    <a href="../iter/adapters/copied.rs.html#19-21">Copied</a>, <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>, <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>, <a href="../iter/traits/marker.rs.html#32">FusedIterator</a>, <a href="../iter/adapters/map.rs.html#61-65">Map</a>, <a href="../iter/traits/marker.rs.html#67">TrustedLen</a>, <a href="../iter/adapters/zip.rs.html#559">TrustedRandomAccess</a>,
 <a href=#13 id=13 data-nosnippet>13</a>    <a href="../iter/adapters/zip.rs.html#572-583">TrustedRandomAccessNoCoerce</a>,
 <a href=#14 id=14 data-nosnippet>14</a>};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><a href="../num/nonzero.rs.html#112"><span class="kw">crate</span>::num::NonZero</a>;
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><a href="../ops/try_trait.rs.html#133-220"><span class="kw">crate</span>::ops::Try</a>;
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#333">self</a>, <a href="../slice/iter.rs.html#399-408">Split</a> <span class="kw">as </span>SliceSplit};
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#332">self</a>, <a href="../slice/iter.rs.html#399-408">Split</a> <span class="kw">as </span>SliceSplit};
 <a href=#18 id=18 data-nosnippet>18</a>
 <a href=#19 id=19 data-nosnippet>19</a><span class="doccomment">/// An iterator over the [`char`]s of a string slice.
 <a href=#20 id=20 data-nosnippet>20</a>///
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>///
 <a href=#25 id=25 data-nosnippet>25</a>/// [`char`]: prim@char
 <a href=#26 id=26 data-nosnippet>26</a>/// [`chars`]: str::chars
-<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(<a href="../clone.rs.html#289-291">Clone</a>)]
+<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(<a href="../clone.rs.html#290-292">Clone</a>)]
 <a href=#28 id=28 data-nosnippet>28</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#29 id=29 data-nosnippet>29</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#30 id=30 data-nosnippet>30</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Chars.html">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>///
 <a href=#167 id=167 data-nosnippet>167</a>/// [`char`]: prim@char
 <a href=#168 id=168 data-nosnippet>168</a>/// [`char_indices`]: str::char_indices
-<a href=#169 id=169 data-nosnippet>169</a></span><span class="attr">#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#169 id=169 data-nosnippet>169</a></span><span class="attr">#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#170 id=170 data-nosnippet>170</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#171 id=171 data-nosnippet>171</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#172 id=172 data-nosnippet>172</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.CharIndices.html">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -280,7 +280,7 @@
 <a href=#280 id=280 data-nosnippet>280</a>/// [`bytes`]: str::bytes
 <a href=#281 id=281 data-nosnippet>281</a></span><span class="attr">#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#282 id=282 data-nosnippet>282</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#283 id=283 data-nosnippet>283</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#283 id=283 data-nosnippet>283</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Bytes.html">Bytes</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/copied.rs.html#19-21">Copied</a>&lt;slice::<a href="../slice/iter.rs.html#67-78">Iter</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;&gt;);
 <a href=#285 id=285 data-nosnippet>285</a>
 <a href=#286 id=286 data-nosnippet>286</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
@@ -1158,8 +1158,8 @@
 <a href=#1158 id=1158 data-nosnippet>1158</a>/// [`lines`]: str::lines
 <a href=#1159 id=1159 data-nosnippet>1159</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1160 id=1160 data-nosnippet>1160</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
-<a href=#1161 id=1161 data-nosnippet>1161</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
-<a href=#1162 id=1162 data-nosnippet>1162</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3306-3354">LinesMap</a>&gt;);
+<a href=#1161 id=1161 data-nosnippet>1161</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1162 id=1162 data-nosnippet>1162</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3325-3373">LinesMap</a>&gt;);
 <a href=#1163 id=1163 data-nosnippet>1163</a>
 <a href=#1164 id=1164 data-nosnippet>1164</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1165 id=1165 data-nosnippet>1165</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1162">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -1223,7 +1223,7 @@
 <a href=#1223 id=1223 data-nosnippet>1223</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1224 id=1224 data-nosnippet>1224</a>#[deprecated(since = <span class="string">"1.4.0"</span>, note = <span class="string">"use lines()/Lines instead now"</span>)]
 <a href=#1225 id=1225 data-nosnippet>1225</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
-<a href=#1226 id=1226 data-nosnippet>1226</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1226 id=1226 data-nosnippet>1226</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1227 id=1227 data-nosnippet>1227</a>#[allow(deprecated)]
 <a href=#1228 id=1228 data-nosnippet>1228</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.LinesAny.html">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="#1162">Lines</a>&lt;<span class="lifetime">'a</span>&gt;);
 <a href=#1229 id=1229 data-nosnippet>1229</a>
@@ -1264,9 +1264,9 @@
 <a href=#1264 id=1264 data-nosnippet>1264</a>///
 <a href=#1265 id=1265 data-nosnippet>1265</a>/// [`split_whitespace`]: str::split_whitespace
 <a href=#1266 id=1266 data-nosnippet>1266</a></span><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1267 id=1267 data-nosnippet>1267</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1267 id=1267 data-nosnippet>1267</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1268 id=1268 data-nosnippet>1268</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitWhitespace.html">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1269 id=1269 data-nosnippet>1269</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="#786-802">Split</a>&lt;<span class="lifetime">'a</span>, <a href="mod.rs.html#3306-3354">IsWhitespace</a>&gt;, <a href="mod.rs.html#3306-3354">IsNotEmpty</a>&gt;,
+<a href=#1269 id=1269 data-nosnippet>1269</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="#786-802">Split</a>&lt;<span class="lifetime">'a</span>, <a href="mod.rs.html#3325-3373">IsWhitespace</a>&gt;, <a href="mod.rs.html#3325-3373">IsNotEmpty</a>&gt;,
 <a href=#1270 id=1270 data-nosnippet>1270</a>}
 <a href=#1271 id=1271 data-nosnippet>1271</a>
 <a href=#1272 id=1272 data-nosnippet>1272</a><span class="doccomment">/// An iterator over the non-ASCII-whitespace substrings of a string,
@@ -1277,10 +1277,10 @@
 <a href=#1277 id=1277 data-nosnippet>1277</a>///
 <a href=#1278 id=1278 data-nosnippet>1278</a>/// [`split_ascii_whitespace`]: str::split_ascii_whitespace
 <a href=#1279 id=1279 data-nosnippet>1279</a></span><span class="attr">#[stable(feature = <span class="string">"split_ascii_whitespace"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1280 id=1280 data-nosnippet>1280</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1280 id=1280 data-nosnippet>1280</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1281 id=1281 data-nosnippet>1281</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitAsciiWhitespace.html">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1282 id=1282 data-nosnippet>1282</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner:
-<a href=#1283 id=1283 data-nosnippet>1283</a>        <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="../slice/iter.rs.html#399-408">SliceSplit</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>, <a href="mod.rs.html#3306-3354">IsAsciiWhitespace</a>&gt;, <a href="mod.rs.html#3306-3354">BytesIsNotEmpty</a>&gt;, <a href="mod.rs.html#3306-3354">UnsafeBytesToStr</a>&gt;,
+<a href=#1283 id=1283 data-nosnippet>1283</a>        <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="../slice/iter.rs.html#399-408">SliceSplit</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>, <a href="mod.rs.html#3325-3373">IsAsciiWhitespace</a>&gt;, <a href="mod.rs.html#3325-3373">BytesIsNotEmpty</a>&gt;, <a href="mod.rs.html#3325-3373">UnsafeBytesToStr</a>&gt;,
 <a href=#1284 id=1284 data-nosnippet>1284</a>}
 <a href=#1285 id=1285 data-nosnippet>1285</a>
 <a href=#1286 id=1286 data-nosnippet>1286</a><span class="doccomment">/// An iterator over the substrings of a string,
@@ -1433,7 +1433,7 @@
 <a href=#1433 id=1433 data-nosnippet>1433</a>
 <a href=#1434 id=1434 data-nosnippet>1434</a><span class="comment">// FIXME(#26925) Remove in favor of `#[derive(Clone)]`
 <a href=#1435 id=1435 data-nosnippet>1435</a></span><span class="attr">#[stable(feature = <span class="string">"split_inclusive"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#1436 id=1436 data-nosnippet>1436</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#99-168">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../clone.rs.html#194-251">Clone</a>&gt;&gt; <a href="../clone.rs.html#194-251">Clone</a> <span class="kw">for </span><a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
+<a href=#1436 id=1436 data-nosnippet>1436</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#99-168">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../clone.rs.html#194-252">Clone</a>&gt;&gt; <a href="../clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#1296">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
 <a href=#1437 id=1437 data-nosnippet>1437</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#1438 id=1438 data-nosnippet>1438</a>        <a href="#1296">SplitInclusive</a>(<a class="self" href="#1437">self</a>.<span class="number">0</span>.<a href="../clone.rs.html#236">clone</a>())
 <a href=#1439 id=1439 data-nosnippet>1439</a>    }
@@ -1481,7 +1481,7 @@
 <a href=#1481 id=1481 data-nosnippet>1481</a>/// See its documentation for more.
 <a href=#1482 id=1482 data-nosnippet>1482</a>///
 <a href=#1483 id=1483 data-nosnippet>1483</a>/// [`encode_utf16`]: str::encode_utf16
-<a href=#1484 id=1484 data-nosnippet>1484</a></span><span class="attr">#[derive(<a href="../clone.rs.html#289-291">Clone</a>)]
+<a href=#1484 id=1484 data-nosnippet>1484</a></span><span class="attr">#[derive(<a href="../clone.rs.html#290-292">Clone</a>)]
 <a href=#1485 id=1485 data-nosnippet>1485</a>#[stable(feature = <span class="string">"encode_utf16"</span>, since = <span class="string">"1.8.0"</span>)]
 <a href=#1486 id=1486 data-nosnippet>1486</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EncodeUtf16.html">EncodeUtf16</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1487 id=1487 data-nosnippet>1487</a>    <span class="kw">pub</span>(<span class="kw">super</span>) chars: <a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;,
@@ -1577,16 +1577,16 @@
 <a href=#1577 id=1577 data-nosnippet>1577</a>
 <a href=#1578 id=1578 data-nosnippet>1578</a><span class="doccomment">/// The return type of [`str::escape_debug`].
 <a href=#1579 id=1579 data-nosnippet>1579</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1580 id=1580 data-nosnippet>1580</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1580 id=1580 data-nosnippet>1580</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1581 id=1581 data-nosnippet>1581</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDebug.html">EscapeDebug</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1582 id=1582 data-nosnippet>1582</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#310">EscapeDebug</a>, <a href="mod.rs.html#3306-3354">CharEscapeDebug</a>&gt;,
+<a href=#1582 id=1582 data-nosnippet>1582</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#310">EscapeDebug</a>, <a href="mod.rs.html#3325-3373">CharEscapeDebug</a>&gt;,
 <a href=#1583 id=1583 data-nosnippet>1583</a>}
 <a href=#1584 id=1584 data-nosnippet>1584</a>
 <a href=#1585 id=1585 data-nosnippet>1585</a><span class="doccomment">/// The return type of [`str::escape_default`].
 <a href=#1586 id=1586 data-nosnippet>1586</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1587 id=1587 data-nosnippet>1587</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1587 id=1587 data-nosnippet>1587</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1588 id=1588 data-nosnippet>1588</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDefault.html">EscapeDefault</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1589 id=1589 data-nosnippet>1589</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#233">EscapeDefault</a>, <a href="mod.rs.html#3306-3354">CharEscapeDefault</a>&gt;,
+<a href=#1589 id=1589 data-nosnippet>1589</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#233">EscapeDefault</a>, <a href="mod.rs.html#3325-3373">CharEscapeDefault</a>&gt;,
 <a href=#1590 id=1590 data-nosnippet>1590</a>}
 <a href=#1591 id=1591 data-nosnippet>1591</a>
 <a href=#1592 id=1592 data-nosnippet>1592</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="#1588-1590">EscapeDefault</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -1603,9 +1603,9 @@
 <a href=#1603 id=1603 data-nosnippet>1603</a>
 <a href=#1604 id=1604 data-nosnippet>1604</a><span class="doccomment">/// The return type of [`str::escape_unicode`].
 <a href=#1605 id=1605 data-nosnippet>1605</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1606 id=1606 data-nosnippet>1606</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1606 id=1606 data-nosnippet>1606</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#1607 id=1607 data-nosnippet>1607</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeUnicode.html">EscapeUnicode</a>&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#1608 id=1608 data-nosnippet>1608</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#167">EscapeUnicode</a>, <a href="mod.rs.html#3306-3354">CharEscapeUnicode</a>&gt;,
+<a href=#1608 id=1608 data-nosnippet>1608</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#167">EscapeUnicode</a>, <a href="mod.rs.html#3325-3373">CharEscapeUnicode</a>&gt;,
 <a href=#1609 id=1609 data-nosnippet>1609</a>}
 <a href=#1610 id=1610 data-nosnippet>1610</a>
 <a href=#1611 id=1611 data-nosnippet>1611</a><span class="macro">macro_rules!</span> escape_types_impls {

@@ -1,14 +1,14 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/alloc/layout.rs`."><title>layout.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/alloc/</div>layout.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// Seemingly inconsequential code changes to this file can lead to measurable
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/alloc/layout.rs`."><title>layout.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/alloc/</div>layout.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// Seemingly inconsequential code changes to this file can lead to measurable
 <a href=#2 id=2 data-nosnippet>2</a>// performance impact on compilation times, due at least in part to the fact
 <a href=#3 id=3 data-nosnippet>3</a>// that the layout code gets called from many instantiations of the various
 <a href=#4 id=4 data-nosnippet>4</a>// collections, resulting in having to optimize down excess IR multiple times.
 <a href=#5 id=5 data-nosnippet>5</a>// Your performance intuition is useless. Run perf.
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span><a href="../error.rs.html#59-261"><span class="kw">crate</span>::error::Error</a>;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::{<a href="../intrinsics/mod.rs.html#2089">unchecked_add</a>, <a href="../intrinsics/mod.rs.html#2109">unchecked_mul</a>, <a href="../intrinsics/mod.rs.html#2099">unchecked_sub</a>};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::{<a href="../intrinsics/mod.rs.html#2082">unchecked_add</a>, <a href="../intrinsics/mod.rs.html#2102">unchecked_mul</a>, <a href="../intrinsics/mod.rs.html#2092">unchecked_sub</a>};
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../mem/alignment.rs.html#17-22">Alignment</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../ptr/non_null.rs.html#78-80"><span class="kw">crate</span>::ptr::NonNull</a>;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use crate</span>::{<a href="../ub_checks.rs.html#53-82">assert_unsafe_precondition</a>, <a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#275">mem</a>};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use crate</span>::{<a href="../ub_checks.rs.html#53-82">assert_unsafe_precondition</a>, <a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#274">mem</a>};
 <a href=#12 id=12 data-nosnippet>12</a>
 <a href=#13 id=13 data-nosnippet>13</a><span class="doccomment">/// Layout of a block of memory.
 <a href=#14 id=14 data-nosnippet>14</a>///
@@ -25,7 +25,7 @@
 <a href=#25 id=25 data-nosnippet>25</a>/// like this are met, use specific allocators with looser
 <a href=#26 id=26 data-nosnippet>26</a>/// requirements, or use the more lenient `Allocator` interface.)
 <a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[stable(feature = <span class="string">"alloc_layout"</span>, since = <span class="string">"1.28.0"</span>)]
-<a href=#28 id=28 data-nosnippet>28</a>#[derive(<a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../hash/mod.rs.html#250-252">Hash</a>)]
+<a href=#28 id=28 data-nosnippet>28</a>#[derive(<a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../hash/mod.rs.html#250-252">Hash</a>)]
 <a href=#29 id=29 data-nosnippet>29</a>#[lang = <span class="string">"alloc_layout"</span>]
 <a href=#30 id=30 data-nosnippet>30</a></span><span class="kw">pub struct </span><a href="../../../core/alloc/struct.Layout.html">Layout</a> {
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="comment">// size of the requested block of memory, measured in bytes.
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub const fn </span>from_size_align(size: <a href="../../../core/primitive.usize.html">usize</a>, align: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;<span class="self">Self</span>, <a href="#612">LayoutError</a>&gt; {
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">if </span><a href="#30-42">Layout</a>::<a href="#69-72">is_size_align_valid</a>(<a href="#59">size</a>, <a href="#59">align</a>) {
 <a href=#61 id=61 data-nosnippet>61</a>            <span class="comment">// SAFETY: Layout::is_size_align_valid checks the preconditions for this call.
-<a href=#62 id=62 data-nosnippet>62</a>            </span><span class="kw">unsafe </span>{ <a class="prelude-val" href="../result.rs.html#562">Ok</a>(<a href="#30-42">Layout</a> { <a href="#59">size</a>, align: mem::<a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#59">align</a>) }) }
+<a href=#62 id=62 data-nosnippet>62</a>            </span><span class="kw">unsafe </span>{ <a class="prelude-val" href="../result.rs.html#562">Ok</a>(<a href="#30-42">Layout</a> { <a href="#59">size</a>, align: mem::<a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#59">align</a>) }) }
 <a href=#63 id=63 data-nosnippet>63</a>        } <span class="kw">else </span>{
 <a href=#64 id=64 data-nosnippet>64</a>            <a class="prelude-val" href="../result.rs.html#567">Err</a>(<a href="#612">LayoutError</a>)
 <a href=#65 id=65 data-nosnippet>65</a>        }
@@ -94,7 +94,7 @@
 <a href=#94 id=94 data-nosnippet>94</a>
 <a href=#95 id=95 data-nosnippet>95</a>        // SAFETY: the maximum possible alignment is `isize::MAX + 1`,
 <a href=#96 id=96 data-nosnippet>96</a>        // so the subtraction cannot overflow.
-<a href=#97 id=97 data-nosnippet>97</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2099">unchecked_sub</a>(<a href="../../../core/primitive.isize.html">isize</a>::<a href="../num/mod.rs.html#567-586">MAX</a> <span class="kw">as </span><a href="../../../core/primitive.usize.html">usize</a> + <span class="number">1</span>, <a href="#79">alignment</a>.<a href="../mem/alignment.rs.html#205-210">as_usize</a>()) }
+<a href=#97 id=97 data-nosnippet>97</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2092">unchecked_sub</a>(<a href="../../../core/primitive.isize.html">isize</a>::<a href="../num/mod.rs.html#567-586">MAX</a> <span class="kw">as </span><a href="../../../core/primitive.usize.html">usize</a> + <span class="number">1</span>, <a href="#79">alignment</a>.<a href="../mem/alignment.rs.html#205-210">as_usize</a>()) }
 <a href=#98 id=98 data-nosnippet>98</a>    }
 <a href=#99 id=99 data-nosnippet>99</a>
 <a href=#100 id=100 data-nosnippet>100</a>    <span class="doccomment">/// Constructs a `Layout` from a given `size` and `alignment`,
@@ -140,7 +140,7 @@
 <a href=#140 id=140 data-nosnippet>140</a>            ) =&gt; Layout::is_size_align_valid(size, align)
 <a href=#141 id=141 data-nosnippet>141</a>        );
 <a href=#142 id=142 data-nosnippet>142</a>        <span class="comment">// SAFETY: the caller is required to uphold the preconditions.
-<a href=#143 id=143 data-nosnippet>143</a>        </span><span class="kw">unsafe </span>{ <a href="#30-42">Layout</a> { <a href="#132">size</a>, align: mem::<a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#132">align</a>) } }
+<a href=#143 id=143 data-nosnippet>143</a>        </span><span class="kw">unsafe </span>{ <a href="#30-42">Layout</a> { <a href="#132">size</a>, align: mem::<a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#132">align</a>) } }
 <a href=#144 id=144 data-nosnippet>144</a>    }
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// Creates a layout, bypassing all checks.
@@ -341,7 +341,7 @@
 <a href=#341 id=341 data-nosnippet>341</a>    </span><span class="kw">pub const fn </span>padding_needed_for(<span class="kw-2">&amp;</span><span class="self">self</span>, alignment: <a href="../mem/alignment.rs.html#17-22">Alignment</a>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
 <a href=#342 id=342 data-nosnippet>342</a>        <span class="kw">let </span>len_rounded_up = <a class="self" href="#341">self</a>.<a href="#352-375">size_rounded_up_to_custom_alignment</a>(<a href="#341">alignment</a>);
 <a href=#343 id=343 data-nosnippet>343</a>        <span class="comment">// SAFETY: Cannot overflow because the rounded-up value is never less
-<a href=#344 id=344 data-nosnippet>344</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2099">unchecked_sub</a>(<a href="#342">len_rounded_up</a>, <a class="self" href="#341">self</a>.size) }
+<a href=#344 id=344 data-nosnippet>344</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2092">unchecked_sub</a>(<a href="#342">len_rounded_up</a>, <a class="self" href="#341">self</a>.size) }
 <a href=#345 id=345 data-nosnippet>345</a>    }
 <a href=#346 id=346 data-nosnippet>346</a>
 <a href=#347 id=347 data-nosnippet>347</a>    <span class="doccomment">/// Returns the smallest multiple of `align` greater than or equal to `self.size()`.
@@ -369,8 +369,8 @@
 <a href=#369 id=369 data-nosnippet>369</a>        // (Size 0 Align MAX is already aligned, so stays the same, but things like
 <a href=#370 id=370 data-nosnippet>370</a>        // Size 1 Align MAX or Size isize::MAX Align 2 round up to `isize::MAX + 1`.)
 <a href=#371 id=371 data-nosnippet>371</a>        </span><span class="kw">unsafe </span>{
-<a href=#372 id=372 data-nosnippet>372</a>            <span class="kw">let </span>align_m1 = <a href="../intrinsics/mod.rs.html#2099">unchecked_sub</a>(<a href="#352">alignment</a>.<a href="../mem/alignment.rs.html#205-210">as_usize</a>(), <span class="number">1</span>);
-<a href=#373 id=373 data-nosnippet>373</a>            <a href="../intrinsics/mod.rs.html#2089">unchecked_add</a>(<a class="self" href="#352">self</a>.size, <a href="#372">align_m1</a>) &amp; !<a href="#372">align_m1</a>
+<a href=#372 id=372 data-nosnippet>372</a>            <span class="kw">let </span>align_m1 = <a href="../intrinsics/mod.rs.html#2092">unchecked_sub</a>(<a href="#352">alignment</a>.<a href="../mem/alignment.rs.html#205-210">as_usize</a>(), <span class="number">1</span>);
+<a href=#373 id=373 data-nosnippet>373</a>            <a href="../intrinsics/mod.rs.html#2082">unchecked_add</a>(<a class="self" href="#352">self</a>.size, <a href="#372">align_m1</a>) &amp; !<a href="#372">align_m1</a>
 <a href=#374 id=374 data-nosnippet>374</a>        }
 <a href=#375 id=375 data-nosnippet>375</a>    }
 <a href=#376 id=376 data-nosnippet>376</a>
@@ -505,7 +505,7 @@
 <a href=#505 id=505 data-nosnippet>505</a>        // to `Alignment::MAX`) and `next.size` is at most `isize::MAX` (from the
 <a href=#506 id=506 data-nosnippet>506</a>        // `Layout` type invariant).  Thus the largest possible `new_size` is
 <a href=#507 id=507 data-nosnippet>507</a>        // `isize::MAX + 1 + isize::MAX`, which is `usize::MAX`, and cannot overflow.
-<a href=#508 id=508 data-nosnippet>508</a>        </span><span class="kw">let </span>new_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2089">unchecked_add</a>(<a href="#502">offset</a>, <a href="#500">next</a>.size) };
+<a href=#508 id=508 data-nosnippet>508</a>        </span><span class="kw">let </span>new_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2082">unchecked_add</a>(<a href="#502">offset</a>, <a href="#500">next</a>.size) };
 <a href=#509 id=509 data-nosnippet>509</a>
 <a href=#510 id=510 data-nosnippet>510</a>        <span class="kw">if let </span><a class="prelude-val" href="../result.rs.html#562">Ok</a>(layout) = <a href="#30-42">Layout</a>::<a href="#109-119">from_size_alignment</a>(<a href="#508">new_size</a>, <a href="#501">new_alignment</a>) {
 <a href=#511 id=511 data-nosnippet>511</a>            <a class="prelude-val" href="../result.rs.html#562">Ok</a>((<a href="#510">layout</a>, <a href="#502">offset</a>))
@@ -550,7 +550,7 @@
 <a href=#550 id=550 data-nosnippet>550</a>    </span><span class="kw">pub const fn </span>extend_packed(<span class="kw-2">&amp;</span><span class="self">self</span>, next: <span class="self">Self</span>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;<span class="self">Self</span>, <a href="#612">LayoutError</a>&gt; {
 <a href=#551 id=551 data-nosnippet>551</a>        <span class="comment">// SAFETY: each `size` is at most `isize::MAX == usize::MAX/2`, so the
 <a href=#552 id=552 data-nosnippet>552</a>        // sum is at most `usize::MAX/2*2 == usize::MAX - 1`, and cannot overflow.
-<a href=#553 id=553 data-nosnippet>553</a>        </span><span class="kw">let </span>new_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2089">unchecked_add</a>(<a class="self" href="#550">self</a>.size, <a href="#550">next</a>.size) };
+<a href=#553 id=553 data-nosnippet>553</a>        </span><span class="kw">let </span>new_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2082">unchecked_add</a>(<a class="self" href="#550">self</a>.size, <a href="#550">next</a>.size) };
 <a href=#554 id=554 data-nosnippet>554</a>        <span class="comment">// The safe constructor enforces that the new size isn't too big for the alignment
 <a href=#555 id=555 data-nosnippet>555</a>        </span><a href="#30-42">Layout</a>::<a href="#109-119">from_size_alignment</a>(<a href="#553">new_size</a>, <a class="self" href="#550">self</a>.align)
 <a href=#556 id=556 data-nosnippet>556</a>    }
@@ -584,7 +584,7 @@
 <a href=#584 id=584 data-nosnippet>584</a>            // This is a useless hint inside this function, but after inlining this helps
 <a href=#585 id=585 data-nosnippet>585</a>            // deduplicate checks for whether the overall capacity is zero (e.g., in RawVec's
 <a href=#586 id=586 data-nosnippet>586</a>            // allocation path) before/after this multiplication.
-<a href=#587 id=587 data-nosnippet>587</a>            </span><span class="kw">let </span>array_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2109">unchecked_mul</a>(<a href="#571">element_size</a>, <a href="#570">n</a>) };
+<a href=#587 id=587 data-nosnippet>587</a>            </span><span class="kw">let </span>array_size = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2102">unchecked_mul</a>(<a href="#571">element_size</a>, <a href="#570">n</a>) };
 <a href=#588 id=588 data-nosnippet>588</a>
 <a href=#589 id=589 data-nosnippet>589</a>            <span class="comment">// SAFETY: We just checked above that the `array_size` will not
 <a href=#590 id=590 data-nosnippet>590</a>            // exceed `isize::MAX` even when rounded up to the alignment.
@@ -608,7 +608,7 @@
 <a href=#608 id=608 data-nosnippet>608</a>/// do not satisfy its documented constraints.
 <a href=#609 id=609 data-nosnippet>609</a></span><span class="attr">#[stable(feature = <span class="string">"alloc_layout_error"</span>, since = <span class="string">"1.50.0"</span>)]
 <a href=#610 id=610 data-nosnippet>610</a>#[non_exhaustive]
-<a href=#611 id=611 data-nosnippet>611</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#611 id=611 data-nosnippet>611</a>#[derive(<a href="../clone.rs.html#290-292">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#612 id=612 data-nosnippet>612</a></span><span class="kw">pub struct </span><a href="../../../core/alloc/struct.LayoutError.html">LayoutError</a>;
 <a href=#613 id=613 data-nosnippet>613</a>
 <a href=#614 id=614 data-nosnippet>614</a><span class="attr">#[stable(feature = <span class="string">"alloc_layout"</span>, since = <span class="string">"1.28.0"</span>)]

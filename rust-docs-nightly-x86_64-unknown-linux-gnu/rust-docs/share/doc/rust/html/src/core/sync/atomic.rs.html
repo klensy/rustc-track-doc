@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/atomic.rs`."><title>atomic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>atomic.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Atomic types
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Atomic types provide primitive shared-memory communication between
 <a href=#4 id=4 data-nosnippet>4</a>//! threads, and are the building blocks of other concurrent
@@ -246,8 +246,8 @@
 <a href=#246 id=246 data-nosnippet>246</a><span class="kw">use </span><a href="../cell.rs.html#2313-2315"><span class="kw">crate</span>::cell::UnsafeCell</a>;
 <a href=#247 id=247 data-nosnippet>247</a><span class="kw">use </span><a href="../hint.rs.html#270-313"><span class="kw">crate</span>::hint::spin_loop</a>;
 <a href=#248 id=248 data-nosnippet>248</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#108-116"><span class="kw">crate</span>::intrinsics::AtomicOrdering</a> <span class="kw">as </span>AO;
-<a href=#249 id=249 data-nosnippet>249</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#1110"><span class="kw">crate</span>::mem::transmute</a>;
-<a href=#250 id=250 data-nosnippet>250</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#274">intrinsics</a>};
+<a href=#249 id=249 data-nosnippet>249</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#1104"><span class="kw">crate</span>::mem::transmute</a>;
+<a href=#250 id=250 data-nosnippet>250</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#273">intrinsics</a>};
 <a href=#251 id=251 data-nosnippet>251</a>
 <a href=#252 id=252 data-nosnippet>252</a><span class="attr">#[unstable(
 <a href=#253 id=253 data-nosnippet>253</a>    feature = <span class="string">"atomic_internals"</span>,
@@ -459,7 +459,7 @@
 <a href=#459 id=459 data-nosnippet>459</a>///
 <a href=#460 id=460 data-nosnippet>460</a>/// [nomicon]: ../../../nomicon/atomics.html
 <a href=#461 id=461 data-nosnippet>461</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#462 id=462 data-nosnippet>462</a>#[derive(<a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../hash/mod.rs.html#250-252">Hash</a>)]
+<a href=#462 id=462 data-nosnippet>462</a>#[derive(<a href="../marker.rs.html#462-464">Copy</a>, <a href="../clone.rs.html#290-292">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../cmp.rs.html#380-382">Eq</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../hash/mod.rs.html#250-252">Hash</a>)]
 <a href=#463 id=463 data-nosnippet>463</a>#[non_exhaustive]
 <a href=#464 id=464 data-nosnippet>464</a>#[rustc_diagnostic_item = <span class="string">"Ordering"</span>]
 <a href=#465 id=465 data-nosnippet>465</a></span><span class="kw">pub enum </span><a href="../../../core/sync/atomic/enum.Ordering.html">Ordering</a> {
@@ -555,7 +555,7 @@
 <a href=#555 id=555 data-nosnippet>555</a>    </span><span class="kw">pub const fn </span>new(v: <a href="../../../core/primitive.bool.html">bool</a>) -&gt; <a href="#416">AtomicBool</a> {
 <a href=#556 id=556 data-nosnippet>556</a>        <span class="comment">// SAFETY:
 <a href=#557 id=557 data-nosnippet>557</a>        // `Atomic&lt;T&gt;` is essentially a transparent wrapper around `T`.
-<a href=#558 id=558 data-nosnippet>558</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#555">v</a>) }
+<a href=#558 id=558 data-nosnippet>558</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#555">v</a>) }
 <a href=#559 id=559 data-nosnippet>559</a>    }
 <a href=#560 id=560 data-nosnippet>560</a>
 <a href=#561 id=561 data-nosnippet>561</a>    <span class="doccomment">/// Creates a new `AtomicBool` from a pointer.
@@ -741,7 +741,7 @@
 <a href=#741 id=741 data-nosnippet>741</a>        // * `Atomic&lt;T&gt;` is essentially a transparent wrapper around `T`.
 <a href=#742 id=742 data-nosnippet>742</a>        // * all operations on `Atomic&lt;bool&gt;` ensure that `T::Storage` remains
 <a href=#743 id=743 data-nosnippet>743</a>        //   a valid `bool`.
-<a href=#744 id=744 data-nosnippet>744</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#739">self</a>) }
+<a href=#744 id=744 data-nosnippet>744</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#739">self</a>) }
 <a href=#745 id=745 data-nosnippet>745</a>    }
 <a href=#746 id=746 data-nosnippet>746</a>
 <a href=#747 id=747 data-nosnippet>747</a>    <span class="doccomment">/// Loads a value from the bool.
@@ -1593,7 +1593,7 @@
 <a href=#1593 id=1593 data-nosnippet>1593</a>    </span><span class="kw">pub const fn </span>new(p: <span class="kw-2">*mut </span>T) -&gt; <a href="#436">AtomicPtr</a>&lt;T&gt; {
 <a href=#1594 id=1594 data-nosnippet>1594</a>        <span class="comment">// SAFETY:
 <a href=#1595 id=1595 data-nosnippet>1595</a>        // `Atomic&lt;T&gt;` is essentially a transparent wrapper around `T`.
-<a href=#1596 id=1596 data-nosnippet>1596</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#1593">p</a>) }
+<a href=#1596 id=1596 data-nosnippet>1596</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#1593">p</a>) }
 <a href=#1597 id=1597 data-nosnippet>1597</a>    }
 <a href=#1598 id=1598 data-nosnippet>1598</a>
 <a href=#1599 id=1599 data-nosnippet>1599</a>    <span class="doccomment">/// Creates a new `AtomicPtr` from a pointer.
@@ -1823,7 +1823,7 @@
 <a href=#1823 id=1823 data-nosnippet>1823</a>    </span><span class="kw">pub const fn </span>into_inner(<span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>T {
 <a href=#1824 id=1824 data-nosnippet>1824</a>        <span class="comment">// SAFETY:
 <a href=#1825 id=1825 data-nosnippet>1825</a>        // `Atomic&lt;T&gt;` is essentially a transparent wrapper around `T`.
-<a href=#1826 id=1826 data-nosnippet>1826</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#1823">self</a>) }
+<a href=#1826 id=1826 data-nosnippet>1826</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#1823">self</a>) }
 <a href=#1827 id=1827 data-nosnippet>1827</a>    }
 <a href=#1828 id=1828 data-nosnippet>1828</a>
 <a href=#1829 id=1829 data-nosnippet>1829</a>    <span class="doccomment">/// Loads a value from the pointer.

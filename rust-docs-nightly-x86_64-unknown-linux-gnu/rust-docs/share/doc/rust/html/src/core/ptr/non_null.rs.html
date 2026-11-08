@@ -1,12 +1,12 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/non_null.rs`."><title>non_null.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.101.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>non_null.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../clone.rs.html#283"><span class="kw">crate</span>::clone::TrivialClone</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/non_null.rs`."><title>non_null.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>non_null.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../clone.rs.html#284"><span class="kw">crate</span>::clone::TrivialClone</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../cmp.rs.html#420-430"><span class="kw">crate</span>::cmp::Ordering</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::marker::{<a href="../marker.rs.html#1063">Destruct</a>, <a href="../marker.rs.html#190-192">PointeeSized</a>, <a href="../marker.rs.html#235-237">Unsize</a>};
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>, <a href="../intrinsics/mod.rs.html#1110">transmute</a>};
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>, <a href="../intrinsics/mod.rs.html#1104">transmute</a>};
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../num/nonzero.rs.html#112"><span class="kw">crate</span>::num::NonZero</a>;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a href="../ops/unsize.rs.html#36-38">CoerceUnsized</a>, <a href="../ops/unsize.rs.html#122-124">DispatchFromDyn</a>};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#333">self</a>, <a href="../slice/index.rs.html#124-174">SliceIndex</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#332">self</a>, <a href="../slice/index.rs.html#124-174">SliceIndex</a>};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="../ub_checks.rs.html#53-82"><span class="kw">crate</span>::ub_checks::assert_unsafe_precondition</a>;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#332">hash</a>, <a href="../lib.rs.html#274">intrinsics</a>, <a href="../lib.rs.html#275">mem</a>, <a href="../lib.rs.html#278">ptr</a>};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#331">hash</a>, <a href="../lib.rs.html#273">intrinsics</a>, <a href="../lib.rs.html#274">mem</a>, <a href="../lib.rs.html#277">ptr</a>};
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// `*mut T` but non-zero and [covariant].
 <a href=#12 id=12 data-nosnippet>12</a>///
@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>    #[inline]
 <a href=#102 id=102 data-nosnippet>102</a>    </span><span class="kw">pub const fn </span>without_provenance(addr: <a href="../num/nonzero.rs.html#112">NonZero</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="self">Self </span>{
 <a href=#103 id=103 data-nosnippet>103</a>        <span class="comment">// SAFETY: we know `addr` is non-zero and all nonzero integers are valid raw pointers.
-<a href=#104 id=104 data-nosnippet>104</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#102">addr</a>) }
+<a href=#104 id=104 data-nosnippet>104</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#102">addr</a>) }
 <a href=#105 id=105 data-nosnippet>105</a>    }
 <a href=#106 id=106 data-nosnippet>106</a>
 <a href=#107 id=107 data-nosnippet>107</a>    <span class="doccomment">/// Creates a new `NonNull` that is dangling, but well-aligned.
@@ -243,7 +243,7 @@
 <a href=#243 id=243 data-nosnippet>243</a>                <span class="string">"NonNull::new_unchecked requires that the pointer is non-null"</span>,
 <a href=#244 id=244 data-nosnippet>244</a>                (ptr: <span class="kw-2">*mut </span>() = ptr <span class="kw">as </span><span class="kw-2">*mut </span>()) =&gt; !ptr.is_null()
 <a href=#245 id=245 data-nosnippet>245</a>            );
-<a href=#246 id=246 data-nosnippet>246</a>            <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#238">ptr</a>)
+<a href=#246 id=246 data-nosnippet>246</a>            <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#238">ptr</a>)
 <a href=#247 id=247 data-nosnippet>247</a>        }
 <a href=#248 id=248 data-nosnippet>248</a>    }
 <a href=#249 id=249 data-nosnippet>249</a>
@@ -290,7 +290,7 @@
 <a href=#290 id=290 data-nosnippet>290</a>    #[inline]
 <a href=#291 id=291 data-nosnippet>291</a>    </span><span class="kw">pub const fn </span>from_ref(r: <span class="kw-2">&amp;</span>T) -&gt; <span class="self">Self </span>{
 <a href=#292 id=292 data-nosnippet>292</a>        <span class="comment">// SAFETY: A reference cannot be null.
-<a href=#293 id=293 data-nosnippet>293</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#291">r</a> <span class="kw">as </span><span class="kw-2">*const </span>T) }
+<a href=#293 id=293 data-nosnippet>293</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#291">r</a> <span class="kw">as </span><span class="kw-2">*const </span>T) }
 <a href=#294 id=294 data-nosnippet>294</a>    }
 <a href=#295 id=295 data-nosnippet>295</a>
 <a href=#296 id=296 data-nosnippet>296</a>    <span class="doccomment">/// Converts a mutable reference to a `NonNull` pointer.
@@ -299,7 +299,7 @@
 <a href=#299 id=299 data-nosnippet>299</a>    #[inline]
 <a href=#300 id=300 data-nosnippet>300</a>    </span><span class="kw">pub const fn </span>from_mut(r: <span class="kw-2">&amp;mut </span>T) -&gt; <span class="self">Self </span>{
 <a href=#301 id=301 data-nosnippet>301</a>        <span class="comment">// SAFETY: A mutable reference cannot be null.
-<a href=#302 id=302 data-nosnippet>302</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a href="#300">r</a> <span class="kw">as </span><span class="kw-2">*mut </span>T) }
+<a href=#302 id=302 data-nosnippet>302</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a href="#300">r</a> <span class="kw">as </span><span class="kw-2">*mut </span>T) }
 <a href=#303 id=303 data-nosnippet>303</a>    }
 <a href=#304 id=304 data-nosnippet>304</a>
 <a href=#305 id=305 data-nosnippet>305</a>    <span class="doccomment">/// Performs the same functionality as [`std::ptr::from_raw_parts`], except that a
@@ -413,7 +413,7 @@
 <a href=#413 id=413 data-nosnippet>413</a>        // SAFETY: `NonNull` is `transparent` over a `*const T`, and `*const T`
 <a href=#414 id=414 data-nosnippet>414</a>        // and `*mut T` have the same layout, so transitively we can transmute
 <a href=#415 id=415 data-nosnippet>415</a>        // our `NonNull` to a `*mut T` directly.
-<a href=#416 id=416 data-nosnippet>416</a>        </span><span class="kw">unsafe </span>{ mem::<a href="../intrinsics/mod.rs.html#1110">transmute</a>::&lt;<span class="self">Self</span>, <span class="kw-2">*mut </span>T&gt;(<a class="self" href="#410">self</a>) }
+<a href=#416 id=416 data-nosnippet>416</a>        </span><span class="kw">unsafe </span>{ mem::<a href="../intrinsics/mod.rs.html#1104">transmute</a>::&lt;<span class="self">Self</span>, <span class="kw-2">*mut </span>T&gt;(<a class="self" href="#410">self</a>) }
 <a href=#417 id=417 data-nosnippet>417</a>    }
 <a href=#418 id=418 data-nosnippet>418</a>
 <a href=#419 id=419 data-nosnippet>419</a>    <span class="doccomment">/// Returns a shared reference to the value. If the value may be uninitialized, [`as_uninit_ref`]
@@ -510,7 +510,7 @@
 <a href=#510 id=510 data-nosnippet>510</a>    #[inline]
 <a href=#511 id=511 data-nosnippet>511</a>    </span><span class="kw">pub const fn </span>cast&lt;U&gt;(<span class="self">self</span>) -&gt; <a href="#78-80">NonNull</a>&lt;U&gt; {
 <a href=#512 id=512 data-nosnippet>512</a>        <span class="comment">// SAFETY: `self` is a `NonNull` pointer which is necessarily non-null
-<a href=#513 id=513 data-nosnippet>513</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#511">self</a>.<a href="#410-417">as_ptr</a>() <span class="kw">as </span><span class="kw-2">*mut </span>U) }
+<a href=#513 id=513 data-nosnippet>513</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#511">self</a>.<a href="#410-417">as_ptr</a>() <span class="kw">as </span><span class="kw-2">*mut </span>U) }
 <a href=#514 id=514 data-nosnippet>514</a>    }
 <a href=#515 id=515 data-nosnippet>515</a>
 <a href=#516 id=516 data-nosnippet>516</a>    <span class="doccomment">/// Try to cast to a pointer of another type by checking alignment.
@@ -567,7 +567,7 @@
 <a href=#567 id=567 data-nosnippet>567</a>        // Additionally safety contract of `offset` guarantees that the resulting pointer is
 <a href=#568 id=568 data-nosnippet>568</a>        // pointing to an allocation, there can't be an allocation at null, thus it's safe to
 <a href=#569 id=569 data-nosnippet>569</a>        // construct `NonNull`.
-<a href=#570 id=570 data-nosnippet>570</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(intrinsics::<a href="../intrinsics/mod.rs.html#1165">offset</a>(<a class="self" href="#562">self</a>.<a href="#410-417">as_ptr</a>(), <a href="#562">count</a>)) }
+<a href=#570 id=570 data-nosnippet>570</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(intrinsics::<a href="../intrinsics/mod.rs.html#1159">offset</a>(<a class="self" href="#562">self</a>.<a href="#410-417">as_ptr</a>(), <a href="#562">count</a>)) }
 <a href=#571 id=571 data-nosnippet>571</a>    }
 <a href=#572 id=572 data-nosnippet>572</a>
 <a href=#573 id=573 data-nosnippet>573</a>    <span class="doccomment">/// Calculates the offset from a pointer in bytes.
@@ -594,7 +594,7 @@
 <a href=#594 id=594 data-nosnippet>594</a>        // Additionally safety contract of `offset` guarantees that the resulting pointer is
 <a href=#595 id=595 data-nosnippet>595</a>        // pointing to an allocation, there can't be an allocation at null, thus it's safe to
 <a href=#596 id=596 data-nosnippet>596</a>        // construct `NonNull`.
-<a href=#597 id=597 data-nosnippet>597</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#591">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#413-416">byte_offset</a>(<a href="#591">count</a>)) }
+<a href=#597 id=597 data-nosnippet>597</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#591">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#413-416">byte_offset</a>(<a href="#591">count</a>)) }
 <a href=#598 id=598 data-nosnippet>598</a>    }
 <a href=#599 id=599 data-nosnippet>599</a>
 <a href=#600 id=600 data-nosnippet>600</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/add.md"</span>)]
@@ -625,7 +625,7 @@
 <a href=#625 id=625 data-nosnippet>625</a>        // Additionally safety contract of `offset` guarantees that the resulting pointer is
 <a href=#626 id=626 data-nosnippet>626</a>        // pointing to an allocation, there can't be an allocation at null, thus it's safe to
 <a href=#627 id=627 data-nosnippet>627</a>        // construct `NonNull`.
-<a href=#628 id=628 data-nosnippet>628</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(intrinsics::<a href="../intrinsics/mod.rs.html#1165">offset</a>(<a class="self" href="#620">self</a>.<a href="#410-417">as_ptr</a>(), <a href="#620">count</a>)) }
+<a href=#628 id=628 data-nosnippet>628</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(intrinsics::<a href="../intrinsics/mod.rs.html#1159">offset</a>(<a class="self" href="#620">self</a>.<a href="#410-417">as_ptr</a>(), <a href="#620">count</a>)) }
 <a href=#629 id=629 data-nosnippet>629</a>    }
 <a href=#630 id=630 data-nosnippet>630</a>
 <a href=#631 id=631 data-nosnippet>631</a>    <span class="doccomment">/// Calculates the offset from a pointer in bytes (convenience for `.byte_offset(count as isize)`).
@@ -652,7 +652,7 @@
 <a href=#652 id=652 data-nosnippet>652</a>        // Additionally safety contract of `add` guarantees that the resulting pointer is pointing
 <a href=#653 id=653 data-nosnippet>653</a>        // to an allocation, there can't be an allocation at null, thus it's safe to construct
 <a href=#654 id=654 data-nosnippet>654</a>        // `NonNull`.
-<a href=#655 id=655 data-nosnippet>655</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#649">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#999-1002">byte_add</a>(<a href="#649">count</a>)) }
+<a href=#655 id=655 data-nosnippet>655</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#649">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#999-1002">byte_add</a>(<a href="#649">count</a>)) }
 <a href=#656 id=656 data-nosnippet>656</a>    }
 <a href=#657 id=657 data-nosnippet>657</a>
 <a href=#658 id=658 data-nosnippet>658</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"./docs/sub.md"</span>)]
@@ -715,7 +715,7 @@
 <a href=#715 id=715 data-nosnippet>715</a>        // Additionally safety contract of `sub` guarantees that the resulting pointer is pointing
 <a href=#716 id=716 data-nosnippet>716</a>        // to an allocation, there can't be an allocation at null, thus it's safe to construct
 <a href=#717 id=717 data-nosnippet>717</a>        // `NonNull`.
-<a href=#718 id=718 data-nosnippet>718</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1110">transmute</a>(<a class="self" href="#712">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#1087-1090">byte_sub</a>(<a href="#712">count</a>)) }
+<a href=#718 id=718 data-nosnippet>718</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#1104">transmute</a>(<a class="self" href="#712">self</a>.<a href="#410-417">as_ptr</a>().<a href="mut_ptr.rs.html#1087-1090">byte_sub</a>(<a href="#712">count</a>)) }
 <a href=#719 id=719 data-nosnippet>719</a>    }
 <a href=#720 id=720 data-nosnippet>720</a>
 <a href=#721 id=721 data-nosnippet>721</a>    <span class="doccomment">/// Calculates the distance between two pointers within the same allocation. The returned value is in
@@ -1664,7 +1664,7 @@
 <a href=#1664 id=1664 data-nosnippet>1664</a>}
 <a href=#1665 id=1665 data-nosnippet>1665</a>
 <a href=#1666 id=1666 data-nosnippet>1666</a><span class="attr">#[stable(feature = <span class="string">"nonnull"</span>, since = <span class="string">"1.25.0"</span>)]
-<a href=#1667 id=1667 data-nosnippet>1667</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../clone.rs.html#194-251">Clone</a> <span class="kw">for </span><a href="#78-80">NonNull</a>&lt;T&gt; {
+<a href=#1667 id=1667 data-nosnippet>1667</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#78-80">NonNull</a>&lt;T&gt; {
 <a href=#1668 id=1668 data-nosnippet>1668</a>    <span class="attr">#[inline(always)]
 <a href=#1669 id=1669 data-nosnippet>1669</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#1670 id=1670 data-nosnippet>1670</a>        <span class="kw-2">*</span><a class="self" href="#1669">self</a>
@@ -1676,7 +1676,7 @@
 <a href=#1676 id=1676 data-nosnippet>1676</a>
 <a href=#1677 id=1677 data-nosnippet>1677</a><span class="attr">#[doc(hidden)]
 <a href=#1678 id=1678 data-nosnippet>1678</a>#[unstable(feature = <span class="string">"trivial_clone"</span>, issue = <span class="string">"none"</span>)]
-<a href=#1679 id=1679 data-nosnippet>1679</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../clone.rs.html#283">TrivialClone</a> <span class="kw">for </span><a href="#78-80">NonNull</a>&lt;T&gt; {}
+<a href=#1679 id=1679 data-nosnippet>1679</a></span><span class="kw">unsafe impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../clone.rs.html#284">TrivialClone</a> <span class="kw">for </span><a href="#78-80">NonNull</a>&lt;T&gt; {}
 <a href=#1680 id=1680 data-nosnippet>1680</a>
 <a href=#1681 id=1681 data-nosnippet>1681</a><span class="attr">#[unstable(feature = <span class="string">"coerce_unsized"</span>, issue = <span class="string">"18598"</span>)]
 <a href=#1682 id=1682 data-nosnippet>1682</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>, U: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <a href="../ops/unsize.rs.html#36-38">CoerceUnsized</a>&lt;<a href="#78-80">NonNull</a>&lt;U&gt;&gt; <span class="kw">for </span><a href="#78-80">NonNull</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#235-237">Unsize</a>&lt;U&gt; {}

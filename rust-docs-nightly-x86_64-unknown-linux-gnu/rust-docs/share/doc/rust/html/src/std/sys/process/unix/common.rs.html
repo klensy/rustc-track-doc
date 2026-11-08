@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/process/unix/common.rs`."><title>common.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-020b02a2.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.101.0" data-rustdoc-version="1.101.0-nightly (c980177d8 2026-11-06)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.101.0.js"></script><script defer src="../../../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/process/unix/</div>common.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(test, not(target_os = <span class="string">"emscripten"</span>)))]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/process/unix/common.rs`."><title>common.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (f5cedb83a 2026-11-07)" data-channel="nightly" data-search-js="search-835b9732.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files1.102.0.js"></script><script defer src="../../../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/process/unix/</div>common.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#[cfg(all(test, not(target_os = <span class="string">"emscripten"</span>)))]
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">mod </span>tests;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>libc::{<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.EXIT_FAILURE.html">EXIT_FAILURE</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/constant.EXIT_SUCCESS.html">EXIT_SUCCESS</a>, <a href="../../../../../std/ffi/type.c_int.html">c_int</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.gid_t.html">gid_t</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.pid_t.html">pid_t</a>, <a href="https://docs.rs/libc/0.2.191/libc/unix/type.uid_t.html">uid_t</a>};
@@ -10,13 +10,13 @@
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../../../os/unix/mod.rs.html#103-128"><span class="kw">crate</span>::os::unix::prelude</a>::<span class="kw-2">*</span>;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><a href="../../../path.rs.html#2357-2359"><span class="kw">crate</span>::path::Path</a>;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><a href="../../../process.rs.html#297-301"><span class="kw">crate</span>::process::StdioPipes</a>;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><a href="../../fd/unix.rs.html#67"><span class="kw">crate</span>::sys::fd::FileDesc</a>;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><a href="../../fd/unix.rs.html#57"><span class="kw">crate</span>::sys::fd::FileDesc</a>;
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><a href="../../fs/unix.rs.html#92"><span class="kw">crate</span>::sys::fs::File</a>;
 <a href=#15 id=15 data-nosnippet>15</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"fuchsia"</span>, target_os = <span class="string">"l4re"</span>)))]
 <a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">use </span><a href="../../fs/unix.rs.html#423-434"><span class="kw">crate</span>::sys::fs::OpenOptions</a>;
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><a href="../../pipe/unix.rs.html#8-40"><span class="kw">crate</span>::sys::pipe::pipe</a>;
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::sys::process::env::{<a href="../env.rs.html#8-12">CommandEnv</a>, <a href="../env.rs.html#92-94">CommandEnvs</a>, <a href="../env.rs.html#125-127">CommandResolvedEnvs</a>};
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::sys::{<a href="../../mod.rs.html#54-56">FromInner</a>, <a href="../../mod.rs.html#49-51">IntoInner</a>, <a href="../../pal/unix/mod.rs.html#244-255">cvt_r</a>};
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::sys::{<a href="../../mod.rs.html#54-56">FromInner</a>, <a href="../../mod.rs.html#49-51">IntoInner</a>, <a href="../../pal/unix/mod.rs.html#249-260">cvt_r</a>};
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use crate</span>::{<a href="../../../../../std/fmt/index.html">fmt</a>, <a href="../../../lib.rs.html#638">io</a>, <a href="../../../../../std/mem/index.html">mem</a>};
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">mod </span><a href="common/cstring_array.rs.html#1-122">cstring_array</a>;
@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a><span class="kw">pub enum </span>ChildStdio {
 <a href=#122 id=122 data-nosnippet>122</a>    Inherit,
 <a href=#123 id=123 data-nosnippet>123</a>    Explicit(<a href="../../../../../std/ffi/type.c_int.html">c_int</a>),
-<a href=#124 id=124 data-nosnippet>124</a>    Owned(<a href="../../fd/unix.rs.html#67">FileDesc</a>),
+<a href=#124 id=124 data-nosnippet>124</a>    Owned(<a href="../../fd/unix.rs.html#57">FileDesc</a>),
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="comment">// On Fuchsia and L4Re, null stdio is the default, so we simply don't
 <a href=#127 id=127 data-nosnippet>127</a>    // specify any actions at the time of spawning.
@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>    Inherit,
 <a href=#135 id=135 data-nosnippet>135</a>    Null,
 <a href=#136 id=136 data-nosnippet>136</a>    MakePipe,
-<a href=#137 id=137 data-nosnippet>137</a>    Fd(<a href="../../fd/unix.rs.html#67">FileDesc</a>),
+<a href=#137 id=137 data-nosnippet>137</a>    Fd(<a href="../../fd/unix.rs.html#57">FileDesc</a>),
 <a href=#138 id=138 data-nosnippet>138</a>    StaticFd(<a href="../../../os/fd/owned.rs.html#53-56">BorrowedFd</a>&lt;<span class="lifetime">'static</span>&gt;),
 <a href=#139 id=139 data-nosnippet>139</a>}
 <a href=#140 id=140 data-nosnippet>140</a>
@@ -150,9 +150,9 @@
 <a href=#150 id=150 data-nosnippet>150</a>
 <a href=#151 id=151 data-nosnippet>151</a><span class="kw">impl </span><a href="#142-149">ProgramKind</a> {
 <a href=#152 id=152 data-nosnippet>152</a>    <span class="kw">fn </span>new(program: <span class="kw-2">&amp;</span><a href="../../../ffi/os_str.rs.html#116-118">OsStr</a>) -&gt; <span class="self">Self </span>{
-<a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">if </span><a href="#152">program</a>.<a href="../../../ffi/os_str.rs.html#1123-1125">as_encoded_bytes</a>().<a href="../../../../../core/primitive.slice.html#method.starts_with">starts_with</a>(<span class="string">b"/"</span>) {
+<a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">if </span><a href="#152">program</a>.<a href="../../../ffi/os_str.rs.html#1129-1131">as_encoded_bytes</a>().<a href="../../../../../core/primitive.slice.html#method.starts_with">starts_with</a>(<span class="string">b"/"</span>) {
 <a href=#154 id=154 data-nosnippet>154</a>            <span class="self">Self</span>::<a href="#148">Absolute</a>
-<a href=#155 id=155 data-nosnippet>155</a>        } <span class="kw">else if </span><a href="#152">program</a>.<a href="../../../ffi/os_str.rs.html#1123-1125">as_encoded_bytes</a>().<a href="../../../../../core/primitive.slice.html#method.contains">contains</a>(<span class="kw-2">&amp;</span><span class="string">b'/'</span>) {
+<a href=#155 id=155 data-nosnippet>155</a>        } <span class="kw">else if </span><a href="#152">program</a>.<a href="../../../ffi/os_str.rs.html#1129-1131">as_encoded_bytes</a>().<a href="../../../../../core/primitive.slice.html#method.contains">contains</a>(<span class="kw-2">&amp;</span><span class="string">b'/'</span>) {
 <a href=#156 id=156 data-nosnippet>156</a>            <span class="comment">// If the program has more than one component in it, it is a relative path.
 <a href=#157 id=157 data-nosnippet>157</a>            </span><span class="self">Self</span>::<a href="#146">Relative</a>
 <a href=#158 id=158 data-nosnippet>158</a>        } <span class="kw">else </span>{
@@ -421,7 +421,7 @@
 <a href=#421 id=421 data-nosnippet>421</a>            }
 <a href=#422 id=422 data-nosnippet>422</a>
 <a href=#423 id=423 data-nosnippet>423</a>            Stdio::<a href="#138">StaticFd</a>(fd) =&gt; {
-<a href=#424 id=424 data-nosnippet>424</a>                <span class="kw">let </span>fd = <a href="../../fd/unix.rs.html#67">FileDesc</a>::<a href="../../mod.rs.html#55">from_inner</a>(fd.try_clone_to_owned()<span class="question-mark">?</span>);
+<a href=#424 id=424 data-nosnippet>424</a>                <span class="kw">let </span>fd = <a href="../../fd/unix.rs.html#57">FileDesc</a>::<a href="../../mod.rs.html#55">from_inner</a>(fd.try_clone_to_owned()<span class="question-mark">?</span>);
 <a href=#425 id=425 data-nosnippet>425</a>                <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Ok</a>((ChildStdio::<a href="#124">Owned</a>(<a href="#424">fd</a>), <a class="prelude-val" href="../../../../../std/option/enum.Option.html">None</a>))
 <a href=#426 id=426 data-nosnippet>426</a>            }
 <a href=#427 id=427 data-nosnippet>427</a>
@@ -433,9 +433,9 @@
 <a href=#433 id=433 data-nosnippet>433</a>
 <a href=#434 id=434 data-nosnippet>434</a>            <span class="attr">#[cfg(not(any(target_os = <span class="string">"fuchsia"</span>, target_os = <span class="string">"l4re"</span>)))]
 <a href=#435 id=435 data-nosnippet>435</a>            </span>Stdio::<a href="#135">Null</a> =&gt; {
-<a href=#436 id=436 data-nosnippet>436</a>                <span class="kw">let </span><span class="kw-2">mut </span>opts = <a href="../../fs/unix.rs.html#423-434">OpenOptions</a>::<a href="../../fs/unix.rs.html#1116-1129">new</a>();
-<a href=#437 id=437 data-nosnippet>437</a>                <a href="#436">opts</a>.<a href="../../fs/unix.rs.html#1131-1133">read</a>(<a href="#404">readable</a>);
-<a href=#438 id=438 data-nosnippet>438</a>                <a href="#436">opts</a>.<a href="../../fs/unix.rs.html#1134-1136">write</a>(!<a href="#404">readable</a>);
+<a href=#436 id=436 data-nosnippet>436</a>                <span class="kw">let </span><span class="kw-2">mut </span>opts = <a href="../../fs/unix.rs.html#423-434">OpenOptions</a>::<a href="../../fs/unix.rs.html#1115-1128">new</a>();
+<a href=#437 id=437 data-nosnippet>437</a>                <a href="#436">opts</a>.<a href="../../fs/unix.rs.html#1130-1132">read</a>(<a href="#404">readable</a>);
+<a href=#438 id=438 data-nosnippet>438</a>                <a href="#436">opts</a>.<a href="../../fs/unix.rs.html#1133-1135">write</a>(!<a href="#404">readable</a>);
 <a href=#439 id=439 data-nosnippet>439</a>                <span class="kw">let </span>fd = File::open_c(DEV_NULL, <span class="kw-2">&amp;</span>opts)<span class="question-mark">?</span>;
 <a href=#440 id=440 data-nosnippet>440</a>                <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Ok</a>((ChildStdio::<a href="#124">Owned</a>(<a href="#439">fd</a>.<a href="../../mod.rs.html#50">into_inner</a>()), <a class="prelude-val" href="../../../../../std/option/enum.Option.html">None</a>))
 <a href=#441 id=441 data-nosnippet>441</a>            }
@@ -446,8 +446,8 @@
 <a href=#446 id=446 data-nosnippet>446</a>    }
 <a href=#447 id=447 data-nosnippet>447</a>}
 <a href=#448 id=448 data-nosnippet>448</a>
-<a href=#449 id=449 data-nosnippet>449</a><span class="kw">impl </span><a href="../../../../../std/convert/trait.From.html">From</a>&lt;<a href="../../fd/unix.rs.html#67">FileDesc</a>&gt; <span class="kw">for </span><a href="#133-139">Stdio</a> {
-<a href=#450 id=450 data-nosnippet>450</a>    <span class="kw">fn </span>from(fd: <a href="../../fd/unix.rs.html#67">FileDesc</a>) -&gt; <a href="#133-139">Stdio</a> {
+<a href=#449 id=449 data-nosnippet>449</a><span class="kw">impl </span><a href="../../../../../std/convert/trait.From.html">From</a>&lt;<a href="../../fd/unix.rs.html#57">FileDesc</a>&gt; <span class="kw">for </span><a href="#133-139">Stdio</a> {
+<a href=#450 id=450 data-nosnippet>450</a>    <span class="kw">fn </span>from(fd: <a href="../../fd/unix.rs.html#57">FileDesc</a>) -&gt; <a href="#133-139">Stdio</a> {
 <a href=#451 id=451 data-nosnippet>451</a>        Stdio::<a href="#137">Fd</a>(<a href="#450">fd</a>)
 <a href=#452 id=452 data-nosnippet>452</a>    }
 <a href=#453 id=453 data-nosnippet>453</a>}
@@ -659,11 +659,11 @@
 <a href=#659 id=659 data-nosnippet>659</a>
 <a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">if </span><a href="#651">fds</a>[<span class="number">0</span>].revents != <span class="number">0 </span>&amp;&amp; read(<span class="kw-2">&amp;</span>out, stdout)<span class="question-mark">? </span>{
 <a href=#661 id=661 data-nosnippet>661</a>            err.set_nonblocking(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
-<a href=#662 id=662 data-nosnippet>662</a>            <span class="kw">return </span><a href="#643">err</a>.<a href="../../fd/unix.rs.html#186-189">read_to_end</a>(<a href="#644">stderr</a>).<a href="../../../../../std/result/enum.Result.html#method.map">map</a>(<a href="../../../../../std/mem/fn.drop.html">drop</a>);
+<a href=#662 id=662 data-nosnippet>662</a>            <span class="kw">return </span><a href="#643">err</a>.<a href="../../fd/unix.rs.html#176-179">read_to_end</a>(<a href="#644">stderr</a>).<a href="../../../../../std/result/enum.Result.html#method.map">map</a>(<a href="../../../../../std/mem/fn.drop.html">drop</a>);
 <a href=#663 id=663 data-nosnippet>663</a>        }
 <a href=#664 id=664 data-nosnippet>664</a>        <span class="kw">if </span><a href="#651">fds</a>[<span class="number">1</span>].revents != <span class="number">0 </span>&amp;&amp; read(<span class="kw-2">&amp;</span>err, stderr)<span class="question-mark">? </span>{
 <a href=#665 id=665 data-nosnippet>665</a>            out.set_nonblocking(<span class="bool-val">false</span>)<span class="question-mark">?</span>;
-<a href=#666 id=666 data-nosnippet>666</a>            <span class="kw">return </span><a href="#641">out</a>.<a href="../../fd/unix.rs.html#186-189">read_to_end</a>(<a href="#642">stdout</a>).<a href="../../../../../std/result/enum.Result.html#method.map">map</a>(<a href="../../../../../std/mem/fn.drop.html">drop</a>);
+<a href=#666 id=666 data-nosnippet>666</a>            <span class="kw">return </span><a href="#641">out</a>.<a href="../../fd/unix.rs.html#176-179">read_to_end</a>(<a href="#642">stdout</a>).<a href="../../../../../std/result/enum.Result.html#method.map">map</a>(<a href="../../../../../std/mem/fn.drop.html">drop</a>);
 <a href=#667 id=667 data-nosnippet>667</a>        }
 <a href=#668 id=668 data-nosnippet>668</a>    }
 <a href=#669 id=669 data-nosnippet>669</a>
@@ -672,8 +672,8 @@
 <a href=#672 id=672 data-nosnippet>672</a>    // reader will return Ok(0), in which case we'll see `Ok` ourselves. In
 <a href=#673 id=673 data-nosnippet>673</a>    // this case we flip the other fd back into blocking mode and read
 <a href=#674 id=674 data-nosnippet>674</a>    // whatever's leftover on that file descriptor.
-<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>read(fd: <span class="kw-2">&amp;</span><a href="../../fd/unix.rs.html#67">FileDesc</a>, dst: <span class="kw-2">&amp;mut </span><a href="../../../../../std/vec/struct.Vec.html">Vec</a>&lt;<a href="../../../../../std/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../../../std/result/enum.Result.html">Result</a>&lt;<a href="../../../../../std/primitive.bool.html">bool</a>, io::<a href="../../../../../std/io/struct.Error.html">Error</a>&gt; {
-<a href=#676 id=676 data-nosnippet>676</a>        <span class="kw">match </span><a href="#675">fd</a>.<a href="../../fd/unix.rs.html#186-189">read_to_end</a>(<a href="#675">dst</a>) {
+<a href=#675 id=675 data-nosnippet>675</a>    </span><span class="kw">fn </span>read(fd: <span class="kw-2">&amp;</span><a href="../../fd/unix.rs.html#57">FileDesc</a>, dst: <span class="kw-2">&amp;mut </span><a href="../../../../../std/vec/struct.Vec.html">Vec</a>&lt;<a href="../../../../../std/primitive.u8.html">u8</a>&gt;) -&gt; <a class="prelude-ty" href="../../../../../std/result/enum.Result.html">Result</a>&lt;<a href="../../../../../std/primitive.bool.html">bool</a>, io::<a href="../../../../../std/io/struct.Error.html">Error</a>&gt; {
+<a href=#676 id=676 data-nosnippet>676</a>        <span class="kw">match </span><a href="#675">fd</a>.<a href="../../fd/unix.rs.html#176-179">read_to_end</a>(<a href="#675">dst</a>) {
 <a href=#677 id=677 data-nosnippet>677</a>            <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Ok</a>(<span class="kw">_</span>) =&gt; <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Ok</a>(<span class="bool-val">true</span>),
 <a href=#678 id=678 data-nosnippet>678</a>            <a class="prelude-val" href="../../../../../std/result/enum.Result.html">Err</a>(e) =&gt; {
 <a href=#679 id=679 data-nosnippet>679</a>                <span class="kw">if </span><a href="#678">e</a>.<a href="../../../../../std/io/struct.Error.html#method.raw_os_error">raw_os_error</a>() == <a class="prelude-val" href="../../../../../std/option/enum.Option.html">Some</a>(libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/linux_like/linux_l4re_shared/constant.EWOULDBLOCK.html">EWOULDBLOCK</a>)
