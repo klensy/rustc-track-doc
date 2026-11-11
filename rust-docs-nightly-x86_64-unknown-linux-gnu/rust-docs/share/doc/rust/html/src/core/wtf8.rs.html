@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/wtf8.rs`."><title>wtf8.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (ac8310ba6 2026-11-09)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>wtf8.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of [the WTF-8 encoding](https://wtf-8.codeberg.page/).
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/wtf8.rs`."><title>wtf8.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (9c5648833 2026-11-10)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>wtf8.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of [the WTF-8 encoding](https://wtf-8.codeberg.page/).
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This library uses Rust’s type system to maintain
 <a href=#4 id=4 data-nosnippet>4</a>//! [well-formedness](https://wtf-8.codeberg.page/#well-formed),
@@ -20,26 +20,26 @@
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="attr">#![doc(hidden)]
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span><span class="kw">crate</span>::char::{<a href="char/methods.rs.html#2532-2538">EscapeDebugExtArgs</a>, <a href="char/methods.rs.html#2663-2686">encode_utf16_raw</a>};
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><a href="clone.rs.html#609-646"><span class="kw">crate</span>::clone::CloneToUninit</a>;
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#330">self</a>, <a href="fmt/mod.rs.html#123-245">Write</a>};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><a href="clone.rs.html#608-645"><span class="kw">crate</span>::clone::CloneToUninit</a>;
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#331">self</a>, <a href="fmt/mod.rs.html#123-245">Write</a>};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::hash::{<a href="hash/mod.rs.html#250-252">Hash</a>, <a href="hash/mod.rs.html#312-554">Hasher</a>};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><a href="iter/traits/marker.rs.html#32"><span class="kw">crate</span>::iter::FusedIterator</a>;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span><a href="num/niche_types.rs.html#160-162"><span class="kw">crate</span>::num::niche_types::CodePointInner</a>;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span><a href="str/validations.rs.html#35-69"><span class="kw">crate</span>::str::next_code_point</a>;
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="lib.rs.html#293">ops</a>, <a href="lib.rs.html#332">slice</a>, <a href="lib.rs.html#333">str</a>};
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="lib.rs.html#294">ops</a>, <a href="lib.rs.html#333">slice</a>, <a href="lib.rs.html#334">str</a>};
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="doccomment">/// A Unicode code point: from U+0000 to U+10FFFF.
 <a href=#32 id=32 data-nosnippet>32</a>///
 <a href=#33 id=33 data-nosnippet>33</a>/// Compares with the `char` type,
 <a href=#34 id=34 data-nosnippet>34</a>/// which represents a Unicode scalar value:
 <a href=#35 id=35 data-nosnippet>35</a>/// a code point that is not a surrogate (U+D800 to U+DFFF).
-<a href=#36 id=36 data-nosnippet>36</a></span><span class="attr">#[derive(<a href="cmp.rs.html#380-382">Eq</a>, <a href="cmp.rs.html#288-290">PartialEq</a>, <a href="cmp.rs.html#1211-1213">Ord</a>, <a href="cmp.rs.html#1611-1613">PartialOrd</a>, <a href="clone.rs.html#290-292">Clone</a>, <a href="marker.rs.html#462-464">Copy</a>)]
+<a href=#36 id=36 data-nosnippet>36</a></span><span class="attr">#[derive(<a href="cmp.rs.html#380-382">Eq</a>, <a href="cmp.rs.html#288-290">PartialEq</a>, <a href="cmp.rs.html#1211-1213">Ord</a>, <a href="cmp.rs.html#1611-1613">PartialOrd</a>, <a href="clone.rs.html#289-291">Clone</a>, <a href="marker.rs.html#462-464">Copy</a>)]
 <a href=#37 id=37 data-nosnippet>37</a>#[doc(hidden)]
 <a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub struct </span>CodePoint(<a href="num/niche_types.rs.html#160-162">CodePointInner</a>);
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="doccomment">/// Format the code point as `U+` followed by four to six hexadecimal digits.
 <a href=#41 id=41 data-nosnippet>41</a>/// Example: `U+1F4A9`
-<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#38">CodePoint</a> {
+<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#38">CodePoint</a> {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="attr">#[inline]
 <a href=#44 id=44 data-nosnippet>44</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#45 id=45 data-nosnippet>45</a>        <a href="macros/mod.rs.html#608-615">write!</a>(<a href="#44">formatter</a>, <span class="string">"U+{:04X}"</span>, <span class="self">self</span>.<span class="number">0</span>.as_inner())
@@ -143,7 +143,7 @@
 <a href=#143 id=143 data-nosnippet>143</a><span class="doccomment">/// Formats the string in double quotes, with characters escaped according to
 <a href=#144 id=144 data-nosnippet>144</a>/// [`char::escape_debug`] and unpaired surrogates represented as `\u{xxxx}`,
 <a href=#145 id=145 data-nosnippet>145</a>/// where each `x` is a hexadecimal digit.
-<a href=#146 id=146 data-nosnippet>146</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#146 id=146 data-nosnippet>146</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">fn </span>write_str_escaped(f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;, s: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a>) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#149 id=149 data-nosnippet>149</a>            <span class="kw">use </span><a href="fmt/mod.rs.html#123-245"><span class="kw">crate</span>::fmt::Write</a> <span class="kw">as _</span>;
@@ -177,7 +177,7 @@
 <a href=#177 id=177 data-nosnippet>177</a>
 <a href=#178 id=178 data-nosnippet>178</a><span class="doccomment">/// Formats the string with unpaired surrogates substituted with the replacement
 <a href=#179 id=179 data-nosnippet>179</a>/// character, U+FFFD.
-<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1187-1213">fmt::Display</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1186-1212">fmt::Display</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">let </span>wtf8_bytes = <span class="kw-2">&amp;</span><a class="self" href="#181">self</a>.bytes;
 <a href=#183 id=183 data-nosnippet>183</a>        <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="number">0</span>;
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>                <a class="prelude-val" href="option.rs.html#602">None</a> =&gt; {
 <a href=#195 id=195 data-nosnippet>195</a>                    <span class="comment">// SAFETY: after next_surrogate returns None, the remainder is valid UTF-8.
 <a href=#196 id=196 data-nosnippet>196</a>                    </span><span class="kw">let </span>s = <span class="kw">unsafe </span>{ str::<a href="str/converts.rs.html#178-182">from_utf8_unchecked</a>(<span class="kw-2">&amp;</span><a href="#182">wtf8_bytes</a>[pos..]) };
-<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">if </span><a href="#183">pos</a> == <span class="number">0 </span>{ <span class="kw">return </span><a href="#196">s</a>.<a href="fmt/mod.rs.html#1212">fmt</a>(<a href="#181">formatter</a>) } <span class="kw">else </span>{ <span class="kw">return </span><a href="#181">formatter</a>.<a href="fmt/mod.rs.html#2099-2101">write_str</a>(<a href="#196">s</a>) }
+<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">if </span><a href="#183">pos</a> == <span class="number">0 </span>{ <span class="kw">return </span><a href="#196">s</a>.<a href="fmt/mod.rs.html#1211">fmt</a>(<a href="#181">formatter</a>) } <span class="kw">else </span>{ <span class="kw">return </span><a href="#181">formatter</a>.<a href="fmt/mod.rs.html#2098-2100">write_str</a>(<a href="#196">s</a>) }
 <a href=#198 id=198 data-nosnippet>198</a>                }
 <a href=#199 id=199 data-nosnippet>199</a>            }
 <a href=#200 id=200 data-nosnippet>200</a>        }
@@ -494,7 +494,7 @@
 <a href=#494 id=494 data-nosnippet>494</a>
 <a href=#495 id=495 data-nosnippet>495</a><span class="comment">// This error type is only used temporarily to provide better panic messages
 <a href=#496 id=496 data-nosnippet>496</a>// It does not implement Error.
-<a href=#497 id=497 data-nosnippet>497</a></span><span class="attr">#[derive(<a href="fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#497 id=497 data-nosnippet>497</a></span><span class="attr">#[derive(<a href="fmt/mod.rs.html#1092-1094">Debug</a>)]
 <a href=#498 id=498 data-nosnippet>498</a></span><span class="kw">pub enum </span>Utf8BoundaryError {
 <a href=#499 id=499 data-nosnippet>499</a>    NotABoundary,
 <a href=#500 id=500 data-nosnippet>500</a>    OutOfBounds,
@@ -533,7 +533,7 @@
 <a href=#533 id=533 data-nosnippet>533</a><span class="doccomment">/// Iterator for the code points of a WTF-8 string.
 <a href=#534 id=534 data-nosnippet>534</a>///
 <a href=#535 id=535 data-nosnippet>535</a>/// Created with the method `.code_points()`.
-<a href=#536 id=536 data-nosnippet>536</a></span><span class="attr">#[derive(<a href="clone.rs.html#290-292">Clone</a>)]
+<a href=#536 id=536 data-nosnippet>536</a></span><span class="attr">#[derive(<a href="clone.rs.html#289-291">Clone</a>)]
 <a href=#537 id=537 data-nosnippet>537</a>#[doc(hidden)]
 <a href=#538 id=538 data-nosnippet>538</a></span><span class="kw">pub struct </span>Wtf8CodePoints&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#539 id=539 data-nosnippet>539</a>    bytes: slice::<a href="slice/iter.rs.html#67-78">Iter</a>&lt;<span class="lifetime">'a</span>, <a href="../../core/primitive.u8.html">u8</a>&gt;,
@@ -555,9 +555,9 @@
 <a href=#555 id=555 data-nosnippet>555</a>    }
 <a href=#556 id=556 data-nosnippet>556</a>}
 <a href=#557 id=557 data-nosnippet>557</a>
-<a href=#558 id=558 data-nosnippet>558</a><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#558 id=558 data-nosnippet>558</a><span class="kw">impl </span><a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#559 id=559 data-nosnippet>559</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#560 id=560 data-nosnippet>560</a>        <a href="#559">f</a>.<a href="fmt/mod.rs.html#2639-2641">debug_tuple</a>(<span class="string">"Wtf8CodePoints"</span>)
+<a href=#560 id=560 data-nosnippet>560</a>        <a href="#559">f</a>.<a href="fmt/mod.rs.html#2638-2640">debug_tuple</a>(<span class="string">"Wtf8CodePoints"</span>)
 <a href=#561 id=561 data-nosnippet>561</a>            <span class="comment">// SAFETY: We always leave the string in a valid state after each iteration.
 <a href=#562 id=562 data-nosnippet>562</a>            </span>.<a href="fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><span class="kw">unsafe </span>{ <a href="#132-134">Wtf8</a>::<a href="#218-221">from_bytes_unchecked</a>(<a class="self" href="#559">self</a>.bytes.<a href="slice/iter.rs.html#135-137">as_slice</a>()) })
 <a href=#563 id=563 data-nosnippet>563</a>            .<a href="fmt/builders.rs.html#505-515">finish</a>()
@@ -566,7 +566,7 @@
 <a href=#566 id=566 data-nosnippet>566</a>
 <a href=#567 id=567 data-nosnippet>567</a><span class="doccomment">/// Generates a wide character sequence for potentially ill-formed UTF-16.
 <a href=#568 id=568 data-nosnippet>568</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#569 id=569 data-nosnippet>569</a>#[derive(<a href="clone.rs.html#290-292">Clone</a>)]
+<a href=#569 id=569 data-nosnippet>569</a>#[derive(<a href="clone.rs.html#289-291">Clone</a>)]
 <a href=#570 id=570 data-nosnippet>570</a>#[doc(hidden)]
 <a href=#571 id=571 data-nosnippet>571</a></span><span class="kw">pub struct </span>EncodeWide&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#572 id=572 data-nosnippet>572</a>    code_points: <a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'a</span>&gt;,
@@ -611,10 +611,10 @@
 <a href=#611 id=611 data-nosnippet>611</a></span><span class="kw">impl </span><a href="iter/traits/marker.rs.html#32">FusedIterator</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {}
 <a href=#612 id=612 data-nosnippet>612</a>
 <a href=#613 id=613 data-nosnippet>613</a><span class="attr">#[stable(feature = <span class="string">"encode_wide_debug"</span>, since = <span class="string">"1.92.0"</span>)]
-<a href=#614 id=614 data-nosnippet>614</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#614 id=614 data-nosnippet>614</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#615 id=615 data-nosnippet>615</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#616 id=616 data-nosnippet>616</a>        <span class="kw">struct </span>CodeUnit(<a href="../../core/primitive.u16.html">u16</a>);
-<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#616">CodeUnit</a> {
+<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">impl </span><a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#616">CodeUnit</a> {
 <a href=#618 id=618 data-nosnippet>618</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#619 id=619 data-nosnippet>619</a>                <span class="comment">// This output attempts to balance readability with precision.
 <a href=#620 id=620 data-nosnippet>620</a>                // Render characters which take only one WTF-16 code unit using
@@ -653,12 +653,12 @@
 <a href=#653 id=653 data-nosnippet>653</a>}
 <a href=#654 id=654 data-nosnippet>654</a>
 <a href=#655 id=655 data-nosnippet>655</a><span class="attr">#[unstable(feature = <span class="string">"clone_to_uninit"</span>, issue = <span class="string">"126799"</span>)]
-<a href=#656 id=656 data-nosnippet>656</a></span><span class="kw">unsafe impl </span><a href="clone.rs.html#609-646">CloneToUninit</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#656 id=656 data-nosnippet>656</a></span><span class="kw">unsafe impl </span><a href="clone.rs.html#608-645">CloneToUninit</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#657 id=657 data-nosnippet>657</a>    <span class="attr">#[inline]
 <a href=#658 id=658 data-nosnippet>658</a>    #[cfg_attr(debug_assertions, track_caller)]
 <a href=#659 id=659 data-nosnippet>659</a>    </span><span class="kw">unsafe fn </span>clone_to_uninit(<span class="kw-2">&amp;</span><span class="self">self</span>, dst: <span class="kw-2">*mut </span><a href="../../core/primitive.u8.html">u8</a>) {
 <a href=#660 id=660 data-nosnippet>660</a>        <span class="comment">// SAFETY: we're just a transparent wrapper around [u8]
-<a href=#661 id=661 data-nosnippet>661</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#659">self</a>.bytes.<a href="clone.rs.html#645">clone_to_uninit</a>(<a href="#659">dst</a>) }
+<a href=#661 id=661 data-nosnippet>661</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#659">self</a>.bytes.<a href="clone.rs.html#644">clone_to_uninit</a>(<a href="#659">dst</a>) }
 <a href=#662 id=662 data-nosnippet>662</a>    }
 <a href=#663 id=663 data-nosnippet>663</a>}
 </code></pre></div></section></main></body></html>

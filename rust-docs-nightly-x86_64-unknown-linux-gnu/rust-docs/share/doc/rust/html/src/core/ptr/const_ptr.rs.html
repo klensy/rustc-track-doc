@@ -1,8 +1,8 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/const_ptr.rs`."><title>const_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (ac8310ba6 2026-11-09)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>const_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ptr/const_ptr.rs`."><title>const_ptr.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (9c5648833 2026-11-10)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ptr/</div>const_ptr.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{<a href="../cmp.rs.html#426">Equal</a>, <a href="../cmp.rs.html#429">Greater</a>, <a href="../cmp.rs.html#423">Less</a>};
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#2508-2550"><span class="kw">crate</span>::intrinsics::const_eval_select</a>;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../lib.rs.html#274">self</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#332">self</a>, <a href="../slice/index.rs.html#124-174">SliceIndex</a>};
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../lib.rs.html#275">self</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#333">self</a>, <a href="../slice/index.rs.html#124-174">SliceIndex</a>};
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#190-192">PointeeSized</a>&gt; <span class="kw-2">*const </span>T {
 <a href=#8 id=8 data-nosnippet>8</a>    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"docs/is_null.md"</span>)]
@@ -1166,7 +1166,7 @@
 <a href=#1166 id=1166 data-nosnippet>1166</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1167 id=1167 data-nosnippet>1167</a>    {
 <a href=#1168 id=1168 data-nosnippet>1168</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read`.
-<a href=#1169 id=1169 data-nosnippet>1169</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1715-1756">read</a>(<a class="self" href="#1164">self</a>) }
+<a href=#1169 id=1169 data-nosnippet>1169</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1710-1751">read</a>(<a class="self" href="#1164">self</a>) }
 <a href=#1170 id=1170 data-nosnippet>1170</a>    }
 <a href=#1171 id=1171 data-nosnippet>1171</a>
 <a href=#1172 id=1172 data-nosnippet>1172</a>    <span class="doccomment">/// Performs a volatile read of the value from `self` without moving it. This
@@ -1190,7 +1190,7 @@
 <a href=#1190 id=1190 data-nosnippet>1190</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1191 id=1191 data-nosnippet>1191</a>    {
 <a href=#1192 id=1192 data-nosnippet>1192</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read_volatile`.
-<a href=#1193 id=1193 data-nosnippet>1193</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#2148-2161">read_volatile</a>(<a class="self" href="#1188">self</a>) }
+<a href=#1193 id=1193 data-nosnippet>1193</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#2143-2156">read_volatile</a>(<a class="self" href="#1188">self</a>) }
 <a href=#1194 id=1194 data-nosnippet>1194</a>    }
 <a href=#1195 id=1195 data-nosnippet>1195</a>
 <a href=#1196 id=1196 data-nosnippet>1196</a>    <span class="doccomment">/// Reads the value from `self` without moving it. This leaves the
@@ -1212,7 +1212,7 @@
 <a href=#1212 id=1212 data-nosnippet>1212</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1213 id=1213 data-nosnippet>1213</a>    {
 <a href=#1214 id=1214 data-nosnippet>1214</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `read_unaligned`.
-<a href=#1215 id=1215 data-nosnippet>1215</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1833-1853">read_unaligned</a>(<a class="self" href="#1210">self</a>) }
+<a href=#1215 id=1215 data-nosnippet>1215</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#1828-1848">read_unaligned</a>(<a class="self" href="#1210">self</a>) }
 <a href=#1216 id=1216 data-nosnippet>1216</a>    }
 <a href=#1217 id=1217 data-nosnippet>1217</a>
 <a href=#1218 id=1218 data-nosnippet>1218</a>    <span class="doccomment">/// Copies `count * size_of::&lt;T&gt;()` bytes from `self` to `dest`. The source
@@ -1234,7 +1234,7 @@
 <a href=#1234 id=1234 data-nosnippet>1234</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1235 id=1235 data-nosnippet>1235</a>    {
 <a href=#1236 id=1236 data-nosnippet>1236</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `copy`.
-<a href=#1237 id=1237 data-nosnippet>1237</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#646-663">copy</a>(<a class="self" href="#1232">self</a>, <a href="#1232">dest</a>, <a href="#1232">count</a>) }
+<a href=#1237 id=1237 data-nosnippet>1237</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#641-658">copy</a>(<a class="self" href="#1232">self</a>, <a href="#1232">dest</a>, <a href="#1232">count</a>) }
 <a href=#1238 id=1238 data-nosnippet>1238</a>    }
 <a href=#1239 id=1239 data-nosnippet>1239</a>
 <a href=#1240 id=1240 data-nosnippet>1240</a>    <span class="doccomment">/// Copies `count * size_of::&lt;T&gt;()` bytes from `self` to `dest`. The source
@@ -1256,7 +1256,7 @@
 <a href=#1256 id=1256 data-nosnippet>1256</a>        </span>T: <a href="../marker.rs.html#158-160">Sized</a>,
 <a href=#1257 id=1257 data-nosnippet>1257</a>    {
 <a href=#1258 id=1258 data-nosnippet>1258</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `copy_nonoverlapping`.
-<a href=#1259 id=1259 data-nosnippet>1259</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#549-571">copy_nonoverlapping</a>(<a class="self" href="#1254">self</a>, <a href="#1254">dest</a>, <a href="#1254">count</a>) }
+<a href=#1259 id=1259 data-nosnippet>1259</a>        </span><span class="kw">unsafe </span>{ <a href="mod.rs.html#544-566">copy_nonoverlapping</a>(<a class="self" href="#1254">self</a>, <a href="#1254">dest</a>, <a href="#1254">count</a>) }
 <a href=#1260 id=1260 data-nosnippet>1260</a>    }
 <a href=#1261 id=1261 data-nosnippet>1261</a>
 <a href=#1262 id=1262 data-nosnippet>1262</a>    <span class="doccomment">/// Computes the offset that needs to be applied to the pointer in order to make it aligned to
@@ -1307,7 +1307,7 @@
 <a href=#1307 id=1307 data-nosnippet>1307</a>        }
 <a href=#1308 id=1308 data-nosnippet>1308</a>
 <a href=#1309 id=1309 data-nosnippet>1309</a>        <span class="comment">// SAFETY: `align` has been checked to be a power of 2 above
-<a href=#1310 id=1310 data-nosnippet>1310</a>        </span><span class="kw">let </span>ret = <span class="kw">unsafe </span>{ <a href="mod.rs.html#2287-2457">align_offset</a>(<a class="self" href="#1301">self</a>, <a href="#1301">align</a>) };
+<a href=#1310 id=1310 data-nosnippet>1310</a>        </span><span class="kw">let </span>ret = <span class="kw">unsafe </span>{ <a href="mod.rs.html#2282-2452">align_offset</a>(<a class="self" href="#1301">self</a>, <a href="#1301">align</a>) };
 <a href=#1311 id=1311 data-nosnippet>1311</a>
 <a href=#1312 id=1312 data-nosnippet>1312</a>        <span class="comment">// Inform Miri that we want to consider the resulting pointer to be suitably aligned.
 <a href=#1313 id=1313 data-nosnippet>1313</a>        </span><span class="attr">#[cfg(miri)]
@@ -1425,7 +1425,7 @@
 <a href=#1425 id=1425 data-nosnippet>1425</a>    #[stable(feature = <span class="string">"ptr_cast_slice"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
 <a href=#1426 id=1426 data-nosnippet>1426</a>    #[rustc_const_stable(feature = <span class="string">"ptr_cast_slice"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
 <a href=#1427 id=1427 data-nosnippet>1427</a>    </span><span class="kw">pub const fn </span>cast_slice(<span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <span class="kw-2">*const </span>[T] {
-<a href=#1428 id=1428 data-nosnippet>1428</a>        <a href="mod.rs.html#1210-1212">slice_from_raw_parts</a>(<a class="self" href="#1427">self</a>, <a href="#1427">len</a>)
+<a href=#1428 id=1428 data-nosnippet>1428</a>        <a href="mod.rs.html#1205-1207">slice_from_raw_parts</a>(<a class="self" href="#1427">self</a>, <a href="#1427">len</a>)
 <a href=#1429 id=1429 data-nosnippet>1429</a>    }
 <a href=#1430 id=1430 data-nosnippet>1430</a>}
 <a href=#1431 id=1431 data-nosnippet>1431</a><span class="kw">impl</span>&lt;T&gt; <span class="kw-2">*const </span><a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt; {
@@ -1693,7 +1693,7 @@
 <a href=#1693 id=1693 data-nosnippet>1693</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a> + <a href="metadata.rs.html#85">Thin</a>&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">*const </span>T {
 <a href=#1694 id=1694 data-nosnippet>1694</a>    <span class="doccomment">/// Returns the default value of [`null()`][crate::ptr::null].
 <a href=#1695 id=1695 data-nosnippet>1695</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#1696 id=1696 data-nosnippet>1696</a>        <span class="kw">crate</span>::ptr::<a href="mod.rs.html#873-875">null</a>()
+<a href=#1696 id=1696 data-nosnippet>1696</a>        <span class="kw">crate</span>::ptr::<a href="mod.rs.html#868-870">null</a>()
 <a href=#1697 id=1697 data-nosnippet>1697</a>    }
 <a href=#1698 id=1698 data-nosnippet>1698</a>}
 </code></pre></div></section></main></body></html>

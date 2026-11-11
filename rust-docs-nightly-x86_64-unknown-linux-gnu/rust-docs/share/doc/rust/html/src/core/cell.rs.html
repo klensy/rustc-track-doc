@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (ac8310ba6 2026-11-09)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/cell.rs`."><title>cell.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (9c5648833 2026-11-10)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>cell.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Shareable mutable containers.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Rust memory safety is based on this rule: Given an object `T`, it is only possible to
 <a href=#4 id=4 data-nosnippet>4</a>//! have one of the following:
@@ -252,14 +252,14 @@
 <a href=#252 id=252 data-nosnippet>252</a></span><span class="attr">#![stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#253 id=253 data-nosnippet>253</a>
 <a href=#254 id=254 data-nosnippet>254</a></span><span class="kw">use </span><a href="cmp.rs.html#420-430"><span class="kw">crate</span>::cmp::Ordering</a>;
-<a href=#255 id=255 data-nosnippet>255</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#330">self</a>, <a href="fmt/mod.rs.html#1093-1095">Debug</a>, <a href="fmt/mod.rs.html#1187-1213">Display</a>};
+<a href=#255 id=255 data-nosnippet>255</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#331">self</a>, <a href="fmt/mod.rs.html#1092-1094">Debug</a>, <a href="fmt/mod.rs.html#1186-1212">Display</a>};
 <a href=#256 id=256 data-nosnippet>256</a><span class="kw">use </span><span class="kw">crate</span>::marker::{<a href="marker.rs.html#1063">Destruct</a>, <a href="marker.rs.html#811">PhantomData</a>, <a href="marker.rs.html#235-237">Unsize</a>};
-<a href=#257 id=257 data-nosnippet>257</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="lib.rs.html#274">self</a>, <a href="mem/manually_drop.rs.html#156-158">ManuallyDrop</a>};
-<a href=#258 id=258 data-nosnippet>258</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a class="self" href="lib.rs.html#293">self</a>, <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>, <a href="ops/deref.rs.html#139-151">Deref</a>, <a href="ops/deref.rs.html#270-275">DerefMut</a>, <a href="ops/deref.rs.html#297">DerefPure</a>, <a href="ops/unsize.rs.html#122-124">DispatchFromDyn</a>};
+<a href=#257 id=257 data-nosnippet>257</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="lib.rs.html#275">self</a>, <a href="mem/manually_drop.rs.html#156-158">ManuallyDrop</a>};
+<a href=#258 id=258 data-nosnippet>258</a><span class="kw">use </span><span class="kw">crate</span>::ops::{<a class="self" href="lib.rs.html#294">self</a>, <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>, <a href="ops/deref.rs.html#139-151">Deref</a>, <a href="ops/deref.rs.html#270-275">DerefMut</a>, <a href="ops/deref.rs.html#297">DerefPure</a>, <a href="ops/unsize.rs.html#122-124">DispatchFromDyn</a>};
 <a href=#259 id=259 data-nosnippet>259</a><span class="kw">use </span><a href="panic.rs.html#133-163"><span class="kw">crate</span>::panic::const_panic</a>;
 <a href=#260 id=260 data-nosnippet>260</a><span class="kw">use </span><a href="pin.rs.html#1899"><span class="kw">crate</span>::pin::PinSafePointer</a>;
-<a href=#261 id=261 data-nosnippet>261</a><span class="kw">use </span><span class="kw">crate</span>::ptr::{<a class="self" href="lib.rs.html#277">self</a>, <a href="ptr/non_null.rs.html#78-80">NonNull</a>};
-<a href=#262 id=262 data-nosnippet>262</a><span class="kw">use </span><a href="lib.rs.html#324"><span class="kw">crate</span>::range</a>;
+<a href=#261 id=261 data-nosnippet>261</a><span class="kw">use </span><span class="kw">crate</span>::ptr::{<a class="self" href="lib.rs.html#278">self</a>, <a href="ptr/non_null.rs.html#78-80">NonNull</a>};
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">use </span><a href="lib.rs.html#325"><span class="kw">crate</span>::range</a>;
 <a href=#263 id=263 data-nosnippet>263</a>
 <a href=#264 id=264 data-nosnippet>264</a><span class="kw">mod </span><a href="cell/covariant_unsafe_cell.rs.html#1-172">covariant_unsafe_cell</a>;
 <a href=#265 id=265 data-nosnippet>265</a><span class="kw">mod </span><a href="cell/lazy.rs.html#1-387">lazy</a>;
@@ -330,7 +330,7 @@
 <a href=#330 id=330 data-nosnippet>330</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; !<a href="marker.rs.html#657-669">Sync</a> <span class="kw">for </span><a href="#317-319">Cell</a>&lt;T&gt; {}
 <a href=#331 id=331 data-nosnippet>331</a>
 <a href=#332 id=332 data-nosnippet>332</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#333 id=333 data-nosnippet>333</a></span><span class="kw">impl</span>&lt;T: <a href="marker.rs.html#454-456">Copy</a>&gt; <a href="clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#317-319">Cell</a>&lt;T&gt; {
+<a href=#333 id=333 data-nosnippet>333</a></span><span class="kw">impl</span>&lt;T: <a href="marker.rs.html#454-456">Copy</a>&gt; <a href="clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#317-319">Cell</a>&lt;T&gt; {
 <a href=#334 id=334 data-nosnippet>334</a>    <span class="attr">#[inline]
 <a href=#335 id=335 data-nosnippet>335</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#317-319">Cell</a>&lt;T&gt; {
 <a href=#336 id=336 data-nosnippet>336</a>        <a href="#317-319">Cell</a>::<a href="#419-421">new</a>(<a class="self" href="#335">self</a>.<a href="#557-561">get</a>())
@@ -477,7 +477,7 @@
 <a href=#477 id=477 data-nosnippet>477</a>            <a href="#476">diff</a> &gt;= <a href="mem/mod.rs.html#375-384">size_of</a>::&lt;T&gt;()
 <a href=#478 id=478 data-nosnippet>478</a>        }
 <a href=#479 id=479 data-nosnippet>479</a>
-<a href=#480 id=480 data-nosnippet>480</a>        <span class="kw">if </span>ptr::<a href="ptr/mod.rs.html#2506-2508">eq</a>(<a class="self" href="#470">self</a>, <a href="#470">other</a>) {
+<a href=#480 id=480 data-nosnippet>480</a>        <span class="kw">if </span>ptr::<a href="ptr/mod.rs.html#2501-2503">eq</a>(<a class="self" href="#470">self</a>, <a href="#470">other</a>) {
 <a href=#481 id=481 data-nosnippet>481</a>            <span class="comment">// Swapping wouldn't change anything.
 <a href=#482 id=482 data-nosnippet>482</a>            </span><span class="kw">return</span>;
 <a href=#483 id=483 data-nosnippet>483</a>        }
@@ -801,7 +801,7 @@
 <a href=#801 id=801 data-nosnippet>801</a></span><span class="attr">#[unstable(feature = <span class="string">"cell_get_cloned"</span>, issue = <span class="string">"145329"</span>)]
 <a href=#802 id=802 data-nosnippet>802</a></span><span class="comment">// Allow potential overlapping implementations in user code
 <a href=#803 id=803 data-nosnippet>803</a></span><span class="attr">#[marker]
-<a href=#804 id=804 data-nosnippet>804</a></span><span class="kw">pub unsafe trait </span><a href="../../core/cell/trait.CloneFromCell.html">CloneFromCell</a>: <a href="clone.rs.html#194-252">Clone</a> {}
+<a href=#804 id=804 data-nosnippet>804</a></span><span class="kw">pub unsafe trait </span><a href="../../core/cell/trait.CloneFromCell.html">CloneFromCell</a>: <a href="clone.rs.html#193-251">Clone</a> {}
 <a href=#805 id=805 data-nosnippet>805</a>
 <a href=#806 id=806 data-nosnippet>806</a><span class="comment">// `CloneFromCell` can be implemented for types that don't have indirection and which don't access
 <a href=#807 id=807 data-nosnippet>807</a>// `Cell`s in their `Clone` implementation. A commonly-used subset is covered here.
@@ -842,7 +842,7 @@
 <a href=#842 id=842 data-nosnippet>842</a>    /// ```
 <a href=#843 id=843 data-nosnippet>843</a>    </span><span class="kw">pub fn </span>get_cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#844 id=844 data-nosnippet>844</a>        <span class="comment">// SAFETY: T is CloneFromCell, which guarantees that this is sound.
-<a href=#845 id=845 data-nosnippet>845</a>        </span><a href="#317-319">Cell</a>::<a href="#419-421">new</a>(T::<a href="clone.rs.html#236">clone</a>(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a class="self" href="#843">self</a>.<a href="#605-607">as_ptr</a>() }))
+<a href=#845 id=845 data-nosnippet>845</a>        </span><a href="#317-319">Cell</a>::<a href="#419-421">new</a>(T::<a href="clone.rs.html#235">clone</a>(<span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><a class="self" href="#843">self</a>.<a href="#605-607">as_ptr</a>() }))
 <a href=#846 id=846 data-nosnippet>846</a>    }
 <a href=#847 id=847 data-nosnippet>847</a>}
 <a href=#848 id=848 data-nosnippet>848</a>
@@ -865,14 +865,14 @@
 <a href=#865 id=865 data-nosnippet>865</a><span class="doccomment">/// An error returned by [`RefCell::try_borrow`].
 <a href=#866 id=866 data-nosnippet>866</a></span><span class="attr">#[stable(feature = <span class="string">"try_borrow"</span>, since = <span class="string">"1.13.0"</span>)]
 <a href=#867 id=867 data-nosnippet>867</a>#[non_exhaustive]
-<a href=#868 id=868 data-nosnippet>868</a>#[derive(<a href="fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#868 id=868 data-nosnippet>868</a>#[derive(<a href="fmt/mod.rs.html#1092-1094">Debug</a>)]
 <a href=#869 id=869 data-nosnippet>869</a></span><span class="kw">pub struct </span><a href="../../core/cell/struct.BorrowError.html">BorrowError</a> {
 <a href=#870 id=870 data-nosnippet>870</a>    <span class="attr">#[cfg(feature = <span class="string">"debug_refcell"</span>)]
 <a href=#871 id=871 data-nosnippet>871</a>    </span>location: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">crate</span>::panic::Location&lt;<span class="lifetime">'static</span>&gt;,
 <a href=#872 id=872 data-nosnippet>872</a>}
 <a href=#873 id=873 data-nosnippet>873</a>
 <a href=#874 id=874 data-nosnippet>874</a><span class="attr">#[stable(feature = <span class="string">"try_borrow"</span>, since = <span class="string">"1.13.0"</span>)]
-<a href=#875 id=875 data-nosnippet>875</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1187-1213">Display</a> <span class="kw">for </span><a href="#869-872">BorrowError</a> {
+<a href=#875 id=875 data-nosnippet>875</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1186-1212">Display</a> <span class="kw">for </span><a href="#869-872">BorrowError</a> {
 <a href=#876 id=876 data-nosnippet>876</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#877 id=877 data-nosnippet>877</a>        <span class="attr">#[cfg(feature = <span class="string">"debug_refcell"</span>)]
 <a href=#878 id=878 data-nosnippet>878</a>        </span><span class="kw">let </span>res = <span class="macro">write!</span>(
@@ -882,7 +882,7 @@
 <a href=#882 id=882 data-nosnippet>882</a>        );
 <a href=#883 id=883 data-nosnippet>883</a>
 <a href=#884 id=884 data-nosnippet>884</a>        <span class="attr">#[cfg(not(feature = <span class="string">"debug_refcell"</span>))]
-<a href=#885 id=885 data-nosnippet>885</a>        </span><span class="kw">let </span>res = Display::<a href="fmt/mod.rs.html#1212">fmt</a>(<span class="string">"RefCell already mutably borrowed"</span>, <a href="#876">f</a>);
+<a href=#885 id=885 data-nosnippet>885</a>        </span><span class="kw">let </span>res = Display::<a href="fmt/mod.rs.html#1211">fmt</a>(<span class="string">"RefCell already mutably borrowed"</span>, <a href="#876">f</a>);
 <a href=#886 id=886 data-nosnippet>886</a>
 <a href=#887 id=887 data-nosnippet>887</a>        <a href="#885">res</a>
 <a href=#888 id=888 data-nosnippet>888</a>    }
@@ -891,20 +891,20 @@
 <a href=#891 id=891 data-nosnippet>891</a><span class="doccomment">/// An error returned by [`RefCell::try_borrow_mut`].
 <a href=#892 id=892 data-nosnippet>892</a></span><span class="attr">#[stable(feature = <span class="string">"try_borrow"</span>, since = <span class="string">"1.13.0"</span>)]
 <a href=#893 id=893 data-nosnippet>893</a>#[non_exhaustive]
-<a href=#894 id=894 data-nosnippet>894</a>#[derive(<a href="fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#894 id=894 data-nosnippet>894</a>#[derive(<a href="fmt/mod.rs.html#1092-1094">Debug</a>)]
 <a href=#895 id=895 data-nosnippet>895</a></span><span class="kw">pub struct </span><a href="../../core/cell/struct.BorrowMutError.html">BorrowMutError</a> {
 <a href=#896 id=896 data-nosnippet>896</a>    <span class="attr">#[cfg(feature = <span class="string">"debug_refcell"</span>)]
 <a href=#897 id=897 data-nosnippet>897</a>    </span>location: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">crate</span>::panic::Location&lt;<span class="lifetime">'static</span>&gt;,
 <a href=#898 id=898 data-nosnippet>898</a>}
 <a href=#899 id=899 data-nosnippet>899</a>
 <a href=#900 id=900 data-nosnippet>900</a><span class="attr">#[stable(feature = <span class="string">"try_borrow"</span>, since = <span class="string">"1.13.0"</span>)]
-<a href=#901 id=901 data-nosnippet>901</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1187-1213">Display</a> <span class="kw">for </span><a href="#895-898">BorrowMutError</a> {
+<a href=#901 id=901 data-nosnippet>901</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1186-1212">Display</a> <span class="kw">for </span><a href="#895-898">BorrowMutError</a> {
 <a href=#902 id=902 data-nosnippet>902</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#903 id=903 data-nosnippet>903</a>        <span class="attr">#[cfg(feature = <span class="string">"debug_refcell"</span>)]
 <a href=#904 id=904 data-nosnippet>904</a>        </span><span class="kw">let </span>res = <span class="macro">write!</span>(f, <span class="string">"RefCell already borrowed; a previous borrow was at {}"</span>, <span class="self">self</span>.location);
 <a href=#905 id=905 data-nosnippet>905</a>
 <a href=#906 id=906 data-nosnippet>906</a>        <span class="attr">#[cfg(not(feature = <span class="string">"debug_refcell"</span>))]
-<a href=#907 id=907 data-nosnippet>907</a>        </span><span class="kw">let </span>res = Display::<a href="fmt/mod.rs.html#1212">fmt</a>(<span class="string">"RefCell already borrowed"</span>, <a href="#902">f</a>);
+<a href=#907 id=907 data-nosnippet>907</a>        </span><span class="kw">let </span>res = Display::<a href="fmt/mod.rs.html#1211">fmt</a>(<span class="string">"RefCell already borrowed"</span>, <a href="#902">f</a>);
 <a href=#908 id=908 data-nosnippet>908</a>
 <a href=#909 id=909 data-nosnippet>909</a>        <a href="#907">res</a>
 <a href=#910 id=910 data-nosnippet>910</a>    }
@@ -1444,14 +1444,14 @@
 <a href=#1444 id=1444 data-nosnippet>1444</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; !<a href="marker.rs.html#657-669">Sync</a> <span class="kw">for </span><a href="#854-863">RefCell</a>&lt;T&gt; {}
 <a href=#1445 id=1445 data-nosnippet>1445</a>
 <a href=#1446 id=1446 data-nosnippet>1446</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1447 id=1447 data-nosnippet>1447</a></span><span class="kw">impl</span>&lt;T: <a href="clone.rs.html#194-252">Clone</a>&gt; <a href="clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#854-863">RefCell</a>&lt;T&gt; {
+<a href=#1447 id=1447 data-nosnippet>1447</a></span><span class="kw">impl</span>&lt;T: <a href="clone.rs.html#193-251">Clone</a>&gt; <a href="clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#854-863">RefCell</a>&lt;T&gt; {
 <a href=#1448 id=1448 data-nosnippet>1448</a>    <span class="doccomment">/// # Panics
 <a href=#1449 id=1449 data-nosnippet>1449</a>    ///
 <a href=#1450 id=1450 data-nosnippet>1450</a>    /// Panics if the value is currently mutably borrowed.
 <a href=#1451 id=1451 data-nosnippet>1451</a>    </span><span class="attr">#[inline]
 <a href=#1452 id=1452 data-nosnippet>1452</a>    #[track_caller]
 <a href=#1453 id=1453 data-nosnippet>1453</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#854-863">RefCell</a>&lt;T&gt; {
-<a href=#1454 id=1454 data-nosnippet>1454</a>        <a href="#854-863">RefCell</a>::<a href="#976-983">new</a>(<a class="self" href="#1453">self</a>.<a href="#1126-1131">borrow</a>().<a href="clone.rs.html#236">clone</a>())
+<a href=#1454 id=1454 data-nosnippet>1454</a>        <a href="#854-863">RefCell</a>::<a href="#976-983">new</a>(<a class="self" href="#1453">self</a>.<a href="#1126-1131">borrow</a>().<a href="clone.rs.html#235">clone</a>())
 <a href=#1455 id=1455 data-nosnippet>1455</a>    }
 <a href=#1456 id=1456 data-nosnippet>1456</a>
 <a href=#1457 id=1457 data-nosnippet>1457</a>    <span class="doccomment">/// # Panics
@@ -1460,7 +1460,7 @@
 <a href=#1460 id=1460 data-nosnippet>1460</a>    </span><span class="attr">#[inline]
 <a href=#1461 id=1461 data-nosnippet>1461</a>    #[track_caller]
 <a href=#1462 id=1462 data-nosnippet>1462</a>    </span><span class="kw">fn </span>clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, source: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
-<a href=#1463 id=1463 data-nosnippet>1463</a>        <a class="self" href="#1462">self</a>.<a href="#1335-1337">get_mut</a>().<a href="clone.rs.html#246-251">clone_from</a>(<span class="kw-2">&amp;</span><a href="#1462">source</a>.<a href="#1126-1131">borrow</a>())
+<a href=#1463 id=1463 data-nosnippet>1463</a>        <a class="self" href="#1462">self</a>.<a href="#1335-1337">get_mut</a>().<a href="clone.rs.html#245-250">clone_from</a>(<span class="kw-2">&amp;</span><a href="#1462">source</a>.<a href="#1126-1131">borrow</a>())
 <a href=#1464 id=1464 data-nosnippet>1464</a>    }
 <a href=#1465 id=1465 data-nosnippet>1465</a>}
 <a href=#1466 id=1466 data-nosnippet>1466</a>
@@ -1594,7 +1594,7 @@
 <a href=#1594 id=1594 data-nosnippet>1594</a>}
 <a href=#1595 id=1595 data-nosnippet>1595</a>
 <a href=#1596 id=1596 data-nosnippet>1596</a><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
-<a href=#1597 id=1597 data-nosnippet>1597</a></span><span class="kw">const impl </span><a href="clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#1557-1559">BorrowRef</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#1597 id=1597 data-nosnippet>1597</a></span><span class="kw">const impl </span><a href="clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#1557-1559">BorrowRef</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#1598 id=1598 data-nosnippet>1598</a>    <span class="attr">#[inline]
 <a href=#1599 id=1599 data-nosnippet>1599</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#1600 id=1600 data-nosnippet>1600</a>        <span class="comment">// Since this Ref exists, we know the borrow flag
@@ -1653,7 +1653,7 @@
 <a href=#1653 id=1653 data-nosnippet>1653</a>    #[inline]
 <a href=#1654 id=1654 data-nosnippet>1654</a>    #[rustc_const_unstable(feature = <span class="string">"const_ref_cell"</span>, issue = <span class="string">"137844"</span>)]
 <a href=#1655 id=1655 data-nosnippet>1655</a>    </span><span class="kw">pub const fn </span>clone(orig: <span class="kw-2">&amp;</span><a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'b</span>, T&gt;) -&gt; <a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'b</span>, T&gt; {
-<a href=#1656 id=1656 data-nosnippet>1656</a>        <a href="#1619-1625">Ref</a> { value: <a href="#1655">orig</a>.value, borrow: <a href="#1655">orig</a>.borrow.<a href="clone.rs.html#236">clone</a>() }
+<a href=#1656 id=1656 data-nosnippet>1656</a>        <a href="#1619-1625">Ref</a> { value: <a href="#1655">orig</a>.value, borrow: <a href="#1655">orig</a>.borrow.<a href="clone.rs.html#235">clone</a>() }
 <a href=#1657 id=1657 data-nosnippet>1657</a>    }
 <a href=#1658 id=1658 data-nosnippet>1658</a>
 <a href=#1659 id=1659 data-nosnippet>1659</a>    <span class="doccomment">/// Makes a new `Ref` for a component of the borrowed data.
@@ -1783,7 +1783,7 @@
 <a href=#1783 id=1783 data-nosnippet>1783</a>        </span>F: <a href="ops/function.rs.html#242-251">FnOnce</a>(<span class="kw-2">&amp;</span>T) -&gt; (<span class="kw-2">&amp;</span>U, <span class="kw-2">&amp;</span>V),
 <a href=#1784 id=1784 data-nosnippet>1784</a>    {
 <a href=#1785 id=1785 data-nosnippet>1785</a>        <span class="kw">let </span>(a, b) = <a href="#1781">f</a>(<span class="kw-2">&amp;*</span><a href="#1781">orig</a>);
-<a href=#1786 id=1786 data-nosnippet>1786</a>        <span class="kw">let </span>borrow = <a href="#1781">orig</a>.borrow.<a href="clone.rs.html#236">clone</a>();
+<a href=#1786 id=1786 data-nosnippet>1786</a>        <span class="kw">let </span>borrow = <a href="#1781">orig</a>.borrow.<a href="clone.rs.html#235">clone</a>();
 <a href=#1787 id=1787 data-nosnippet>1787</a>        (
 <a href=#1788 id=1788 data-nosnippet>1788</a>            <a href="#1619-1625">Ref</a> { value: <a href="ptr/non_null.rs.html#78-80">NonNull</a>::<a href="convert/mod.rs.html#594">from</a>(<a href="#1785">a</a>), <a href="#1786">borrow</a> },
 <a href=#1789 id=1789 data-nosnippet>1789</a>            <a href="#1619-1625">Ref</a> { value: <a href="ptr/non_null.rs.html#78-80">NonNull</a>::<a href="convert/mod.rs.html#594">from</a>(<a href="#1785">b</a>), borrow: <a href="#1781">orig</a>.borrow },
@@ -1831,9 +1831,9 @@
 <a href=#1831 id=1831 data-nosnippet>1831</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="marker.rs.html#235-237">Unsize</a>&lt;U&gt;, U: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>&lt;<a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'b</span>, U&gt;&gt; <span class="kw">for </span><a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'b</span>, T&gt; {}
 <a href=#1832 id=1832 data-nosnippet>1832</a>
 <a href=#1833 id=1833 data-nosnippet>1833</a><span class="attr">#[stable(feature = <span class="string">"std_guard_impls"</span>, since = <span class="string">"1.20.0"</span>)]
-<a href=#1834 id=1834 data-nosnippet>1834</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a> <span class="kw">for </span><a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#1834 id=1834 data-nosnippet>1834</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a> <span class="kw">for </span><a href="#1619-1625">Ref</a>&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#1835 id=1835 data-nosnippet>1835</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#1836 id=1836 data-nosnippet>1836</a>        (<span class="kw-2">**</span><a class="self" href="#1835">self</a>).<a href="fmt/mod.rs.html#1212">fmt</a>(<a href="#1835">f</a>)
+<a href=#1836 id=1836 data-nosnippet>1836</a>        (<span class="kw-2">**</span><a class="self" href="#1835">self</a>).<a href="fmt/mod.rs.html#1211">fmt</a>(<a href="#1835">f</a>)
 <a href=#1837 id=1837 data-nosnippet>1837</a>    }
 <a href=#1838 id=1838 data-nosnippet>1838</a>}
 <a href=#1839 id=1839 data-nosnippet>1839</a>
@@ -2137,9 +2137,9 @@
 <a href=#2137 id=2137 data-nosnippet>2137</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="marker.rs.html#235-237">Unsize</a>&lt;U&gt;, U: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="ops/unsize.rs.html#36-38">CoerceUnsized</a>&lt;<a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'b</span>, U&gt;&gt; <span class="kw">for </span><a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'b</span>, T&gt; {}
 <a href=#2138 id=2138 data-nosnippet>2138</a>
 <a href=#2139 id=2139 data-nosnippet>2139</a><span class="attr">#[stable(feature = <span class="string">"std_guard_impls"</span>, since = <span class="string">"1.20.0"</span>)]
-<a href=#2140 id=2140 data-nosnippet>2140</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a> <span class="kw">for </span><a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#2140 id=2140 data-nosnippet>2140</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a> + <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a> <span class="kw">for </span><a href="#2102-2109">RefMut</a>&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#2141 id=2141 data-nosnippet>2141</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#2142 id=2142 data-nosnippet>2142</a>        (<span class="kw-2">**</span><a class="self" href="#2141">self</a>).<a href="fmt/mod.rs.html#1212">fmt</a>(<a href="#2141">f</a>)
+<a href=#2142 id=2142 data-nosnippet>2142</a>        (<span class="kw-2">**</span><a class="self" href="#2141">self</a>).<a href="fmt/mod.rs.html#1211">fmt</a>(<a href="#2141">f</a>)
 <a href=#2143 id=2143 data-nosnippet>2143</a>    }
 <a href=#2144 id=2144 data-nosnippet>2144</a>}
 <a href=#2145 id=2145 data-nosnippet>2145</a>
@@ -2383,7 +2383,7 @@
 <a href=#2383 id=2383 data-nosnippet>2383</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#2384 id=2384 data-nosnippet>2384</a>    </span><span class="kw">pub const unsafe fn </span>replace(<span class="kw-2">&amp;</span><span class="self">self</span>, value: T) -&gt; T {
 <a href=#2385 id=2385 data-nosnippet>2385</a>        <span class="comment">// SAFETY: pointer comes from `&amp;self` so naturally satisfies invariants.
-<a href=#2386 id=2386 data-nosnippet>2386</a>        </span><span class="kw">unsafe </span>{ ptr::<a href="ptr/mod.rs.html#1578-1601">replace</a>(<a class="self" href="#2384">self</a>.<a href="#2436-2440">get</a>(), <a href="#2384">value</a>) }
+<a href=#2386 id=2386 data-nosnippet>2386</a>        </span><span class="kw">unsafe </span>{ ptr::<a href="ptr/mod.rs.html#1573-1596">replace</a>(<a class="self" href="#2384">self</a>.<a href="#2436-2440">get</a>(), <a href="#2384">value</a>) }
 <a href=#2387 id=2387 data-nosnippet>2387</a>    }
 <a href=#2388 id=2388 data-nosnippet>2388</a>}
 <a href=#2389 id=2389 data-nosnippet>2389</a>

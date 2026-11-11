@@ -1,8 +1,8 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/maybe_uninit.rs`."><title>maybe_uninit.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (ac8310ba6 2026-11-09)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-b2682d9c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>maybe_uninit.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../any.rs.html#906-908"><span class="kw">crate</span>::any::type_name</a>;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../clone.rs.html#284"><span class="kw">crate</span>::clone::TrivialClone</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/maybe_uninit.rs`."><title>maybe_uninit.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (9c5648833 2026-11-10)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>maybe_uninit.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../any.rs.html#906-908"><span class="kw">crate</span>::any::type_name</a>;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../clone.rs.html#283"><span class="kw">crate</span>::clone::TrivialClone</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::marker::{<a href="../marker.rs.html#1063">Destruct</a>, <a href="../marker.rs.html#906">Freeze</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="manually_drop.rs.html#156-158">ManuallyDrop</a>, <a href="mod.rs.html#1274-1280">transmute_neo</a>};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#273">intrinsics</a>, <a href="../lib.rs.html#277">ptr</a>, <a href="../lib.rs.html#332">slice</a>};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#274">intrinsics</a>, <a href="../lib.rs.html#278">ptr</a>, <a href="../lib.rs.html#333">slice</a>};
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// A wrapper type to construct uninitialized instances of `T`.
 <a href=#8 id=8 data-nosnippet>8</a>///
@@ -358,7 +358,7 @@
 <a href=#358 id=358 data-nosnippet>358</a>}
 <a href=#359 id=359 data-nosnippet>359</a>
 <a href=#360 id=360 data-nosnippet>360</a><span class="attr">#[stable(feature = <span class="string">"maybe_uninit"</span>, since = <span class="string">"1.36.0"</span>)]
-<a href=#361 id=361 data-nosnippet>361</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#454-456">Copy</a>&gt; <a href="../clone.rs.html#194-252">Clone</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; {
+<a href=#361 id=361 data-nosnippet>361</a></span><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#454-456">Copy</a>&gt; <a href="../clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; {
 <a href=#362 id=362 data-nosnippet>362</a>    <span class="attr">#[inline(always)]
 <a href=#363 id=363 data-nosnippet>363</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
 <a href=#364 id=364 data-nosnippet>364</a>        <span class="comment">// Not calling `T::clone()`, we cannot know if we are initialized enough for that.
@@ -369,15 +369,15 @@
 <a href=#369 id=369 data-nosnippet>369</a><span class="comment">// SAFETY: the clone implementation is a copy, see above.
 <a href=#370 id=370 data-nosnippet>370</a></span><span class="attr">#[doc(hidden)]
 <a href=#371 id=371 data-nosnippet>371</a>#[unstable(feature = <span class="string">"trivial_clone"</span>, issue = <span class="string">"none"</span>)]
-<a href=#372 id=372 data-nosnippet>372</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="../clone.rs.html#284">TrivialClone</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; <span class="kw">where </span><a href="#355-358">MaybeUninit</a>&lt;T&gt;: <a href="../clone.rs.html#194-252">Clone</a> {}
+<a href=#372 id=372 data-nosnippet>372</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="../clone.rs.html#283">TrivialClone</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; <span class="kw">where </span><a href="#355-358">MaybeUninit</a>&lt;T&gt;: <a href="../clone.rs.html#193-251">Clone</a> {}
 <a href=#373 id=373 data-nosnippet>373</a>
 <a href=#374 id=374 data-nosnippet>374</a><span class="attr">#[stable(feature = <span class="string">"maybe_uninit_debug"</span>, since = <span class="string">"1.41.0"</span>)]
-<a href=#375 id=375 data-nosnippet>375</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; {
+<a href=#375 id=375 data-nosnippet>375</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#355-358">MaybeUninit</a>&lt;T&gt; {
 <a href=#376 id=376 data-nosnippet>376</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#377 id=377 data-nosnippet>377</a>        <span class="comment">// NB: there is no `.pad_fmt` so we can't use a simpler `format_args!("MaybeUninit&lt;{..}&gt;").
 <a href=#378 id=378 data-nosnippet>378</a>        </span><span class="kw">let </span>full_name = <a href="../any.rs.html#906-908">type_name</a>::&lt;<span class="self">Self</span>&gt;();
 <a href=#379 id=379 data-nosnippet>379</a>        <span class="kw">let </span>prefix_len = <a href="#378">full_name</a>.<a href="../str/mod.rs.html#1516-1518">find</a>(<span class="string">"MaybeUninit"</span>).<a href="../option.rs.html#1013-1018">unwrap</a>();
-<a href=#380 id=380 data-nosnippet>380</a>        <a href="#376">f</a>.<a href="../fmt/mod.rs.html#1910-1946">pad</a>(<span class="kw-2">&amp;</span><a href="#378">full_name</a>[prefix_len..])
+<a href=#380 id=380 data-nosnippet>380</a>        <a href="#376">f</a>.<a href="../fmt/mod.rs.html#1909-1945">pad</a>(<span class="kw-2">&amp;</span><a href="#378">full_name</a>[prefix_len..])
 <a href=#381 id=381 data-nosnippet>381</a>    }
 <a href=#382 id=382 data-nosnippet>382</a>}
 <a href=#383 id=383 data-nosnippet>383</a>
@@ -830,7 +830,7 @@
 <a href=#830 id=830 data-nosnippet>830</a>        <span class="comment">// SAFETY: the caller must guarantee that `self` is initialized and
 <a href=#831 id=831 data-nosnippet>831</a>        // satisfies all invariants of `T`.
 <a href=#832 id=832 data-nosnippet>832</a>        // Dropping the value in place is safe if that is the case.
-<a href=#833 id=833 data-nosnippet>833</a>        </span><span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#827-840">drop_in_place</a>(<a class="self" href="#826">self</a>.<a href="#659-662">as_mut_ptr</a>()) }
+<a href=#833 id=833 data-nosnippet>833</a>        </span><span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#822-835">drop_in_place</a>(<a class="self" href="#826">self</a>.<a href="#659-662">as_mut_ptr</a>()) }
 <a href=#834 id=834 data-nosnippet>834</a>    }
 <a href=#835 id=835 data-nosnippet>835</a>
 <a href=#836 id=836 data-nosnippet>836</a>    <span class="doccomment">/// Gets a shared reference to the contained value.
@@ -1148,7 +1148,7 @@
 <a href=#1148 id=1148 data-nosnippet>1148</a>    #[must_use]
 <a href=#1149 id=1149 data-nosnippet>1149</a>    </span><span class="kw">pub const fn </span>from_ref(r: <span class="kw-2">&amp;</span>T) -&gt; <span class="kw-2">&amp;</span><a href="#355-358">MaybeUninit</a>&lt;T&gt; {
 <a href=#1150 id=1150 data-nosnippet>1150</a>        <span class="comment">// SAFETY: `MaybeUninit&lt;T&gt;` is repr(transparent) and every initialized T is a valid MaybeUninit&lt;T&gt;
-<a href=#1151 id=1151 data-nosnippet>1151</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr::<a href="../ptr/mod.rs.html#1121-1123">from_ref</a>(<a href="#1149">r</a>).<a href="../ptr/const_ptr.rs.html#48-50">cast</a>() }
+<a href=#1151 id=1151 data-nosnippet>1151</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr::<a href="../ptr/mod.rs.html#1116-1118">from_ref</a>(<a href="#1149">r</a>).<a href="../ptr/const_ptr.rs.html#48-50">cast</a>() }
 <a href=#1152 id=1152 data-nosnippet>1152</a>    }
 <a href=#1153 id=1153 data-nosnippet>1153</a>}
 <a href=#1154 id=1154 data-nosnippet>1154</a>
@@ -1257,7 +1257,7 @@
 <a href=#1257 id=1257 data-nosnippet>1257</a>    </span><span class="attr">#[stable(feature = <span class="string">"maybe_uninit_write_slice"</span>, since = <span class="string">"1.93.0"</span>)]
 <a href=#1258 id=1258 data-nosnippet>1258</a>    </span><span class="kw">pub fn </span>write_clone_of_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="kw-2">&amp;mut </span>[T]
 <a href=#1259 id=1259 data-nosnippet>1259</a>    <span class="kw">where
-<a href=#1260 id=1260 data-nosnippet>1260</a>        </span>T: <a href="../clone.rs.html#194-252">Clone</a>,
+<a href=#1260 id=1260 data-nosnippet>1260</a>        </span>T: <a href="../clone.rs.html#193-251">Clone</a>,
 <a href=#1261 id=1261 data-nosnippet>1261</a>    {
 <a href=#1262 id=1262 data-nosnippet>1262</a>        <span class="comment">// unlike copy_from_slice this does not call clone_from_slice on the slice
 <a href=#1263 id=1263 data-nosnippet>1263</a>        // this is because `MaybeUninit&lt;T: Clone&gt;` does not implement Clone.
@@ -1311,7 +1311,7 @@
 <a href=#1311 id=1311 data-nosnippet>1311</a>    #[unstable(feature = <span class="string">"maybe_uninit_fill"</span>, issue = <span class="string">"117428"</span>)]
 <a href=#1312 id=1312 data-nosnippet>1312</a>    </span><span class="kw">pub fn </span>write_filled(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) -&gt; <span class="kw-2">&amp;mut </span>[T]
 <a href=#1313 id=1313 data-nosnippet>1313</a>    <span class="kw">where
-<a href=#1314 id=1314 data-nosnippet>1314</a>        </span>T: <a href="../clone.rs.html#194-252">Clone</a>,
+<a href=#1314 id=1314 data-nosnippet>1314</a>        </span>T: <a href="../clone.rs.html#193-251">Clone</a>,
 <a href=#1315 id=1315 data-nosnippet>1315</a>    {
 <a href=#1316 id=1316 data-nosnippet>1316</a>        SpecFill::<a href="#1755">spec_fill</a>(<a class="self" href="#1312">self</a>, <a href="#1312">value</a>);
 <a href=#1317 id=1317 data-nosnippet>1317</a>        <span class="comment">// SAFETY: Valid elements have just been filled into `self` so it is initialized
@@ -1607,7 +1607,7 @@
 <a href=#1607 id=1607 data-nosnippet>1607</a>            <span class="comment">// SAFETY: the caller must guarantee that every element of `self`
 <a href=#1608 id=1608 data-nosnippet>1608</a>            // is initialized and satisfies all invariants of `T`.
 <a href=#1609 id=1609 data-nosnippet>1609</a>            // Dropping the value in place is safe if that is the case.
-<a href=#1610 id=1610 data-nosnippet>1610</a>            </span><span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#827-840">drop_in_place</a>(<a class="self" href="#1602">self</a> <span class="kw">as </span><span class="kw-2">*mut </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] <span class="kw">as </span><span class="kw-2">*mut </span>[T]) }
+<a href=#1610 id=1610 data-nosnippet>1610</a>            </span><span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#822-835">drop_in_place</a>(<a class="self" href="#1602">self</a> <span class="kw">as </span><span class="kw-2">*mut </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] <span class="kw">as </span><span class="kw-2">*mut </span>[T]) }
 <a href=#1611 id=1611 data-nosnippet>1611</a>        }
 <a href=#1612 id=1612 data-nosnippet>1612</a>    }
 <a href=#1613 id=1613 data-nosnippet>1613</a>
@@ -1679,7 +1679,7 @@
 <a href=#1679 id=1679 data-nosnippet>1679</a>    <span class="attr">#[inline]
 <a href=#1680 id=1680 data-nosnippet>1680</a>    </span><span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;; <a href="#1678">N</a>] {
 <a href=#1681 id=1681 data-nosnippet>1681</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
-<a href=#1682 id=1682 data-nosnippet>1682</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr::<a href="../ptr/mod.rs.html#1121-1123">from_ref</a>(<a class="self" href="#1680">self</a>).<a href="../ptr/const_ptr.rs.html#48-50">cast</a>() }
+<a href=#1682 id=1682 data-nosnippet>1682</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr::<a href="../ptr/mod.rs.html#1116-1118">from_ref</a>(<a class="self" href="#1680">self</a>).<a href="../ptr/const_ptr.rs.html#48-50">cast</a>() }
 <a href=#1683 id=1683 data-nosnippet>1683</a>    }
 <a href=#1684 id=1684 data-nosnippet>1684</a>}
 <a href=#1685 id=1685 data-nosnippet>1685</a>
@@ -1696,7 +1696,7 @@
 <a href=#1696 id=1696 data-nosnippet>1696</a>    <span class="attr">#[inline]
 <a href=#1697 id=1697 data-nosnippet>1697</a>    </span><span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;; <a href="#1695">N</a>] {
 <a href=#1698 id=1698 data-nosnippet>1698</a>        <span class="comment">// SAFETY: T and MaybeUninit&lt;T&gt; have the same layout
-<a href=#1699 id=1699 data-nosnippet>1699</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>ptr::<a href="../ptr/mod.rs.html#1171-1173">from_mut</a>(<a class="self" href="#1697">self</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
+<a href=#1699 id=1699 data-nosnippet>1699</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>ptr::<a href="../ptr/mod.rs.html#1166-1168">from_mut</a>(<a class="self" href="#1697">self</a>).<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>() }
 <a href=#1700 id=1700 data-nosnippet>1700</a>    }
 <a href=#1701 id=1701 data-nosnippet>1701</a>}
 <a href=#1702 id=1702 data-nosnippet>1702</a>
@@ -1755,7 +1755,7 @@
 <a href=#1755 id=1755 data-nosnippet>1755</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T);
 <a href=#1756 id=1756 data-nosnippet>1756</a>}
 <a href=#1757 id=1757 data-nosnippet>1757</a>
-<a href=#1758 id=1758 data-nosnippet>1758</a><span class="kw">impl</span>&lt;T: <a href="../clone.rs.html#194-252">Clone</a>&gt; <a href="#1754-1756">SpecFill</a>&lt;T&gt; <span class="kw">for </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] {
+<a href=#1758 id=1758 data-nosnippet>1758</a><span class="kw">impl</span>&lt;T: <a href="../clone.rs.html#193-251">Clone</a>&gt; <a href="#1754-1756">SpecFill</a>&lt;T&gt; <span class="kw">for </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] {
 <a href=#1759 id=1759 data-nosnippet>1759</a>    default <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
 <a href=#1760 id=1760 data-nosnippet>1760</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = <a href="#1739-1742">Guard</a> { slice: <a class="self" href="#1759">self</a>, initialized: <span class="number">0 </span>};
 <a href=#1761 id=1761 data-nosnippet>1761</a>
@@ -1771,13 +1771,13 @@
 <a href=#1771 id=1771 data-nosnippet>1771</a>    }
 <a href=#1772 id=1772 data-nosnippet>1772</a>}
 <a href=#1773 id=1773 data-nosnippet>1773</a>
-<a href=#1774 id=1774 data-nosnippet>1774</a><span class="kw">impl</span>&lt;T: <a href="../clone.rs.html#284">TrivialClone</a>&gt; <a href="#1754-1756">SpecFill</a>&lt;T&gt; <span class="kw">for </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] {
+<a href=#1774 id=1774 data-nosnippet>1774</a><span class="kw">impl</span>&lt;T: <a href="../clone.rs.html#283">TrivialClone</a>&gt; <a href="#1754-1756">SpecFill</a>&lt;T&gt; <span class="kw">for </span>[<a href="#355-358">MaybeUninit</a>&lt;T&gt;] {
 <a href=#1775 id=1775 data-nosnippet>1775</a>    <span class="kw">fn </span>spec_fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) {
 <a href=#1776 id=1776 data-nosnippet>1776</a>        <span class="comment">// SAFETY: because `T` is `TrivialClone`, this is equivalent to calling
 <a href=#1777 id=1777 data-nosnippet>1777</a>        // `T::clone` for every element. Notably, `TrivialClone` also implies
 <a href=#1778 id=1778 data-nosnippet>1778</a>        // that the `clone` implementation will not panic, so we can avoid
 <a href=#1779 id=1779 data-nosnippet>1779</a>        // initialization guards and such.
-<a href=#1780 id=1780 data-nosnippet>1780</a>        </span><a class="self" href="#1775">self</a>.<a href="../slice/mod.rs.html#4205-4212">fill_with</a>(|| <a href="#355-358">MaybeUninit</a>::<a href="#406-408">new</a>(<span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#1715-1756">read</a>(<span class="kw-2">&amp;</span><a href="#1775">value</a>) }));
+<a href=#1780 id=1780 data-nosnippet>1780</a>        </span><a class="self" href="#1775">self</a>.<a href="../slice/mod.rs.html#4205-4212">fill_with</a>(|| <a href="#355-358">MaybeUninit</a>::<a href="#406-408">new</a>(<span class="kw">unsafe </span>{ ptr::<a href="../ptr/mod.rs.html#1710-1751">read</a>(<span class="kw-2">&amp;</span><a href="#1775">value</a>) }));
 <a href=#1781 id=1781 data-nosnippet>1781</a>    }
 <a href=#1782 id=1782 data-nosnippet>1782</a>}
 </code></pre></div></section></main></body></html>
