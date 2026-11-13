@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["RangePattern"]};
+window.SIDEBAR_ITEMS = {"macro":[["pattern_type",1]],"trait":["RangePattern"]};

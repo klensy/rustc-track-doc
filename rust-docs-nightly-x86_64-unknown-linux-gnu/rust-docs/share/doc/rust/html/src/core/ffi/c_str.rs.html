@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/c_str.rs`."><title>c_str.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (3ef0c22cd 2026-11-11)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>c_str.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! [`CStr`] and its related types.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/c_str.rs`."><title>c_str.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (8eb778d04 2026-11-12)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>c_str.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! [`CStr`] and its related types.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><a href="../cmp.rs.html#420-430"><span class="kw">crate</span>::cmp::Ordering</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../error.rs.html#59-261"><span class="kw">crate</span>::error::Error</a>;
@@ -6,10 +6,10 @@
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../intrinsics/mod.rs.html#2508-2550"><span class="kw">crate</span>::intrinsics::const_eval_select</a>;
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><a href="../iter/traits/marker.rs.html#32"><span class="kw">crate</span>::iter::FusedIterator</a>;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="../marker.rs.html#811"><span class="kw">crate</span>::marker::PhantomData</a>;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../num/niche_types.rs.html#116-141"><span class="kw">crate</span>::num::niche_types::UsizeNoHighBitMinusOne</a>;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../num/niche_types.rs.html#117-142"><span class="kw">crate</span>::num::niche_types::UsizeNoHighBitMinusOne</a>;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../ptr/non_null.rs.html#78-80"><span class="kw">crate</span>::ptr::NonNull</a>;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><a href="../slice/mod.rs.html#28"><span class="kw">crate</span>::slice::memchr</a>;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#294">ops</a>, <a href="../lib.rs.html#325">range</a>, <a href="../lib.rs.html#333">slice</a>, <a href="../lib.rs.html#334">str</a>};
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#330">fmt</a>, <a href="../lib.rs.html#293">ops</a>, <a href="../lib.rs.html#324">range</a>, <a href="../lib.rs.html#332">slice</a>, <a href="../lib.rs.html#333">str</a>};
 <a href=#13 id=13 data-nosnippet>13</a>
 <a href=#14 id=14 data-nosnippet>14</a><span class="comment">// FIXME: because this is doc(inline)d, we *have* to use intra-doc links because the actual link
 <a href=#15 id=15 data-nosnippet>15</a>//   depends on where the item is being documented. however, since this is libcore, we can't
@@ -267,7 +267,7 @@
 <a href=#267 id=267 data-nosnippet>267</a>        </span><span class="kw">unsafe </span>{
 <a href=#268 id=268 data-nosnippet>268</a>            <span class="self">Self</span>::<a href="#396-426">from_bytes_with_nul_unchecked</a>(slice::<a href="../slice/raw.rs.html#124-141">from_raw_parts</a>(
 <a href=#269 id=269 data-nosnippet>269</a>                <a href="#256">ptr</a>.<a href="../ptr/const_ptr.rs.html#48-50">cast</a>(),
-<a href=#270 id=270 data-nosnippet>270</a>                <a href="#259">len</a>.<a href="../num/niche_types.rs.html#116-141">as_inner</a>() + <span class="number">1</span>,
+<a href=#270 id=270 data-nosnippet>270</a>                <a href="#259">len</a>.<a href="../num/niche_types.rs.html#117-142">as_inner</a>() + <span class="number">1</span>,
 <a href=#271 id=271 data-nosnippet>271</a>            ))
 <a href=#272 id=272 data-nosnippet>272</a>        }
 <a href=#273 id=273 data-nosnippet>273</a>    }
@@ -653,7 +653,7 @@
 <a href=#653 id=653 data-nosnippet>653</a>    /// let cstr = c"Hello, world!";
 <a href=#654 id=654 data-nosnippet>654</a>    /// println!("{}", cstr.display());
 <a href=#655 id=655 data-nosnippet>655</a>    /// ```
-<a href=#656 id=656 data-nosnippet>656</a>    </span><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#656 id=656 data-nosnippet>656</a>    </span><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#657 id=657 data-nosnippet>657</a>    #[must_use = <span class="string">"this does not display the `CStr`; \
 <a href=#658 id=658 data-nosnippet>658</a>                  it returns an object that can be displayed"</span>]
 <a href=#659 id=659 data-nosnippet>659</a>    #[inline]
@@ -758,7 +758,7 @@
 <a href=#758 id=758 data-nosnippet>758</a></span><span class="attr">#[inline]
 <a href=#759 id=759 data-nosnippet>759</a>#[unstable(feature = <span class="string">"cstr_internals"</span>, issue = <span class="string">"none"</span>)]
 <a href=#760 id=760 data-nosnippet>760</a>#[rustc_allow_const_fn_unstable(const_eval_select)]
-<a href=#761 id=761 data-nosnippet>761</a></span><span class="kw">const unsafe fn </span>strlen(ptr: <span class="kw-2">*const </span><a href="primitives.rs.html#21">c_char</a>) -&gt; <a href="../num/niche_types.rs.html#116-141">UsizeNoHighBitMinusOne</a> {
+<a href=#761 id=761 data-nosnippet>761</a></span><span class="kw">const unsafe fn </span>strlen(ptr: <span class="kw-2">*const </span><a href="primitives.rs.html#21">c_char</a>) -&gt; <a href="../num/niche_types.rs.html#117-142">UsizeNoHighBitMinusOne</a> {
 <a href=#762 id=762 data-nosnippet>762</a>    <a href="../intrinsics/mod.rs.html#2508-2550">const_eval_select!</a>(
 <a href=#763 id=763 data-nosnippet>763</a>        @capture { s: <span class="kw-2">*const </span>c_char = ptr } -&gt; UsizeNoHighBitMinusOne:
 <a href=#764 id=764 data-nosnippet>764</a>        <span class="kw">if const </span>{
@@ -850,7 +850,7 @@
 <a href=#850 id=850 data-nosnippet>850</a>    <span class="attr">#[inline]
 <a href=#851 id=851 data-nosnippet>851</a>    </span><span class="kw">fn </span>count(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
 <a href=#852 id=852 data-nosnippet>852</a>        <span class="comment">// SAFETY: We always hold a valid pointer to a C string
-<a href=#853 id=853 data-nosnippet>853</a>        </span><span class="kw">unsafe </span>{ <a href="#761-784">strlen</a>(<a class="self" href="#851">self</a>.ptr.<a href="../ptr/non_null.rs.html#410-417">as_ptr</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>()) }.<a href="../num/niche_types.rs.html#116-141">as_inner</a>()
+<a href=#853 id=853 data-nosnippet>853</a>        </span><span class="kw">unsafe </span>{ <a href="#761-784">strlen</a>(<a class="self" href="#851">self</a>.ptr.<a href="../ptr/non_null.rs.html#410-417">as_ptr</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>()) }.<a href="../num/niche_types.rs.html#117-142">as_inner</a>()
 <a href=#854 id=854 data-nosnippet>854</a>    }
 <a href=#855 id=855 data-nosnippet>855</a>}
 <a href=#856 id=856 data-nosnippet>856</a>
@@ -874,19 +874,19 @@
 <a href=#874 id=874 data-nosnippet>874</a>///
 <a href=#875 id=875 data-nosnippet>875</a>/// [`Display`]: fmt::Display
 <a href=#876 id=876 data-nosnippet>876</a>/// [`format!`]: ../../../std/macro.format.html
-<a href=#877 id=877 data-nosnippet>877</a></span><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#877 id=877 data-nosnippet>877</a></span><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#878 id=878 data-nosnippet>878</a></span><span class="kw">pub struct </span><a href="../../../core/ffi/c_str/struct.Display.html">Display</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#879 id=879 data-nosnippet>879</a>    c_str: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="#104-110">CStr</a>,
 <a href=#880 id=880 data-nosnippet>880</a>}
 <a href=#881 id=881 data-nosnippet>881</a>
-<a href=#882 id=882 data-nosnippet>882</a><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#882 id=882 data-nosnippet>882</a><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#883 id=883 data-nosnippet>883</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#878-880">Display</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#884 id=884 data-nosnippet>884</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#885 id=885 data-nosnippet>885</a>        fmt::Debug::<a href="../fmt/mod.rs.html#1083">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#884">self</a>.c_str, <a href="#884">f</a>)
 <a href=#886 id=886 data-nosnippet>886</a>    }
 <a href=#887 id=887 data-nosnippet>887</a>}
 <a href=#888 id=888 data-nosnippet>888</a>
-<a href=#889 id=889 data-nosnippet>889</a><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"CURRENT_RUSTC_VERSION"</span>)]
+<a href=#889 id=889 data-nosnippet>889</a><span class="attr">#[stable(feature = <span class="string">"cstr_display"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#890 id=890 data-nosnippet>890</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1186-1212">fmt::Display</a> <span class="kw">for </span><a href="#878-880">Display</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#891 id=891 data-nosnippet>891</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#892 id=892 data-nosnippet>892</a>        fmt::Display::<a href="../fmt/mod.rs.html#1211">fmt</a>(<span class="kw">crate</span>::byte_str::<a href="../byte_str/mod.rs.html#44">ByteStr</a>::<a href="../byte_str/mod.rs.html#100-104">from_bytes</a>(<a class="self" href="#891">self</a>.c_str.<a href="#564-569">to_bytes</a>()), <a href="#891">f</a>)
