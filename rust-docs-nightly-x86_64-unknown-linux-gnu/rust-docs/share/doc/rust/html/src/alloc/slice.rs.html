@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/slice.rs`."><title>slice.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (8eb778d04 2026-11-12)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>slice.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Utilities for the slice primitive type.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/slice.rs`."><title>slice.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (5f4effd57 2026-11-13)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/</div>slice.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Utilities for the slice primitive type.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! *[See also the slice primitive type](slice).*
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -11,13 +11,13 @@
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span>core::borrow::{<a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>, <a href="../../alloc/borrow/trait.BorrowMut.html">BorrowMut</a>};
 <a href=#13 id=13 data-nosnippet>13</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">use </span><a href="../../core/clone/trait.TrivialClone.html">core::clone::TrivialClone</a>;
+<a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">use </span><a href="https://doc.rust-lang.org/nightly/core/clone/trait.TrivialClone.html">core::clone::TrivialClone</a>;
 <a href=#15 id=15 data-nosnippet>15</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">use </span>core::cmp::Ordering::{<a class="self" href="../../core/cmp/enum.Ordering.html">self</a>, <a href="../../core/cmp/enum.Ordering.html#variant.Less">Less</a>};
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">use </span>core::cmp::Ordering::{<a class="self" href="https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html">self</a>, <a href="https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html#variant.Less">Less</a>};
 <a href=#17 id=17 data-nosnippet>17</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">use </span><a href="../../core/mem/maybe_uninit/union.MaybeUninit.html">core::mem::MaybeUninit</a>;
+<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">use </span><a href="https://doc.rust-lang.org/nightly/core/mem/maybe_uninit/union.MaybeUninit.html">core::mem::MaybeUninit</a>;
 <a href=#19 id=19 data-nosnippet>19</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span><a href="../../core/ptr/index.html">core::ptr</a>;
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">use </span><a href="https://doc.rust-lang.org/nightly/core/ptr/index.html">core::ptr</a>;
 <a href=#21 id=21 data-nosnippet>21</a><span class="attr">#[stable(feature = <span class="string">"array_windows"</span>, since = <span class="string">"1.94.0"</span>)]
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">pub use </span><a href="../../alloc/slice/struct.ArrayWindows.html">core::slice::ArrayWindows</a>;
 <a href=#23 id=23 data-nosnippet>23</a><span class="attr">#[stable(feature = <span class="string">"inherent_ascii_escape"</span>, since = <span class="string">"1.60.0"</span>)]
@@ -130,9 +130,9 @@
 <a href=#130 id=130 data-nosnippet>130</a>    #[inline]
 <a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">pub fn </span>sort(<span class="kw-2">&amp;mut </span><span class="self">self</span>)
 <a href=#132 id=132 data-nosnippet>132</a>    <span class="kw">where
-<a href=#133 id=133 data-nosnippet>133</a>        </span>T: <a href="../../core/cmp/trait.Ord.html">Ord</a>,
+<a href=#133 id=133 data-nosnippet>133</a>        </span>T: <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html">Ord</a>,
 <a href=#134 id=134 data-nosnippet>134</a>    {
-<a href=#135 id=135 data-nosnippet>135</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#131">self</a>, T::<a href="../../core/cmp/trait.PartialOrd.html#method.lt">lt</a>);
+<a href=#135 id=135 data-nosnippet>135</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#131">self</a>, T::<a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.lt">lt</a>);
 <a href=#136 id=136 data-nosnippet>136</a>    }
 <a href=#137 id=137 data-nosnippet>137</a>
 <a href=#138 id=138 data-nosnippet>138</a>    <span class="doccomment">/// Sorts the slice in ascending order with a comparison function, preserving initial order of
@@ -191,9 +191,9 @@
 <a href=#191 id=191 data-nosnippet>191</a>    #[inline]
 <a href=#192 id=192 data-nosnippet>192</a>    </span><span class="kw">pub fn </span>sort_by&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>compare: F)
 <a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">where
-<a href=#194 id=194 data-nosnippet>194</a>        </span>F: <a href="../../core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../core/cmp/enum.Ordering.html">Ordering</a>,
+<a href=#194 id=194 data-nosnippet>194</a>        </span>F: <a href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html">Ordering</a>,
 <a href=#195 id=195 data-nosnippet>195</a>    {
-<a href=#196 id=196 data-nosnippet>196</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#192">self</a>, |a, b| <a href="#192">compare</a>(<a href="#196">a</a>, <a href="#196">b</a>) == <a href="../../core/cmp/enum.Ordering.html#variant.Less">Less</a>);
+<a href=#196 id=196 data-nosnippet>196</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#192">self</a>, |a, b| <a href="#192">compare</a>(<a href="#196">a</a>, <a href="#196">b</a>) == <a href="https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html#variant.Less">Less</a>);
 <a href=#197 id=197 data-nosnippet>197</a>    }
 <a href=#198 id=198 data-nosnippet>198</a>
 <a href=#199 id=199 data-nosnippet>199</a>    <span class="doccomment">/// Sorts the slice in ascending order with a key extraction function, preserving initial order
@@ -246,10 +246,10 @@
 <a href=#246 id=246 data-nosnippet>246</a>    #[inline]
 <a href=#247 id=247 data-nosnippet>247</a>    </span><span class="kw">pub fn </span>sort_by_key&lt;K, F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>f: F)
 <a href=#248 id=248 data-nosnippet>248</a>    <span class="kw">where
-<a href=#249 id=249 data-nosnippet>249</a>        </span>F: <a href="../../core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T) -&gt; K,
-<a href=#250 id=250 data-nosnippet>250</a>        K: <a href="../../core/cmp/trait.Ord.html">Ord</a>,
+<a href=#249 id=249 data-nosnippet>249</a>        </span>F: <a href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T) -&gt; K,
+<a href=#250 id=250 data-nosnippet>250</a>        K: <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html">Ord</a>,
 <a href=#251 id=251 data-nosnippet>251</a>    {
-<a href=#252 id=252 data-nosnippet>252</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#247">self</a>, |a, b| <a href="#247">f</a>(<a href="#252">a</a>).<a href="../../core/cmp/trait.PartialOrd.html#method.lt">lt</a>(<span class="kw-2">&amp;</span><a href="#247">f</a>(<a href="#252">b</a>)));
+<a href=#252 id=252 data-nosnippet>252</a>        <a href="#871-876">stable_sort</a>(<a class="self" href="#247">self</a>, |a, b| <a href="#247">f</a>(<a href="#252">a</a>).<a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.lt">lt</a>(<span class="kw-2">&amp;</span><a href="#247">f</a>(<a href="#252">b</a>)));
 <a href=#253 id=253 data-nosnippet>253</a>    }
 <a href=#254 id=254 data-nosnippet>254</a>
 <a href=#255 id=255 data-nosnippet>255</a>    <span class="doccomment">/// Sorts the slice in ascending order with a key extraction function, preserving initial order
@@ -311,8 +311,8 @@
 <a href=#311 id=311 data-nosnippet>311</a>    #[inline]
 <a href=#312 id=312 data-nosnippet>312</a>    </span><span class="kw">pub fn </span>sort_by_cached_key&lt;K, F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F)
 <a href=#313 id=313 data-nosnippet>313</a>    <span class="kw">where
-<a href=#314 id=314 data-nosnippet>314</a>        </span>F: <a href="../../core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T) -&gt; K,
-<a href=#315 id=315 data-nosnippet>315</a>        K: <a href="../../core/cmp/trait.Ord.html">Ord</a>,
+<a href=#314 id=314 data-nosnippet>314</a>        </span>F: <a href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T) -&gt; K,
+<a href=#315 id=315 data-nosnippet>315</a>        K: <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.Ord.html">Ord</a>,
 <a href=#316 id=316 data-nosnippet>316</a>    {
 <a href=#317 id=317 data-nosnippet>317</a>        <span class="comment">// Helper macro for indexing our vector by the smallest possible type, to reduce allocation.
 <a href=#318 id=318 data-nosnippet>318</a>        </span><span class="macro">macro_rules!</span> sort_by_key {
@@ -334,7 +334,7 @@
 <a href=#334 id=334 data-nosnippet>334</a>            }};
 <a href=#335 id=335 data-nosnippet>335</a>        }
 <a href=#336 id=336 data-nosnippet>336</a>
-<a href=#337 id=337 data-nosnippet>337</a>        <span class="kw">let </span>len = <a class="self" href="#312">self</a>.<a href="../../core/primitive.slice.html#method.len">len</a>();
+<a href=#337 id=337 data-nosnippet>337</a>        <span class="kw">let </span>len = <a class="self" href="#312">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>();
 <a href=#338 id=338 data-nosnippet>338</a>        <span class="kw">if </span><a href="#337">len</a> &lt; <span class="number">2 </span>{
 <a href=#339 id=339 data-nosnippet>339</a>            <span class="kw">return</span>;
 <a href=#340 id=340 data-nosnippet>340</a>        }
@@ -342,13 +342,13 @@
 <a href=#342 id=342 data-nosnippet>342</a>        <span class="comment">// Avoids binary-size usage in cases where the alignment doesn't work out to make this
 <a href=#343 id=343 data-nosnippet>343</a>        // beneficial or on 32-bit platforms.
 <a href=#344 id=344 data-nosnippet>344</a>        </span><span class="kw">let </span>is_using_u32_as_idx_type_helpful =
-<a href=#345 id=345 data-nosnippet>345</a>            <span class="kw">const </span>{ <a href="../../core/mem/fn.size_of.html">size_of</a>::&lt;(K, <a href="../../core/primitive.u32.html">u32</a>)&gt;() &lt; <a href="../../core/mem/fn.size_of.html">size_of</a>::&lt;(K, <a href="../../core/primitive.usize.html">usize</a>)&gt;() };
+<a href=#345 id=345 data-nosnippet>345</a>            <span class="kw">const </span>{ <a href="https://doc.rust-lang.org/nightly/core/mem/fn.size_of.html">size_of</a>::&lt;(K, <a href="https://doc.rust-lang.org/nightly/core/primitive.u32.html">u32</a>)&gt;() &lt; <a href="https://doc.rust-lang.org/nightly/core/mem/fn.size_of.html">size_of</a>::&lt;(K, <a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>)&gt;() };
 <a href=#346 id=346 data-nosnippet>346</a>
 <a href=#347 id=347 data-nosnippet>347</a>        <span class="comment">// It's possible to instantiate this for u8 and u16 but, doing so is very wasteful in terms
 <a href=#348 id=348 data-nosnippet>348</a>        // of compile-times and binary-size, the peak saved heap memory for u16 is (u8 + u16) -&gt; 4
 <a href=#349 id=349 data-nosnippet>349</a>        // bytes * u16::MAX vs (u8 + u32) -&gt; 8 bytes * u16::MAX, the saved heap memory is at peak
 <a href=#350 id=350 data-nosnippet>350</a>        // ~262KB.
-<a href=#351 id=351 data-nosnippet>351</a>        </span><span class="kw">if </span><a href="#344">is_using_u32_as_idx_type_helpful</a> &amp;&amp; <a href="#337">len</a> &lt;= (<a href="../../core/primitive.u32.html">u32</a>::<a href="../../core/primitive.u32.html#associatedconstant.MAX">MAX</a> <span class="kw">as </span><a href="../../core/primitive.usize.html">usize</a>) {
+<a href=#351 id=351 data-nosnippet>351</a>        </span><span class="kw">if </span><a href="#344">is_using_u32_as_idx_type_helpful</a> &amp;&amp; <a href="#337">len</a> &lt;= (<a href="https://doc.rust-lang.org/nightly/core/primitive.u32.html">u32</a>::<a href="https://doc.rust-lang.org/nightly/core/primitive.u32.html#associatedconstant.MAX">MAX</a> <span class="kw">as </span><a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>) {
 <a href=#352 id=352 data-nosnippet>352</a>            <span class="kw">return </span><a href="#318-335">sort_by_key!</a>(u32, <span class="self">self</span>, f);
 <a href=#353 id=353 data-nosnippet>353</a>        }
 <a href=#354 id=354 data-nosnippet>354</a>
@@ -371,7 +371,7 @@
 <a href=#371 id=371 data-nosnippet>371</a>    #[inline]
 <a href=#372 id=372 data-nosnippet>372</a>    </span><span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;
 <a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">where
-<a href=#374 id=374 data-nosnippet>374</a>        </span>T: <a href="../../core/clone/trait.Clone.html">Clone</a>,
+<a href=#374 id=374 data-nosnippet>374</a>        </span>T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>,
 <a href=#375 id=375 data-nosnippet>375</a>    {
 <a href=#376 id=376 data-nosnippet>376</a>        <a class="self" href="#372">self</a>.<a href="#396-461">to_vec_in</a>(<a href="alloc.rs.html#86">Global</a>)
 <a href=#377 id=377 data-nosnippet>377</a>    }
@@ -395,24 +395,24 @@
 <a href=#395 id=395 data-nosnippet>395</a>    #[unstable(feature = <span class="string">"allocator_ext"</span>, issue = <span class="string">"163177"</span>, implied_by = <span class="string">"allocator_api"</span>)]
 <a href=#396 id=396 data-nosnippet>396</a>    </span><span class="kw">pub fn </span>to_vec_in&lt;A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, alloc: A) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;
 <a href=#397 id=397 data-nosnippet>397</a>    <span class="kw">where
-<a href=#398 id=398 data-nosnippet>398</a>        </span>T: <a href="../../core/clone/trait.Clone.html">Clone</a>,
+<a href=#398 id=398 data-nosnippet>398</a>        </span>T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>,
 <a href=#399 id=399 data-nosnippet>399</a>    {
 <a href=#400 id=400 data-nosnippet>400</a>        <span class="kw">return </span>T::<a href="#403-405">to_vec</a>(<a class="self" href="#396">self</a>, <a href="#396">alloc</a>);
 <a href=#401 id=401 data-nosnippet>401</a>
 <a href=#402 id=402 data-nosnippet>402</a>        <span class="kw">trait </span>ConvertVec {
 <a href=#403 id=403 data-nosnippet>403</a>            <span class="kw">fn </span>to_vec&lt;A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt;(s: <span class="kw-2">&amp;</span>[<span class="self">Self</span>], alloc: A) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<span class="self">Self</span>, A&gt;
 <a href=#404 id=404 data-nosnippet>404</a>            <span class="kw">where
-<a href=#405 id=405 data-nosnippet>405</a>                </span><span class="self">Self</span>: <a href="../../core/marker/trait.Sized.html">Sized</a>;
+<a href=#405 id=405 data-nosnippet>405</a>                </span><span class="self">Self</span>: <a href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html">Sized</a>;
 <a href=#406 id=406 data-nosnippet>406</a>        }
 <a href=#407 id=407 data-nosnippet>407</a>
-<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>&gt; <a href="#402-406">ConvertVec</a> <span class="kw">for </span>T {
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>&gt; <a href="#402-406">ConvertVec</a> <span class="kw">for </span>T {
 <a href=#409 id=409 data-nosnippet>409</a>            <span class="attr">#[inline]
 <a href=#410 id=410 data-nosnippet>410</a>            </span>default <span class="kw">fn </span>to_vec&lt;A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt;(s: <span class="kw-2">&amp;</span>[<span class="self">Self</span>], alloc: A) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<span class="self">Self</span>, A&gt; {
 <a href=#411 id=411 data-nosnippet>411</a>                <span class="kw">struct </span>DropGuard&lt;<span class="lifetime">'a</span>, T, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; {
 <a href=#412 id=412 data-nosnippet>412</a>                    vec: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;,
-<a href=#413 id=413 data-nosnippet>413</a>                    num_init: <a href="../../core/primitive.usize.html">usize</a>,
+<a href=#413 id=413 data-nosnippet>413</a>                    num_init: <a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>,
 <a href=#414 id=414 data-nosnippet>414</a>                }
-<a href=#415 id=415 data-nosnippet>415</a>                <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="../../core/ops/drop/trait.Drop.html">Drop</a> <span class="kw">for </span><a href="#411-414">DropGuard</a>&lt;<span class="lifetime">'a</span>, T, A&gt; {
+<a href=#415 id=415 data-nosnippet>415</a>                <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html">Drop</a> <span class="kw">for </span><a href="#411-414">DropGuard</a>&lt;<span class="lifetime">'a</span>, T, A&gt; {
 <a href=#416 id=416 data-nosnippet>416</a>                    <span class="attr">#[inline]
 <a href=#417 id=417 data-nosnippet>417</a>                    </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
 <a href=#418 id=418 data-nosnippet>418</a>                        <span class="comment">// SAFETY:
@@ -422,7 +422,7 @@
 <a href=#422 id=422 data-nosnippet>422</a>                        }
 <a href=#423 id=423 data-nosnippet>423</a>                    }
 <a href=#424 id=424 data-nosnippet>424</a>                }
-<a href=#425 id=425 data-nosnippet>425</a>                <span class="kw">let </span><span class="kw-2">mut </span>vec = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#938-940">with_capacity_in</a>(<a href="#410">s</a>.<a href="../../core/primitive.slice.html#method.len">len</a>(), <a href="#410">alloc</a>);
+<a href=#425 id=425 data-nosnippet>425</a>                <span class="kw">let </span><span class="kw-2">mut </span>vec = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#938-940">with_capacity_in</a>(<a href="#410">s</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>(), <a href="#410">alloc</a>);
 <a href=#426 id=426 data-nosnippet>426</a>                <span class="kw">let </span><span class="kw-2">mut </span>guard = <a href="#411-414">DropGuard</a> { vec: <span class="kw-2">&amp;mut </span><a href="#425">vec</a>, num_init: <span class="number">0 </span>};
 <a href=#427 id=427 data-nosnippet>427</a>                <span class="kw">let </span>slots = <a href="#426">guard</a>.vec.<a href="vec/mod.rs.html#3362-3373">spare_capacity_mut</a>();
 <a href=#428 id=428 data-nosnippet>428</a>                <span class="comment">// .take(slots.len()) is necessary for LLVM to remove bounds checks
@@ -431,27 +431,27 @@
 <a href=#431 id=431 data-nosnippet>431</a>                    guard.num_init = i;
 <a href=#432 id=432 data-nosnippet>432</a>                    slots[i].write(b.clone());
 <a href=#433 id=433 data-nosnippet>433</a>                }
-<a href=#434 id=434 data-nosnippet>434</a>                core::mem::<a href="../../core/mem/fn.forget.html">forget</a>(<a href="#426">guard</a>);
+<a href=#434 id=434 data-nosnippet>434</a>                core::mem::<a href="https://doc.rust-lang.org/nightly/core/mem/fn.forget.html">forget</a>(<a href="#426">guard</a>);
 <a href=#435 id=435 data-nosnippet>435</a>                <span class="comment">// SAFETY:
 <a href=#436 id=436 data-nosnippet>436</a>                // the vec was allocated and initialized above to at least this length.
 <a href=#437 id=437 data-nosnippet>437</a>                </span><span class="kw">unsafe </span>{
-<a href=#438 id=438 data-nosnippet>438</a>                    <a href="#425">vec</a>.<a href="vec/mod.rs.html#2139-2147">set_len</a>(<a href="#410">s</a>.<a href="../../core/primitive.slice.html#method.len">len</a>());
+<a href=#438 id=438 data-nosnippet>438</a>                    <a href="#425">vec</a>.<a href="vec/mod.rs.html#2139-2147">set_len</a>(<a href="#410">s</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>());
 <a href=#439 id=439 data-nosnippet>439</a>                }
 <a href=#440 id=440 data-nosnippet>440</a>                <a href="#425">vec</a>
 <a href=#441 id=441 data-nosnippet>441</a>            }
 <a href=#442 id=442 data-nosnippet>442</a>        }
 <a href=#443 id=443 data-nosnippet>443</a>
-<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.TrivialClone.html">TrivialClone</a>&gt; <a href="#402-406">ConvertVec</a> <span class="kw">for </span>T {
+<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.TrivialClone.html">TrivialClone</a>&gt; <a href="#402-406">ConvertVec</a> <span class="kw">for </span>T {
 <a href=#445 id=445 data-nosnippet>445</a>            <span class="attr">#[inline]
 <a href=#446 id=446 data-nosnippet>446</a>            </span><span class="kw">fn </span>to_vec&lt;A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt;(s: <span class="kw-2">&amp;</span>[<span class="self">Self</span>], alloc: A) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<span class="self">Self</span>, A&gt; {
-<a href=#447 id=447 data-nosnippet>447</a>                <span class="kw">let </span>len = <a href="#446">s</a>.<a href="../../core/primitive.slice.html#method.len">len</a>();
+<a href=#447 id=447 data-nosnippet>447</a>                <span class="kw">let </span>len = <a href="#446">s</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>();
 <a href=#448 id=448 data-nosnippet>448</a>                <span class="kw">let </span><span class="kw-2">mut </span>v = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#938-940">with_capacity_in</a>(<a href="#447">len</a>, <a href="#446">alloc</a>);
 <a href=#449 id=449 data-nosnippet>449</a>                <span class="kw">if </span><a href="#447">len</a> &gt; <span class="number">0 </span>{
 <a href=#450 id=450 data-nosnippet>450</a>                    <span class="comment">// SAFETY:
 <a href=#451 id=451 data-nosnippet>451</a>                    // allocated above with the capacity of `s`, and initialize to `s.len()` in
 <a href=#452 id=452 data-nosnippet>452</a>                    // ptr::copy_to_non_overlapping below.
 <a href=#453 id=453 data-nosnippet>453</a>                    </span><span class="kw">unsafe </span>{
-<a href=#454 id=454 data-nosnippet>454</a>                        <a href="#446">s</a>.<a href="../../core/primitive.slice.html#method.as_ptr">as_ptr</a>().<a href="../../core/primitive.pointer.html#method.copy_to_nonoverlapping">copy_to_nonoverlapping</a>(<a href="#448">v</a>.<a href="vec/mod.rs.html#1971-1975">as_mut_ptr</a>(), <a href="#447">len</a>);
+<a href=#454 id=454 data-nosnippet>454</a>                        <a href="#446">s</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.as_ptr">as_ptr</a>().<a href="https://doc.rust-lang.org/nightly/core/primitive.pointer.html#method.copy_to_nonoverlapping">copy_to_nonoverlapping</a>(<a href="#448">v</a>.<a href="vec/mod.rs.html#1971-1975">as_mut_ptr</a>(), <a href="#447">len</a>);
 <a href=#455 id=455 data-nosnippet>455</a>                        <a href="#448">v</a>.<a href="vec/mod.rs.html#2139-2147">set_len</a>(<a href="#447">len</a>);
 <a href=#456 id=456 data-nosnippet>456</a>                    }
 <a href=#457 id=457 data-nosnippet>457</a>                }
@@ -479,7 +479,7 @@
 <a href=#479 id=479 data-nosnippet>479</a>    #[rustc_const_unstable(feature = <span class="string">"const_heap"</span>, issue = <span class="string">"79597"</span>)]
 <a href=#480 id=480 data-nosnippet>480</a>    #[inline]
 <a href=#481 id=481 data-nosnippet>481</a>    </span><span class="kw">pub const fn </span>into_vec&lt;A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt;(<span class="self">self</span>: <a href="boxed.rs.html#308-311">Box</a>&lt;<span class="self">Self</span>, A&gt;) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt; {
-<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">let </span>len = <a class="self" href="#481">self</a>.<a href="../../core/primitive.slice.html#method.len">len</a>();
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">let </span>len = <a class="self" href="#481">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>();
 <a href=#483 id=483 data-nosnippet>483</a>        <span class="kw">let </span>(b, alloc) = <a href="boxed.rs.html#308-311">Box</a>::<a href="boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a class="self" href="#481">self</a>);
 <a href=#484 id=484 data-nosnippet>484</a>        <span class="comment">// SAFETY: `b` is currently allocated with `alloc` and was allocated with the
 <a href=#485 id=485 data-nosnippet>485</a>        // matching layout for an array of `T * len`, the length is equal to the capacity,
@@ -509,9 +509,9 @@
 <a href=#509 id=509 data-nosnippet>509</a>    </span><span class="attr">#[rustc_allow_incoherent_impl]
 <a href=#510 id=510 data-nosnippet>510</a>    #[cfg(not(no_global_oom_handling))]
 <a href=#511 id=511 data-nosnippet>511</a>    #[stable(feature = <span class="string">"repeat_generic_slice"</span>, since = <span class="string">"1.40.0"</span>)]
-<a href=#512 id=512 data-nosnippet>512</a>    </span><span class="kw">pub fn </span>repeat(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;
+<a href=#512 id=512 data-nosnippet>512</a>    </span><span class="kw">pub fn </span>repeat(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;
 <a href=#513 id=513 data-nosnippet>513</a>    <span class="kw">where
-<a href=#514 id=514 data-nosnippet>514</a>        </span>T: <a href="../../core/marker/trait.Copy.html">Copy</a>,
+<a href=#514 id=514 data-nosnippet>514</a>        </span>T: <a href="https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html">Copy</a>,
 <a href=#515 id=515 data-nosnippet>515</a>    {
 <a href=#516 id=516 data-nosnippet>516</a>        <span class="kw">if </span><a href="#512">n</a> == <span class="number">0 </span>{
 <a href=#517 id=517 data-nosnippet>517</a>            <span class="kw">return </span><a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#473-475">new</a>();
@@ -523,11 +523,11 @@
 <a href=#523 id=523 data-nosnippet>523</a>        // and `rem` is the remaining part of `n`.
 <a href=#524 id=524 data-nosnippet>524</a>
 <a href=#525 id=525 data-nosnippet>525</a>        // Using `Vec` to access `set_len()`.
-<a href=#526 id=526 data-nosnippet>526</a>        </span><span class="kw">let </span>capacity = <a class="self" href="#512">self</a>.<a href="../../core/primitive.slice.html#method.len">len</a>().<a href="../../core/primitive.usize.html#method.checked_mul">checked_mul</a>(<a href="#512">n</a>).<a href="../../core/option/enum.Option.html#method.expect">expect</a>(<span class="string">"capacity overflow"</span>);
+<a href=#526 id=526 data-nosnippet>526</a>        </span><span class="kw">let </span>capacity = <a class="self" href="#512">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>().<a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html#method.checked_mul">checked_mul</a>(<a href="#512">n</a>).<a href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#method.expect">expect</a>(<span class="string">"capacity overflow"</span>);
 <a href=#527 id=527 data-nosnippet>527</a>        <span class="kw">let </span><span class="kw-2">mut </span>buf = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#526">capacity</a>);
 <a href=#528 id=528 data-nosnippet>528</a>
 <a href=#529 id=529 data-nosnippet>529</a>        <span class="comment">// `2^expn` repetition is done by doubling `buf` `expn`-times.
-<a href=#530 id=530 data-nosnippet>530</a>        </span><a href="#527">buf</a>.<a href="../../core/iter/traits/collect/trait.Extend.html#tymethod.extend">extend</a>(<a class="self" href="#512">self</a>);
+<a href=#530 id=530 data-nosnippet>530</a>        </span><a href="#527">buf</a>.<a href="https://doc.rust-lang.org/nightly/core/iter/traits/collect/trait.Extend.html#tymethod.extend">extend</a>(<a class="self" href="#512">self</a>);
 <a href=#531 id=531 data-nosnippet>531</a>        {
 <a href=#532 id=532 data-nosnippet>532</a>            <span class="kw">let </span><span class="kw-2">mut </span>m = <a href="#512">n</a> &gt;&gt; <span class="number">1</span>;
 <a href=#533 id=533 data-nosnippet>533</a>            <span class="comment">// If `m &gt; 0`, there are remaining bits up to the leftmost '1'.
@@ -571,9 +571,9 @@
 <a href=#571 id=571 data-nosnippet>571</a>            // space with copies of the previous `len` elements.
 <a href=#572 id=572 data-nosnippet>572</a>            </span><span class="kw">unsafe </span>{
 <a href=#573 id=573 data-nosnippet>573</a>                <span class="comment">// This is non-overlapping since `2^expn &gt; rem`.
-<a href=#574 id=574 data-nosnippet>574</a>                </span>ptr::<a href="../../core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>::&lt;T&gt;(
+<a href=#574 id=574 data-nosnippet>574</a>                </span>ptr::<a href="https://doc.rust-lang.org/nightly/core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>::&lt;T&gt;(
 <a href=#575 id=575 data-nosnippet>575</a>                    <a href="#527">buf</a>.<a href="vec/mod.rs.html#1886-1890">as_ptr</a>(),
-<a href=#576 id=576 data-nosnippet>576</a>                    (<a href="#527">buf</a>.<a href="vec/mod.rs.html#1971-1975">as_mut_ptr</a>()).<a href="../../core/primitive.pointer.html#method.add">add</a>(<a href="#527">buf</a>.<a href="vec/mod.rs.html#3159-3168">len</a>()),
+<a href=#576 id=576 data-nosnippet>576</a>                    (<a href="#527">buf</a>.<a href="vec/mod.rs.html#1971-1975">as_mut_ptr</a>()).<a href="https://doc.rust-lang.org/nightly/core/primitive.pointer.html#method.add">add</a>(<a href="#527">buf</a>.<a href="vec/mod.rs.html#3159-3168">len</a>()),
 <a href=#577 id=577 data-nosnippet>577</a>                    <a href="#561">rem_len</a>,
 <a href=#578 id=578 data-nosnippet>578</a>                );
 <a href=#579 id=579 data-nosnippet>579</a>                <span class="comment">// `buf.len() + rem_len` equals to `buf.capacity()` (`= self.len() * n`).
@@ -593,7 +593,7 @@
 <a href=#593 id=593 data-nosnippet>593</a>    /// ```
 <a href=#594 id=594 data-nosnippet>594</a>    </span><span class="attr">#[rustc_allow_incoherent_impl]
 <a href=#595 id=595 data-nosnippet>595</a>    #[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#596 id=596 data-nosnippet>596</a>    </span><span class="kw">pub fn </span>concat&lt;Item: <span class="question-mark">?</span><a href="../../core/marker/trait.Sized.html">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; &lt;<span class="self">Self </span><span class="kw">as </span>Concat&lt;Item&gt;&gt;::<a href="#720">Output</a>
+<a href=#596 id=596 data-nosnippet>596</a>    </span><span class="kw">pub fn </span>concat&lt;Item: <span class="question-mark">?</span><a href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; &lt;<span class="self">Self </span><span class="kw">as </span>Concat&lt;Item&gt;&gt;::<a href="#720">Output</a>
 <a href=#597 id=597 data-nosnippet>597</a>    <span class="kw">where
 <a href=#598 id=598 data-nosnippet>598</a>        </span><span class="self">Self</span>: <a href="#717-725">Concat</a>&lt;Item&gt;,
 <a href=#599 id=599 data-nosnippet>599</a>    {
@@ -640,7 +640,7 @@
 <a href=#640 id=640 data-nosnippet>640</a>    }
 <a href=#641 id=641 data-nosnippet>641</a>}
 <a href=#642 id=642 data-nosnippet>642</a>
-<a href=#643 id=643 data-nosnippet>643</a><span class="kw">impl </span>[<a href="../../core/primitive.u8.html">u8</a>] {
+<a href=#643 id=643 data-nosnippet>643</a><span class="kw">impl </span>[<a href="https://doc.rust-lang.org/nightly/core/primitive.u8.html">u8</a>] {
 <a href=#644 id=644 data-nosnippet>644</a>    <span class="doccomment">/// Returns a vector containing a copy of this slice where each byte
 <a href=#645 id=645 data-nosnippet>645</a>    /// is mapped to its ASCII upper case equivalent.
 <a href=#646 id=646 data-nosnippet>646</a>    ///
@@ -656,8 +656,8 @@
 <a href=#656 id=656 data-nosnippet>656</a>                  without modifying the original"</span>]
 <a href=#657 id=657 data-nosnippet>657</a>    #[stable(feature = <span class="string">"ascii_methods_on_intrinsics"</span>, since = <span class="string">"1.23.0"</span>)]
 <a href=#658 id=658 data-nosnippet>658</a>    #[inline]
-<a href=#659 id=659 data-nosnippet>659</a>    </span><span class="kw">pub fn </span>to_ascii_uppercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
-<a href=#660 id=660 data-nosnippet>660</a>        <a class="self" href="#659">self</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>().<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|b| <a href="#660">b</a>.<a href="../../core/primitive.u8.html#method.to_ascii_uppercase">to_ascii_uppercase</a>()).<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>()
+<a href=#659 id=659 data-nosnippet>659</a>    </span><span class="kw">pub fn </span>to_ascii_uppercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="https://doc.rust-lang.org/nightly/core/primitive.u8.html">u8</a>&gt; {
+<a href=#660 id=660 data-nosnippet>660</a>        <a class="self" href="#659">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>().<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|b| <a href="#660">b</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.u8.html#method.to_ascii_uppercase">to_ascii_uppercase</a>()).<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>()
 <a href=#661 id=661 data-nosnippet>661</a>    }
 <a href=#662 id=662 data-nosnippet>662</a>
 <a href=#663 id=663 data-nosnippet>663</a>    <span class="doccomment">/// Returns a vector containing a copy of this slice where each byte
@@ -675,8 +675,8 @@
 <a href=#675 id=675 data-nosnippet>675</a>                  without modifying the original"</span>]
 <a href=#676 id=676 data-nosnippet>676</a>    #[stable(feature = <span class="string">"ascii_methods_on_intrinsics"</span>, since = <span class="string">"1.23.0"</span>)]
 <a href=#677 id=677 data-nosnippet>677</a>    #[inline]
-<a href=#678 id=678 data-nosnippet>678</a>    </span><span class="kw">pub fn </span>to_ascii_lowercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="../../core/primitive.u8.html">u8</a>&gt; {
-<a href=#679 id=679 data-nosnippet>679</a>        <a class="self" href="#678">self</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>().<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|b| <a href="#679">b</a>.<a href="../../core/primitive.u8.html#method.to_ascii_lowercase">to_ascii_lowercase</a>()).<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>()
+<a href=#678 id=678 data-nosnippet>678</a>    </span><span class="kw">pub fn </span>to_ascii_lowercase(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;<a href="https://doc.rust-lang.org/nightly/core/primitive.u8.html">u8</a>&gt; {
+<a href=#679 id=679 data-nosnippet>679</a>        <a class="self" href="#678">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>().<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|b| <a href="#679">b</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.u8.html#method.to_ascii_lowercase">to_ascii_lowercase</a>()).<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>()
 <a href=#680 id=680 data-nosnippet>680</a>    }
 <a href=#681 id=681 data-nosnippet>681</a>}
 <a href=#682 id=682 data-nosnippet>682</a>
@@ -714,7 +714,7 @@
 <a href=#714 id=714 data-nosnippet>714</a>/// }
 <a href=#715 id=715 data-nosnippet>715</a>/// ```
 <a href=#716 id=716 data-nosnippet>716</a></span><span class="attr">#[unstable(feature = <span class="string">"slice_concat_trait"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"implementation detail"</span>)]
-<a href=#717 id=717 data-nosnippet>717</a></span><span class="kw">pub trait </span><a href="../../alloc/slice/trait.Concat.html">Concat</a>&lt;Item: <span class="question-mark">?</span><a href="../../core/marker/trait.Sized.html">Sized</a>&gt; {
+<a href=#717 id=717 data-nosnippet>717</a></span><span class="kw">pub trait </span><a href="../../alloc/slice/trait.Concat.html">Concat</a>&lt;Item: <span class="question-mark">?</span><a href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html">Sized</a>&gt; {
 <a href=#718 id=718 data-nosnippet>718</a>    <span class="attr">#[unstable(feature = <span class="string">"slice_concat_trait"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"implementation detail"</span>)]
 <a href=#719 id=719 data-nosnippet>719</a>    </span><span class="doccomment">/// The resulting type after concatenation
 <a href=#720 id=720 data-nosnippet>720</a>    </span><span class="kw">type </span>Output;
@@ -738,11 +738,11 @@
 <a href=#738 id=738 data-nosnippet>738</a>
 <a href=#739 id=739 data-nosnippet>739</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#740 id=740 data-nosnippet>740</a>#[unstable(feature = <span class="string">"slice_concat_ext"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"implementation detail"</span>)]
-<a href=#741 id=741 data-nosnippet>741</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#717-725">Concat</a>&lt;T&gt; <span class="kw">for </span>[V] {
+<a href=#741 id=741 data-nosnippet>741</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#717-725">Concat</a>&lt;T&gt; <span class="kw">for </span>[V] {
 <a href=#742 id=742 data-nosnippet>742</a>    <span class="kw">type </span>Output = <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;;
 <a href=#743 id=743 data-nosnippet>743</a>
 <a href=#744 id=744 data-nosnippet>744</a>    <span class="kw">fn </span>concat(slice: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt; {
-<a href=#745 id=745 data-nosnippet>745</a>        <span class="kw">let </span>size = <a href="#744">slice</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>().<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|slice| <a href="#745">slice</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="../../core/primitive.slice.html#method.len">len</a>()).<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>();
+<a href=#745 id=745 data-nosnippet>745</a>        <span class="kw">let </span>size = <a href="#744">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>().<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|slice| <a href="#745">slice</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>()).<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>();
 <a href=#746 id=746 data-nosnippet>746</a>        <span class="kw">let </span><span class="kw-2">mut </span>result = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#745">size</a>);
 <a href=#747 id=747 data-nosnippet>747</a>        <span class="kw">for </span>v <span class="kw">in </span>slice {
 <a href=#748 id=748 data-nosnippet>748</a>            result.extend_from_slice(v.borrow())
@@ -753,16 +753,16 @@
 <a href=#753 id=753 data-nosnippet>753</a>
 <a href=#754 id=754 data-nosnippet>754</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#755 id=755 data-nosnippet>755</a>#[unstable(feature = <span class="string">"slice_concat_ext"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"implementation detail"</span>)]
-<a href=#756 id=756 data-nosnippet>756</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#729-737">Join</a>&lt;<span class="kw-2">&amp;</span>T&gt; <span class="kw">for </span>[V] {
+<a href=#756 id=756 data-nosnippet>756</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#729-737">Join</a>&lt;<span class="kw-2">&amp;</span>T&gt; <span class="kw">for </span>[V] {
 <a href=#757 id=757 data-nosnippet>757</a>    <span class="kw">type </span>Output = <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;;
 <a href=#758 id=758 data-nosnippet>758</a>
 <a href=#759 id=759 data-nosnippet>759</a>    <span class="kw">fn </span>join(slice: <span class="kw-2">&amp;</span><span class="self">Self</span>, sep: <span class="kw-2">&amp;</span>T) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt; {
-<a href=#760 id=760 data-nosnippet>760</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a href="#759">slice</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>();
-<a href=#761 id=761 data-nosnippet>761</a>        <span class="kw">let </span>first = <span class="kw">match </span><a href="#760">iter</a>.<a href="../../core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>() {
-<a href=#762 id=762 data-nosnippet>762</a>            <a class="prelude-val" href="../../core/option/enum.Option.html#variant.Some">Some</a>(first) =&gt; <a href="#762">first</a>,
-<a href=#763 id=763 data-nosnippet>763</a>            <a class="prelude-val" href="../../core/option/enum.Option.html#variant.None">None</a> =&gt; <span class="kw">return </span><a href="macros.rs.html#43-63">vec!</a>[],
+<a href=#760 id=760 data-nosnippet>760</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a href="#759">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>();
+<a href=#761 id=761 data-nosnippet>761</a>        <span class="kw">let </span>first = <span class="kw">match </span><a href="#760">iter</a>.<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>() {
+<a href=#762 id=762 data-nosnippet>762</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#variant.Some">Some</a>(first) =&gt; <a href="#762">first</a>,
+<a href=#763 id=763 data-nosnippet>763</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#variant.None">None</a> =&gt; <span class="kw">return </span><a href="macros.rs.html#43-63">vec!</a>[],
 <a href=#764 id=764 data-nosnippet>764</a>        };
-<a href=#765 id=765 data-nosnippet>765</a>        <span class="kw">let </span>size = <a href="#759">slice</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>().<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|v| <a href="#765">v</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="../../core/primitive.slice.html#method.len">len</a>()).<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>::&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;() + <a href="#759">slice</a>.<a href="../../core/primitive.slice.html#method.len">len</a>() - <span class="number">1</span>;
+<a href=#765 id=765 data-nosnippet>765</a>        <span class="kw">let </span>size = <a href="#759">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>().<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|v| <a href="#765">v</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>()).<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>::&lt;<a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>&gt;() + <a href="#759">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>() - <span class="number">1</span>;
 <a href=#766 id=766 data-nosnippet>766</a>        <span class="kw">let </span><span class="kw-2">mut </span>result = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#765">size</a>);
 <a href=#767 id=767 data-nosnippet>767</a>        <a href="#766">result</a>.<a href="vec/mod.rs.html#3669-3671">extend_from_slice</a>(<a href="#761">first</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>());
 <a href=#768 id=768 data-nosnippet>768</a>
@@ -776,17 +776,17 @@
 <a href=#776 id=776 data-nosnippet>776</a>
 <a href=#777 id=777 data-nosnippet>777</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#778 id=778 data-nosnippet>778</a>#[unstable(feature = <span class="string">"slice_concat_ext"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"implementation detail"</span>)]
-<a href=#779 id=779 data-nosnippet>779</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#729-737">Join</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; <span class="kw">for </span>[V] {
+<a href=#779 id=779 data-nosnippet>779</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>, V: <a href="../../alloc/borrow/trait.Borrow.html">Borrow</a>&lt;[T]&gt;&gt; <a href="#729-737">Join</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; <span class="kw">for </span>[V] {
 <a href=#780 id=780 data-nosnippet>780</a>    <span class="kw">type </span>Output = <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;;
 <a href=#781 id=781 data-nosnippet>781</a>
 <a href=#782 id=782 data-nosnippet>782</a>    <span class="kw">fn </span>join(slice: <span class="kw-2">&amp;</span><span class="self">Self</span>, sep: <span class="kw-2">&amp;</span>[T]) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt; {
-<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a href="#782">slice</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>();
-<a href=#784 id=784 data-nosnippet>784</a>        <span class="kw">let </span>first = <span class="kw">match </span><a href="#783">iter</a>.<a href="../../core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>() {
-<a href=#785 id=785 data-nosnippet>785</a>            <a class="prelude-val" href="../../core/option/enum.Option.html#variant.Some">Some</a>(first) =&gt; <a href="#785">first</a>,
-<a href=#786 id=786 data-nosnippet>786</a>            <a class="prelude-val" href="../../core/option/enum.Option.html#variant.None">None</a> =&gt; <span class="kw">return </span><a href="macros.rs.html#43-63">vec!</a>[],
+<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a href="#782">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>();
+<a href=#784 id=784 data-nosnippet>784</a>        <span class="kw">let </span>first = <span class="kw">match </span><a href="#783">iter</a>.<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#tymethod.next">next</a>() {
+<a href=#785 id=785 data-nosnippet>785</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#variant.Some">Some</a>(first) =&gt; <a href="#785">first</a>,
+<a href=#786 id=786 data-nosnippet>786</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html#variant.None">None</a> =&gt; <span class="kw">return </span><a href="macros.rs.html#43-63">vec!</a>[],
 <a href=#787 id=787 data-nosnippet>787</a>        };
 <a href=#788 id=788 data-nosnippet>788</a>        <span class="kw">let </span>size =
-<a href=#789 id=789 data-nosnippet>789</a>            <a href="#782">slice</a>.<a href="../../core/primitive.slice.html#method.iter">iter</a>().<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|v| <a href="#789">v</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="../../core/primitive.slice.html#method.len">len</a>()).<a href="../../core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>::&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;() + <a href="#782">sep</a>.<a href="../../core/primitive.slice.html#method.len">len</a>() * (<a href="#782">slice</a>.<a href="../../core/primitive.slice.html#method.len">len</a>() - <span class="number">1</span>);
+<a href=#789 id=789 data-nosnippet>789</a>            <a href="#782">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.iter">iter</a>().<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.map">map</a>(|v| <a href="#789">v</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>().<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>()).<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.sum">sum</a>::&lt;<a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>&gt;() + <a href="#782">sep</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>() * (<a href="#782">slice</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>() - <span class="number">1</span>);
 <a href=#790 id=790 data-nosnippet>790</a>        <span class="kw">let </span><span class="kw-2">mut </span>result = <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#788">size</a>);
 <a href=#791 id=791 data-nosnippet>791</a>        <a href="#790">result</a>.<a href="vec/mod.rs.html#3669-3671">extend_from_slice</a>(<a href="#784">first</a>.<a href="../../alloc/borrow/trait.Borrow.html">borrow</a>());
 <a href=#792 id=792 data-nosnippet>792</a>
@@ -825,23 +825,23 @@
 <a href=#825 id=825 data-nosnippet>825</a>}
 <a href=#826 id=826 data-nosnippet>826</a>
 <a href=#827 id=827 data-nosnippet>827</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#828 id=828 data-nosnippet>828</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="#823-825">SpecCloneIntoVec</a>&lt;T, A&gt; <span class="kw">for </span>[T] {
+<a href=#828 id=828 data-nosnippet>828</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="#823-825">SpecCloneIntoVec</a>&lt;T, A&gt; <span class="kw">for </span>[T] {
 <a href=#829 id=829 data-nosnippet>829</a>    default <span class="kw">fn </span>clone_into(<span class="kw-2">&amp;</span><span class="self">self</span>, target: <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;) {
 <a href=#830 id=830 data-nosnippet>830</a>        <span class="comment">// drop anything in target that will not be overwritten
-<a href=#831 id=831 data-nosnippet>831</a>        </span><a href="#829">target</a>.<a href="vec/mod.rs.html#1730-1750">truncate</a>(<a class="self" href="#829">self</a>.<a href="../../core/primitive.slice.html#method.len">len</a>());
+<a href=#831 id=831 data-nosnippet>831</a>        </span><a href="#829">target</a>.<a href="vec/mod.rs.html#1730-1750">truncate</a>(<a class="self" href="#829">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.len">len</a>());
 <a href=#832 id=832 data-nosnippet>832</a>
 <a href=#833 id=833 data-nosnippet>833</a>        <span class="comment">// target.len &lt;= self.len due to the truncate above, so the
 <a href=#834 id=834 data-nosnippet>834</a>        // slices here are always in-bounds.
-<a href=#835 id=835 data-nosnippet>835</a>        </span><span class="kw">let </span>(init, tail) = <a class="self" href="#829">self</a>.<a href="../../core/primitive.slice.html#method.split_at">split_at</a>(<a href="#829">target</a>.<a href="vec/mod.rs.html#3159-3168">len</a>());
+<a href=#835 id=835 data-nosnippet>835</a>        </span><span class="kw">let </span>(init, tail) = <a class="self" href="#829">self</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.split_at">split_at</a>(<a href="#829">target</a>.<a href="vec/mod.rs.html#3159-3168">len</a>());
 <a href=#836 id=836 data-nosnippet>836</a>
 <a href=#837 id=837 data-nosnippet>837</a>        <span class="comment">// reuse the contained values' allocations/resources.
-<a href=#838 id=838 data-nosnippet>838</a>        </span><a href="#829">target</a>.<a href="../../core/primitive.slice.html#method.clone_from_slice">clone_from_slice</a>(<a href="#835">init</a>);
+<a href=#838 id=838 data-nosnippet>838</a>        </span><a href="#829">target</a>.<a href="https://doc.rust-lang.org/nightly/core/primitive.slice.html#method.clone_from_slice">clone_from_slice</a>(<a href="#835">init</a>);
 <a href=#839 id=839 data-nosnippet>839</a>        <a href="#829">target</a>.<a href="vec/mod.rs.html#3669-3671">extend_from_slice</a>(<a href="#835">tail</a>);
 <a href=#840 id=840 data-nosnippet>840</a>    }
 <a href=#841 id=841 data-nosnippet>841</a>}
 <a href=#842 id=842 data-nosnippet>842</a>
 <a href=#843 id=843 data-nosnippet>843</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#844 id=844 data-nosnippet>844</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.TrivialClone.html">TrivialClone</a>, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="#823-825">SpecCloneIntoVec</a>&lt;T, A&gt; <span class="kw">for </span>[T] {
+<a href=#844 id=844 data-nosnippet>844</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.TrivialClone.html">TrivialClone</a>, A: <a href="../../alloc/alloc/trait.Allocator.html">Allocator</a>&gt; <a href="#823-825">SpecCloneIntoVec</a>&lt;T, A&gt; <span class="kw">for </span>[T] {
 <a href=#845 id=845 data-nosnippet>845</a>    <span class="kw">fn </span>clone_into(<span class="kw-2">&amp;</span><span class="self">self</span>, target: <span class="kw-2">&amp;mut </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;) {
 <a href=#846 id=846 data-nosnippet>846</a>        <a href="#845">target</a>.<a href="vec/mod.rs.html#3127-3144">clear</a>();
 <a href=#847 id=847 data-nosnippet>847</a>        <a href="#845">target</a>.<a href="vec/mod.rs.html#3669-3671">extend_from_slice</a>(<a class="self" href="#845">self</a>);
@@ -850,7 +850,7 @@
 <a href=#850 id=850 data-nosnippet>850</a>
 <a href=#851 id=851 data-nosnippet>851</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#852 id=852 data-nosnippet>852</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#853 id=853 data-nosnippet>853</a></span><span class="kw">impl</span>&lt;T: <a href="../../core/clone/trait.Clone.html">Clone</a>&gt; <a href="borrow.rs.html#27-69">ToOwned</a> <span class="kw">for </span>[T] {
+<a href=#853 id=853 data-nosnippet>853</a></span><span class="kw">impl</span>&lt;T: <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html">Clone</a>&gt; <a href="borrow.rs.html#27-69">ToOwned</a> <span class="kw">for </span>[T] {
 <a href=#854 id=854 data-nosnippet>854</a>    <span class="kw">type </span>Owned = <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;;
 <a href=#855 id=855 data-nosnippet>855</a>
 <a href=#856 id=856 data-nosnippet>856</a>    <span class="kw">fn </span>to_owned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt; {
@@ -870,7 +870,7 @@
 <a href=#870 id=870 data-nosnippet>870</a>#[cfg(not(no_global_oom_handling))]
 <a href=#871 id=871 data-nosnippet>871</a></span><span class="kw">fn </span>stable_sort&lt;T, F&gt;(v: <span class="kw-2">&amp;mut </span>[T], <span class="kw-2">mut </span>is_less: F)
 <a href=#872 id=872 data-nosnippet>872</a><span class="kw">where
-<a href=#873 id=873 data-nosnippet>873</a>    </span>F: <a href="../../core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../core/primitive.bool.html">bool</a>,
+<a href=#873 id=873 data-nosnippet>873</a>    </span>F: <a href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="https://doc.rust-lang.org/nightly/core/primitive.bool.html">bool</a>,
 <a href=#874 id=874 data-nosnippet>874</a>{
 <a href=#875 id=875 data-nosnippet>875</a>    sort::stable::sort::&lt;T, F, <a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;&gt;(<a href="#871">v</a>, <span class="kw-2">&amp;mut </span><a href="#871">is_less</a>);
 <a href=#876 id=876 data-nosnippet>876</a>}
@@ -878,11 +878,11 @@
 <a href=#878 id=878 data-nosnippet>878</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#879 id=879 data-nosnippet>879</a>#[unstable(issue = <span class="string">"none"</span>, feature = <span class="string">"std_internals"</span>)]
 <a href=#880 id=880 data-nosnippet>880</a></span><span class="kw">impl</span>&lt;T&gt; sort::stable::BufGuard&lt;T&gt; <span class="kw">for </span><a href="vec/mod.rs.html#448-451">Vec</a>&lt;T&gt; {
-<a href=#881 id=881 data-nosnippet>881</a>    <span class="kw">fn </span>with_capacity(capacity: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
+<a href=#881 id=881 data-nosnippet>881</a>    <span class="kw">fn </span>with_capacity(capacity: <a href="https://doc.rust-lang.org/nightly/core/primitive.usize.html">usize</a>) -&gt; <span class="self">Self </span>{
 <a href=#882 id=882 data-nosnippet>882</a>        <a href="vec/mod.rs.html#448-451">Vec</a>::<a href="vec/mod.rs.html#534-536">with_capacity</a>(<a href="#881">capacity</a>)
 <a href=#883 id=883 data-nosnippet>883</a>    }
 <a href=#884 id=884 data-nosnippet>884</a>
-<a href=#885 id=885 data-nosnippet>885</a>    <span class="kw">fn </span>as_uninit_slice_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[<a href="../../core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>&lt;T&gt;] {
+<a href=#885 id=885 data-nosnippet>885</a>    <span class="kw">fn </span>as_uninit_slice_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>[<a href="https://doc.rust-lang.org/nightly/core/mem/maybe_uninit/union.MaybeUninit.html">MaybeUninit</a>&lt;T&gt;] {
 <a href=#886 id=886 data-nosnippet>886</a>        <a class="self" href="#885">self</a>.<a href="vec/mod.rs.html#3362-3373">spare_capacity_mut</a>()
 <a href=#887 id=887 data-nosnippet>887</a>    }
 <a href=#888 id=888 data-nosnippet>888</a>}
