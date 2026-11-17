@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1c7ad9c1.js";
+            window.path_to_searchindex_js = "searchindex-972ae2a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-25a05a0a.js"></script>
@@ -4334,18 +4334,57 @@ simply use <code>Struct::X</code>.</p>
 <span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="error-code-e0225"><a class="header" href="#error-code-e0225">Error code E0225</a></h1>
-<p>Multiple types were used as bounds for a closure or trait object.</p>
+<p>Multiple traits were used as bounds in a <code>dyn</code> trait object type.</p>
 <p>Erroneous code example:</p>
-<pre class="playground"><code class="language-rust compile_fail E0225">fn main() {
-    let _: Box&lt;dyn std::io::Read + std::io::Write&gt;;
-}</code></pre>
-<p>Rust does not currently support this.</p>
-<p>Auto traits such as Send and Sync are an exception to this rule:
-It’s possible to have bounds of one non-builtin trait, plus any number of
-auto traits. For example, the following compiles correctly:</p>
-<pre class="playground"><code class="language-rust">fn main() {
-    let _: Box&lt;dyn std::io::Read + Send + Sync&gt;;
-}</code></pre>
+<pre class="playground"><code class="language-rust compile_fail E0225 edition2024"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct Example {
+    file: Box&lt;dyn std::io::Read + std::io::Write&gt;,
+}
+<span class="boring">}</span></code></pre>
+<p>Rust does not currently support ad-hoc combinations of traits in one trait
+object. There are several exceptions and alternatives:</p>
+<ul>
+<li>
+<p>Any number of auto traits such as <code>Send</code> and <code>Sync</code> are permitted to
+accompany a single normal trait. For example, the following code is
+accepted:</p>
+<pre><code class="language-edition2024">struct Example {
+    file: Box&lt;dyn std::io::Read + Send + Sync&gt;,
+}
+</code></pre>
+</li>
+<li>
+<p>Supertraits of the single non-auto trait are permitted and do not need to
+be specified explicitly. For example, the following code is permitted,
+even though <code>read_to_string()</code> is a method of <code>Read</code>, not <code>BufRead</code>,
+because <code>Read</code> is a supertrait of <code>BufRead</code>.</p>
+<pre><code class="language-edition2024">struct Example {
+    file: Box&lt;dyn std::io::BufRead&gt;,
+}
+
+impl Example {
+    fn read(mut self, string: &amp;mut String) -&gt; std::io::Result&lt;usize&gt; {
+        self.file.read_to_string(string)
+    }
+}
+</code></pre>
+<p>Therefore, if you are defining traits intended for use as trait objects,
+adding supertraits may be a suitable solution for this error.</p>
+</li>
+<li>
+<p>If you cannot or should not modify the definition of either trait, you can
+instead define a new trait which is implemented for that combination:</p>
+<pre><code class="language-edition2024">trait ReadWrite: std::io::Read + std::io::Write {}
+
+impl&lt;T: std::io::Read + std::io::Write&gt; ReadWrite for T {}
+
+struct Example {
+    file: Box&lt;dyn ReadWrite&gt;,
+}
+</code></pre>
+</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="error-code-e0226"><a class="header" href="#error-code-e0226">Error code E0226</a></h1>
 <p>More than one explicit lifetime bound was used on a trait object.</p>
