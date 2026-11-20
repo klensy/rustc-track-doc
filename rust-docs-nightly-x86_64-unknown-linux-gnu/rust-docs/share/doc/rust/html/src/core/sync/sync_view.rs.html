@@ -1,11 +1,11 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/sync_view.rs`."><title>sync_view.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (65ce8611f 2026-11-18)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>sync_view.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Defines [`SyncView`].
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/sync/sync_view.rs`."><title>sync_view.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6905905bb 2026-11-19)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/sync/</div>sync_view.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Defines [`SyncView`].
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><a href="../clone.rs.html#283">core::clone::TrivialClone</a>;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../cmp.rs.html#420-430">core::cmp::Ordering</a>;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../cmp.rs.html#421-431">core::cmp::Ordering</a>;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../lib.rs.html#331">core::fmt</a>;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../future/future.rs.html#37-114">core::future::Future</a>;
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>core::hash::{<a href="../hash/mod.rs.html#250-252">Hash</a>, <a href="../hash/mod.rs.html#312-554">Hasher</a>};
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core::marker::{<a href="../marker.rs.html#257-259">StructuralPartialEq</a>, <a href="../marker.rs.html#1075">Tuple</a>};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core::marker::{<a href="../marker.rs.html#258-260">StructuralPartialEq</a>, <a href="../marker.rs.html#1076">Tuple</a>};
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>core::ops::{<a href="../ops/coroutine.rs.html#73-120">Coroutine</a>, <a href="../ops/coroutine.rs.html#11-26">CoroutineState</a>};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../pin.rs.html#1091-1093">core::pin::Pin</a>;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>core::task::{<a href="../task/wake.rs.html#222-234">Context</a>, <a href="../task/poll.rs.html#13-27">Poll</a>};
@@ -98,13 +98,13 @@
 <a href=#98 id=98 data-nosnippet>98</a>// use `&amp;` access to the inner value, violating the `Sync` impl's safety
 <a href=#99 id=99 data-nosnippet>99</a>// requirements.
 <a href=#100 id=100 data-nosnippet>100</a></span><span class="attr">#[repr(transparent)]
-<a href=#101 id=101 data-nosnippet>101</a></span><span class="kw">pub struct </span><a href="../../../core/sync/struct.SyncView.html">SyncView</a>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt; {
+<a href=#101 id=101 data-nosnippet>101</a></span><span class="kw">pub struct </span><a href="../../../core/sync/struct.SyncView.html">SyncView</a>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt; {
 <a href=#102 id=102 data-nosnippet>102</a>    inner: T,
 <a href=#103 id=103 data-nosnippet>103</a>}
 <a href=#104 id=104 data-nosnippet>104</a>
 <a href=#105 id=105 data-nosnippet>105</a><span class="comment">// See `SyncView`'s docs for justification.
 <a href=#106 id=106 data-nosnippet>106</a></span><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
-<a href=#107 id=107 data-nosnippet>107</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt; <a href="../marker.rs.html#657-669">Sync</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; {}
+<a href=#107 id=107 data-nosnippet>107</a></span><span class="kw">unsafe impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt; <a href="../marker.rs.html#658-670">Sync</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; {}
 <a href=#108 id=108 data-nosnippet>108</a>
 <a href=#109 id=109 data-nosnippet>109</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#110 id=110 data-nosnippet>110</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
@@ -119,13 +119,13 @@
 <a href=#119 id=119 data-nosnippet>119</a>}
 <a href=#120 id=120 data-nosnippet>120</a>
 <a href=#121 id=121 data-nosnippet>121</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
-<a href=#122 id=122 data-nosnippet>122</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt; <a href="../fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; {
+<a href=#122 id=122 data-nosnippet>122</a></span><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; {
 <a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;(), fmt::<a href="../fmt/mod.rs.html#111">Error</a>&gt; {
-<a href=#124 id=124 data-nosnippet>124</a>        <a href="#123">f</a>.<a href="../fmt/mod.rs.html#2489-2491">debug_struct</a>(<span class="string">"SyncView"</span>).<a href="../fmt/builders.rs.html#248-265">finish_non_exhaustive</a>()
+<a href=#124 id=124 data-nosnippet>124</a>        <a href="#123">f</a>.<a href="../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"SyncView"</span>).<a href="../fmt/builders.rs.html#248-265">finish_non_exhaustive</a>()
 <a href=#125 id=125 data-nosnippet>125</a>    }
 <a href=#126 id=126 data-nosnippet>126</a>}
 <a href=#127 id=127 data-nosnippet>127</a>
-<a href=#128 id=128 data-nosnippet>128</a><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#158-160">Sized</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
+<a href=#128 id=128 data-nosnippet>128</a><span class="kw">impl</span>&lt;T: <a href="../marker.rs.html#159-161">Sized</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
 <a href=#129 id=129 data-nosnippet>129</a>    <span class="doccomment">/// Wrap a value in an `SyncView`
 <a href=#130 id=130 data-nosnippet>130</a>    </span><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#131 id=131 data-nosnippet>131</a>    #[rustc_const_stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
@@ -146,7 +146,7 @@
 <a href=#146 id=146 data-nosnippet>146</a>    }
 <a href=#147 id=147 data-nosnippet>147</a>}
 <a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
+<a href=#149 id=149 data-nosnippet>149</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
 <a href=#150 id=150 data-nosnippet>150</a>    <span class="doccomment">/// Gets pinned exclusive access to the underlying value.
 <a href=#151 id=151 data-nosnippet>151</a>    ///
 <a href=#152 id=152 data-nosnippet>152</a>    /// `SyncView` is considered to _structurally pin_ the underlying
@@ -189,7 +189,7 @@
 <a href=#189 id=189 data-nosnippet>189</a>    }
 <a href=#190 id=190 data-nosnippet>190</a>}
 <a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a> + <a href="../marker.rs.html#657-669">Sync</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
+<a href=#192 id=192 data-nosnippet>192</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a> + <a href="../marker.rs.html#658-670">Sync</a>&gt; <a href="#101-103">SyncView</a>&lt;T&gt; {
 <a href=#193 id=193 data-nosnippet>193</a>    <span class="doccomment">/// Gets pinned shared access to the underlying value.
 <a href=#194 id=194 data-nosnippet>194</a>    ///
 <a href=#195 id=195 data-nosnippet>195</a>    /// `SyncView` is considered to _structurally pin_ the underlying
@@ -221,7 +221,7 @@
 <a href=#221 id=221 data-nosnippet>221</a></span><span class="kw">const impl</span>&lt;F, Args&gt; <a href="../ops/function.rs.html#242-251">FnOnce</a>&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#222 id=222 data-nosnippet>222</a><span class="kw">where
 <a href=#223 id=223 data-nosnippet>223</a>    </span>F: [<span class="kw">const</span>] <a href="../ops/function.rs.html#242-251">FnOnce</a>&lt;Args&gt;,
-<a href=#224 id=224 data-nosnippet>224</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#224 id=224 data-nosnippet>224</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#225 id=225 data-nosnippet>225</a>{
 <a href=#226 id=226 data-nosnippet>226</a>    <span class="kw">type </span>Output = F::Output;
 <a href=#227 id=227 data-nosnippet>227</a>
@@ -235,7 +235,7 @@
 <a href=#235 id=235 data-nosnippet>235</a></span><span class="kw">const impl</span>&lt;F, Args&gt; <a href="../ops/function.rs.html#163-167">FnMut</a>&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#236 id=236 data-nosnippet>236</a><span class="kw">where
 <a href=#237 id=237 data-nosnippet>237</a>    </span>F: [<span class="kw">const</span>] <a href="../ops/function.rs.html#163-167">FnMut</a>&lt;Args&gt;,
-<a href=#238 id=238 data-nosnippet>238</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#238 id=238 data-nosnippet>238</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#239 id=239 data-nosnippet>239</a>{
 <a href=#240 id=240 data-nosnippet>240</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
 <a href=#241 id=241 data-nosnippet>241</a>        <a class="self" href="#240">self</a>.<a href="../convert/mod.rs.html#375">as_mut</a>().<a href="../ops/function.rs.html#166">call_mut</a>(<a href="#240">args</a>)
@@ -246,8 +246,8 @@
 <a href=#246 id=246 data-nosnippet>246</a>#[rustc_const_unstable(feature = <span class="string">"const_trait_impl"</span>, issue = <span class="string">"143874"</span>)]
 <a href=#247 id=247 data-nosnippet>247</a></span><span class="kw">const impl</span>&lt;F, Args&gt; <a href="../ops/function.rs.html#76-80">Fn</a>&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#248 id=248 data-nosnippet>248</a><span class="kw">where
-<a href=#249 id=249 data-nosnippet>249</a>    </span>F: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../ops/function.rs.html#76-80">Fn</a>&lt;Args&gt;,
-<a href=#250 id=250 data-nosnippet>250</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#249 id=249 data-nosnippet>249</a>    </span>F: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../ops/function.rs.html#76-80">Fn</a>&lt;Args&gt;,
+<a href=#250 id=250 data-nosnippet>250</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#251 id=251 data-nosnippet>251</a>{
 <a href=#252 id=252 data-nosnippet>252</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::Output {
 <a href=#253 id=253 data-nosnippet>253</a>        <a class="self" href="#252">self</a>.<a href="../convert/mod.rs.html#223">as_ref</a>().<a href="../ops/function.rs.html#79">call</a>(<a href="#252">args</a>)
@@ -258,7 +258,7 @@
 <a href=#258 id=258 data-nosnippet>258</a></span><span class="kw">impl</span>&lt;F, Args&gt; AsyncFnOnce&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#259 id=259 data-nosnippet>259</a><span class="kw">where
 <a href=#260 id=260 data-nosnippet>260</a>    </span>F: AsyncFnOnce&lt;Args&gt;,
-<a href=#261 id=261 data-nosnippet>261</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#261 id=261 data-nosnippet>261</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#262 id=262 data-nosnippet>262</a>{
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="kw">type </span>CallOnceFuture = F::CallOnceFuture;
 <a href=#264 id=264 data-nosnippet>264</a>
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a></span><span class="kw">impl</span>&lt;F, Args&gt; AsyncFnMut&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#274 id=274 data-nosnippet>274</a><span class="kw">where
 <a href=#275 id=275 data-nosnippet>275</a>    </span>F: AsyncFnMut&lt;Args&gt;,
-<a href=#276 id=276 data-nosnippet>276</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#276 id=276 data-nosnippet>276</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#277 id=277 data-nosnippet>277</a>{
 <a href=#278 id=278 data-nosnippet>278</a>    <span class="kw">type </span>CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
 <a href=#279 id=279 data-nosnippet>279</a>        = F::CallRefFuture&lt;<span class="lifetime">'a</span>&gt;
@@ -288,8 +288,8 @@
 <a href=#288 id=288 data-nosnippet>288</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#289 id=289 data-nosnippet>289</a></span><span class="kw">impl</span>&lt;F, Args&gt; AsyncFn&lt;Args&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;F&gt;
 <a href=#290 id=290 data-nosnippet>290</a><span class="kw">where
-<a href=#291 id=291 data-nosnippet>291</a>    </span>F: <a href="../marker.rs.html#657-669">Sync</a> + AsyncFn&lt;Args&gt;,
-<a href=#292 id=292 data-nosnippet>292</a>    Args: <a href="../marker.rs.html#1075">Tuple</a>,
+<a href=#291 id=291 data-nosnippet>291</a>    </span>F: <a href="../marker.rs.html#658-670">Sync</a> + AsyncFn&lt;Args&gt;,
+<a href=#292 id=292 data-nosnippet>292</a>    Args: <a href="../marker.rs.html#1076">Tuple</a>,
 <a href=#293 id=293 data-nosnippet>293</a>{
 <a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">extern </span><span class="string">"rust-call" </span><span class="kw">fn </span>async_call(<span class="kw-2">&amp;</span><span class="self">self</span>, args: Args) -&gt; <span class="self">Self</span>::CallRefFuture&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#295 id=295 data-nosnippet>295</a>        <a class="self" href="#294">self</a>.<a href="../convert/mod.rs.html#223">as_ref</a>().<a href="../ops/async_function.rs.html#14">async_call</a>(<a href="#294">args</a>)
@@ -299,7 +299,7 @@
 <a href=#299 id=299 data-nosnippet>299</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#300 id=300 data-nosnippet>300</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../future/future.rs.html#37-114">Future</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#301 id=301 data-nosnippet>301</a><span class="kw">where
-<a href=#302 id=302 data-nosnippet>302</a>    </span>T: <a href="../future/future.rs.html#37-114">Future</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#302 id=302 data-nosnippet>302</a>    </span>T: <a href="../future/future.rs.html#37-114">Future</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#303 id=303 data-nosnippet>303</a>{
 <a href=#304 id=304 data-nosnippet>304</a>    <span class="kw">type </span>Output = T::Output;
 <a href=#305 id=305 data-nosnippet>305</a>
@@ -312,7 +312,7 @@
 <a href=#312 id=312 data-nosnippet>312</a><span class="attr">#[unstable(feature = <span class="string">"coroutine_trait"</span>, issue = <span class="string">"43122"</span>)] </span><span class="comment">// also #98407
 <a href=#313 id=313 data-nosnippet>313</a></span><span class="kw">impl</span>&lt;R, G&gt; <a href="../ops/coroutine.rs.html#73-120">Coroutine</a>&lt;R&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;G&gt;
 <a href=#314 id=314 data-nosnippet>314</a><span class="kw">where
-<a href=#315 id=315 data-nosnippet>315</a>    </span>G: <a href="../ops/coroutine.rs.html#73-120">Coroutine</a>&lt;R&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#315 id=315 data-nosnippet>315</a>    </span>G: <a href="../ops/coroutine.rs.html#73-120">Coroutine</a>&lt;R&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#316 id=316 data-nosnippet>316</a>{
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="kw">type </span>Yield = G::Yield;
 <a href=#318 id=318 data-nosnippet>318</a>    <span class="kw">type </span>Return = G::Return;
@@ -327,7 +327,7 @@
 <a href=#327 id=327 data-nosnippet>327</a>#[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
 <a href=#328 id=328 data-nosnippet>328</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../convert/mod.rs.html#220-224">AsRef</a>&lt;T&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#329 id=329 data-nosnippet>329</a><span class="kw">where
-<a href=#330 id=330 data-nosnippet>330</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#330 id=330 data-nosnippet>330</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#331 id=331 data-nosnippet>331</a>{
 <a href=#332 id=332 data-nosnippet>332</a>    <span class="doccomment">/// Gets shared access to the underlying value.
 <a href=#333 id=333 data-nosnippet>333</a>    </span><span class="attr">#[inline]
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>#[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
 <a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../convert/mod.rs.html#372-376">AsMut</a>&lt;T&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#342 id=342 data-nosnippet>342</a><span class="kw">where
-<a href=#343 id=343 data-nosnippet>343</a>    </span>T: <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#343 id=343 data-nosnippet>343</a>    </span>T: <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#344 id=344 data-nosnippet>344</a>{
 <a href=#345 id=345 data-nosnippet>345</a>    <span class="doccomment">/// Gets exclusive access to the underlying value.
 <a href=#346 id=346 data-nosnippet>346</a>    </span><span class="attr">#[inline]
@@ -353,7 +353,7 @@
 <a href=#353 id=353 data-nosnippet>353</a>#[rustc_const_unstable(feature = <span class="string">"const_clone"</span>, issue = <span class="string">"142757"</span>)]
 <a href=#354 id=354 data-nosnippet>354</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#355 id=355 data-nosnippet>355</a><span class="kw">where
-<a href=#356 id=356 data-nosnippet>356</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../clone.rs.html#193-251">Clone</a>,
+<a href=#356 id=356 data-nosnippet>356</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../clone.rs.html#193-251">Clone</a>,
 <a href=#357 id=357 data-nosnippet>357</a>{
 <a href=#358 id=358 data-nosnippet>358</a>    <span class="attr">#[inline]
 <a href=#359 id=359 data-nosnippet>359</a>    </span><span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
@@ -364,17 +364,17 @@
 <a href=#364 id=364 data-nosnippet>364</a><span class="attr">#[doc(hidden)]
 <a href=#365 id=365 data-nosnippet>365</a>#[unstable(feature = <span class="string">"trivial_clone"</span>, issue = <span class="string">"none"</span>)]
 <a href=#366 id=366 data-nosnippet>366</a>#[rustc_const_unstable(feature = <span class="string">"const_clone"</span>, issue = <span class="string">"142757"</span>)]
-<a href=#367 id=367 data-nosnippet>367</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="../clone.rs.html#283">TrivialClone</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../clone.rs.html#283">TrivialClone</a> {}
+<a href=#367 id=367 data-nosnippet>367</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="../clone.rs.html#283">TrivialClone</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../clone.rs.html#283">TrivialClone</a> {}
 <a href=#368 id=368 data-nosnippet>368</a>
 <a href=#369 id=369 data-nosnippet>369</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
-<a href=#370 id=370 data-nosnippet>370</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../marker.rs.html#454-456">Copy</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#657-669">Sync</a> + <a href="../marker.rs.html#454-456">Copy</a> {}
+<a href=#370 id=370 data-nosnippet>370</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../marker.rs.html#455-457">Copy</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#658-670">Sync</a> + <a href="../marker.rs.html#455-457">Copy</a> {}
 <a href=#371 id=371 data-nosnippet>371</a>
 <a href=#372 id=372 data-nosnippet>372</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#373 id=373 data-nosnippet>373</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
 <a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">const impl</span>&lt;T, U&gt; <a href="../cmp.rs.html#253-281">PartialEq</a>&lt;<a href="#101-103">SyncView</a>&lt;U&gt;&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#375 id=375 data-nosnippet>375</a><span class="kw">where
-<a href=#376 id=376 data-nosnippet>376</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#253-281">PartialEq</a>&lt;U&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
-<a href=#377 id=377 data-nosnippet>377</a>    U: <a href="../marker.rs.html#657-669">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#376 id=376 data-nosnippet>376</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#253-281">PartialEq</a>&lt;U&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
+<a href=#377 id=377 data-nosnippet>377</a>    U: <a href="../marker.rs.html#658-670">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#378 id=378 data-nosnippet>378</a>{
 <a href=#379 id=379 data-nosnippet>379</a>    <span class="attr">#[inline]
 <a href=#380 id=380 data-nosnippet>380</a>    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#101-103">SyncView</a>&lt;U&gt;) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
@@ -383,16 +383,16 @@
 <a href=#383 id=383 data-nosnippet>383</a>}
 <a href=#384 id=384 data-nosnippet>384</a>
 <a href=#385 id=385 data-nosnippet>385</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
-<a href=#386 id=386 data-nosnippet>386</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../marker.rs.html#257-259">StructuralPartialEq</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#657-669">Sync</a> + <a href="../marker.rs.html#257-259">StructuralPartialEq</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a> {}
+<a href=#386 id=386 data-nosnippet>386</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../marker.rs.html#258-260">StructuralPartialEq</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#658-670">Sync</a> + <a href="../marker.rs.html#258-260">StructuralPartialEq</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a> {}
 <a href=#387 id=387 data-nosnippet>387</a>
 <a href=#388 id=388 data-nosnippet>388</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#389 id=389 data-nosnippet>389</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
-<a href=#390 id=390 data-nosnippet>390</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../cmp.rs.html#353-372">Eq</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#353-372">Eq</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a> {}
+<a href=#390 id=390 data-nosnippet>390</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../cmp.rs.html#354-373">Eq</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt; <span class="kw">where </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#354-373">Eq</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a> {}
 <a href=#391 id=391 data-nosnippet>391</a>
 <a href=#392 id=392 data-nosnippet>392</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#393 id=393 data-nosnippet>393</a></span><span class="kw">impl</span>&lt;T&gt; <a href="../hash/mod.rs.html#185-242">Hash</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#394 id=394 data-nosnippet>394</a><span class="kw">where
-<a href=#395 id=395 data-nosnippet>395</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + <a href="../hash/mod.rs.html#185-242">Hash</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#395 id=395 data-nosnippet>395</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + <a href="../hash/mod.rs.html#185-242">Hash</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#396 id=396 data-nosnippet>396</a>{
 <a href=#397 id=397 data-nosnippet>397</a>    <span class="attr">#[inline]
 <a href=#398 id=398 data-nosnippet>398</a>    </span><span class="kw">fn </span>hash&lt;H: <a href="../hash/mod.rs.html#312-554">Hasher</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
@@ -402,26 +402,26 @@
 <a href=#402 id=402 data-nosnippet>402</a>
 <a href=#403 id=403 data-nosnippet>403</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#404 id=404 data-nosnippet>404</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
-<a href=#405 id=405 data-nosnippet>405</a></span><span class="kw">const impl</span>&lt;T, U&gt; <a href="../cmp.rs.html#1458-1584">PartialOrd</a>&lt;<a href="#101-103">SyncView</a>&lt;U&gt;&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
+<a href=#405 id=405 data-nosnippet>405</a></span><span class="kw">const impl</span>&lt;T, U&gt; <a href="../cmp.rs.html#1459-1585">PartialOrd</a>&lt;<a href="#101-103">SyncView</a>&lt;U&gt;&gt; <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#406 id=406 data-nosnippet>406</a><span class="kw">where
-<a href=#407 id=407 data-nosnippet>407</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#1458-1584">PartialOrd</a>&lt;U&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
-<a href=#408 id=408 data-nosnippet>408</a>    U: <a href="../marker.rs.html#657-669">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#407 id=407 data-nosnippet>407</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#1459-1585">PartialOrd</a>&lt;U&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
+<a href=#408 id=408 data-nosnippet>408</a>    U: <a href="../marker.rs.html#658-670">Sync</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#409 id=409 data-nosnippet>409</a>{
 <a href=#410 id=410 data-nosnippet>410</a>    <span class="attr">#[inline]
-<a href=#411 id=411 data-nosnippet>411</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#101-103">SyncView</a>&lt;U&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../cmp.rs.html#420-430">Ordering</a>&gt; {
-<a href=#412 id=412 data-nosnippet>412</a>        <a class="self" href="#411">self</a>.inner.<a href="../cmp.rs.html#1487">partial_cmp</a>(<span class="kw-2">&amp;</span><a href="#411">other</a>.inner)
+<a href=#411 id=411 data-nosnippet>411</a>    </span><span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#101-103">SyncView</a>&lt;U&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../cmp.rs.html#421-431">Ordering</a>&gt; {
+<a href=#412 id=412 data-nosnippet>412</a>        <a class="self" href="#411">self</a>.inner.<a href="../cmp.rs.html#1488">partial_cmp</a>(<span class="kw-2">&amp;</span><a href="#411">other</a>.inner)
 <a href=#413 id=413 data-nosnippet>413</a>    }
 <a href=#414 id=414 data-nosnippet>414</a>}
 <a href=#415 id=415 data-nosnippet>415</a>
 <a href=#416 id=416 data-nosnippet>416</a><span class="attr">#[stable(feature = <span class="string">"exclusive_wrapper"</span>, since = <span class="string">"1.101.0"</span>)]
 <a href=#417 id=417 data-nosnippet>417</a>#[rustc_const_unstable(feature = <span class="string">"const_cmp"</span>, issue = <span class="string">"143800"</span>)]
-<a href=#418 id=418 data-nosnippet>418</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../cmp.rs.html#1045-1204">Ord</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
+<a href=#418 id=418 data-nosnippet>418</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../cmp.rs.html#1046-1205">Ord</a> <span class="kw">for </span><a href="#101-103">SyncView</a>&lt;T&gt;
 <a href=#419 id=419 data-nosnippet>419</a><span class="kw">where
-<a href=#420 id=420 data-nosnippet>420</a>    </span>T: <a href="../marker.rs.html#657-669">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#1045-1204">Ord</a> + <span class="question-mark">?</span><a href="../marker.rs.html#158-160">Sized</a>,
+<a href=#420 id=420 data-nosnippet>420</a>    </span>T: <a href="../marker.rs.html#658-670">Sync</a> + [<span class="kw">const</span>] <a href="../cmp.rs.html#1046-1205">Ord</a> + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#421 id=421 data-nosnippet>421</a>{
 <a href=#422 id=422 data-nosnippet>422</a>    <span class="attr">#[inline]
-<a href=#423 id=423 data-nosnippet>423</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../cmp.rs.html#420-430">Ordering</a> {
-<a href=#424 id=424 data-nosnippet>424</a>        <a class="self" href="#423">self</a>.inner.<a href="../cmp.rs.html#1063">cmp</a>(<span class="kw-2">&amp;</span><a href="#423">other</a>.inner)
+<a href=#423 id=423 data-nosnippet>423</a>    </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../cmp.rs.html#421-431">Ordering</a> {
+<a href=#424 id=424 data-nosnippet>424</a>        <a class="self" href="#423">self</a>.inner.<a href="../cmp.rs.html#1064">cmp</a>(<span class="kw-2">&amp;</span><a href="#423">other</a>.inner)
 <a href=#425 id=425 data-nosnippet>425</a>    }
 <a href=#426 id=426 data-nosnippet>426</a>}
 </code></pre></div></section></main></body></html>

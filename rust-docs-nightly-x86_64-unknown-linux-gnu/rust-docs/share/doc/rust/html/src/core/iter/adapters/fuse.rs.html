@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/fuse.rs`."><title>fuse.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (65ce8611f 2026-11-18)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>fuse.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../lib.rs.html#274"><span class="kw">crate</span>::intrinsics</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/fuse.rs`."><title>fuse.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6905905bb 2026-11-19)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>fuse.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../lib.rs.html#274"><span class="kw">crate</span>::intrinsics</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="mod.rs.html#105-137"><span class="kw">crate</span>::iter::adapters::SourceIter</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="zip.rs.html#593-600"><span class="kw">crate</span>::iter::adapters::zip::try_get_unchecked</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::iter::{
@@ -12,7 +12,7 @@
 <a href=#12 id=12 data-nosnippet>12</a>///
 <a href=#13 id=13 data-nosnippet>13</a>/// This `struct` is created by [`Iterator::fuse`]. See its documentation
 <a href=#14 id=14 data-nosnippet>14</a>/// for more.
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[derive(<a href="../../clone.rs.html#289-291">Clone</a>, <a href="../../fmt/mod.rs.html#1092-1094">Debug</a>)]
+<a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[derive(<a href="../../clone.rs.html#289-291">Clone</a>, <a href="../../fmt/mod.rs.html#1093-1095">Debug</a>)]
 <a href=#16 id=16 data-nosnippet>16</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#17 id=17 data-nosnippet>17</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub struct </span><a href="../../../../core/iter/struct.Fuse.html">Fuse</a>&lt;I&gt; {
@@ -87,7 +87,7 @@
 <a href=#87 id=87 data-nosnippet>87</a>    <span class="attr">#[inline]
 <a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">fn </span>try_fold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, acc: Acc, fold: Fold) -&gt; R
 <a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">where
-<a href=#90 id=90 data-nosnippet>90</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#90 id=90 data-nosnippet>90</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#91 id=91 data-nosnippet>91</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#92 id=92 data-nosnippet>92</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#93 id=93 data-nosnippet>93</a>    {
@@ -123,7 +123,7 @@
 <a href=#123 id=123 data-nosnippet>123</a>            // `Iterator::__iterator_get_unchecked`.
 <a href=#124 id=124 data-nosnippet>124</a>            </span><a class="prelude-val" href="../../option.rs.html#606">Some</a>(<span class="kw-2">ref mut </span>iter) =&gt; <span class="kw">unsafe </span>{ <a href="zip.rs.html#593-600">try_get_unchecked</a>(<a href="#124">iter</a>, <a href="#117">idx</a>) },
 <a href=#125 id=125 data-nosnippet>125</a>            <span class="comment">// SAFETY: the caller asserts there is an item at `i`, so we're not exhausted.
-<a href=#126 id=126 data-nosnippet>126</a>            </span><a class="prelude-val" href="../../option.rs.html#602">None</a> =&gt; <span class="kw">unsafe </span>{ intrinsics::<a href="../../intrinsics/mod.rs.html#647">unreachable</a>() },
+<a href=#126 id=126 data-nosnippet>126</a>            </span><a class="prelude-val" href="../../option.rs.html#602">None</a> =&gt; <span class="kw">unsafe </span>{ intrinsics::<a href="../../intrinsics/mod.rs.html#651">unreachable</a>() },
 <a href=#127 id=127 data-nosnippet>127</a>        }
 <a href=#128 id=128 data-nosnippet>128</a>    }
 <a href=#129 id=129 data-nosnippet>129</a>}
@@ -151,7 +151,7 @@
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="attr">#[inline]
 <a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">fn </span>try_rfold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, acc: Acc, fold: Fold) -&gt; R
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">where
-<a href=#154 id=154 data-nosnippet>154</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#154 id=154 data-nosnippet>154</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#155 id=155 data-nosnippet>155</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#156 id=156 data-nosnippet>156</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#157 id=157 data-nosnippet>157</a>    {
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">fn </span>nth(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>::Item&gt;;
 <a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">fn </span>try_fold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, acc: Acc, fold: Fold) -&gt; R
 <a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">where
-<a href=#276 id=276 data-nosnippet>276</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#276 id=276 data-nosnippet>276</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#277 id=277 data-nosnippet>277</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#278 id=278 data-nosnippet>278</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;;
 <a href=#279 id=279 data-nosnippet>279</a>    <span class="kw">fn </span>find&lt;P&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, predicate: P) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>::Item&gt;
@@ -292,7 +292,7 @@
 <a href=#292 id=292 data-nosnippet>292</a>        </span>I: <a href="../traits/double_ended.rs.html#44-477">DoubleEndedIterator</a>;
 <a href=#293 id=293 data-nosnippet>293</a>    <span class="kw">fn </span>try_rfold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, acc: Acc, fold: Fold) -&gt; R
 <a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">where
-<a href=#295 id=295 data-nosnippet>295</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#295 id=295 data-nosnippet>295</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#296 id=296 data-nosnippet>296</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#297 id=297 data-nosnippet>297</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#298 id=298 data-nosnippet>298</a>        I: <a href="../traits/double_ended.rs.html#44-477">DoubleEndedIterator</a>;
@@ -339,7 +339,7 @@
 <a href=#339 id=339 data-nosnippet>339</a>    <span class="attr">#[inline]
 <a href=#340 id=340 data-nosnippet>340</a>    </span>default <span class="kw">fn </span>try_fold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>acc: Acc, fold: Fold) -&gt; R
 <a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">where
-<a href=#342 id=342 data-nosnippet>342</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#342 id=342 data-nosnippet>342</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#343 id=343 data-nosnippet>343</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#344 id=344 data-nosnippet>344</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#345 id=345 data-nosnippet>345</a>    {
@@ -396,7 +396,7 @@
 <a href=#396 id=396 data-nosnippet>396</a>    <span class="attr">#[inline]
 <a href=#397 id=397 data-nosnippet>397</a>    </span>default <span class="kw">fn </span>try_rfold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>acc: Acc, fold: Fold) -&gt; R
 <a href=#398 id=398 data-nosnippet>398</a>    <span class="kw">where
-<a href=#399 id=399 data-nosnippet>399</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#399 id=399 data-nosnippet>399</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#400 id=400 data-nosnippet>400</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#401 id=401 data-nosnippet>401</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#402 id=402 data-nosnippet>402</a>        I: <a href="../traits/double_ended.rs.html#44-477">DoubleEndedIterator</a>,
@@ -449,7 +449,7 @@
 <a href=#449 id=449 data-nosnippet>449</a>    <span class="attr">#[inline]
 <a href=#450 id=450 data-nosnippet>450</a>    </span><span class="kw">fn </span>try_fold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>acc: Acc, fold: Fold) -&gt; R
 <a href=#451 id=451 data-nosnippet>451</a>    <span class="kw">where
-<a href=#452 id=452 data-nosnippet>452</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#452 id=452 data-nosnippet>452</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#453 id=453 data-nosnippet>453</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#454 id=454 data-nosnippet>454</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#455 id=455 data-nosnippet>455</a>    {
@@ -500,7 +500,7 @@
 <a href=#500 id=500 data-nosnippet>500</a>    <span class="attr">#[inline]
 <a href=#501 id=501 data-nosnippet>501</a>    </span><span class="kw">fn </span>try_rfold&lt;Acc, Fold, R&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>acc: Acc, fold: Fold) -&gt; R
 <a href=#502 id=502 data-nosnippet>502</a>    <span class="kw">where
-<a href=#503 id=503 data-nosnippet>503</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#158-160">Sized</a>,
+<a href=#503 id=503 data-nosnippet>503</a>        </span><span class="self">Self</span>: <a href="../../marker.rs.html#159-161">Sized</a>,
 <a href=#504 id=504 data-nosnippet>504</a>        Fold: <a href="../../ops/function.rs.html#163-167">FnMut</a>(Acc, <span class="self">Self</span>::Item) -&gt; R,
 <a href=#505 id=505 data-nosnippet>505</a>        R: <a href="../../ops/try_trait.rs.html#133-220">Try</a>&lt;Output = Acc&gt;,
 <a href=#506 id=506 data-nosnippet>506</a>        I: <a href="../traits/double_ended.rs.html#44-477">DoubleEndedIterator</a>,

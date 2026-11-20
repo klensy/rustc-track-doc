@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/pin.rs`."><title>pin.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (65ce8611f 2026-11-18)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>pin.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Types that pin data to a location in memory.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/pin.rs`."><title>pin.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6905905bb 2026-11-19)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>pin.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Types that pin data to a location in memory.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! It is sometimes useful to be able to rely upon a certain value not being able to *move*,
 <a href=#4 id=4 data-nosnippet>4</a>//! in the sense that its address in memory cannot change. This is useful especially when there
@@ -924,7 +924,7 @@
 <a href=#924 id=924 data-nosnippet>924</a></span><span class="kw">use crate</span>::{
 <a href=#925 id=925 data-nosnippet>925</a>    cell::{<a href="cell.rs.html#854-863">RefCell</a>, <a href="cell.rs.html#2313-2315">UnsafeCell</a>},
 <a href=#926 id=926 data-nosnippet>926</a>    <a href="future/future.rs.html#37-114">future::Future</a>,
-<a href=#927 id=927 data-nosnippet>927</a>    <a href="marker.rs.html#1027">marker::PhantomPinned</a>,
+<a href=#927 id=927 data-nosnippet>927</a>    <a href="marker.rs.html#1028">marker::PhantomPinned</a>,
 <a href=#928 id=928 data-nosnippet>928</a>    <a href="lib.rs.html#275">mem</a>, <a href="lib.rs.html#278">ptr</a>,
 <a href=#929 id=929 data-nosnippet>929</a>};
 <a href=#930 id=930 data-nosnippet>930</a><span class="kw">use crate</span>::{<a href="lib.rs.html#286">cmp</a>, <a href="lib.rs.html#331">fmt</a>};
@@ -1087,7 +1087,7 @@
 <a href=#1087 id=1087 data-nosnippet>1087</a>#[fundamental]
 <a href=#1088 id=1088 data-nosnippet>1088</a>#[repr(transparent)]
 <a href=#1089 id=1089 data-nosnippet>1089</a>#[rustc_pub_transparent]
-<a href=#1090 id=1090 data-nosnippet>1090</a>#[derive(<a href="marker.rs.html#462-464">Copy</a>, <a href="clone.rs.html#289-291">Clone</a>)]
+<a href=#1090 id=1090 data-nosnippet>1090</a>#[derive(<a href="marker.rs.html#463-465">Copy</a>, <a href="clone.rs.html#289-291">Clone</a>)]
 <a href=#1091 id=1091 data-nosnippet>1091</a></span><span class="kw">pub struct </span><a href="../../core/pin/struct.Pin.html">Pin</a>&lt;Ptr&gt; {
 <a href=#1092 id=1092 data-nosnippet>1092</a>    pointer: Ptr,
 <a href=#1093 id=1093 data-nosnippet>1093</a>}
@@ -1114,38 +1114,38 @@
 <a href=#1114 id=1114 data-nosnippet>1114</a>}
 <a href=#1115 id=1115 data-nosnippet>1115</a>
 <a href=#1116 id=1116 data-nosnippet>1116</a><span class="attr">#[stable(feature = <span class="string">"pin_trait_impls"</span>, since = <span class="string">"1.41.0"</span>)]
-<a href=#1117 id=1117 data-nosnippet>1117</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="cmp.rs.html#353-372">Eq</a>&gt;&gt; <a href="cmp.rs.html#353-372">Eq</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {}
+<a href=#1117 id=1117 data-nosnippet>1117</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="cmp.rs.html#354-373">Eq</a>&gt;&gt; <a href="cmp.rs.html#354-373">Eq</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {}
 <a href=#1118 id=1118 data-nosnippet>1118</a>
 <a href=#1119 id=1119 data-nosnippet>1119</a><span class="attr">#[stable(feature = <span class="string">"pin_trait_impls"</span>, since = <span class="string">"1.41.0"</span>)]
-<a href=#1120 id=1120 data-nosnippet>1120</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>, Q: <a href="ops/deref.rs.html#139-151">Deref</a>&gt; <a href="cmp.rs.html#1458-1584">PartialOrd</a>&lt;<a href="#1091-1093">Pin</a>&lt;Q&gt;&gt; <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt;
+<a href=#1120 id=1120 data-nosnippet>1120</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>, Q: <a href="ops/deref.rs.html#139-151">Deref</a>&gt; <a href="cmp.rs.html#1459-1585">PartialOrd</a>&lt;<a href="#1091-1093">Pin</a>&lt;Q&gt;&gt; <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt;
 <a href=#1121 id=1121 data-nosnippet>1121</a><span class="kw">where
-<a href=#1122 id=1122 data-nosnippet>1122</a>    </span>Ptr::Target: <a href="cmp.rs.html#1458-1584">PartialOrd</a>&lt;Q::Target&gt;,
+<a href=#1122 id=1122 data-nosnippet>1122</a>    </span>Ptr::Target: <a href="cmp.rs.html#1459-1585">PartialOrd</a>&lt;Q::Target&gt;,
 <a href=#1123 id=1123 data-nosnippet>1123</a>{
-<a href=#1124 id=1124 data-nosnippet>1124</a>    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a class="prelude-ty" href="option.rs.html#598-607">Option</a>&lt;cmp::<a href="cmp.rs.html#420-430">Ordering</a>&gt; {
-<a href=#1125 id=1125 data-nosnippet>1125</a>        Ptr::Target::<a href="cmp.rs.html#1487">partial_cmp</a>(<a class="self" href="#1124">self</a>, <a href="#1124">other</a>)
+<a href=#1124 id=1124 data-nosnippet>1124</a>    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a class="prelude-ty" href="option.rs.html#598-607">Option</a>&lt;cmp::<a href="cmp.rs.html#421-431">Ordering</a>&gt; {
+<a href=#1125 id=1125 data-nosnippet>1125</a>        Ptr::Target::<a href="cmp.rs.html#1488">partial_cmp</a>(<a class="self" href="#1124">self</a>, <a href="#1124">other</a>)
 <a href=#1126 id=1126 data-nosnippet>1126</a>    }
 <a href=#1127 id=1127 data-nosnippet>1127</a>
 <a href=#1128 id=1128 data-nosnippet>1128</a>    <span class="kw">fn </span>lt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a href="../../core/primitive.bool.html">bool</a> {
-<a href=#1129 id=1129 data-nosnippet>1129</a>        Ptr::Target::<a href="cmp.rs.html#1502-1504">lt</a>(<a class="self" href="#1128">self</a>, <a href="#1128">other</a>)
+<a href=#1129 id=1129 data-nosnippet>1129</a>        Ptr::Target::<a href="cmp.rs.html#1503-1505">lt</a>(<a class="self" href="#1128">self</a>, <a href="#1128">other</a>)
 <a href=#1130 id=1130 data-nosnippet>1130</a>    }
 <a href=#1131 id=1131 data-nosnippet>1131</a>
 <a href=#1132 id=1132 data-nosnippet>1132</a>    <span class="kw">fn </span>le(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a href="../../core/primitive.bool.html">bool</a> {
-<a href=#1133 id=1133 data-nosnippet>1133</a>        Ptr::Target::<a href="cmp.rs.html#1520-1522">le</a>(<a class="self" href="#1132">self</a>, <a href="#1132">other</a>)
+<a href=#1133 id=1133 data-nosnippet>1133</a>        Ptr::Target::<a href="cmp.rs.html#1521-1523">le</a>(<a class="self" href="#1132">self</a>, <a href="#1132">other</a>)
 <a href=#1134 id=1134 data-nosnippet>1134</a>    }
 <a href=#1135 id=1135 data-nosnippet>1135</a>
 <a href=#1136 id=1136 data-nosnippet>1136</a>    <span class="kw">fn </span>gt(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a href="../../core/primitive.bool.html">bool</a> {
-<a href=#1137 id=1137 data-nosnippet>1137</a>        Ptr::Target::<a href="cmp.rs.html#1538-1540">gt</a>(<a class="self" href="#1136">self</a>, <a href="#1136">other</a>)
+<a href=#1137 id=1137 data-nosnippet>1137</a>        Ptr::Target::<a href="cmp.rs.html#1539-1541">gt</a>(<a class="self" href="#1136">self</a>, <a href="#1136">other</a>)
 <a href=#1138 id=1138 data-nosnippet>1138</a>    }
 <a href=#1139 id=1139 data-nosnippet>1139</a>
 <a href=#1140 id=1140 data-nosnippet>1140</a>    <span class="kw">fn </span>ge(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><a href="#1091-1093">Pin</a>&lt;Q&gt;) -&gt; <a href="../../core/primitive.bool.html">bool</a> {
-<a href=#1141 id=1141 data-nosnippet>1141</a>        Ptr::Target::<a href="cmp.rs.html#1556-1558">ge</a>(<a class="self" href="#1140">self</a>, <a href="#1140">other</a>)
+<a href=#1141 id=1141 data-nosnippet>1141</a>        Ptr::Target::<a href="cmp.rs.html#1557-1559">ge</a>(<a class="self" href="#1140">self</a>, <a href="#1140">other</a>)
 <a href=#1142 id=1142 data-nosnippet>1142</a>    }
 <a href=#1143 id=1143 data-nosnippet>1143</a>}
 <a href=#1144 id=1144 data-nosnippet>1144</a>
 <a href=#1145 id=1145 data-nosnippet>1145</a><span class="attr">#[stable(feature = <span class="string">"pin_trait_impls"</span>, since = <span class="string">"1.41.0"</span>)]
-<a href=#1146 id=1146 data-nosnippet>1146</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="cmp.rs.html#1045-1204">Ord</a>&gt;&gt; <a href="cmp.rs.html#1045-1204">Ord</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
-<a href=#1147 id=1147 data-nosnippet>1147</a>    <span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; cmp::<a href="cmp.rs.html#420-430">Ordering</a> {
-<a href=#1148 id=1148 data-nosnippet>1148</a>        Ptr::Target::<a href="cmp.rs.html#1063">cmp</a>(<a class="self" href="#1147">self</a>, <a href="#1147">other</a>)
+<a href=#1146 id=1146 data-nosnippet>1146</a></span><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="cmp.rs.html#1046-1205">Ord</a>&gt;&gt; <a href="cmp.rs.html#1046-1205">Ord</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
+<a href=#1147 id=1147 data-nosnippet>1147</a>    <span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; cmp::<a href="cmp.rs.html#421-431">Ordering</a> {
+<a href=#1148 id=1148 data-nosnippet>1148</a>        Ptr::Target::<a href="cmp.rs.html#1064">cmp</a>(<a class="self" href="#1147">self</a>, <a href="#1147">other</a>)
 <a href=#1149 id=1149 data-nosnippet>1149</a>    }
 <a href=#1150 id=1150 data-nosnippet>1150</a>}
 <a href=#1151 id=1151 data-nosnippet>1151</a>
@@ -1156,7 +1156,7 @@
 <a href=#1156 id=1156 data-nosnippet>1156</a>    }
 <a href=#1157 id=1157 data-nosnippet>1157</a>}
 <a href=#1158 id=1158 data-nosnippet>1158</a>
-<a href=#1159 id=1159 data-nosnippet>1159</a><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="marker.rs.html#1014">Unpin</a>&gt;&gt; <a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
+<a href=#1159 id=1159 data-nosnippet>1159</a><span class="kw">impl</span>&lt;Ptr: <a href="ops/deref.rs.html#139-151">Deref</a>&lt;Target: <a href="marker.rs.html#1015">Unpin</a>&gt;&gt; <a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
 <a href=#1160 id=1160 data-nosnippet>1160</a>    <span class="doccomment">/// Constructs a new `Pin&lt;Ptr&gt;` around a pointer to some data of a type that
 <a href=#1161 id=1161 data-nosnippet>1161</a>    /// implements [`Unpin`].
 <a href=#1162 id=1162 data-nosnippet>1162</a>    ///
@@ -1484,7 +1484,7 @@
 <a href=#1484 id=1484 data-nosnippet>1484</a>    #[inline(always)]
 <a href=#1485 id=1485 data-nosnippet>1485</a>    </span><span class="kw">pub fn </span>set(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: Ptr::Target)
 <a href=#1486 id=1486 data-nosnippet>1486</a>    <span class="kw">where
-<a href=#1487 id=1487 data-nosnippet>1487</a>        </span>Ptr::Target: <a href="marker.rs.html#158-160">Sized</a>,
+<a href=#1487 id=1487 data-nosnippet>1487</a>        </span>Ptr::Target: <a href="marker.rs.html#159-161">Sized</a>,
 <a href=#1488 id=1488 data-nosnippet>1488</a>    {
 <a href=#1489 id=1489 data-nosnippet>1489</a>        <span class="kw-2">*</span>(<a class="self" href="#1485">self</a>.pointer) = <a href="#1485">value</a>;
 <a href=#1490 id=1490 data-nosnippet>1490</a>    }
@@ -1518,7 +1518,7 @@
 <a href=#1518 id=1518 data-nosnippet>1518</a>    }
 <a href=#1519 id=1519 data-nosnippet>1519</a>}
 <a href=#1520 id=1520 data-nosnippet>1520</a>
-<a href=#1521 id=1521 data-nosnippet>1521</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt; {
+<a href=#1521 id=1521 data-nosnippet>1521</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt; {
 <a href=#1522 id=1522 data-nosnippet>1522</a>    <span class="doccomment">/// Constructs a new pin by mapping the interior value.
 <a href=#1523 id=1523 data-nosnippet>1523</a>    ///
 <a href=#1524 id=1524 data-nosnippet>1524</a>    /// For example, if you wanted to get a `Pin` of a field of something,
@@ -1537,7 +1537,7 @@
 <a href=#1537 id=1537 data-nosnippet>1537</a>    </span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
 <a href=#1538 id=1538 data-nosnippet>1538</a>    </span><span class="kw">pub unsafe fn </span>map_unchecked&lt;U, F&gt;(<span class="self">self</span>, func: F) -&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>U&gt;
 <a href=#1539 id=1539 data-nosnippet>1539</a>    <span class="kw">where
-<a href=#1540 id=1540 data-nosnippet>1540</a>        </span>U: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>,
+<a href=#1540 id=1540 data-nosnippet>1540</a>        </span>U: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>,
 <a href=#1541 id=1541 data-nosnippet>1541</a>        F: <a href="ops/function.rs.html#242-251">FnOnce</a>(<span class="kw-2">&amp;</span>T) -&gt; <span class="kw-2">&amp;</span>U,
 <a href=#1542 id=1542 data-nosnippet>1542</a>    {
 <a href=#1543 id=1543 data-nosnippet>1543</a>        <span class="kw">let </span>pointer = <a class="self" href="#1538">self</a>.pointer;
@@ -1574,7 +1574,7 @@
 <a href=#1574 id=1574 data-nosnippet>1574</a>    }
 <a href=#1575 id=1575 data-nosnippet>1575</a>}
 <a href=#1576 id=1576 data-nosnippet>1576</a>
-<a href=#1577 id=1577 data-nosnippet>1577</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
+<a href=#1577 id=1577 data-nosnippet>1577</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt; {
 <a href=#1578 id=1578 data-nosnippet>1578</a>    <span class="doccomment">/// Converts this `Pin&lt;&amp;mut T&gt;` into a `Pin&lt;&amp;T&gt;` with the same lifetime.
 <a href=#1579 id=1579 data-nosnippet>1579</a>    </span><span class="attr">#[inline(always)]
 <a href=#1580 id=1580 data-nosnippet>1580</a>    #[must_use = <span class="string">"`self` will be dropped if the result is not used"</span>]
@@ -1599,7 +1599,7 @@
 <a href=#1599 id=1599 data-nosnippet>1599</a>    #[rustc_const_stable(feature = <span class="string">"const_pin"</span>, since = <span class="string">"1.84.0"</span>)]
 <a href=#1600 id=1600 data-nosnippet>1600</a>    </span><span class="kw">pub const fn </span>get_mut(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
 <a href=#1601 id=1601 data-nosnippet>1601</a>    <span class="kw">where
-<a href=#1602 id=1602 data-nosnippet>1602</a>        </span>T: <a href="marker.rs.html#1014">Unpin</a>,
+<a href=#1602 id=1602 data-nosnippet>1602</a>        </span>T: <a href="marker.rs.html#1015">Unpin</a>,
 <a href=#1603 id=1603 data-nosnippet>1603</a>    {
 <a href=#1604 id=1604 data-nosnippet>1604</a>        <a class="self" href="#1600">self</a>.pointer
 <a href=#1605 id=1605 data-nosnippet>1605</a>    }
@@ -1641,7 +1641,7 @@
 <a href=#1641 id=1641 data-nosnippet>1641</a>    #[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
 <a href=#1642 id=1642 data-nosnippet>1642</a>    </span><span class="kw">pub unsafe fn </span>map_unchecked_mut&lt;U, F&gt;(<span class="self">self</span>, func: F) -&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>U&gt;
 <a href=#1643 id=1643 data-nosnippet>1643</a>    <span class="kw">where
-<a href=#1644 id=1644 data-nosnippet>1644</a>        </span>U: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>,
+<a href=#1644 id=1644 data-nosnippet>1644</a>        </span>U: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>,
 <a href=#1645 id=1645 data-nosnippet>1645</a>        F: <a href="ops/function.rs.html#242-251">FnOnce</a>(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>U,
 <a href=#1646 id=1646 data-nosnippet>1646</a>    {
 <a href=#1647 id=1647 data-nosnippet>1647</a>        <span class="comment">// SAFETY: the caller is responsible for not moving the
@@ -1654,7 +1654,7 @@
 <a href=#1654 id=1654 data-nosnippet>1654</a>    }
 <a href=#1655 id=1655 data-nosnippet>1655</a>}
 <a href=#1656 id=1656 data-nosnippet>1656</a>
-<a href=#1657 id=1657 data-nosnippet>1657</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>T&gt; {
+<a href=#1657 id=1657 data-nosnippet>1657</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>T&gt; {
 <a href=#1658 id=1658 data-nosnippet>1658</a>    <span class="doccomment">/// Gets a pinning reference from a `&amp;'static` reference.
 <a href=#1659 id=1659 data-nosnippet>1659</a>    ///
 <a href=#1660 id=1660 data-nosnippet>1660</a>    /// This is safe because `T` is borrowed immutably for the `'static` lifetime, which
@@ -1668,7 +1668,7 @@
 <a href=#1668 id=1668 data-nosnippet>1668</a>    }
 <a href=#1669 id=1669 data-nosnippet>1669</a>}
 <a href=#1670 id=1670 data-nosnippet>1670</a>
-<a href=#1671 id=1671 data-nosnippet>1671</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw-2">mut </span>T&gt; {
+<a href=#1671 id=1671 data-nosnippet>1671</a><span class="kw">impl</span>&lt;T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1091-1093">Pin</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw-2">mut </span>T&gt; {
 <a href=#1672 id=1672 data-nosnippet>1672</a>    <span class="doccomment">/// Gets a pinning mutable reference from a static mutable reference.
 <a href=#1673 id=1673 data-nosnippet>1673</a>    ///
 <a href=#1674 id=1674 data-nosnippet>1674</a>    /// This is safe because `T` is borrowed for the `'static` lifetime, which
@@ -1721,7 +1721,7 @@
 <a href=#1721 id=1721 data-nosnippet>1721</a>    #[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
 <a href=#1722 id=1722 data-nosnippet>1722</a>    #[rustc_diagnostic_item = <span class="string">"PinDerefMutHelper"</span>]
 <a href=#1723 id=1723 data-nosnippet>1723</a>    </span><span class="kw">pub const trait </span>PinDerefMutHelper {
-<a href=#1724 id=1724 data-nosnippet>1724</a>        <span class="kw">type </span>Target: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>;
+<a href=#1724 id=1724 data-nosnippet>1724</a>        <span class="kw">type </span>Target: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>;
 <a href=#1725 id=1725 data-nosnippet>1725</a>        <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Target;
 <a href=#1726 id=1726 data-nosnippet>1726</a>    }
 <a href=#1727 id=1727 data-nosnippet>1727</a>
@@ -1729,7 +1729,7 @@
 <a href=#1729 id=1729 data-nosnippet>1729</a>    #[rustc_const_unstable(feature = <span class="string">"const_convert"</span>, issue = <span class="string">"143773"</span>)]
 <a href=#1730 id=1730 data-nosnippet>1730</a>    </span><span class="kw">const impl</span>&lt;Ptr: [<span class="kw">const</span>] <a href="ops/deref.rs.html#270-275"><span class="kw">super</span>::DerefMut</a>&gt; <a href="#1723-1726">PinDerefMutHelper</a> <span class="kw">for </span><a href="#1716-1718">PinHelper</a>&lt;Ptr&gt;
 <a href=#1731 id=1731 data-nosnippet>1731</a>    <span class="kw">where
-<a href=#1732 id=1732 data-nosnippet>1732</a>        </span>Ptr::Target: <a href="marker.rs.html#1014"><span class="kw">crate</span>::marker::Unpin</a>,
+<a href=#1732 id=1732 data-nosnippet>1732</a>        </span>Ptr::Target: <a href="marker.rs.html#1015"><span class="kw">crate</span>::marker::Unpin</a>,
 <a href=#1733 id=1733 data-nosnippet>1733</a>    {
 <a href=#1734 id=1734 data-nosnippet>1734</a>        <span class="kw">type </span>Target = Ptr::Target;
 <a href=#1735 id=1735 data-nosnippet>1735</a>
@@ -1772,7 +1772,7 @@
 <a href=#1772 id=1772 data-nosnippet>1772</a></span><span class="kw">const impl</span>&lt;Ptr&gt; <a href="ops/deref.rs.html#270-275">DerefMut</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt;
 <a href=#1773 id=1773 data-nosnippet>1773</a><span class="kw">where
 <a href=#1774 id=1774 data-nosnippet>1774</a>    </span>Ptr: [<span class="kw">const</span>] <a href="ops/deref.rs.html#270-275">DerefMut</a>,
-<a href=#1775 id=1775 data-nosnippet>1775</a>    &lt;Ptr <span class="kw">as </span>Deref&gt;::<a href="ops/deref.rs.html#144">Target</a>: <a href="marker.rs.html#1014">Unpin</a>,
+<a href=#1775 id=1775 data-nosnippet>1775</a>    &lt;Ptr <span class="kw">as </span>Deref&gt;::<a href="ops/deref.rs.html#144">Target</a>: <a href="marker.rs.html#1015">Unpin</a>,
 <a href=#1776 id=1776 data-nosnippet>1776</a>{
 <a href=#1777 id=1777 data-nosnippet>1777</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Ptr::Target {
 <a href=#1778 id=1778 data-nosnippet>1778</a>        <a href="#1091-1093">Pin</a>::<a href="#1600-1605">get_mut</a>(<a href="#1091-1093">Pin</a>::<a href="#1413-1419">as_mut</a>(<a class="self" href="#1777">self</a>))
@@ -1790,23 +1790,23 @@
 <a href=#1790 id=1790 data-nosnippet>1790</a>// the safety requirements of `PinSafePointer`.
 <a href=#1791 id=1791 data-nosnippet>1791</a>
 <a href=#1792 id=1792 data-nosnippet>1792</a></span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#1793 id=1793 data-nosnippet>1793</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a>&gt; <a href="fmt/mod.rs.html#1052-1084">fmt::Debug</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
+<a href=#1793 id=1793 data-nosnippet>1793</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt; <a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
 <a href=#1794 id=1794 data-nosnippet>1794</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#1795 id=1795 data-nosnippet>1795</a>        fmt::Debug::<a href="fmt/mod.rs.html#1083">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1794">self</a>.pointer, <a href="#1794">f</a>)
+<a href=#1795 id=1795 data-nosnippet>1795</a>        fmt::Debug::<a href="fmt/mod.rs.html#1084">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1794">self</a>.pointer, <a href="#1794">f</a>)
 <a href=#1796 id=1796 data-nosnippet>1796</a>    }
 <a href=#1797 id=1797 data-nosnippet>1797</a>}
 <a href=#1798 id=1798 data-nosnippet>1798</a>
 <a href=#1799 id=1799 data-nosnippet>1799</a><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#1800 id=1800 data-nosnippet>1800</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1186-1212">fmt::Display</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
+<a href=#1800 id=1800 data-nosnippet>1800</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a>&gt; <a href="fmt/mod.rs.html#1187-1213">fmt::Display</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
 <a href=#1801 id=1801 data-nosnippet>1801</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#1802 id=1802 data-nosnippet>1802</a>        fmt::Display::<a href="fmt/mod.rs.html#1211">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1801">self</a>.pointer, <a href="#1801">f</a>)
+<a href=#1802 id=1802 data-nosnippet>1802</a>        fmt::Display::<a href="fmt/mod.rs.html#1212">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1801">self</a>.pointer, <a href="#1801">f</a>)
 <a href=#1803 id=1803 data-nosnippet>1803</a>    }
 <a href=#1804 id=1804 data-nosnippet>1804</a>}
 <a href=#1805 id=1805 data-nosnippet>1805</a>
 <a href=#1806 id=1806 data-nosnippet>1806</a><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#1807 id=1807 data-nosnippet>1807</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1490-1494">fmt::Pointer</a>&gt; <a href="fmt/mod.rs.html#1490-1494">fmt::Pointer</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
+<a href=#1807 id=1807 data-nosnippet>1807</a></span><span class="kw">impl</span>&lt;Ptr: <a href="fmt/mod.rs.html#1491-1495">fmt::Pointer</a>&gt; <a href="fmt/mod.rs.html#1491-1495">fmt::Pointer</a> <span class="kw">for </span><a href="#1091-1093">Pin</a>&lt;Ptr&gt; {
 <a href=#1808 id=1808 data-nosnippet>1808</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#1809 id=1809 data-nosnippet>1809</a>        fmt::Pointer::<a href="fmt/mod.rs.html#1493">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1808">self</a>.pointer, <a href="#1808">f</a>)
+<a href=#1809 id=1809 data-nosnippet>1809</a>        fmt::Pointer::<a href="fmt/mod.rs.html#1494">fmt</a>(<span class="kw-2">&amp;</span><a class="self" href="#1808">self</a>.pointer, <a href="#1808">f</a>)
 <a href=#1810 id=1810 data-nosnippet>1810</a>    }
 <a href=#1811 id=1811 data-nosnippet>1811</a>}
 <a href=#1812 id=1812 data-nosnippet>1812</a>
@@ -1896,7 +1896,7 @@
 <a href=#1896 id=1896 data-nosnippet>1896</a>/// [`clone`]: Clone::clone
 <a href=#1897 id=1897 data-nosnippet>1897</a>/// [`Arc`]: ../../std/sync/struct.Arc.html "Arc"
 <a href=#1898 id=1898 data-nosnippet>1898</a>/// [`Arc::get_mut`]: ../../std/sync/struct.Arc.html#method.get_mut "Arc::get_mut"
-<a href=#1899 id=1899 data-nosnippet>1899</a></span><span class="kw">pub unsafe trait </span><a href="../../core/pin/trait.PinSafePointer.html">PinSafePointer</a>: <a href="ops/deref.rs.html#139-151">Deref</a> + <a href="marker.rs.html#158-160">Sized</a> {}
+<a href=#1899 id=1899 data-nosnippet>1899</a></span><span class="kw">pub unsafe trait </span><a href="../../core/pin/trait.PinSafePointer.html">PinSafePointer</a>: <a href="ops/deref.rs.html#139-151">Deref</a> + <a href="marker.rs.html#159-161">Sized</a> {}
 <a href=#1900 id=1900 data-nosnippet>1900</a>
 <a href=#1901 id=1901 data-nosnippet>1901</a><span class="comment">// A pointer can only be pin safe if it does not implement certain safe traits
 <a href=#1902 id=1902 data-nosnippet>1902</a>// maliciously. Since `&amp;T` is fundamental, downstream crates may be able to
@@ -1915,7 +1915,7 @@
 <a href=#1915 id=1915 data-nosnippet>1915</a>// the existence of an `&amp;&amp;T` cannot be treated as evidence that the `T` is not
 <a href=#1916 id=1916 data-nosnippet>1916</a>// pinned, so this is not problematic.
 <a href=#1917 id=1917 data-nosnippet>1917</a></span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#1918 id=1918 data-nosnippet>1918</a></span><span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1899">PinSafePointer</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {}
+<a href=#1918 id=1918 data-nosnippet>1918</a></span><span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1899">PinSafePointer</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {}
 <a href=#1919 id=1919 data-nosnippet>1919</a>
 <a href=#1920 id=1920 data-nosnippet>1920</a><span class="comment">// A pointer can only be pin safe if it does not implement certain safe traits
 <a href=#1921 id=1921 data-nosnippet>1921</a>// maliciously. Since `&amp;mut T` is fundamental, downstream crates may be able to
@@ -1934,7 +1934,7 @@
 <a href=#1934 id=1934 data-nosnippet>1934</a>// However, the existence of an `&amp;&amp;mut T` cannot be treated as evidence that the
 <a href=#1935 id=1935 data-nosnippet>1935</a>// `T` is not pinned, so this is not problematic.
 <a href=#1936 id=1936 data-nosnippet>1936</a></span><span class="attr">#[stable(feature = <span class="string">"pin"</span>, since = <span class="string">"1.33.0"</span>)]
-<a href=#1937 id=1937 data-nosnippet>1937</a></span><span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#158-160">Sized</a>&gt; <a href="#1899">PinSafePointer</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T {}
+<a href=#1937 id=1937 data-nosnippet>1937</a></span><span class="kw">unsafe impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="question-mark">?</span><a href="marker.rs.html#159-161">Sized</a>&gt; <a href="#1899">PinSafePointer</a> <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T {}
 <a href=#1938 id=1938 data-nosnippet>1938</a>
 <a href=#1939 id=1939 data-nosnippet>1939</a><span class="comment">// A pointer can only be pin safe if it does not implement certain safe traits
 <a href=#1940 id=1940 data-nosnippet>1940</a>// maliciously. `Pin` implements these traits by forwarding to `P`, which also
