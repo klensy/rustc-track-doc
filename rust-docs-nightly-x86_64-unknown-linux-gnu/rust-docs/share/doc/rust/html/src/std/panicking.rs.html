@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/panicking.rs`."><title>panicking.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1f5a765c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6905905bb 2026-11-19)" data-channel="nightly" data-search-js="search-69faa2c4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>panicking.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of various bits and pieces of the `panic!` macro and
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/panicking.rs`."><title>panicking.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (c7d5ba59d 2026-11-20)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/</div>panicking.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of various bits and pieces of the `panic!` macro and
 <a href=#2 id=2 data-nosnippet>2</a>//! associated runtime pieces.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! Specifically, this module contains the implementation of:
@@ -19,14 +19,14 @@
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span><a href="../../std/any/trait.Any.html"><span class="kw">crate</span>::any::Any</a>;
 <a href=#21 id=21 data-nosnippet>21</a><span class="attr">#[cfg(not(test))]
-<a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span><a href="io/stdio.rs.html#1128-1137"><span class="kw">crate</span>::io::try_set_output_capture</a>;
+<a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span><a href="io/stdio.rs.html#1119-1128"><span class="kw">crate</span>::io::try_set_output_capture</a>;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../../std/mem/index.html">self</a>, <a href="../../std/mem/struct.ManuallyDrop.html">ManuallyDrop</a>};
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::panic::{<a href="panic.rs.html#435-443">BacktraceStyle</a>, <a href="panic.rs.html#42-47">PanicHookInfo</a>};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::sync::atomic::{<a href="../../std/sync/atomic/struct.Atomic.html">Atomic</a>, <a href="../../std/sync/atomic/type.AtomicBool.html">AtomicBool</a>, <a href="../../std/sync/atomic/enum.Ordering.html">Ordering</a>};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><a href="sync/nonpoison/rwlock.rs.html#43-48"><span class="kw">crate</span>::sync::nonpoison::RwLock</a>;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span><a href="sys/mod.rs.html#10"><span class="kw">crate</span>::sys::backtrace</a>;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span><a href="sys/stdio/unix.rs.html#98-100"><span class="kw">crate</span>::sys::stdio::panic_output</a>;
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="../../std/fmt/index.html">fmt</a>, <a href="../../std/intrinsics/index.html">intrinsics</a>, <a href="lib.rs.html#646">process</a>, <a href="lib.rs.html#626">thread</a>};
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="../../std/fmt/index.html">fmt</a>, <a href="../../std/intrinsics/index.html">intrinsics</a>, <a href="lib.rs.html#648">process</a>, <a href="lib.rs.html#628">thread</a>};
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="comment">// This forces codegen of the function called by panic!() inside the std crate, rather than in
 <a href=#32 id=32 data-nosnippet>32</a>// downstream crates. Primarily this is useful for rustc's codegen tests, which rely on noticing
@@ -309,9 +309,9 @@
 <a href=#309 id=309 data-nosnippet>309</a>        }
 <a href=#310 id=310 data-nosnippet>310</a>    };
 <a href=#311 id=311 data-nosnippet>311</a>
-<a href=#312 id=312 data-nosnippet>312</a>    <span class="kw">if let </span><a class="prelude-val" href="../../std/result/enum.Result.html">Ok</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(local)) = <a href="io/stdio.rs.html#1128-1137">try_set_output_capture</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">None</a>) {
+<a href=#312 id=312 data-nosnippet>312</a>    <span class="kw">if let </span><a class="prelude-val" href="../../std/result/enum.Result.html">Ok</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(local)) = <a href="io/stdio.rs.html#1119-1128">try_set_output_capture</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">None</a>) {
 <a href=#313 id=313 data-nosnippet>313</a>        <a href="#253">write</a>(<span class="kw-2">&amp;mut *</span><a href="#312">local</a>.<a href="sync/poison/mutex.rs.html#496-501">lock</a>().<a href="../../std/result/enum.Result.html#method.unwrap_or_else">unwrap_or_else</a>(|e| <a href="#313">e</a>.<a href="sync/poison.rs.html#312-314">into_inner</a>()));
-<a href=#314 id=314 data-nosnippet>314</a>        <a href="io/stdio.rs.html#1128-1137">try_set_output_capture</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(<a href="#312">local</a>)).<a href="../../std/result/enum.Result.html#method.ok">ok</a>();
+<a href=#314 id=314 data-nosnippet>314</a>        <a href="io/stdio.rs.html#1119-1128">try_set_output_capture</a>(<a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(<a href="#312">local</a>)).<a href="../../std/result/enum.Result.html#method.ok">ok</a>();
 <a href=#315 id=315 data-nosnippet>315</a>    } <span class="kw">else if let </span><a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(<span class="kw-2">mut </span>out) = <a href="sys/stdio/unix.rs.html#98-100">panic_output</a>() {
 <a href=#316 id=316 data-nosnippet>316</a>        <a href="#253">write</a>(<span class="kw-2">&amp;mut </span><a href="#315">out</a>);
 <a href=#317 id=317 data-nosnippet>317</a>    }
@@ -722,14 +722,14 @@
 <a href=#722 id=722 data-nosnippet>722</a>            // thread that's panicking.
 <a href=#723 id=723 data-nosnippet>723</a>            </span><span class="kw">match </span><a class="self" href="#717">self</a>.inner.<a href="../../std/option/enum.Option.html#method.take">take</a>() {
 <a href=#724 id=724 data-nosnippet>724</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(a) =&gt; <a href="../../std/boxed/struct.Box.html">Box</a>::<a href="../../std/boxed/struct.Box.html#method.new">new</a>(<a href="#724">a</a>) <span class="kw">as </span><a href="../../std/boxed/struct.Box.html">Box</a>&lt;<span class="kw">dyn </span><a href="../../std/any/trait.Any.html">Any</a> + <a href="../../std/marker/trait.Send.html">Send</a>&gt;,
-<a href=#725 id=725 data-nosnippet>725</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2648-2650">abort</a>(),
+<a href=#725 id=725 data-nosnippet>725</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2651-2656">abort</a>(),
 <a href=#726 id=726 data-nosnippet>726</a>            }
 <a href=#727 id=727 data-nosnippet>727</a>        }
 <a href=#728 id=728 data-nosnippet>728</a>
 <a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">fn </span>get(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>(<span class="kw">dyn </span><a href="../../std/any/trait.Any.html">Any</a> + <a href="../../std/marker/trait.Send.html">Send</a>) {
 <a href=#730 id=730 data-nosnippet>730</a>            <span class="kw">match </span><a class="self" href="#729">self</a>.inner {
 <a href=#731 id=731 data-nosnippet>731</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(<span class="kw-2">ref </span>a) =&gt; <a href="#731">a</a>,
-<a href=#732 id=732 data-nosnippet>732</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2648-2650">abort</a>(),
+<a href=#732 id=732 data-nosnippet>732</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2651-2656">abort</a>(),
 <a href=#733 id=733 data-nosnippet>733</a>            }
 <a href=#734 id=734 data-nosnippet>734</a>        }
 <a href=#735 id=735 data-nosnippet>735</a>    }
@@ -738,7 +738,7 @@
 <a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../std/fmt/struct.Formatter.html">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../std/fmt/type.Result.html">Result</a> {
 <a href=#739 id=739 data-nosnippet>739</a>            <span class="kw">match </span><span class="kw-2">&amp;</span><a class="self" href="#738">self</a>.inner {
 <a href=#740 id=740 data-nosnippet>740</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">Some</a>(a) =&gt; <a href="#738">f</a>.<a href="../../std/fmt/struct.Formatter.html#method.write_str">write_str</a>(<a href="#757-765">payload_as_str</a>(<a href="#740">a</a>)),
-<a href=#741 id=741 data-nosnippet>741</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2648-2650">abort</a>(),
+<a href=#741 id=741 data-nosnippet>741</a>                <a class="prelude-val" href="../../std/option/enum.Option.html">None</a> =&gt; process::<a href="process.rs.html#2651-2656">abort</a>(),
 <a href=#742 id=742 data-nosnippet>742</a>            }
 <a href=#743 id=743 data-nosnippet>743</a>        }
 <a href=#744 id=744 data-nosnippet>744</a>    }
@@ -796,7 +796,7 @@
 <a href=#796 id=796 data-nosnippet>796</a>                </span><a href="rt.rs.html#40-51">rtprintpanic!</a>(<span class="string">"aborting due to panic at {location}:\n{payload}\n"</span>);
 <a href=#797 id=797 data-nosnippet>797</a>            }
 <a href=#798 id=798 data-nosnippet>798</a>        }
-<a href=#799 id=799 data-nosnippet>799</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2648-2650">abort</a>();
+<a href=#799 id=799 data-nosnippet>799</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2651-2656">abort</a>();
 <a href=#800 id=800 data-nosnippet>800</a>    }
 <a href=#801 id=801 data-nosnippet>801</a>
 <a href=#802 id=802 data-nosnippet>802</a>    <span class="kw">match </span><span class="kw-2">*</span><a href="#101">HOOK</a>.<a href="sync/nonpoison/rwlock.rs.html#334-339">read</a>() {
@@ -830,7 +830,7 @@
 <a href=#830 id=830 data-nosnippet>830</a>        // through a nounwind function (e.g. extern "C") then we cannot continue
 <a href=#831 id=831 data-nosnippet>831</a>        // unwinding and have to abort immediately.
 <a href=#832 id=832 data-nosnippet>832</a>        </span><a href="rt.rs.html#40-51">rtprintpanic!</a>(<span class="string">"thread caused non-unwinding panic. aborting.\n"</span>);
-<a href=#833 id=833 data-nosnippet>833</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2648-2650">abort</a>();
+<a href=#833 id=833 data-nosnippet>833</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2651-2656">abort</a>();
 <a href=#834 id=834 data-nosnippet>834</a>    }
 <a href=#835 id=835 data-nosnippet>835</a>
 <a href=#836 id=836 data-nosnippet>836</a>    <a href="#882-885">rust_panic</a>(<a href="#774">payload</a>)
@@ -850,7 +850,7 @@
 <a href=#850 id=850 data-nosnippet>850</a>            }
 <a href=#851 id=851 data-nosnippet>851</a>        }
 <a href=#852 id=852 data-nosnippet>852</a>
-<a href=#853 id=853 data-nosnippet>853</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2648-2650">abort</a>();
+<a href=#853 id=853 data-nosnippet>853</a>        <span class="kw">crate</span>::process::<a href="process.rs.html#2651-2656">abort</a>();
 <a href=#854 id=854 data-nosnippet>854</a>    }
 <a href=#855 id=855 data-nosnippet>855</a>
 <a href=#856 id=856 data-nosnippet>856</a>    <span class="kw">struct </span>RewrapBox(<a href="../../std/boxed/struct.Box.html">Box</a>&lt;<span class="kw">dyn </span><a href="../../std/any/trait.Any.html">Any</a> + <a href="../../std/marker/trait.Send.html">Send</a>&gt;);
