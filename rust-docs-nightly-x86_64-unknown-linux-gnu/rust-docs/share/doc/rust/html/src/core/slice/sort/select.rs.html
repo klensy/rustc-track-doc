@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/select.rs`."><title>select.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/</div>select.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains the implementation for `slice::select_nth_unstable`.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/sort/select.rs`."><title>select.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/sort/</div>select.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! This module contains the implementation for `slice::select_nth_unstable`.
 <a href=#2 id=2 data-nosnippet>2</a>//! It uses an introselect algorithm based on ipnsort by Lukas Bergdoll and Orson Peters,
 <a href=#3 id=3 data-nosnippet>3</a>//! published at: &lt;https://github.com/Voultapher/sort-research-rs/tree/main/ipnsort&gt;
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a>//! better performance than one would get using heapsort as fallback.
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span><a href="../../macros/mod.rs.html#237-239"><span class="kw">crate</span>::cfg_select</a>;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../../lib.rs.html#275">self</a>, <a href="../../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../../lib.rs.html#276">self</a>, <a href="../../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
 <a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[cfg(not(feature = <span class="string">"optimize_for_size"</span>))]
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span><a href="shared/pivot.rs.html#13-45"><span class="kw">crate</span>::slice::sort::shared::pivot::choose_pivot</a>;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><a href="shared/smallsort.rs.html#574-602"><span class="kw">crate</span>::slice::sort::shared::smallsort::insertion_sort_shift_left</a>;
@@ -35,12 +35,12 @@
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="comment">// Find max element and place it in the last position of the array. We're free to use
 <a href=#36 id=36 data-nosnippet>36</a>        // `unwrap()` here because we checked that `v` is not empty.
 <a href=#37 id=37 data-nosnippet>37</a>        </span><span class="kw">let </span>max_idx = <a href="#158-164">max_index</a>(<a href="#18">v</a>, <span class="kw-2">&amp;mut </span><a href="#20">is_less</a>).<a href="../../option.rs.html#1013-1018">unwrap</a>();
-<a href=#38 id=38 data-nosnippet>38</a>        <a href="#18">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#37">max_idx</a>, <a href="#19">index</a>);
+<a href=#38 id=38 data-nosnippet>38</a>        <a href="#18">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#37">max_idx</a>, <a href="#19">index</a>);
 <a href=#39 id=39 data-nosnippet>39</a>    } <span class="kw">else if </span><a href="#19">index</a> == <span class="number">0 </span>{
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="comment">// Find min element and place it in the first position of the array. We're free to use
 <a href=#41 id=41 data-nosnippet>41</a>        // `unwrap()` here because we checked that `v` is not empty.
 <a href=#42 id=42 data-nosnippet>42</a>        </span><span class="kw">let </span>min_idx = <a href="#148-154">min_index</a>(<a href="#18">v</a>, <span class="kw-2">&amp;mut </span><a href="#20">is_less</a>).<a href="../../option.rs.html#1013-1018">unwrap</a>();
-<a href=#43 id=43 data-nosnippet>43</a>        <a href="#18">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#42">min_idx</a>, <a href="#19">index</a>);
+<a href=#43 id=43 data-nosnippet>43</a>        <a href="#18">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#42">min_idx</a>, <a href="#19">index</a>);
 <a href=#44 id=44 data-nosnippet>44</a>    } <span class="kw">else </span>{
 <a href=#45 id=45 data-nosnippet>45</a>        <span class="macro">cfg_select!</span> {
 <a href=#46 id=46 data-nosnippet>46</a>            feature = <span class="string">"optimize_for_size" </span>=&gt; {
@@ -52,8 +52,8 @@
 <a href=#52 id=52 data-nosnippet>52</a>        }
 <a href=#53 id=53 data-nosnippet>53</a>    }
 <a href=#54 id=54 data-nosnippet>54</a>
-<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span>(left, right) = <a href="#18">v</a>.<a href="../mod.rs.html#1997-2002">split_at_mut</a>(<a href="#19">index</a>);
-<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span>(pivot, right) = <a href="#55">right</a>.<a href="../mod.rs.html#1997-2002">split_at_mut</a>(<span class="number">1</span>);
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">let </span>(left, right) = <a href="#18">v</a>.<a href="../mod.rs.html#2017-2022">split_at_mut</a>(<a href="#19">index</a>);
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">let </span>(pivot, right) = <a href="#55">right</a>.<a href="../mod.rs.html#2017-2022">split_at_mut</a>(<span class="number">1</span>);
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">let </span>pivot = <span class="kw-2">&amp;mut </span><a href="#56">pivot</a>[<span class="number">0</span>];
 <a href=#58 id=58 data-nosnippet>58</a>    (<a href="#55">left</a>, <a href="#57">pivot</a>, <a href="#56">right</a>)
 <a href=#59 id=59 data-nosnippet>59</a>}
@@ -125,8 +125,8 @@
 <a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">let </span>mid = <a href="unstable/quicksort.rs.html#93-137">partition</a>(<a href="#67">v</a>, <a href="#98">pivot_pos</a>, <a href="#70">is_less</a>);
 <a href=#126 id=126 data-nosnippet>126</a>
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="comment">// Split the slice into `left`, `pivot`, and `right`.
-<a href=#128 id=128 data-nosnippet>128</a>        </span><span class="kw">let </span>(left, right) = <a href="#67">v</a>.<a href="../mod.rs.html#1997-2002">split_at_mut</a>(<a href="#125">mid</a>);
-<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>(pivot, right) = <a href="#128">right</a>.<a href="../mod.rs.html#1997-2002">split_at_mut</a>(<span class="number">1</span>);
+<a href=#128 id=128 data-nosnippet>128</a>        </span><span class="kw">let </span>(left, right) = <a href="#67">v</a>.<a href="../mod.rs.html#2017-2022">split_at_mut</a>(<a href="#125">mid</a>);
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>(pivot, right) = <a href="#128">right</a>.<a href="../mod.rs.html#2017-2022">split_at_mut</a>(<span class="number">1</span>);
 <a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>pivot = <span class="kw-2">&amp;</span><a href="#129">pivot</a>[<span class="number">0</span>];
 <a href=#131 id=131 data-nosnippet>131</a>
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">if </span><a href="#125">mid</a> &lt; <a href="#68">index</a> {
@@ -147,9 +147,9 @@
 <a href=#147 id=147 data-nosnippet>147</a>/// comparator function
 <a href=#148 id=148 data-nosnippet>148</a></span><span class="kw">fn </span>min_index&lt;T, F: <a href="../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../core/primitive.bool.html">bool</a>&gt;(slice: <span class="kw-2">&amp;</span>[T], is_less: <span class="kw-2">&amp;mut </span>F) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<a href="../../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#149 id=149 data-nosnippet>149</a>    <a href="#148">slice</a>
-<a href=#150 id=150 data-nosnippet>150</a>        .<a href="../mod.rs.html#1041-1043">iter</a>()
-<a href=#151 id=151 data-nosnippet>151</a>        .<a href="../../iter/traits/iterator.rs.html#1058-1063">enumerate</a>()
-<a href=#152 id=152 data-nosnippet>152</a>        .<a href="../../iter/traits/iterator.rs.html#2711-2718">reduce</a>(|acc, t| <span class="kw">if </span><a href="#148">is_less</a>(<a href="#152">t</a>.<span class="number">1</span>, <a href="#152">acc</a>.<span class="number">1</span>) { <a href="#152">t</a> } <span class="kw">else </span>{ <a href="#152">acc</a> })
+<a href=#150 id=150 data-nosnippet>150</a>        .<a href="../mod.rs.html#1061-1063">iter</a>()
+<a href=#151 id=151 data-nosnippet>151</a>        .<a href="../../iter/traits/iterator.rs.html#1064-1069">enumerate</a>()
+<a href=#152 id=152 data-nosnippet>152</a>        .<a href="../../iter/traits/iterator.rs.html#2732-2739">reduce</a>(|acc, t| <span class="kw">if </span><a href="#148">is_less</a>(<a href="#152">t</a>.<span class="number">1</span>, <a href="#152">acc</a>.<span class="number">1</span>) { <a href="#152">t</a> } <span class="kw">else </span>{ <a href="#152">acc</a> })
 <a href=#153 id=153 data-nosnippet>153</a>        .<a href="../../option.rs.html#1160-1168">map</a>(|(i, <span class="kw">_</span>)| <a href="#153">i</a>)
 <a href=#154 id=154 data-nosnippet>154</a>}
 <a href=#155 id=155 data-nosnippet>155</a>
@@ -157,9 +157,9 @@
 <a href=#157 id=157 data-nosnippet>157</a>/// comparator function
 <a href=#158 id=158 data-nosnippet>158</a></span><span class="kw">fn </span>max_index&lt;T, F: <a href="../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; <a href="../../../../core/primitive.bool.html">bool</a>&gt;(slice: <span class="kw-2">&amp;</span>[T], is_less: <span class="kw-2">&amp;mut </span>F) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<a href="../../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#159 id=159 data-nosnippet>159</a>    <a href="#158">slice</a>
-<a href=#160 id=160 data-nosnippet>160</a>        .<a href="../mod.rs.html#1041-1043">iter</a>()
-<a href=#161 id=161 data-nosnippet>161</a>        .<a href="../../iter/traits/iterator.rs.html#1058-1063">enumerate</a>()
-<a href=#162 id=162 data-nosnippet>162</a>        .<a href="../../iter/traits/iterator.rs.html#2711-2718">reduce</a>(|acc, t| <span class="kw">if </span><a href="#158">is_less</a>(<a href="#162">acc</a>.<span class="number">1</span>, <a href="#162">t</a>.<span class="number">1</span>) { <a href="#162">t</a> } <span class="kw">else </span>{ <a href="#162">acc</a> })
+<a href=#160 id=160 data-nosnippet>160</a>        .<a href="../mod.rs.html#1061-1063">iter</a>()
+<a href=#161 id=161 data-nosnippet>161</a>        .<a href="../../iter/traits/iterator.rs.html#1064-1069">enumerate</a>()
+<a href=#162 id=162 data-nosnippet>162</a>        .<a href="../../iter/traits/iterator.rs.html#2732-2739">reduce</a>(|acc, t| <span class="kw">if </span><a href="#158">is_less</a>(<a href="#162">acc</a>.<span class="number">1</span>, <a href="#162">t</a>.<span class="number">1</span>) { <a href="#162">t</a> } <span class="kw">else </span>{ <a href="#162">acc</a> })
 <a href=#163 id=163 data-nosnippet>163</a>        .<a href="../../option.rs.html#1160-1168">map</a>(|(i, <span class="kw">_</span>)| <a href="#163">i</a>)
 <a href=#164 id=164 data-nosnippet>164</a>}
 <a href=#165 id=165 data-nosnippet>165</a>
@@ -188,13 +188,13 @@
 <a href=#188 id=188 data-nosnippet>188</a>            <span class="comment">// Find max element and place it in the last position of the array. We're free to use
 <a href=#189 id=189 data-nosnippet>189</a>            // `unwrap()` here because we know v must not be empty.
 <a href=#190 id=190 data-nosnippet>190</a>            </span><span class="kw">let </span>max_idx = <a href="#158-164">max_index</a>(<a href="#168">v</a>, <a href="#168">is_less</a>).<a href="../../option.rs.html#1013-1018">unwrap</a>();
-<a href=#191 id=191 data-nosnippet>191</a>            <a href="#168">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#190">max_idx</a>, <a href="#168">k</a>);
+<a href=#191 id=191 data-nosnippet>191</a>            <a href="#168">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#190">max_idx</a>, <a href="#168">k</a>);
 <a href=#192 id=192 data-nosnippet>192</a>            <span class="kw">return</span>;
 <a href=#193 id=193 data-nosnippet>193</a>        } <span class="kw">else if </span><a href="#168">k</a> == <span class="number">0 </span>{
 <a href=#194 id=194 data-nosnippet>194</a>            <span class="comment">// Find min element and place it in the first position of the array. We're free to use
 <a href=#195 id=195 data-nosnippet>195</a>            // `unwrap()` here because we know v must not be empty.
 <a href=#196 id=196 data-nosnippet>196</a>            </span><span class="kw">let </span>min_idx = <a href="#148-154">min_index</a>(<a href="#168">v</a>, <a href="#168">is_less</a>).<a href="../../option.rs.html#1013-1018">unwrap</a>();
-<a href=#197 id=197 data-nosnippet>197</a>            <a href="#168">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#196">min_idx</a>, <a href="#168">k</a>);
+<a href=#197 id=197 data-nosnippet>197</a>            <a href="#168">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#196">min_idx</a>, <a href="#168">k</a>);
 <a href=#198 id=198 data-nosnippet>198</a>            <span class="kw">return</span>;
 <a href=#199 id=199 data-nosnippet>199</a>        }
 <a href=#200 id=200 data-nosnippet>200</a>
@@ -273,9 +273,9 @@
 <a href=#273 id=273 data-nosnippet>273</a>        <a href="#255">d</a> = <a href="#257">f</a>;
 <a href=#274 id=274 data-nosnippet>274</a>    } <span class="kw">else </span>{
 <a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">if </span><a href="#251">is_less</a>(<span class="kw-2">&amp;</span><a href="#250">v</a>[<a href="#256">e</a>], <span class="kw-2">&amp;</span><a href="#250">v</a>[<a href="#253">b</a>]) {
-<a href=#276 id=276 data-nosnippet>276</a>            <a href="#250">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#256">e</a>, <a href="#253">b</a>);
+<a href=#276 id=276 data-nosnippet>276</a>            <a href="#250">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#256">e</a>, <a href="#253">b</a>);
 <a href=#277 id=277 data-nosnippet>277</a>        } <span class="kw">else if </span><a href="#251">is_less</a>(<span class="kw-2">&amp;</span><a href="#250">v</a>[<a href="#259">h</a>], <span class="kw-2">&amp;</span><a href="#250">v</a>[<a href="#256">e</a>]) {
-<a href=#278 id=278 data-nosnippet>278</a>            <a href="#250">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#256">e</a>, <a href="#259">h</a>);
+<a href=#278 id=278 data-nosnippet>278</a>            <a href="#250">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#256">e</a>, <a href="#259">h</a>);
 <a href=#279 id=279 data-nosnippet>279</a>        }
 <a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">return</span>;
 <a href=#281 id=281 data-nosnippet>281</a>    }
@@ -285,7 +285,7 @@
 <a href=#285 id=285 data-nosnippet>285</a>        <a href="#255">d</a> = <a href="#259">h</a>;
 <a href=#286 id=286 data-nosnippet>286</a>    }
 <a href=#287 id=287 data-nosnippet>287</a>
-<a href=#288 id=288 data-nosnippet>288</a>    <a href="#250">v</a>.<a href="../mod.rs.html#910-918">swap</a>(<a href="#255">d</a>, <a href="#256">e</a>);
+<a href=#288 id=288 data-nosnippet>288</a>    <a href="#250">v</a>.<a href="../mod.rs.html#930-938">swap</a>(<a href="#255">d</a>, <a href="#256">e</a>);
 <a href=#289 id=289 data-nosnippet>289</a>}
 <a href=#290 id=290 data-nosnippet>290</a>
 <a href=#291 id=291 data-nosnippet>291</a><span class="doccomment">/// returns the index pointing to the median of the 3

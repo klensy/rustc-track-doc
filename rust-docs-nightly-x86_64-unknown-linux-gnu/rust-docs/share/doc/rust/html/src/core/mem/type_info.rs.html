@@ -1,13 +1,13 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/type_info.rs`."><title>type_info.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>type_info.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MVP for exposing compile-time information about types in a
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/mem/type_info.rs`."><title>type_info.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/mem/</div>type_info.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MVP for exposing compile-time information about types in a
 <a href=#2 id=2 data-nosnippet>2</a>//! runtime or const-eval processable way.
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span><a href="../any.rs.html#725-732"><span class="kw">crate</span>::any::TypeId</a>;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../marker.rs.html#191-193"><span class="kw">crate</span>::marker::PointeeSized</a>;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../ptr/metadata.rs.html#160-163"><span class="kw">crate</span>::ptr::DynMetadata</a>;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#331">fmt</a>, <a href="../lib.rs.html#274">intrinsics</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#332">fmt</a>, <a href="../lib.rs.html#275">intrinsics</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// Compile-time type information.
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#11 id=11 data-nosnippet>11</a>#[non_exhaustive]
 <a href=#12 id=12 data-nosnippet>12</a>#[lang = <span class="string">"type_kind"</span>]
 <a href=#13 id=13 data-nosnippet>13</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>}
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a><span class="doccomment">/// Info of a trait implementation, you can retrieve the vtable with [Self::get_vtable]
-<a href=#53 id=53 data-nosnippet>53</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
+<a href=#53 id=53 data-nosnippet>53</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
 <a href=#54 id=54 data-nosnippet>54</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.TraitImpl.html">TraitImpl</a>&lt;T: <a href="../marker.rs.html#191-193">PointeeSized</a>&gt; {
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) vtable: <a href="../ptr/metadata.rs.html#160-163">DynMetadata</a>&lt;T&gt;,
@@ -104,7 +104,7 @@
 <a href=#104 id=104 data-nosnippet>104</a>
 <a href=#105 id=105 data-nosnippet>105</a><span class="doccomment">/// Compile-time type information about dynamic traits.
 <a href=#106 id=106 data-nosnippet>106</a>/// FIXME(#146922): Add super traits and generics
-<a href=#107 id=107 data-nosnippet>107</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#107 id=107 data-nosnippet>107</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#108 id=108 data-nosnippet>108</a>#[non_exhaustive]
 <a href=#109 id=109 data-nosnippet>109</a>#[lang = <span class="string">"DynTrait"</span>]
 <a href=#110 id=110 data-nosnippet>110</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
@@ -114,7 +114,7 @@
 <a href=#114 id=114 data-nosnippet>114</a>}
 <a href=#115 id=115 data-nosnippet>115</a>
 <a href=#116 id=116 data-nosnippet>116</a><span class="doccomment">/// Compile-time type information about a dynamic trait predicate.
-<a href=#117 id=117 data-nosnippet>117</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#117 id=117 data-nosnippet>117</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#118 id=118 data-nosnippet>118</a>#[non_exhaustive]
 <a href=#119 id=119 data-nosnippet>119</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#120 id=120 data-nosnippet>120</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.DynTraitPredicate.html">DynTraitPredicate</a> {
@@ -123,7 +123,7 @@
 <a href=#123 id=123 data-nosnippet>123</a>}
 <a href=#124 id=124 data-nosnippet>124</a>
 <a href=#125 id=125 data-nosnippet>125</a><span class="doccomment">/// Compile-time type information about a trait.
-<a href=#126 id=126 data-nosnippet>126</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#126 id=126 data-nosnippet>126</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#127 id=127 data-nosnippet>127</a>#[non_exhaustive]
 <a href=#128 id=128 data-nosnippet>128</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#129 id=129 data-nosnippet>129</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.Trait.html">Trait</a> {
@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>}
 <a href=#135 id=135 data-nosnippet>135</a>
 <a href=#136 id=136 data-nosnippet>136</a><span class="doccomment">/// Compile-time type information about instantiated generics of structs, enum and union variants.
-<a href=#137 id=137 data-nosnippet>137</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#137 id=137 data-nosnippet>137</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#138 id=138 data-nosnippet>138</a>#[non_exhaustive]
 <a href=#139 id=139 data-nosnippet>139</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#140 id=140 data-nosnippet>140</a>#[lang = <span class="string">"type_info_generic"</span>]
@@ -148,7 +148,7 @@
 <a href=#148 id=148 data-nosnippet>148</a>}
 <a href=#149 id=149 data-nosnippet>149</a>
 <a href=#150 id=150 data-nosnippet>150</a><span class="doccomment">/// Compile-time type information about generic lifetimes.
-<a href=#151 id=151 data-nosnippet>151</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#151 id=151 data-nosnippet>151</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#152 id=152 data-nosnippet>152</a>#[non_exhaustive]
 <a href=#153 id=153 data-nosnippet>153</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#154 id=154 data-nosnippet>154</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.Lifetime.html">Lifetime</a> {
@@ -156,7 +156,7 @@
 <a href=#156 id=156 data-nosnippet>156</a></span>}
 <a href=#157 id=157 data-nosnippet>157</a>
 <a href=#158 id=158 data-nosnippet>158</a><span class="doccomment">/// Compile-time type information about instantiated generic types.
-<a href=#159 id=159 data-nosnippet>159</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#159 id=159 data-nosnippet>159</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#160 id=160 data-nosnippet>160</a>#[non_exhaustive]
 <a href=#161 id=161 data-nosnippet>161</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#162 id=162 data-nosnippet>162</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.GenericType.html">GenericType</a> {
@@ -165,7 +165,7 @@
 <a href=#165 id=165 data-nosnippet>165</a>}
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a><span class="doccomment">/// Compile-time type information about generic const parameters.
-<a href=#168 id=168 data-nosnippet>168</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#168 id=168 data-nosnippet>168</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#169 id=169 data-nosnippet>169</a>#[non_exhaustive]
 <a href=#170 id=170 data-nosnippet>170</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.Const.html">Const</a> {
@@ -174,14 +174,14 @@
 <a href=#174 id=174 data-nosnippet>174</a>}
 <a href=#175 id=175 data-nosnippet>175</a>
 <a href=#176 id=176 data-nosnippet>176</a><span class="doccomment">/// Compile-time type information about string slice types.
-<a href=#177 id=177 data-nosnippet>177</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#177 id=177 data-nosnippet>177</a></span><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#178 id=178 data-nosnippet>178</a>#[non_exhaustive]
 <a href=#179 id=179 data-nosnippet>179</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">pub struct </span><a href="../../../core/mem/type_info/struct.Str.html">Str</a> {
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="comment">// No additional information to provide for now.
 <a href=#182 id=182 data-nosnippet>182</a></span>}
 <a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#184 id=184 data-nosnippet>184</a><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#185 id=185 data-nosnippet>185</a>#[lang = <span class="string">"FnPtr"</span>]
 <a href=#186 id=186 data-nosnippet>186</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#187 id=187 data-nosnippet>187</a></span><span class="doccomment">/// Function pointer, e.g. fn(u8),
@@ -229,7 +229,7 @@
 <a href=#229 id=229 data-nosnippet>229</a>    }
 <a href=#230 id=230 data-nosnippet>230</a>}
 <a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1093-1095">Debug</a>, <a href="../default.rs.html#146-148">Default</a>, <a href="../marker.rs.html#463-465">Copy</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
+<a href=#232 id=232 data-nosnippet>232</a><span class="attr">#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>, <a href="../default.rs.html#146-148">Default</a>, <a href="../marker.rs.html#463-465">Copy</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
 <a href=#233 id=233 data-nosnippet>233</a>#[non_exhaustive]
 <a href=#234 id=234 data-nosnippet>234</a>#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#235 id=235 data-nosnippet>235</a></span><span class="doccomment">/// Abi of [FnPtr]
@@ -737,8 +737,8 @@
 <a href=#737 id=737 data-nosnippet>737</a>}
 <a href=#738 id=738 data-nosnippet>738</a>
 <a href=#739 id=739 data-nosnippet>739</a><span class="attr">#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
-<a href=#740 id=740 data-nosnippet>740</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#734-737">VariantId</a> {
-<a href=#741 id=741 data-nosnippet>741</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#740 id=740 data-nosnippet>740</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#734-737">VariantId</a> {
+<a href=#741 id=741 data-nosnippet>741</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#742 id=742 data-nosnippet>742</a>        <a href="../macros/mod.rs.html#608-615">write!</a>(<a href="#741">f</a>, <span class="string">"Variant({:#034x}-{})"</span>, <span class="self">self</span>.base.as_u128(), <span class="self">self</span>.variant)
 <a href=#743 id=743 data-nosnippet>743</a>    }
 <a href=#744 id=744 data-nosnippet>744</a>}
@@ -833,8 +833,8 @@
 <a href=#833 id=833 data-nosnippet>833</a>}
 <a href=#834 id=834 data-nosnippet>834</a>
 <a href=#835 id=835 data-nosnippet>835</a><span class="attr">#[unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
-<a href=#836 id=836 data-nosnippet>836</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#831-833">FieldId</a> {
-<a href=#837 id=837 data-nosnippet>837</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#836 id=836 data-nosnippet>836</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#831-833">FieldId</a> {
+<a href=#837 id=837 data-nosnippet>837</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#838 id=838 data-nosnippet>838</a>        <a href="../macros/mod.rs.html#608-615">write!</a>(<a href="#837">f</a>, <span class="string">"FieldId({:#034x})"</span>, <span class="self">self</span>.frt_type_id.as_u128())
 <a href=#839 id=839 data-nosnippet>839</a>    }
 <a href=#840 id=840 data-nosnippet>840</a>}
@@ -859,7 +859,7 @@
 <a href=#859 id=859 data-nosnippet>859</a>    #[rustc_const_unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#860 id=860 data-nosnippet>860</a>    #[rustc_comptime]
 <a href=#861 id=861 data-nosnippet>861</a>    </span><span class="kw">pub fn </span>type_id(<span class="self">self</span>) -&gt; <a href="../any.rs.html#725-732">TypeId</a> {
-<a href=#862 id=862 data-nosnippet>862</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2966-2968">field_representing_type_actual_type_id</a>(<a class="self" href="#861">self</a>.frt_type_id)
+<a href=#862 id=862 data-nosnippet>862</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2968-2970">field_representing_type_actual_type_id</a>(<a class="self" href="#861">self</a>.frt_type_id)
 <a href=#863 id=863 data-nosnippet>863</a>    }
 <a href=#864 id=864 data-nosnippet>864</a>
 <a href=#865 id=865 data-nosnippet>865</a>    <span class="doccomment">/// Returns the name of the field.
@@ -881,7 +881,7 @@
 <a href=#881 id=881 data-nosnippet>881</a>    #[rustc_const_unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#882 id=882 data-nosnippet>882</a>    #[rustc_comptime]
 <a href=#883 id=883 data-nosnippet>883</a>    </span><span class="kw">pub fn </span>name(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span><a href="../../../core/primitive.str.html">str</a> {
-<a href=#884 id=884 data-nosnippet>884</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2977">field_representing_type_name</a>(<a class="self" href="#883">self</a>.frt_type_id)
+<a href=#884 id=884 data-nosnippet>884</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2979">field_representing_type_name</a>(<a class="self" href="#883">self</a>.frt_type_id)
 <a href=#885 id=885 data-nosnippet>885</a>    }
 <a href=#886 id=886 data-nosnippet>886</a>
 <a href=#887 id=887 data-nosnippet>887</a>    <span class="doccomment">/// Returns the raw documentation attributes when given a `FieldId`.
@@ -924,7 +924,7 @@
 <a href=#924 id=924 data-nosnippet>924</a>    #[rustc_const_unstable(feature = <span class="string">"type_info"</span>, issue = <span class="string">"146922"</span>)]
 <a href=#925 id=925 data-nosnippet>925</a>    #[rustc_comptime]
 <a href=#926 id=926 data-nosnippet>926</a>    </span><span class="kw">pub fn </span>offset(<span class="self">self</span>) -&gt; <a href="../../../core/primitive.usize.html">usize</a> {
-<a href=#927 id=927 data-nosnippet>927</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2986">field_representing_type_offset</a>(<a class="self" href="#926">self</a>.frt_type_id)
+<a href=#927 id=927 data-nosnippet>927</a>        intrinsics::<a href="../intrinsics/mod.rs.html#2988">field_representing_type_offset</a>(<a class="self" href="#926">self</a>.frt_type_id)
 <a href=#928 id=928 data-nosnippet>928</a>    }
 <a href=#929 id=929 data-nosnippet>929</a>
 <a href=#930 id=930 data-nosnippet>930</a>    <span class="doccomment">/// Given given a `FieldId` returns a list of attributes.

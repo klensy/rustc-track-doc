@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/map_windows.rs`."><title>map_windows.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>map_windows.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../traits/marker.rs.html#32"><span class="kw">crate</span>::iter::FusedIterator</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/map_windows.rs`."><title>map_windows.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>map_windows.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../traits/marker.rs.html#32"><span class="kw">crate</span>::iter::FusedIterator</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a href="../../mem/manually_drop.rs.html#156-158">ManuallyDrop</a>, <a href="../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>, <a href="../../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{<a href="../../lib.rs.html#331">fmt</a>, <a href="../../lib.rs.html#278">ptr</a>};
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{<a href="../../lib.rs.html#332">fmt</a>, <a href="../../lib.rs.html#279">ptr</a>};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="doccomment">/// An iterator over the mapped windows of another iterator.
 <a href=#6 id=6 data-nosnippet>6</a>///
@@ -8,12 +8,12 @@
 <a href=#8 id=8 data-nosnippet>8</a>/// documentation for more information.
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="attr">#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#10 id=10 data-nosnippet>10</a>#[unstable(feature = <span class="string">"iter_map_windows"</span>, issue = <span class="string">"87155"</span>)]
-<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub struct </span><a href="../../../../core/iter/struct.MapWindows.html">MapWindows</a>&lt;I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub struct </span><a href="../../../../core/iter/struct.MapWindows.html">MapWindows</a>&lt;I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#12 id=12 data-nosnippet>12</a>    f: F,
 <a href=#13 id=13 data-nosnippet>13</a>    inner: <a href="#16-31">MapWindowsInner</a>&lt;I, <a href="#11">N</a>&gt;,
 <a href=#14 id=14 data-nosnippet>14</a>}
 <a href=#15 id=15 data-nosnippet>15</a>
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">struct </span>MapWindowsInner&lt;I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">struct </span>MapWindowsInner&lt;I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#17 id=17 data-nosnippet>17</a>    iter: I,
 <a href=#18 id=18 data-nosnippet>18</a>    <span class="comment">// Since iterators are assumed lazy, i.e. it only yields an item when
 <a href=#19 id=19 data-nosnippet>19</a>    // `Iterator::next()` is called, and `MapWindows` is not an exception.
@@ -45,7 +45,7 @@
 <a href=#45 id=45 data-nosnippet>45</a>    start: <a href="../../../../core/primitive.usize.html">usize</a>,
 <a href=#46 id=46 data-nosnippet>46</a>}
 <a href=#47 id=47 data-nosnippet>47</a>
-<a href=#48 id=48 data-nosnippet>48</a><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="#11-14">MapWindows</a>&lt;I, F, <a href="#48">N</a>&gt; {
+<a href=#48 id=48 data-nosnippet>48</a><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="#11-14">MapWindows</a>&lt;I, F, <a href="#48">N</a>&gt; {
 <a href=#49 id=49 data-nosnippet>49</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::iter) <span class="kw">const fn </span>new(iter: I, f: F) -&gt; <span class="self">Self </span>{
 <a href=#50 id=50 data-nosnippet>50</a>        <a href="../../macros/mod.rs.html#1738-1741">assert!</a>(N != <span class="number">0</span>, <span class="string">"array in `Iterator::map_windows` must contain more than 0 elements"</span>);
 <a href=#51 id=51 data-nosnippet>51</a>
@@ -61,7 +61,7 @@
 <a href=#61 id=61 data-nosnippet>61</a>    }
 <a href=#62 id=62 data-nosnippet>62</a>}
 <a href=#63 id=63 data-nosnippet>63</a>
-<a href=#64 id=64 data-nosnippet>64</a><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="#16-31">MapWindowsInner</a>&lt;I, <a href="#64">N</a>&gt; {
+<a href=#64 id=64 data-nosnippet>64</a><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="#16-31">MapWindowsInner</a>&lt;I, <a href="#64">N</a>&gt; {
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="attr">#[inline]
 <a href=#66 id=66 data-nosnippet>66</a>    </span><span class="kw">const fn </span>new(iter: I) -&gt; <span class="self">Self </span>{
 <a href=#67 id=67 data-nosnippet>67</a>        <span class="self">Self </span>{ <a href="#66">iter</a>, buffer: <a class="prelude-val" href="../../option.rs.html#602">None</a> }
@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>}
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="#43-46">Buffer</a>&lt;T, <a href="#103">N</a>&gt; {
-<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">fn </span>try_from_iter(iter: <span class="kw-2">&amp;mut </span><span class="kw">impl </span><a href="../traits/iterator.rs.html#42-4168">Iterator</a>&lt;Item = T&gt;) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>&gt; {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">fn </span>try_from_iter(iter: <span class="kw-2">&amp;mut </span><span class="kw">impl </span><a href="../traits/iterator.rs.html#42-4195">Iterator</a>&lt;Item = T&gt;) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>&gt; {
 <a href=#105 id=105 data-nosnippet>105</a>        <span class="kw">let </span>first_half = <span class="kw">crate</span>::array::iter_next_chunk(iter).ok()<span class="question-mark">?</span>;
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>buffer =
 <a href=#107 id=107 data-nosnippet>107</a>            [<a href="../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>::<a href="../../mem/maybe_uninit.rs.html#406-408">new</a>(<a href="#105">first_half</a>).<a href="../../mem/maybe_uninit.rs.html#1663-1666">transpose</a>(), [<span class="kw">const </span>{ <a href="../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>::<a href="../../mem/maybe_uninit.rs.html#429-431">uninit</a>() }; <a href="#103">N</a>]];
@@ -110,12 +110,12 @@
 <a href=#110 id=110 data-nosnippet>110</a>
 <a href=#111 id=111 data-nosnippet>111</a>    <span class="attr">#[inline]
 <a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">fn </span>buffer_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span><a href="../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt; {
-<a href=#113 id=113 data-nosnippet>113</a>        <a class="self" href="#112">self</a>.buffer.<a href="../../slice/mod.rs.html#730-732">as_ptr</a>().<a href="../../ptr/const_ptr.rs.html#48-50">cast</a>()
+<a href=#113 id=113 data-nosnippet>113</a>        <a class="self" href="#112">self</a>.buffer.<a href="../../slice/mod.rs.html#750-752">as_ptr</a>().<a href="../../ptr/const_ptr.rs.html#48-50">cast</a>()
 <a href=#114 id=114 data-nosnippet>114</a>    }
 <a href=#115 id=115 data-nosnippet>115</a>
 <a href=#116 id=116 data-nosnippet>116</a>    <span class="attr">#[inline]
 <a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">fn </span>buffer_mut_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span><a href="../../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>&lt;T&gt; {
-<a href=#118 id=118 data-nosnippet>118</a>        <a class="self" href="#117">self</a>.buffer.<a href="../../slice/mod.rs.html#762-764">as_mut_ptr</a>().<a href="../../ptr/mut_ptr.rs.html#31-33">cast</a>()
+<a href=#118 id=118 data-nosnippet>118</a>        <a class="self" href="#117">self</a>.buffer.<a href="../../slice/mod.rs.html#782-784">as_mut_ptr</a>().<a href="../../ptr/mut_ptr.rs.html#31-33">cast</a>()
 <a href=#119 id=119 data-nosnippet>119</a>    }
 <a href=#120 id=120 data-nosnippet>120</a>
 <a href=#121 id=121 data-nosnippet>121</a>    <span class="attr">#[inline]
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a><span class="kw">impl</span>&lt;I, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../../clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#16-31">MapWindowsInner</a>&lt;I, <a href="#215">N</a>&gt;
 <a href=#216 id=216 data-nosnippet>216</a><span class="kw">where
-<a href=#217 id=217 data-nosnippet>217</a>    </span>I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a> + <a href="../../clone.rs.html#193-251">Clone</a>,
+<a href=#217 id=217 data-nosnippet>217</a>    </span>I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a> + <a href="../../clone.rs.html#193-251">Clone</a>,
 <a href=#218 id=218 data-nosnippet>218</a>    I::Item: <a href="../../clone.rs.html#193-251">Clone</a>,
 <a href=#219 id=219 data-nosnippet>219</a>{
 <a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
@@ -235,9 +235,9 @@
 <a href=#235 id=235 data-nosnippet>235</a>}
 <a href=#236 id=236 data-nosnippet>236</a>
 <a href=#237 id=237 data-nosnippet>237</a><span class="attr">#[unstable(feature = <span class="string">"iter_map_windows"</span>, issue = <span class="string">"87155"</span>)]
-<a href=#238 id=238 data-nosnippet>238</a></span><span class="kw">impl</span>&lt;I, F, R, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#11-14">MapWindows</a>&lt;I, F, <a href="#238">N</a>&gt;
+<a href=#238 id=238 data-nosnippet>238</a></span><span class="kw">impl</span>&lt;I, F, R, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#11-14">MapWindows</a>&lt;I, F, <a href="#238">N</a>&gt;
 <a href=#239 id=239 data-nosnippet>239</a><span class="kw">where
-<a href=#240 id=240 data-nosnippet>240</a>    </span>I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>,
+<a href=#240 id=240 data-nosnippet>240</a>    </span>I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>,
 <a href=#241 id=241 data-nosnippet>241</a>    F: <a href="../../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span>[I::Item; <a href="#238">N</a>]) -&gt; R,
 <a href=#242 id=242 data-nosnippet>242</a>{
 <a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">type </span>Item = R;
@@ -270,16 +270,16 @@
 <a href=#270 id=270 data-nosnippet>270</a>}
 <a href=#271 id=271 data-nosnippet>271</a>
 <a href=#272 id=272 data-nosnippet>272</a><span class="attr">#[unstable(feature = <span class="string">"iter_map_windows"</span>, issue = <span class="string">"87155"</span>)]
-<a href=#273 id=273 data-nosnippet>273</a></span><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a> + <a href="../../fmt/mod.rs.html#1053-1085">fmt::Debug</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#11-14">MapWindows</a>&lt;I, F, <a href="#273">N</a>&gt; {
-<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../fmt/mod.rs.html#74">Result</a> {
-<a href=#275 id=275 data-nosnippet>275</a>        <a href="#274">f</a>.<a href="../../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"MapWindows"</span>).<a href="../../fmt/builders.rs.html#156-180">field</a>(<span class="string">"iter"</span>, <span class="kw-2">&amp;</span><a class="self" href="#274">self</a>.inner.iter).<a href="../../fmt/builders.rs.html#295-302">finish</a>()
+<a href=#273 id=273 data-nosnippet>273</a></span><span class="kw">impl</span>&lt;I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a> + <a href="../../fmt/mod.rs.html#1120-1152">fmt::Debug</a>, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#11-14">MapWindows</a>&lt;I, F, <a href="#273">N</a>&gt; {
+<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../../fmt/mod.rs.html#74">Result</a> {
+<a href=#275 id=275 data-nosnippet>275</a>        <a href="#274">f</a>.<a href="../../fmt/mod.rs.html#2557-2559">debug_struct</a>(<span class="string">"MapWindows"</span>).<a href="../../fmt/builders.rs.html#156-180">field</a>(<span class="string">"iter"</span>, <span class="kw-2">&amp;</span><a class="self" href="#274">self</a>.inner.iter).<a href="../../fmt/builders.rs.html#295-302">finish</a>()
 <a href=#276 id=276 data-nosnippet>276</a>    }
 <a href=#277 id=277 data-nosnippet>277</a>}
 <a href=#278 id=278 data-nosnippet>278</a>
 <a href=#279 id=279 data-nosnippet>279</a><span class="attr">#[unstable(feature = <span class="string">"iter_map_windows"</span>, issue = <span class="string">"87155"</span>)]
 <a href=#280 id=280 data-nosnippet>280</a></span><span class="kw">impl</span>&lt;I, F, <span class="kw">const </span>N: <a href="../../../../core/primitive.usize.html">usize</a>&gt; <a href="../../clone.rs.html#193-251">Clone</a> <span class="kw">for </span><a href="#11-14">MapWindows</a>&lt;I, F, <a href="#280">N</a>&gt;
 <a href=#281 id=281 data-nosnippet>281</a><span class="kw">where
-<a href=#282 id=282 data-nosnippet>282</a>    </span>I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a> + <a href="../../clone.rs.html#193-251">Clone</a>,
+<a href=#282 id=282 data-nosnippet>282</a>    </span>I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a> + <a href="../../clone.rs.html#193-251">Clone</a>,
 <a href=#283 id=283 data-nosnippet>283</a>    F: <a href="../../clone.rs.html#193-251">Clone</a>,
 <a href=#284 id=284 data-nosnippet>284</a>    I::Item: <a href="../../clone.rs.html#193-251">Clone</a>,
 <a href=#285 id=285 data-nosnippet>285</a>{

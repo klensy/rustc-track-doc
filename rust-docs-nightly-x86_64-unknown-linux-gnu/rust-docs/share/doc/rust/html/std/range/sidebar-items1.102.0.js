@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["legacy"],"struct":["Range","RangeFrom","RangeFromIter","RangeFull","RangeInclusive","RangeInclusiveIter","RangeIter","RangeTo","RangeToInclusive"]};
+window.SIDEBAR_ITEMS = {"mod":["legacy"],"struct":["Range","RangeFrom","RangeFromIter","RangeFull","RangeInclusive","RangeInclusiveIter","RangeIter","RangeTo","RangeToInclusive"],"trait":["RangeIntersect"]};

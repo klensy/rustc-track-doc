@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/wtf8.rs`."><title>wtf8.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>wtf8.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of [the WTF-8 encoding](https://wtf-8.codeberg.page/).
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/wtf8.rs`."><title>wtf8.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files1.102.0.js"></script><script defer src="../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/</div>wtf8.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implementation of [the WTF-8 encoding](https://wtf-8.codeberg.page/).
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This library uses Rust’s type system to maintain
 <a href=#4 id=4 data-nosnippet>4</a>//! [well-formedness](https://wtf-8.codeberg.page/#well-formed),
@@ -21,12 +21,12 @@
 <a href=#21 id=21 data-nosnippet>21</a>
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">use </span><span class="kw">crate</span>::char::{<a href="char/methods.rs.html#2532-2538">EscapeDebugExtArgs</a>, <a href="char/methods.rs.html#2663-2686">encode_utf16_raw</a>};
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><a href="clone.rs.html#608-645"><span class="kw">crate</span>::clone::CloneToUninit</a>;
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#331">self</a>, <a href="fmt/mod.rs.html#123-245">Write</a>};
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="lib.rs.html#332">self</a>, <a href="fmt/mod.rs.html#123-245">Write</a>};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::hash::{<a href="hash/mod.rs.html#250-252">Hash</a>, <a href="hash/mod.rs.html#312-554">Hasher</a>};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><a href="iter/traits/marker.rs.html#32"><span class="kw">crate</span>::iter::FusedIterator</a>;
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span><a href="num/niche_types.rs.html#161-163"><span class="kw">crate</span>::num::niche_types::CodePointInner</a>;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span><a href="str/validations.rs.html#35-69"><span class="kw">crate</span>::str::next_code_point</a>;
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="lib.rs.html#294">ops</a>, <a href="lib.rs.html#333">slice</a>, <a href="lib.rs.html#334">str</a>};
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use crate</span>::{<a href="lib.rs.html#295">ops</a>, <a href="lib.rs.html#334">slice</a>, <a href="lib.rs.html#335">str</a>};
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a><span class="doccomment">/// A Unicode code point: from U+0000 to U+10FFFF.
 <a href=#32 id=32 data-nosnippet>32</a>///
@@ -39,9 +39,9 @@
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a><span class="doccomment">/// Format the code point as `U+` followed by four to six hexadecimal digits.
 <a href=#41 id=41 data-nosnippet>41</a>/// Example: `U+1F4A9`
-<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#38">CodePoint</a> {
+<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#38">CodePoint</a> {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="attr">#[inline]
-<a href=#44 id=44 data-nosnippet>44</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#44 id=44 data-nosnippet>44</a>    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#45 id=45 data-nosnippet>45</a>        <a href="macros/mod.rs.html#608-615">write!</a>(<a href="#44">formatter</a>, <span class="string">"U+{:04X}"</span>, <span class="self">self</span>.<span class="number">0</span>.as_inner())
 <a href=#46 id=46 data-nosnippet>46</a>    }
 <a href=#47 id=47 data-nosnippet>47</a>}
@@ -143,9 +143,9 @@
 <a href=#143 id=143 data-nosnippet>143</a><span class="doccomment">/// Formats the string in double quotes, with characters escaped according to
 <a href=#144 id=144 data-nosnippet>144</a>/// [`char::escape_debug`] and unpaired surrogates represented as `\u{xxxx}`,
 <a href=#145 id=145 data-nosnippet>145</a>/// where each `x` is a hexadecimal digit.
-<a href=#146 id=146 data-nosnippet>146</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
-<a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">fn </span>write_str_escaped(f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;, s: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a>) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#146 id=146 data-nosnippet>146</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">fn </span>write_str_escaped(f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;, s: <span class="kw-2">&amp;</span><a href="../../core/primitive.str.html">str</a>) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#149 id=149 data-nosnippet>149</a>            <span class="kw">use </span><a href="fmt/mod.rs.html#123-245"><span class="kw">crate</span>::fmt::Write</a> <span class="kw">as _</span>;
 <a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">for </span>c <span class="kw">in </span>s.chars().flat_map(|c| {
 <a href=#151 id=151 data-nosnippet>151</a>                c.escape_debug_ext(EscapeDebugExtArgs {
@@ -177,8 +177,8 @@
 <a href=#177 id=177 data-nosnippet>177</a>
 <a href=#178 id=178 data-nosnippet>178</a><span class="doccomment">/// Formats the string with unpaired surrogates substituted with the replacement
 <a href=#179 id=179 data-nosnippet>179</a>/// character, U+FFFD.
-<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1187-1213">fmt::Display</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#180 id=180 data-nosnippet>180</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1254-1280">fmt::Display</a> <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">let </span>wtf8_bytes = <span class="kw-2">&amp;</span><a class="self" href="#181">self</a>.bytes;
 <a href=#183 id=183 data-nosnippet>183</a>        <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="number">0</span>;
 <a href=#184 id=184 data-nosnippet>184</a>        <span class="kw">loop </span>{
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>                <a class="prelude-val" href="option.rs.html#602">None</a> =&gt; {
 <a href=#195 id=195 data-nosnippet>195</a>                    <span class="comment">// SAFETY: after next_surrogate returns None, the remainder is valid UTF-8.
 <a href=#196 id=196 data-nosnippet>196</a>                    </span><span class="kw">let </span>s = <span class="kw">unsafe </span>{ str::<a href="str/converts.rs.html#178-182">from_utf8_unchecked</a>(<span class="kw-2">&amp;</span><a href="#182">wtf8_bytes</a>[pos..]) };
-<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">if </span><a href="#183">pos</a> == <span class="number">0 </span>{ <span class="kw">return </span><a href="#196">s</a>.<a href="fmt/mod.rs.html#1212">fmt</a>(<a href="#181">formatter</a>) } <span class="kw">else </span>{ <span class="kw">return </span><a href="#181">formatter</a>.<a href="fmt/mod.rs.html#2099-2101">write_str</a>(<a href="#196">s</a>) }
+<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">if </span><a href="#183">pos</a> == <span class="number">0 </span>{ <span class="kw">return </span><a href="#196">s</a>.<a href="fmt/mod.rs.html#1279">fmt</a>(<a href="#181">formatter</a>) } <span class="kw">else </span>{ <span class="kw">return </span><a href="#181">formatter</a>.<a href="fmt/mod.rs.html#2166-2168">write_str</a>(<a href="#196">s</a>) }
 <a href=#198 id=198 data-nosnippet>198</a>                }
 <a href=#199 id=199 data-nosnippet>199</a>            }
 <a href=#200 id=200 data-nosnippet>200</a>        }
@@ -259,7 +259,7 @@
 <a href=#259 id=259 data-nosnippet>259</a>    <span class="doccomment">/// Returns an iterator for the string’s code points.
 <a href=#260 id=260 data-nosnippet>260</a>    </span><span class="attr">#[inline]
 <a href=#261 id=261 data-nosnippet>261</a>    </span><span class="kw">pub fn </span>code_points(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#262 id=262 data-nosnippet>262</a>        <a href="#538-540">Wtf8CodePoints</a> { bytes: <a class="self" href="#261">self</a>.bytes.<a href="slice/mod.rs.html#1041-1043">iter</a>() }
+<a href=#262 id=262 data-nosnippet>262</a>        <a href="#538-540">Wtf8CodePoints</a> { bytes: <a class="self" href="#261">self</a>.bytes.<a href="slice/mod.rs.html#1061-1063">iter</a>() }
 <a href=#263 id=263 data-nosnippet>263</a>    }
 <a href=#264 id=264 data-nosnippet>264</a>
 <a href=#265 id=265 data-nosnippet>265</a>    <span class="doccomment">/// Access raw bytes of WTF-8 data
@@ -291,7 +291,7 @@
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a>    <span class="attr">#[inline]
 <a href=#293 id=293 data-nosnippet>293</a>    </span><span class="kw">pub fn </span>next_surrogate(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>pos: <a href="../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="option.rs.html#598-607">Option</a>&lt;(<a href="../../core/primitive.usize.html">usize</a>, <a href="../../core/primitive.u16.html">u16</a>)&gt; {
-<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a class="self" href="#293">self</a>.bytes[pos..].<a href="slice/mod.rs.html#1041-1043">iter</a>();
+<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = <a class="self" href="#293">self</a>.bytes[pos..].<a href="slice/mod.rs.html#1061-1063">iter</a>();
 <a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">loop </span>{
 <a href=#296 id=296 data-nosnippet>296</a>            <span class="kw">let </span>b = <span class="kw-2">*</span>iter.next()<span class="question-mark">?</span>;
 <a href=#297 id=297 data-nosnippet>297</a>            <span class="kw">if </span><a href="#296">b</a> &lt; <span class="number">0x80 </span>{
@@ -362,11 +362,11 @@
 <a href=#362 id=362 data-nosnippet>362</a>///
 <a href=#363 id=363 data-nosnippet>363</a>/// Panics when `begin` and `end` do not point to code point boundaries,
 <a href=#364 id=364 data-nosnippet>364</a>/// or point beyond the end of the string.
-<a href=#365 id=365 data-nosnippet>365</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#86-93">Range</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#365 id=365 data-nosnippet>365</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#85-92">Range</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#366 id=366 data-nosnippet>366</a>    <span class="kw">type </span>Output = <a href="#132-134">Wtf8</a>;
 <a href=#367 id=367 data-nosnippet>367</a>
 <a href=#368 id=368 data-nosnippet>368</a>    <span class="attr">#[inline]
-<a href=#369 id=369 data-nosnippet>369</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#86-93">Range</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
+<a href=#369 id=369 data-nosnippet>369</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#85-92">Range</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
 <a href=#370 id=370 data-nosnippet>370</a>        <span class="kw">if </span><a href="#369">range</a>.start &lt;= <a href="#369">range</a>.end
 <a href=#371 id=371 data-nosnippet>371</a>            &amp;&amp; <a class="self" href="#369">self</a>.<a href="#440-448">is_code_point_boundary</a>(<a href="#369">range</a>.start)
 <a href=#372 id=372 data-nosnippet>372</a>            &amp;&amp; <a class="self" href="#369">self</a>.<a href="#440-448">is_code_point_boundary</a>(<a href="#369">range</a>.end)
@@ -385,11 +385,11 @@
 <a href=#385 id=385 data-nosnippet>385</a>///
 <a href=#386 id=386 data-nosnippet>386</a>/// Panics when `begin` is not at a code point boundary,
 <a href=#387 id=387 data-nosnippet>387</a>/// or is beyond the end of the string.
-<a href=#388 id=388 data-nosnippet>388</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#202-206">RangeFrom</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#388 id=388 data-nosnippet>388</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#201-205">RangeFrom</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#389 id=389 data-nosnippet>389</a>    <span class="kw">type </span>Output = <a href="#132-134">Wtf8</a>;
 <a href=#390 id=390 data-nosnippet>390</a>
 <a href=#391 id=391 data-nosnippet>391</a>    <span class="attr">#[inline]
-<a href=#392 id=392 data-nosnippet>392</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#202-206">RangeFrom</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
+<a href=#392 id=392 data-nosnippet>392</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#201-205">RangeFrom</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
 <a href=#393 id=393 data-nosnippet>393</a>        <span class="kw">if </span><a class="self" href="#392">self</a>.<a href="#440-448">is_code_point_boundary</a>(<a href="#392">range</a>.start) {
 <a href=#394 id=394 data-nosnippet>394</a>            <span class="comment">// SAFETY: is_code_point_boundary checks that the index is valid
 <a href=#395 id=395 data-nosnippet>395</a>            </span><span class="kw">unsafe </span>{ <a href="#506-513">slice_unchecked</a>(<a class="self" href="#392">self</a>, <a href="#392">range</a>.start, <a class="self" href="#392">self</a>.<a href="#236-238">len</a>()) }
@@ -405,11 +405,11 @@
 <a href=#405 id=405 data-nosnippet>405</a>///
 <a href=#406 id=406 data-nosnippet>406</a>/// Panics when `end` is not at a code point boundary,
 <a href=#407 id=407 data-nosnippet>407</a>/// or is beyond the end of the string.
-<a href=#408 id=408 data-nosnippet>408</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#286-290">RangeTo</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#408 id=408 data-nosnippet>408</a></span><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#285-289">RangeTo</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#409 id=409 data-nosnippet>409</a>    <span class="kw">type </span>Output = <a href="#132-134">Wtf8</a>;
 <a href=#410 id=410 data-nosnippet>410</a>
 <a href=#411 id=411 data-nosnippet>411</a>    <span class="attr">#[inline]
-<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#286-290">RangeTo</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
+<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, range: ops::<a href="ops/range.rs.html#285-289">RangeTo</a>&lt;<a href="../../core/primitive.usize.html">usize</a>&gt;) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
 <a href=#413 id=413 data-nosnippet>413</a>        <span class="kw">if </span><a class="self" href="#412">self</a>.<a href="#440-448">is_code_point_boundary</a>(<a href="#412">range</a>.end) {
 <a href=#414 id=414 data-nosnippet>414</a>            <span class="comment">// SAFETY: is_code_point_boundary checks that the index is valid
 <a href=#415 id=415 data-nosnippet>415</a>            </span><span class="kw">unsafe </span>{ <a href="#506-513">slice_unchecked</a>(<a class="self" href="#412">self</a>, <span class="number">0</span>, <a href="#412">range</a>.end) }
@@ -419,11 +419,11 @@
 <a href=#419 id=419 data-nosnippet>419</a>    }
 <a href=#420 id=420 data-nosnippet>420</a>}
 <a href=#421 id=421 data-nosnippet>421</a>
-<a href=#422 id=422 data-nosnippet>422</a><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#44">RangeFull</a>&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
+<a href=#422 id=422 data-nosnippet>422</a><span class="kw">impl </span><a href="ops/index.rs.html#59-74">ops::Index</a>&lt;ops::<a href="ops/range.rs.html#43">RangeFull</a>&gt; <span class="kw">for </span><a href="#132-134">Wtf8</a> {
 <a href=#423 id=423 data-nosnippet>423</a>    <span class="kw">type </span>Output = <a href="#132-134">Wtf8</a>;
 <a href=#424 id=424 data-nosnippet>424</a>
 <a href=#425 id=425 data-nosnippet>425</a>    <span class="attr">#[inline]
-<a href=#426 id=426 data-nosnippet>426</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, _range: ops::<a href="ops/range.rs.html#44">RangeFull</a>) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
+<a href=#426 id=426 data-nosnippet>426</a>    </span><span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>, _range: ops::<a href="ops/range.rs.html#43">RangeFull</a>) -&gt; <span class="kw-2">&amp;</span><a href="#132-134">Wtf8</a> {
 <a href=#427 id=427 data-nosnippet>427</a>        <a class="self" href="#426">self</a>
 <a href=#428 id=428 data-nosnippet>428</a>    }
 <a href=#429 id=429 data-nosnippet>429</a>}
@@ -441,7 +441,7 @@
 <a href=#441 id=441 data-nosnippet>441</a>        <span class="kw">if </span><a href="#440">index</a> == <span class="number">0 </span>{
 <a href=#442 id=442 data-nosnippet>442</a>            <span class="kw">return </span><span class="bool-val">true</span>;
 <a href=#443 id=443 data-nosnippet>443</a>        }
-<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">match </span><a class="self" href="#440">self</a>.bytes.<a href="slice/mod.rs.html#574-579">get</a>(<a href="#440">index</a>) {
+<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">match </span><a class="self" href="#440">self</a>.bytes.<a href="slice/mod.rs.html#594-599">get</a>(<a href="#440">index</a>) {
 <a href=#445 id=445 data-nosnippet>445</a>            <a class="prelude-val" href="option.rs.html#602">None</a> =&gt; <a href="#440">index</a> == <a class="self" href="#440">self</a>.<a href="#236-238">len</a>(),
 <a href=#446 id=446 data-nosnippet>446</a>            <a class="prelude-val" href="option.rs.html#606">Some</a>(<span class="kw-2">&amp;</span>b) =&gt; (<a href="#446">b</a> <span class="kw">as </span><a href="../../core/primitive.i8.html">i8</a>) &gt;= -<span class="number">0x40</span>,
 <a href=#447 id=447 data-nosnippet>447</a>        }
@@ -475,7 +475,7 @@
 <a href=#475 id=475 data-nosnippet>475</a>        <span class="kw">if </span><a href="#474">index</a> == <span class="number">0 </span>{
 <a href=#476 id=476 data-nosnippet>476</a>            <span class="kw">return </span><a class="prelude-val" href="result.rs.html#562">Ok</a>(());
 <a href=#477 id=477 data-nosnippet>477</a>        }
-<a href=#478 id=478 data-nosnippet>478</a>        <span class="kw">match </span><a class="self" href="#474">self</a>.bytes.<a href="slice/mod.rs.html#574-579">get</a>(<a href="#474">index</a>) {
+<a href=#478 id=478 data-nosnippet>478</a>        <span class="kw">match </span><a class="self" href="#474">self</a>.bytes.<a href="slice/mod.rs.html#594-599">get</a>(<a href="#474">index</a>) {
 <a href=#479 id=479 data-nosnippet>479</a>            <a class="prelude-val" href="option.rs.html#606">Some</a>(<span class="number">0xED</span>) =&gt; (), <span class="comment">// Might be a surrogate
 <a href=#480 id=480 data-nosnippet>480</a>            </span><a class="prelude-val" href="option.rs.html#606">Some</a>(<span class="kw-2">&amp;</span>b) <span class="kw">if </span>(<a href="#480">b</a> <span class="kw">as </span><a href="../../core/primitive.i8.html">i8</a>) &gt;= -<span class="number">0x40 </span>=&gt; <span class="kw">return </span><a class="prelude-val" href="result.rs.html#562">Ok</a>(()),
 <a href=#481 id=481 data-nosnippet>481</a>            <a class="prelude-val" href="option.rs.html#606">Some</a>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><a class="prelude-val" href="result.rs.html#567">Err</a>(Utf8BoundaryError::<a href="#499">NotABoundary</a>),
@@ -494,7 +494,7 @@
 <a href=#494 id=494 data-nosnippet>494</a>
 <a href=#495 id=495 data-nosnippet>495</a><span class="comment">// This error type is only used temporarily to provide better panic messages
 <a href=#496 id=496 data-nosnippet>496</a>// It does not implement Error.
-<a href=#497 id=497 data-nosnippet>497</a></span><span class="attr">#[derive(<a href="fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#497 id=497 data-nosnippet>497</a></span><span class="attr">#[derive(<a href="fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#498 id=498 data-nosnippet>498</a></span><span class="kw">pub enum </span>Utf8BoundaryError {
 <a href=#499 id=499 data-nosnippet>499</a>    NotABoundary,
 <a href=#500 id=500 data-nosnippet>500</a>    OutOfBounds,
@@ -507,7 +507,7 @@
 <a href=#507 id=507 data-nosnippet>507</a>    <span class="comment">// SAFETY: memory layout of a &amp;[u8] and &amp;Wtf8 are the same
 <a href=#508 id=508 data-nosnippet>508</a>    </span><span class="kw">unsafe </span>{
 <a href=#509 id=509 data-nosnippet>509</a>        <span class="kw">let </span>len = <a href="#506">end</a> - <a href="#506">begin</a>;
-<a href=#510 id=510 data-nosnippet>510</a>        <span class="kw">let </span>start = <a href="#506">s</a>.<a href="#267-269">as_bytes</a>().<a href="slice/mod.rs.html#730-732">as_ptr</a>().<a href="ptr/const_ptr.rs.html#845-880">add</a>(<a href="#506">begin</a>);
+<a href=#510 id=510 data-nosnippet>510</a>        <span class="kw">let </span>start = <a href="#506">s</a>.<a href="#267-269">as_bytes</a>().<a href="slice/mod.rs.html#750-752">as_ptr</a>().<a href="ptr/const_ptr.rs.html#845-880">add</a>(<a href="#506">begin</a>);
 <a href=#511 id=511 data-nosnippet>511</a>        <a href="#132-134">Wtf8</a>::<a href="#218-221">from_bytes_unchecked</a>(slice::<a href="slice/raw.rs.html#124-141">from_raw_parts</a>(<a href="#510">start</a>, <a href="#509">len</a>))
 <a href=#512 id=512 data-nosnippet>512</a>    }
 <a href=#513 id=513 data-nosnippet>513</a>}
@@ -539,7 +539,7 @@
 <a href=#539 id=539 data-nosnippet>539</a>    bytes: slice::<a href="slice/iter.rs.html#67-78">Iter</a>&lt;<span class="lifetime">'a</span>, <a href="../../core/primitive.u8.html">u8</a>&gt;,
 <a href=#540 id=540 data-nosnippet>540</a>}
 <a href=#541 id=541 data-nosnippet>541</a>
-<a href=#542 id=542 data-nosnippet>542</a><span class="kw">impl </span><a href="iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#542 id=542 data-nosnippet>542</a><span class="kw">impl </span><a href="iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#543 id=543 data-nosnippet>543</a>    <span class="kw">type </span>Item = <a href="#38">CodePoint</a>;
 <a href=#544 id=544 data-nosnippet>544</a>
 <a href=#545 id=545 data-nosnippet>545</a>    <span class="attr">#[inline]
@@ -555,9 +555,9 @@
 <a href=#555 id=555 data-nosnippet>555</a>    }
 <a href=#556 id=556 data-nosnippet>556</a>}
 <a href=#557 id=557 data-nosnippet>557</a>
-<a href=#558 id=558 data-nosnippet>558</a><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#559 id=559 data-nosnippet>559</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
-<a href=#560 id=560 data-nosnippet>560</a>        <a href="#559">f</a>.<a href="fmt/mod.rs.html#2639-2641">debug_tuple</a>(<span class="string">"Wtf8CodePoints"</span>)
+<a href=#558 id=558 data-nosnippet>558</a><span class="kw">impl </span><a href="fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#538-540">Wtf8CodePoints</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#559 id=559 data-nosnippet>559</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#560 id=560 data-nosnippet>560</a>        <a href="#559">f</a>.<a href="fmt/mod.rs.html#2706-2708">debug_tuple</a>(<span class="string">"Wtf8CodePoints"</span>)
 <a href=#561 id=561 data-nosnippet>561</a>            <span class="comment">// SAFETY: We always leave the string in a valid state after each iteration.
 <a href=#562 id=562 data-nosnippet>562</a>            </span>.<a href="fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><span class="kw">unsafe </span>{ <a href="#132-134">Wtf8</a>::<a href="#218-221">from_bytes_unchecked</a>(<a class="self" href="#559">self</a>.bytes.<a href="slice/iter.rs.html#135-137">as_slice</a>()) })
 <a href=#563 id=563 data-nosnippet>563</a>            .<a href="fmt/builders.rs.html#505-515">finish</a>()
@@ -575,7 +575,7 @@
 <a href=#575 id=575 data-nosnippet>575</a>
 <a href=#576 id=576 data-nosnippet>576</a><span class="comment">// Copied from libunicode/u_str.rs
 <a href=#577 id=577 data-nosnippet>577</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#578 id=578 data-nosnippet>578</a></span><span class="kw">impl </span><a href="iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#578 id=578 data-nosnippet>578</a></span><span class="kw">impl </span><a href="iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#579 id=579 data-nosnippet>579</a>    <span class="kw">type </span>Item = <a href="../../core/primitive.u16.html">u16</a>;
 <a href=#580 id=580 data-nosnippet>580</a>
 <a href=#581 id=581 data-nosnippet>581</a>    <span class="attr">#[inline]
@@ -611,11 +611,11 @@
 <a href=#611 id=611 data-nosnippet>611</a></span><span class="kw">impl </span><a href="iter/traits/marker.rs.html#32">FusedIterator</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {}
 <a href=#612 id=612 data-nosnippet>612</a>
 <a href=#613 id=613 data-nosnippet>613</a><span class="attr">#[stable(feature = <span class="string">"encode_wide_debug"</span>, since = <span class="string">"1.92.0"</span>)]
-<a href=#614 id=614 data-nosnippet>614</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#615 id=615 data-nosnippet>615</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#614 id=614 data-nosnippet>614</a></span><span class="kw">impl </span><a href="fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#571-574">EncodeWide</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#615 id=615 data-nosnippet>615</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#616 id=616 data-nosnippet>616</a>        <span class="kw">struct </span>CodeUnit(<a href="../../core/primitive.u16.html">u16</a>);
-<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">impl </span><a href="fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#616">CodeUnit</a> {
-<a href=#618 id=618 data-nosnippet>618</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
+<a href=#617 id=617 data-nosnippet>617</a>        <span class="kw">impl </span><a href="fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#616">CodeUnit</a> {
+<a href=#618 id=618 data-nosnippet>618</a>            <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="fmt/mod.rs.html#74">Result</a> {
 <a href=#619 id=619 data-nosnippet>619</a>                <span class="comment">// This output attempts to balance readability with precision.
 <a href=#620 id=620 data-nosnippet>620</a>                // Render characters which take only one WTF-16 code unit using
 <a href=#621 id=621 data-nosnippet>621</a>                // `char` syntax and everything else as code units with hex

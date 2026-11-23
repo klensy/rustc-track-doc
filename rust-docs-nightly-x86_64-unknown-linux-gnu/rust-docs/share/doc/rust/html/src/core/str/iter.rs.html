@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::pattern::{<a href="pattern.rs.html#409">DoubleEndedSearcher</a>, <a href="pattern.rs.html#103-178">Pattern</a>, <a href="pattern.rs.html#323-386">ReverseSearcher</a>, <a href="pattern.rs.html#224-304">Searcher</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::validations::{<a href="validations.rs.html#35-69">next_code_point</a>, <a href="validations.rs.html#78-112">next_code_point_reverse</a>};
@@ -6,15 +6,15 @@
 <a href=#6 id=6 data-nosnippet>6</a>    <a href="mod.rs.html#3325-3373">BytesIsNotEmpty</a>, <a href="mod.rs.html#3325-3373">CharEscapeDebug</a>, <a href="mod.rs.html#3325-3373">CharEscapeDefault</a>, <a href="mod.rs.html#3325-3373">CharEscapeUnicode</a>, <a href="mod.rs.html#3325-3373">IsAsciiWhitespace</a>,
 <a href=#7 id=7 data-nosnippet>7</a>    <a href="mod.rs.html#3325-3373">IsNotEmpty</a>, <a href="mod.rs.html#3325-3373">IsWhitespace</a>, <a href="mod.rs.html#3325-3373">LinesMap</a>, <a href="mod.rs.html#3325-3373">UnsafeBytesToStr</a>, <a href="converts.rs.html#178-182">from_utf8_unchecked</a>,
 <a href=#8 id=8 data-nosnippet>8</a>};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../lib.rs.html#307"><span class="kw">crate</span>::char</a> <span class="kw">as </span>char_mod;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#331">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><a href="../lib.rs.html#308"><span class="kw">crate</span>::char</a> <span class="kw">as </span>char_mod;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::fmt::{<a class="self" href="../lib.rs.html#332">self</a>, <a href="../fmt/mod.rs.html#123-245">Write</a>};
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::iter::{
 <a href=#12 id=12 data-nosnippet>12</a>    <a href="../iter/adapters/copied.rs.html#19-21">Copied</a>, <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>, <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>, <a href="../iter/traits/marker.rs.html#32">FusedIterator</a>, <a href="../iter/adapters/map.rs.html#61-65">Map</a>, <a href="../iter/traits/marker.rs.html#67">TrustedLen</a>, <a href="../iter/adapters/zip.rs.html#559">TrustedRandomAccess</a>,
 <a href=#13 id=13 data-nosnippet>13</a>    <a href="../iter/adapters/zip.rs.html#572-583">TrustedRandomAccessNoCoerce</a>,
 <a href=#14 id=14 data-nosnippet>14</a>};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><a href="../num/nonzero.rs.html#112"><span class="kw">crate</span>::num::NonZero</a>;
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><a href="../ops/try_trait.rs.html#133-220"><span class="kw">crate</span>::ops::Try</a>;
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#333">self</a>, <a href="../slice/iter.rs.html#399-408">Split</a> <span class="kw">as </span>SliceSplit};
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::slice::{<a class="self" href="../lib.rs.html#334">self</a>, <a href="../slice/iter.rs.html#399-408">Split</a> <span class="kw">as </span>SliceSplit};
 <a href=#18 id=18 data-nosnippet>18</a>
 <a href=#19 id=19 data-nosnippet>19</a><span class="doccomment">/// An iterator over the [`char`]s of a string slice.
 <a href=#20 id=20 data-nosnippet>20</a>///
@@ -32,7 +32,7 @@
 <a href=#32 id=32 data-nosnippet>32</a>}
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.char.html">char</a>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="attr">#[inline]
@@ -52,7 +52,7 @@
 <a href=#52 id=52 data-nosnippet>52</a>        <span class="kw">const </span>CHUNK_SIZE: <a href="../../../core/primitive.usize.html">usize</a> = <span class="number">32</span>;
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">if </span><a href="#51">remainder</a> &gt;= <a href="#52">CHUNK_SIZE</a> {
-<a href=#55 id=55 data-nosnippet>55</a>            <span class="kw">let </span><span class="kw-2">mut </span>chunks = <a class="self" href="#51">self</a>.iter.<a href="../slice/iter.rs.html#135-137">as_slice</a>().<a href="../slice/mod.rs.html#1399-1409">as_chunks</a>::&lt;<a href="#52">CHUNK_SIZE</a>&gt;().<span class="number">0</span>.<a href="../slice/mod.rs.html#1041-1043">iter</a>();
+<a href=#55 id=55 data-nosnippet>55</a>            <span class="kw">let </span><span class="kw-2">mut </span>chunks = <a class="self" href="#51">self</a>.iter.<a href="../slice/iter.rs.html#135-137">as_slice</a>().<a href="../slice/mod.rs.html#1419-1429">as_chunks</a>::&lt;<a href="#52">CHUNK_SIZE</a>&gt;().<span class="number">0</span>.<a href="../slice/mod.rs.html#1061-1063">iter</a>();
 <a href=#56 id=56 data-nosnippet>56</a>            <span class="kw">let </span><span class="kw-2">mut </span>bytes_skipped: <a href="../../../core/primitive.usize.html">usize</a> = <span class="number">0</span>;
 <a href=#57 id=57 data-nosnippet>57</a>
 <a href=#58 id=58 data-nosnippet>58</a>            <span class="kw">while </span>remainder &gt; CHUNK_SIZE
@@ -110,8 +110,8 @@
 <a href=#110 id=110 data-nosnippet>110</a>}
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a><span class="attr">#[stable(feature = <span class="string">"chars_debug_impl"</span>, since = <span class="string">"1.38.0"</span>)]
-<a href=#113 id=113 data-nosnippet>113</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#113 id=113 data-nosnippet>113</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
 <a href=#115 id=115 data-nosnippet>115</a>        <span class="macro">write!</span>(f, <span class="string">"Chars("</span>)<span class="question-mark">?</span>;
 <a href=#116 id=116 data-nosnippet>116</a>        f.debug_list().entries(<span class="self">self</span>.clone()).finish()<span class="question-mark">?</span>;
 <a href=#117 id=117 data-nosnippet>117</a>        <span class="macro">write!</span>(f, <span class="string">")"</span>)<span class="question-mark">?</span>;
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>///
 <a href=#167 id=167 data-nosnippet>167</a>/// [`char`]: prim@char
 <a href=#168 id=168 data-nosnippet>168</a>/// [`char_indices`]: str::char_indices
-<a href=#169 id=169 data-nosnippet>169</a></span><span class="attr">#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#169 id=169 data-nosnippet>169</a></span><span class="attr">#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#170 id=170 data-nosnippet>170</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#171 id=171 data-nosnippet>171</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#172 id=172 data-nosnippet>172</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.CharIndices.html">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
@@ -175,7 +175,7 @@
 <a href=#175 id=175 data-nosnippet>175</a>}
 <a href=#176 id=176 data-nosnippet>176</a>
 <a href=#177 id=177 data-nosnippet>177</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#178 id=178 data-nosnippet>178</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#178 id=178 data-nosnippet>178</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">type </span>Item = (<a href="../../../core/primitive.usize.html">usize</a>, <a href="../../../core/primitive.char.html">char</a>);
 <a href=#180 id=180 data-nosnippet>180</a>
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="attr">#[inline]
@@ -280,11 +280,11 @@
 <a href=#280 id=280 data-nosnippet>280</a>/// [`bytes`]: str::bytes
 <a href=#281 id=281 data-nosnippet>281</a></span><span class="attr">#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#282 id=282 data-nosnippet>282</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#283 id=283 data-nosnippet>283</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#283 id=283 data-nosnippet>283</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Bytes.html">Bytes</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/copied.rs.html#19-21">Copied</a>&lt;slice::<a href="../slice/iter.rs.html#67-78">Iter</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;&gt;);
 <a href=#285 id=285 data-nosnippet>285</a>
 <a href=#286 id=286 data-nosnippet>286</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#287 id=287 data-nosnippet>287</a></span><span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#287 id=287 data-nosnippet>287</a></span><span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#288 id=288 data-nosnippet>288</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.u8.html">u8</a>;
 <a href=#289 id=289 data-nosnippet>289</a>
 <a href=#290 id=290 data-nosnippet>290</a>    <span class="attr">#[inline]
@@ -309,7 +309,7 @@
 <a href=#309 id=309 data-nosnippet>309</a>
 <a href=#310 id=310 data-nosnippet>310</a>    <span class="attr">#[inline]
 <a href=#311 id=311 data-nosnippet>311</a>    </span><span class="kw">fn </span>nth(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>::Item&gt; {
-<a href=#312 id=312 data-nosnippet>312</a>        <a class="self" href="#311">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#399-405">nth</a>(<a href="#311">n</a>)
+<a href=#312 id=312 data-nosnippet>312</a>        <a class="self" href="#311">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#400-406">nth</a>(<a href="#311">n</a>)
 <a href=#313 id=313 data-nosnippet>313</a>    }
 <a href=#314 id=314 data-nosnippet>314</a>
 <a href=#315 id=315 data-nosnippet>315</a>    <span class="attr">#[inline]
@@ -317,7 +317,7 @@
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="kw">where
 <a href=#318 id=318 data-nosnippet>318</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#319 id=319 data-nosnippet>319</a>    {
-<a href=#320 id=320 data-nosnippet>320</a>        <a class="self" href="#316">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2840-2855">all</a>(<a href="#316">f</a>)
+<a href=#320 id=320 data-nosnippet>320</a>        <a class="self" href="#316">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2862-2877">all</a>(<a href="#316">f</a>)
 <a href=#321 id=321 data-nosnippet>321</a>    }
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a>    <span class="attr">#[inline]
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">where
 <a href=#326 id=326 data-nosnippet>326</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#327 id=327 data-nosnippet>327</a>    {
-<a href=#328 id=328 data-nosnippet>328</a>        <a class="self" href="#324">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2897-2910">any</a>(<a href="#324">f</a>)
+<a href=#328 id=328 data-nosnippet>328</a>        <a class="self" href="#324">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2920-2933">any</a>(<a href="#324">f</a>)
 <a href=#329 id=329 data-nosnippet>329</a>    }
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>    <span class="attr">#[inline]
@@ -333,7 +333,7 @@
 <a href=#333 id=333 data-nosnippet>333</a>    <span class="kw">where
 <a href=#334 id=334 data-nosnippet>334</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#335 id=335 data-nosnippet>335</a>    {
-<a href=#336 id=336 data-nosnippet>336</a>        <a class="self" href="#332">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2971-2984">find</a>(<a href="#332">predicate</a>)
+<a href=#336 id=336 data-nosnippet>336</a>        <a class="self" href="#332">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2994-3007">find</a>(<a href="#332">predicate</a>)
 <a href=#337 id=337 data-nosnippet>337</a>    }
 <a href=#338 id=338 data-nosnippet>338</a>
 <a href=#339 id=339 data-nosnippet>339</a>    <span class="attr">#[inline]
@@ -341,7 +341,7 @@
 <a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">where
 <a href=#342 id=342 data-nosnippet>342</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#343 id=343 data-nosnippet>343</a>    {
-<a href=#344 id=344 data-nosnippet>344</a>        <a class="self" href="#340">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3146-3169">position</a>(<a href="#340">predicate</a>)
+<a href=#344 id=344 data-nosnippet>344</a>        <a class="self" href="#340">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3169-3192">position</a>(<a href="#340">predicate</a>)
 <a href=#345 id=345 data-nosnippet>345</a>    }
 <a href=#346 id=346 data-nosnippet>346</a>
 <a href=#347 id=347 data-nosnippet>347</a>    <span class="attr">#[inline]
@@ -349,14 +349,14 @@
 <a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">where
 <a href=#350 id=350 data-nosnippet>350</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#351 id=351 data-nosnippet>351</a>    {
-<a href=#352 id=352 data-nosnippet>352</a>        <a class="self" href="#348">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3212-3231">rposition</a>(<a href="#348">predicate</a>)
+<a href=#352 id=352 data-nosnippet>352</a>        <a class="self" href="#348">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3235-3254">rposition</a>(<a href="#348">predicate</a>)
 <a href=#353 id=353 data-nosnippet>353</a>    }
 <a href=#354 id=354 data-nosnippet>354</a>
 <a href=#355 id=355 data-nosnippet>355</a>    <span class="attr">#[inline]
 <a href=#356 id=356 data-nosnippet>356</a>    </span><span class="kw">unsafe fn </span>__iterator_get_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.u8.html">u8</a> {
 <a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract
 <a href=#358 id=358 data-nosnippet>358</a>        // for `Iterator::__iterator_get_unchecked`.
-<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#356">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#4161-4167">__iterator_get_unchecked</a>(<a href="#356">idx</a>) }
+<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#356">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#4188-4194">__iterator_get_unchecked</a>(<a href="#356">idx</a>) }
 <a href=#360 id=360 data-nosnippet>360</a>    }
 <a href=#361 id=361 data-nosnippet>361</a>}
 <a href=#362 id=362 data-nosnippet>362</a>
@@ -622,12 +622,12 @@
 <a href=#622 id=622 data-nosnippet>622</a>    <span class="kw">pub</span>(<span class="kw">super</span>) finished: <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#623 id=623 data-nosnippet>623</a>}
 <a href=#624 id=624 data-nosnippet>624</a>
-<a href=#625 id=625 data-nosnippet>625</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#617-623">SplitInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
+<a href=#625 id=625 data-nosnippet>625</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#617-623">SplitInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
 <a href=#626 id=626 data-nosnippet>626</a><span class="kw">where
-<a href=#627 id=627 data-nosnippet>627</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt;,
+<a href=#627 id=627 data-nosnippet>627</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a>&gt;,
 <a href=#628 id=628 data-nosnippet>628</a>{
-<a href=#629 id=629 data-nosnippet>629</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#630 id=630 data-nosnippet>630</a>        <a href="#629">f</a>.<a href="../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"SplitInternal"</span>)
+<a href=#629 id=629 data-nosnippet>629</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#630 id=630 data-nosnippet>630</a>        <a href="#629">f</a>.<a href="../fmt/mod.rs.html#2557-2559">debug_struct</a>(<span class="string">"SplitInternal"</span>)
 <a href=#631 id=631 data-nosnippet>631</a>            .<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"start"</span>, <span class="kw-2">&amp;</span><a class="self" href="#629">self</a>.start)
 <a href=#632 id=632 data-nosnippet>632</a>            .<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"end"</span>, <span class="kw-2">&amp;</span><a class="self" href="#629">self</a>.end)
 <a href=#633 id=633 data-nosnippet>633</a>            .<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"matcher"</span>, <span class="kw-2">&amp;</span><a class="self" href="#629">self</a>.matcher)
@@ -932,12 +932,12 @@
 <a href=#932 id=932 data-nosnippet>932</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) count: <a href="../../../core/primitive.usize.html">usize</a>,
 <a href=#933 id=933 data-nosnippet>933</a>}
 <a href=#934 id=934 data-nosnippet>934</a>
-<a href=#935 id=935 data-nosnippet>935</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#929-933">SplitNInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
+<a href=#935 id=935 data-nosnippet>935</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#929-933">SplitNInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
 <a href=#936 id=936 data-nosnippet>936</a><span class="kw">where
-<a href=#937 id=937 data-nosnippet>937</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt;,
+<a href=#937 id=937 data-nosnippet>937</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a>&gt;,
 <a href=#938 id=938 data-nosnippet>938</a>{
-<a href=#939 id=939 data-nosnippet>939</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#940 id=940 data-nosnippet>940</a>        <a href="#939">f</a>.<a href="../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"SplitNInternal"</span>)
+<a href=#939 id=939 data-nosnippet>939</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#940 id=940 data-nosnippet>940</a>        <a href="#939">f</a>.<a href="../fmt/mod.rs.html#2557-2559">debug_struct</a>(<span class="string">"SplitNInternal"</span>)
 <a href=#941 id=941 data-nosnippet>941</a>            .<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"iter"</span>, <span class="kw-2">&amp;</span><a class="self" href="#939">self</a>.iter)
 <a href=#942 id=942 data-nosnippet>942</a>            .<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"count"</span>, <span class="kw-2">&amp;</span><a class="self" href="#939">self</a>.count)
 <a href=#943 id=943 data-nosnippet>943</a>            .<a href="../fmt/builders.rs.html#295-302">finish</a>()
@@ -1055,12 +1055,12 @@
 <a href=#1055 id=1055 data-nosnippet>1055</a>
 <a href=#1056 id=1056 data-nosnippet>1056</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>MatchIndicesInternal&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) P::Searcher&lt;<span class="lifetime">'a</span>&gt;);
 <a href=#1057 id=1057 data-nosnippet>1057</a>
-<a href=#1058 id=1058 data-nosnippet>1058</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#1056">MatchIndicesInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
+<a href=#1058 id=1058 data-nosnippet>1058</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#1056">MatchIndicesInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
 <a href=#1059 id=1059 data-nosnippet>1059</a><span class="kw">where
-<a href=#1060 id=1060 data-nosnippet>1060</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt;,
+<a href=#1060 id=1060 data-nosnippet>1060</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a>&gt;,
 <a href=#1061 id=1061 data-nosnippet>1061</a>{
-<a href=#1062 id=1062 data-nosnippet>1062</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#1063 id=1063 data-nosnippet>1063</a>        <a href="#1062">f</a>.<a href="../fmt/mod.rs.html#2639-2641">debug_tuple</a>(<span class="string">"MatchIndicesInternal"</span>).<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#1062">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#505-515">finish</a>()
+<a href=#1062 id=1062 data-nosnippet>1062</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#1063 id=1063 data-nosnippet>1063</a>        <a href="#1062">f</a>.<a href="../fmt/mod.rs.html#2706-2708">debug_tuple</a>(<span class="string">"MatchIndicesInternal"</span>).<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#1062">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#505-515">finish</a>()
 <a href=#1064 id=1064 data-nosnippet>1064</a>    }
 <a href=#1065 id=1065 data-nosnippet>1065</a>}
 <a href=#1066 id=1066 data-nosnippet>1066</a>
@@ -1110,12 +1110,12 @@
 <a href=#1110 id=1110 data-nosnippet>1110</a>
 <a href=#1111 id=1111 data-nosnippet>1111</a><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>MatchesInternal&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) P::Searcher&lt;<span class="lifetime">'a</span>&gt;);
 <a href=#1112 id=1112 data-nosnippet>1112</a>
-<a href=#1113 id=1113 data-nosnippet>1113</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#1111">MatchesInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
+<a href=#1113 id=1113 data-nosnippet>1113</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#1111">MatchesInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;
 <a href=#1114 id=1114 data-nosnippet>1114</a><span class="kw">where
-<a href=#1115 id=1115 data-nosnippet>1115</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt;,
+<a href=#1115 id=1115 data-nosnippet>1115</a>    </span>P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a>&gt;,
 <a href=#1116 id=1116 data-nosnippet>1116</a>{
-<a href=#1117 id=1117 data-nosnippet>1117</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#1118 id=1118 data-nosnippet>1118</a>        <a href="#1117">f</a>.<a href="../fmt/mod.rs.html#2639-2641">debug_tuple</a>(<span class="string">"MatchesInternal"</span>).<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#1117">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#505-515">finish</a>()
+<a href=#1117 id=1117 data-nosnippet>1117</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#1118 id=1118 data-nosnippet>1118</a>        <a href="#1117">f</a>.<a href="../fmt/mod.rs.html#2706-2708">debug_tuple</a>(<span class="string">"MatchesInternal"</span>).<a href="../fmt/builders.rs.html#380-400">field</a>(<span class="kw-2">&amp;</span><a class="self" href="#1117">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#505-515">finish</a>()
 <a href=#1119 id=1119 data-nosnippet>1119</a>    }
 <a href=#1120 id=1120 data-nosnippet>1120</a>}
 <a href=#1121 id=1121 data-nosnippet>1121</a>
@@ -1168,11 +1168,11 @@
 <a href=#1168 id=1168 data-nosnippet>1168</a>/// [`lines`]: str::lines
 <a href=#1169 id=1169 data-nosnippet>1169</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1170 id=1170 data-nosnippet>1170</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
-<a href=#1171 id=1171 data-nosnippet>1171</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1171 id=1171 data-nosnippet>1171</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1172 id=1172 data-nosnippet>1172</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3325-3373">LinesMap</a>&gt;);
 <a href=#1173 id=1173 data-nosnippet>1173</a>
 <a href=#1174 id=1174 data-nosnippet>1174</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1176 id=1176 data-nosnippet>1176</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1177 id=1177 data-nosnippet>1177</a>
 <a href=#1178 id=1178 data-nosnippet>1178</a>    <span class="attr">#[inline]
@@ -1233,13 +1233,13 @@
 <a href=#1233 id=1233 data-nosnippet>1233</a></span><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1234 id=1234 data-nosnippet>1234</a>#[deprecated(since = <span class="string">"1.4.0"</span>, note = <span class="string">"use lines()/Lines instead now"</span>)]
 <a href=#1235 id=1235 data-nosnippet>1235</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
-<a href=#1236 id=1236 data-nosnippet>1236</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1236 id=1236 data-nosnippet>1236</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1237 id=1237 data-nosnippet>1237</a>#[allow(deprecated)]
 <a href=#1238 id=1238 data-nosnippet>1238</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.LinesAny.html">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt;);
 <a href=#1239 id=1239 data-nosnippet>1239</a>
 <a href=#1240 id=1240 data-nosnippet>1240</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1241 id=1241 data-nosnippet>1241</a>#[allow(deprecated)]
-<a href=#1242 id=1242 data-nosnippet>1242</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1242 id=1242 data-nosnippet>1242</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1243 id=1243 data-nosnippet>1243</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1244 id=1244 data-nosnippet>1244</a>
 <a href=#1245 id=1245 data-nosnippet>1245</a>    <span class="attr">#[inline]
@@ -1274,7 +1274,7 @@
 <a href=#1274 id=1274 data-nosnippet>1274</a>///
 <a href=#1275 id=1275 data-nosnippet>1275</a>/// [`split_whitespace`]: str::split_whitespace
 <a href=#1276 id=1276 data-nosnippet>1276</a></span><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1277 id=1277 data-nosnippet>1277</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1277 id=1277 data-nosnippet>1277</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1278 id=1278 data-nosnippet>1278</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitWhitespace.html">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1279 id=1279 data-nosnippet>1279</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="#796-812">Split</a>&lt;<span class="lifetime">'a</span>, <a href="mod.rs.html#3325-3373">IsWhitespace</a>&gt;, <a href="mod.rs.html#3325-3373">IsNotEmpty</a>&gt;,
 <a href=#1280 id=1280 data-nosnippet>1280</a>}
@@ -1287,7 +1287,7 @@
 <a href=#1287 id=1287 data-nosnippet>1287</a>///
 <a href=#1288 id=1288 data-nosnippet>1288</a>/// [`split_ascii_whitespace`]: str::split_ascii_whitespace
 <a href=#1289 id=1289 data-nosnippet>1289</a></span><span class="attr">#[stable(feature = <span class="string">"split_ascii_whitespace"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1290 id=1290 data-nosnippet>1290</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1290 id=1290 data-nosnippet>1290</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1291 id=1291 data-nosnippet>1291</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitAsciiWhitespace.html">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1292 id=1292 data-nosnippet>1292</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner:
 <a href=#1293 id=1293 data-nosnippet>1293</a>        <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="../iter/adapters/filter.rs.html#21-25">Filter</a>&lt;<a href="../slice/iter.rs.html#399-408">SliceSplit</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>, <a href="mod.rs.html#3325-3373">IsAsciiWhitespace</a>&gt;, <a href="mod.rs.html#3325-3373">BytesIsNotEmpty</a>&gt;, <a href="mod.rs.html#3325-3373">UnsafeBytesToStr</a>&gt;,
@@ -1306,7 +1306,7 @@
 <a href=#1306 id=1306 data-nosnippet>1306</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitInclusive.html">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="#617-623">SplitInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;);
 <a href=#1307 id=1307 data-nosnippet>1307</a>
 <a href=#1308 id=1308 data-nosnippet>1308</a><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1309 id=1309 data-nosnippet>1309</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1309 id=1309 data-nosnippet>1309</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1310 id=1310 data-nosnippet>1310</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1311 id=1311 data-nosnippet>1311</a>
 <a href=#1312 id=1312 data-nosnippet>1312</a>    <span class="attr">#[inline]
@@ -1362,7 +1362,7 @@
 <a href=#1362 id=1362 data-nosnippet>1362</a>}
 <a href=#1363 id=1363 data-nosnippet>1363</a>
 <a href=#1364 id=1364 data-nosnippet>1364</a><span class="attr">#[stable(feature = <span class="string">"split_ascii_whitespace"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1365 id=1365 data-nosnippet>1365</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1365 id=1365 data-nosnippet>1365</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1366 id=1366 data-nosnippet>1366</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1367 id=1367 data-nosnippet>1367</a>
 <a href=#1368 id=1368 data-nosnippet>1368</a>    <span class="attr">#[inline]
@@ -1425,7 +1425,7 @@
 <a href=#1425 id=1425 data-nosnippet>1425</a>}
 <a href=#1426 id=1426 data-nosnippet>1426</a>
 <a href=#1427 id=1427 data-nosnippet>1427</a><span class="attr">#[stable(feature = <span class="string">"split_inclusive"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#1428 id=1428 data-nosnippet>1428</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
+<a href=#1428 id=1428 data-nosnippet>1428</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
 <a href=#1429 id=1429 data-nosnippet>1429</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1430 id=1430 data-nosnippet>1430</a>
 <a href=#1431 id=1431 data-nosnippet>1431</a>    <span class="attr">#[inline]
@@ -1435,9 +1435,9 @@
 <a href=#1435 id=1435 data-nosnippet>1435</a>}
 <a href=#1436 id=1436 data-nosnippet>1436</a>
 <a href=#1437 id=1437 data-nosnippet>1437</a><span class="attr">#[stable(feature = <span class="string">"split_inclusive"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#1438 id=1438 data-nosnippet>1438</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a>&gt;&gt; <a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
-<a href=#1439 id=1439 data-nosnippet>1439</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#1440 id=1440 data-nosnippet>1440</a>        <a href="#1439">f</a>.<a href="../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"SplitInclusive"</span>).<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"0"</span>, <span class="kw-2">&amp;</span><a class="self" href="#1439">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#295-302">finish</a>()
+<a href=#1438 id=1438 data-nosnippet>1438</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a>&gt;&gt; <a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
+<a href=#1439 id=1439 data-nosnippet>1439</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#1440 id=1440 data-nosnippet>1440</a>        <a href="#1439">f</a>.<a href="../fmt/mod.rs.html#2557-2559">debug_struct</a>(<span class="string">"SplitInclusive"</span>).<a href="../fmt/builders.rs.html#156-180">field</a>(<span class="string">"0"</span>, <span class="kw-2">&amp;</span><a class="self" href="#1439">self</a>.<span class="number">0</span>).<a href="../fmt/builders.rs.html#295-302">finish</a>()
 <a href=#1441 id=1441 data-nosnippet>1441</a>    }
 <a href=#1442 id=1442 data-nosnippet>1442</a>}
 <a href=#1443 id=1443 data-nosnippet>1443</a>
@@ -1499,14 +1499,14 @@
 <a href=#1499 id=1499 data-nosnippet>1499</a>}
 <a href=#1500 id=1500 data-nosnippet>1500</a>
 <a href=#1501 id=1501 data-nosnippet>1501</a><span class="attr">#[stable(feature = <span class="string">"collection_debug"</span>, since = <span class="string">"1.17.0"</span>)]
-<a href=#1502 id=1502 data-nosnippet>1502</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1053-1085">fmt::Debug</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'_</span>&gt; {
-<a href=#1503 id=1503 data-nosnippet>1503</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#561-565">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#1504 id=1504 data-nosnippet>1504</a>        <a href="#1503">f</a>.<a href="../fmt/mod.rs.html#2490-2492">debug_struct</a>(<span class="string">"EncodeUtf16"</span>).<a href="../fmt/builders.rs.html#248-265">finish_non_exhaustive</a>()
+<a href=#1502 id=1502 data-nosnippet>1502</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1120-1152">fmt::Debug</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#1503 id=1503 data-nosnippet>1503</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#1504 id=1504 data-nosnippet>1504</a>        <a href="#1503">f</a>.<a href="../fmt/mod.rs.html#2557-2559">debug_struct</a>(<span class="string">"EncodeUtf16"</span>).<a href="../fmt/builders.rs.html#248-265">finish_non_exhaustive</a>()
 <a href=#1505 id=1505 data-nosnippet>1505</a>    }
 <a href=#1506 id=1506 data-nosnippet>1506</a>}
 <a href=#1507 id=1507 data-nosnippet>1507</a>
 <a href=#1508 id=1508 data-nosnippet>1508</a><span class="attr">#[stable(feature = <span class="string">"encode_utf16"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#1509 id=1509 data-nosnippet>1509</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1509 id=1509 data-nosnippet>1509</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1510 id=1510 data-nosnippet>1510</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.u16.html">u16</a>;
 <a href=#1511 id=1511 data-nosnippet>1511</a>
 <a href=#1512 id=1512 data-nosnippet>1512</a>    <span class="attr">#[inline]
@@ -1558,7 +1558,7 @@
 <a href=#1558 id=1558 data-nosnippet>1558</a>        //
 <a href=#1559 id=1559 data-nosnippet>1559</a>        // Because we never map to larger values the result is never larger than
 <a href=#1560 id=1560 data-nosnippet>1560</a>        // `self.chars.as_str().len()` so the sum can never overflow
-<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><a class="self" href="#1548">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#515-518">as_bytes</a>().<a href="../slice/mod.rs.html#1041-1043">iter</a>().<a href="../iter/traits/iterator.rs.html#2674-2684">fold</a>(<a href="#1549">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
+<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><a class="self" href="#1548">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#515-518">as_bytes</a>().<a href="../slice/mod.rs.html#1061-1063">iter</a>().<a href="../iter/traits/iterator.rs.html#2694-2704">fold</a>(<a href="#1549">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
 <a href=#1562 id=1562 data-nosnippet>1562</a>            <a href="#1561">acc</a>.<a href="../num/mod.rs.html#1461-1485">wrapping_add</a>({
 <a href=#1563 id=1563 data-nosnippet>1563</a>                <span class="kw">if </span><a href="#1561">byte</a> &lt; <span class="number">0b1000_0000 </span>{
 <a href=#1564 id=1564 data-nosnippet>1564</a>                    <span class="comment">// 0b0xxx_xxxx: ASCII-compatible U+0000 to U+007F
@@ -1587,14 +1587,14 @@
 <a href=#1587 id=1587 data-nosnippet>1587</a>
 <a href=#1588 id=1588 data-nosnippet>1588</a><span class="doccomment">/// The return type of [`str::escape_debug`].
 <a href=#1589 id=1589 data-nosnippet>1589</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1590 id=1590 data-nosnippet>1590</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1590 id=1590 data-nosnippet>1590</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1591 id=1591 data-nosnippet>1591</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDebug.html">EscapeDebug</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1592 id=1592 data-nosnippet>1592</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#310">EscapeDebug</a>, <a href="mod.rs.html#3325-3373">CharEscapeDebug</a>&gt;,
 <a href=#1593 id=1593 data-nosnippet>1593</a>}
 <a href=#1594 id=1594 data-nosnippet>1594</a>
 <a href=#1595 id=1595 data-nosnippet>1595</a><span class="doccomment">/// The return type of [`str::escape_default`].
 <a href=#1596 id=1596 data-nosnippet>1596</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1597 id=1597 data-nosnippet>1597</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1597 id=1597 data-nosnippet>1597</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1598 id=1598 data-nosnippet>1598</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeDefault.html">EscapeDefault</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1599 id=1599 data-nosnippet>1599</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#233">EscapeDefault</a>, <a href="mod.rs.html#3325-3373">CharEscapeDefault</a>&gt;,
 <a href=#1600 id=1600 data-nosnippet>1600</a>}
@@ -1605,7 +1605,7 @@
 <a href=#1605 id=1605 data-nosnippet>1605</a>    </span><span class="attr">#[unstable(feature = <span class="string">"std_internals"</span>, issue = <span class="string">"none"</span>)]
 <a href=#1606 id=1606 data-nosnippet>1606</a>    </span><span class="kw">pub fn </span>into_parts(
 <a href=#1607 id=1607 data-nosnippet>1607</a>        <span class="self">self</span>,
-<a href=#1608 id=1608 data-nosnippet>1608</a>    ) -&gt; (<a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4168">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;)
+<a href=#1608 id=1608 data-nosnippet>1608</a>    ) -&gt; (<a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;)
 <a href=#1609 id=1609 data-nosnippet>1609</a>    {
 <a href=#1610 id=1610 data-nosnippet>1610</a>        <a class="self" href="#1607">self</a>.inner.<a href="../iter/adapters/flatten.rs.html#26-32">into_parts</a>()
 <a href=#1611 id=1611 data-nosnippet>1611</a>    }
@@ -1613,7 +1613,7 @@
 <a href=#1613 id=1613 data-nosnippet>1613</a>
 <a href=#1614 id=1614 data-nosnippet>1614</a><span class="doccomment">/// The return type of [`str::escape_unicode`].
 <a href=#1615 id=1615 data-nosnippet>1615</a></span><span class="attr">#[stable(feature = <span class="string">"str_escape"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1616 id=1616 data-nosnippet>1616</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#1616 id=1616 data-nosnippet>1616</a>#[derive(<a href="../clone.rs.html#289-291">Clone</a>, <a href="../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#1617 id=1617 data-nosnippet>1617</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.EscapeUnicode.html">EscapeUnicode</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1618 id=1618 data-nosnippet>1618</a>    <span class="kw">pub</span>(<span class="kw">super</span>) inner: <a href="../iter/adapters/flatten.rs.html#17-19">FlatMap</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;, char_mod::<a href="../char/mod.rs.html#167">EscapeUnicode</a>, <a href="mod.rs.html#3325-3373">CharEscapeUnicode</a>&gt;,
 <a href=#1619 id=1619 data-nosnippet>1619</a>}

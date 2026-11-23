@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/skip.rs`."><title>skip.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>skip.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../intrinsics/mod.rs.html#721-728"><span class="kw">crate</span>::intrinsics::unlikely</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/iter/adapters/skip.rs`."><title>skip.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/iter/adapters/</div>skip.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../intrinsics/mod.rs.html#721-728"><span class="kw">crate</span>::intrinsics::unlikely</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="mod.rs.html#105-137"><span class="kw">crate</span>::iter::adapters::SourceIter</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="zip.rs.html#593-600"><span class="kw">crate</span>::iter::adapters::zip::try_get_unchecked</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::iter::{
@@ -15,7 +15,7 @@
 <a href=#15 id=15 data-nosnippet>15</a>///
 <a href=#16 id=16 data-nosnippet>16</a>/// [`skip`]: Iterator::skip
 <a href=#17 id=17 data-nosnippet>17</a>/// [`Iterator`]: trait.Iterator.html
-<a href=#18 id=18 data-nosnippet>18</a></span><span class="attr">#[derive(<a href="../../clone.rs.html#289-291">Clone</a>, <a href="../../fmt/mod.rs.html#1093-1095">Debug</a>)]
+<a href=#18 id=18 data-nosnippet>18</a></span><span class="attr">#[derive(<a href="../../clone.rs.html#289-291">Clone</a>, <a href="../../fmt/mod.rs.html#1160-1162">Debug</a>)]
 <a href=#19 id=19 data-nosnippet>19</a>#[must_use = <span class="string">"iterators are lazy and do nothing unless consumed"</span>]
 <a href=#20 id=20 data-nosnippet>20</a>#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub struct </span><a href="../../../../core/iter/struct.Skip.html">Skip</a>&lt;I&gt; {
@@ -30,16 +30,16 @@
 <a href=#30 id=30 data-nosnippet>30</a>}
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">impl</span>&lt;I&gt; <a href="../traits/iterator.rs.html#42-4168">Iterator</a> <span class="kw">for </span><a href="#21-24">Skip</a>&lt;I&gt;
+<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">impl</span>&lt;I&gt; <a href="../traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#21-24">Skip</a>&lt;I&gt;
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">where
-<a href=#35 id=35 data-nosnippet>35</a>    </span>I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a>,
+<a href=#35 id=35 data-nosnippet>35</a>    </span>I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a>,
 <a href=#36 id=36 data-nosnippet>36</a>{
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">type </span>Item = &lt;I <span class="kw">as </span>Iterator&gt;::<a href="../traits/iterator.rs.html#46">Item</a>;
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="attr">#[inline]
 <a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../../option.rs.html#598-607">Option</a>&lt;I::Item&gt; {
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">if </span><a href="../../intrinsics/mod.rs.html#721-728">unlikely</a>(<a class="self" href="#40">self</a>.n &gt; <span class="number">0</span>) {
-<a href=#42 id=42 data-nosnippet>42</a>            <a class="self" href="#40">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<span class="kw">crate</span>::mem::<a href="../../mem/mod.rs.html#896-898">take</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#40">self</a>.n))
+<a href=#42 id=42 data-nosnippet>42</a>            <a class="self" href="#40">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<span class="kw">crate</span>::mem::<a href="../../mem/mod.rs.html#896-898">take</a>(<span class="kw-2">&amp;mut </span><a class="self" href="#40">self</a>.n))
 <a href=#43 id=43 data-nosnippet>43</a>        } <span class="kw">else </span>{
 <a href=#44 id=44 data-nosnippet>44</a>            <a class="self" href="#40">self</a>.iter.<a href="../traits/iterator.rs.html#78">next</a>()
 <a href=#45 id=45 data-nosnippet>45</a>        }
@@ -61,9 +61,9 @@
 <a href=#61 id=61 data-nosnippet>61</a>                }
 <a href=#62 id=62 data-nosnippet>62</a>            };
 <a href=#63 id=63 data-nosnippet>63</a>            <span class="comment">// Load nth element including skip.
-<a href=#64 id=64 data-nosnippet>64</a>            </span><a class="self" href="#49">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<a href="#53">n</a>)
+<a href=#64 id=64 data-nosnippet>64</a>            </span><a class="self" href="#49">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<a href="#53">n</a>)
 <a href=#65 id=65 data-nosnippet>65</a>        } <span class="kw">else </span>{
-<a href=#66 id=66 data-nosnippet>66</a>            <a class="self" href="#49">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<a href="#49">n</a>)
+<a href=#66 id=66 data-nosnippet>66</a>            <a class="self" href="#49">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<a href="#49">n</a>)
 <a href=#67 id=67 data-nosnippet>67</a>        }
 <a href=#68 id=68 data-nosnippet>68</a>    }
 <a href=#69 id=69 data-nosnippet>69</a>
@@ -71,7 +71,7 @@
 <a href=#71 id=71 data-nosnippet>71</a>    </span><span class="kw">fn </span>count(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <a href="../../../../core/primitive.usize.html">usize</a> {
 <a href=#72 id=72 data-nosnippet>72</a>        <span class="kw">if </span><a class="self" href="#71">self</a>.n &gt; <span class="number">0 </span>{
 <a href=#73 id=73 data-nosnippet>73</a>            <span class="comment">// nth(n) skips n+1
-<a href=#74 id=74 data-nosnippet>74</a>            </span><span class="kw">if </span><a class="self" href="#71">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<a class="self" href="#71">self</a>.n - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
+<a href=#74 id=74 data-nosnippet>74</a>            </span><span class="kw">if </span><a class="self" href="#71">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<a class="self" href="#71">self</a>.n - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
 <a href=#75 id=75 data-nosnippet>75</a>                <span class="kw">return </span><span class="number">0</span>;
 <a href=#76 id=76 data-nosnippet>76</a>            }
 <a href=#77 id=77 data-nosnippet>77</a>        }
@@ -111,11 +111,11 @@
 <a href=#111 id=111 data-nosnippet>111</a>        <a class="self" href="#104">self</a>.n = <span class="number">0</span>;
 <a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">if </span><a href="#110">n</a> &gt; <span class="number">0 </span>{
 <a href=#113 id=113 data-nosnippet>113</a>            <span class="comment">// nth(n) skips n+1
-<a href=#114 id=114 data-nosnippet>114</a>            </span><span class="kw">if </span><a class="self" href="#104">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<a href="#110">n</a> - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
+<a href=#114 id=114 data-nosnippet>114</a>            </span><span class="kw">if </span><a class="self" href="#104">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<a href="#110">n</a> - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
 <a href=#115 id=115 data-nosnippet>115</a>                <span class="kw">return try </span>{ init };
 <a href=#116 id=116 data-nosnippet>116</a>            }
 <a href=#117 id=117 data-nosnippet>117</a>        }
-<a href=#118 id=118 data-nosnippet>118</a>        <a class="self" href="#104">self</a>.iter.<a href="../traits/iterator.rs.html#2496-2507">try_fold</a>(<a href="#104">init</a>, <a href="#104">fold</a>)
+<a href=#118 id=118 data-nosnippet>118</a>        <a class="self" href="#104">self</a>.iter.<a href="../traits/iterator.rs.html#2514-2525">try_fold</a>(<a href="#104">init</a>, <a href="#104">fold</a>)
 <a href=#119 id=119 data-nosnippet>119</a>    }
 <a href=#120 id=120 data-nosnippet>120</a>
 <a href=#121 id=121 data-nosnippet>121</a>    <span class="attr">#[inline]
@@ -125,11 +125,11 @@
 <a href=#125 id=125 data-nosnippet>125</a>    {
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">if </span><a class="self" href="#122">self</a>.n &gt; <span class="number">0 </span>{
 <a href=#127 id=127 data-nosnippet>127</a>            <span class="comment">// nth(n) skips n+1
-<a href=#128 id=128 data-nosnippet>128</a>            </span><span class="kw">if </span><a class="self" href="#122">self</a>.iter.<a href="../traits/iterator.rs.html#399-405">nth</a>(<a class="self" href="#122">self</a>.n - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
+<a href=#128 id=128 data-nosnippet>128</a>            </span><span class="kw">if </span><a class="self" href="#122">self</a>.iter.<a href="../traits/iterator.rs.html#400-406">nth</a>(<a class="self" href="#122">self</a>.n - <span class="number">1</span>).<a href="../../option.rs.html#682-684">is_none</a>() {
 <a href=#129 id=129 data-nosnippet>129</a>                <span class="kw">return </span><a href="#122">init</a>;
 <a href=#130 id=130 data-nosnippet>130</a>            }
 <a href=#131 id=131 data-nosnippet>131</a>        }
-<a href=#132 id=132 data-nosnippet>132</a>        <a class="self" href="#122">self</a>.iter.<a href="../traits/iterator.rs.html#2674-2684">fold</a>(<a href="#122">init</a>, <a href="#122">fold</a>)
+<a href=#132 id=132 data-nosnippet>132</a>        <a class="self" href="#122">self</a>.iter.<a href="../traits/iterator.rs.html#2694-2704">fold</a>(<a href="#122">init</a>, <a href="#122">fold</a>)
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
 <a href=#135 id=135 data-nosnippet>135</a>    <span class="attr">#[inline]
@@ -294,5 +294,5 @@
 <a href=#294 id=294 data-nosnippet>294</a>// bound is never `None`. I: TrustedRandomAccess happens to provide this guarantee while
 <a href=#295 id=295 data-nosnippet>295</a>// I: TrustedLen would not.
 <a href=#296 id=296 data-nosnippet>296</a></span><span class="attr">#[unstable(feature = <span class="string">"trusted_len"</span>, issue = <span class="string">"37572"</span>)]
-<a href=#297 id=297 data-nosnippet>297</a></span><span class="kw">unsafe impl</span>&lt;I&gt; <a href="../traits/marker.rs.html#67">TrustedLen</a> <span class="kw">for </span><a href="#21-24">Skip</a>&lt;I&gt; <span class="kw">where </span>I: <a href="../traits/iterator.rs.html#42-4168">Iterator</a> + <a href="zip.rs.html#559">TrustedRandomAccess</a> {}
+<a href=#297 id=297 data-nosnippet>297</a></span><span class="kw">unsafe impl</span>&lt;I&gt; <a href="../traits/marker.rs.html#67">TrustedLen</a> <span class="kw">for </span><a href="#21-24">Skip</a>&lt;I&gt; <span class="kw">where </span>I: <a href="../traits/iterator.rs.html#42-4195">Iterator</a> + <a href="zip.rs.html#559">TrustedRandomAccess</a> {}
 </code></pre></div></section></main></body></html>

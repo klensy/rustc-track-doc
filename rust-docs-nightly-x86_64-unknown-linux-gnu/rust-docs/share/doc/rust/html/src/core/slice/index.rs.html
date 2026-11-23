@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/index.rs`."><title>index.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (bdf712ee8 2026-11-21)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>index.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Indexing implementations for `[T]`.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/index.rs`."><title>index.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>index.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Indexing implementations for `[T]`.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><a href="../intrinsics/mod.rs.html#1201-1208"><span class="kw">crate</span>::intrinsics::slice_get_unchecked</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><a href="../marker.rs.html#1064"><span class="kw">crate</span>::marker::Destruct</a>;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><a href="../panic.rs.html#133-163"><span class="kw">crate</span>::panic::const_panic</a>;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><a href="../ub_checks.rs.html#53-82"><span class="kw">crate</span>::ub_checks::assert_unsafe_precondition</a>;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#294">ops</a>, <a href="../lib.rs.html#325">range</a>};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{<a href="../lib.rs.html#295">ops</a>, <a href="../lib.rs.html#326">range</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#10 id=10 data-nosnippet>10</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>    <span class="kw">let </span>ptr = <a href="#84">ptr</a> <span class="kw">as </span><span class="kw-2">*const </span>T;
 <a href=#89 id=89 data-nosnippet>89</a>    <span class="comment">// SAFETY: The caller already checked these preconditions
 <a href=#90 id=90 data-nosnippet>90</a>    </span><span class="kw">let </span>ptr = <span class="kw">unsafe </span>{ <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#1163">offset</a>(<a href="#88">ptr</a>, <a href="#85">offset</a>) };
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#2996-2998">aggregate_raw_ptr</a>(<a href="#90">ptr</a>, <a href="#86">len</a>)
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#2998-3000">aggregate_raw_ptr</a>(<a href="#90">ptr</a>, <a href="#86">len</a>)
 <a href=#92 id=92 data-nosnippet>92</a>}
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a><span class="attr">#[inline(always)]
@@ -100,7 +100,7 @@
 <a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">let </span>ptr = <a href="#96">ptr</a> <span class="kw">as </span><span class="kw-2">*mut </span>T;
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="comment">// SAFETY: The caller already checked these preconditions
 <a href=#102 id=102 data-nosnippet>102</a>    </span><span class="kw">let </span>ptr = <span class="kw">unsafe </span>{ <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#1163">offset</a>(<a href="#100">ptr</a>, <a href="#97">offset</a>) };
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#2996-2998">aggregate_raw_ptr</a>(<a href="#102">ptr</a>, <a href="#98">len</a>)
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">crate</span>::intrinsics::<a href="../intrinsics/mod.rs.html#2998-3000">aggregate_raw_ptr</a>(<a href="#102">ptr</a>, <a href="#98">len</a>)
 <a href=#104 id=104 data-nosnippet>104</a>}
 <a href=#105 id=105 data-nosnippet>105</a>
 <a href=#106 id=106 data-nosnippet>106</a><span class="doccomment">/// A helper trait used for indexing operations.
@@ -328,7 +328,7 @@
 <a href=#328 id=328 data-nosnippet>328</a>/// - the end of the range is out of bounds.
 <a href=#329 id=329 data-nosnippet>329</a></span><span class="attr">#[stable(feature = <span class="string">"slice_get_slice_impls"</span>, since = <span class="string">"1.15.0"</span>)]
 <a href=#330 id=330 data-nosnippet>330</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#331 id=331 data-nosnippet>331</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#331 id=331 data-nosnippet>331</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#332 id=332 data-nosnippet>332</a>    <span class="kw">type </span>Output = [T];
 <a href=#333 id=333 data-nosnippet>333</a>
 <a href=#334 id=334 data-nosnippet>334</a>    <span class="attr">#[inline]
@@ -431,48 +431,48 @@
 <a href=#431 id=431 data-nosnippet>431</a>
 <a href=#432 id=432 data-nosnippet>432</a><span class="attr">#[stable(feature = <span class="string">"new_range_api"</span>, since = <span class="string">"1.96.0"</span>)]
 <a href=#433 id=433 data-nosnippet>433</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#434 id=434 data-nosnippet>434</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#72-79">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#434 id=434 data-nosnippet>434</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#73-80">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#435 id=435 data-nosnippet>435</a>    <span class="kw">type </span>Output = [T];
 <a href=#436 id=436 data-nosnippet>436</a>
 <a href=#437 id=437 data-nosnippet>437</a>    <span class="attr">#[inline]
 <a href=#438 id=438 data-nosnippet>438</a>    </span><span class="kw">fn </span>get(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; {
-<a href=#439 id=439 data-nosnippet>439</a>        ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#438">self</a>).<a href="#132">get</a>(<a href="#438">slice</a>)
+<a href=#439 id=439 data-nosnippet>439</a>        ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#438">self</a>).<a href="#132">get</a>(<a href="#438">slice</a>)
 <a href=#440 id=440 data-nosnippet>440</a>    }
 <a href=#441 id=441 data-nosnippet>441</a>
 <a href=#442 id=442 data-nosnippet>442</a>    <span class="attr">#[inline]
 <a href=#443 id=443 data-nosnippet>443</a>    #[rustc_no_writable]
 <a href=#444 id=444 data-nosnippet>444</a>    </span><span class="kw">fn </span>get_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;mut </span>[T]&gt; {
-<a href=#445 id=445 data-nosnippet>445</a>        ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#444">self</a>).<a href="#137">get_mut</a>(<a href="#444">slice</a>)
+<a href=#445 id=445 data-nosnippet>445</a>        ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#444">self</a>).<a href="#137">get_mut</a>(<a href="#444">slice</a>)
 <a href=#446 id=446 data-nosnippet>446</a>    }
 <a href=#447 id=447 data-nosnippet>447</a>
 <a href=#448 id=448 data-nosnippet>448</a>    <span class="attr">#[inline]
 <a href=#449 id=449 data-nosnippet>449</a>    </span><span class="kw">unsafe fn </span>get_unchecked(<span class="self">self</span>, slice: <span class="kw-2">*const </span>[T]) -&gt; <span class="kw-2">*const </span>[T] {
 <a href=#450 id=450 data-nosnippet>450</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked`.
-<a href=#451 id=451 data-nosnippet>451</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#449">self</a>).<a href="#149">get_unchecked</a>(<a href="#449">slice</a>) }
+<a href=#451 id=451 data-nosnippet>451</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#449">self</a>).<a href="#149">get_unchecked</a>(<a href="#449">slice</a>) }
 <a href=#452 id=452 data-nosnippet>452</a>    }
 <a href=#453 id=453 data-nosnippet>453</a>
 <a href=#454 id=454 data-nosnippet>454</a>    <span class="attr">#[inline]
 <a href=#455 id=455 data-nosnippet>455</a>    </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="self">self</span>, slice: <span class="kw-2">*mut </span>[T]) -&gt; <span class="kw-2">*mut </span>[T] {
 <a href=#456 id=456 data-nosnippet>456</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked_mut`.
-<a href=#457 id=457 data-nosnippet>457</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#455">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#455">slice</a>) }
+<a href=#457 id=457 data-nosnippet>457</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#455">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#455">slice</a>) }
 <a href=#458 id=458 data-nosnippet>458</a>    }
 <a href=#459 id=459 data-nosnippet>459</a>
 <a href=#460 id=460 data-nosnippet>460</a>    <span class="attr">#[inline(always)]
 <a href=#461 id=461 data-nosnippet>461</a>    </span><span class="kw">fn </span>index(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="kw-2">&amp;</span>[T] {
-<a href=#462 id=462 data-nosnippet>462</a>        ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#461">self</a>).<a href="#167">index</a>(<a href="#461">slice</a>)
+<a href=#462 id=462 data-nosnippet>462</a>        ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#461">self</a>).<a href="#167">index</a>(<a href="#461">slice</a>)
 <a href=#463 id=463 data-nosnippet>463</a>    }
 <a href=#464 id=464 data-nosnippet>464</a>
 <a href=#465 id=465 data-nosnippet>465</a>    <span class="attr">#[inline]
 <a href=#466 id=466 data-nosnippet>466</a>    #[rustc_no_writable]
 <a href=#467 id=467 data-nosnippet>467</a>    </span><span class="kw">fn </span>index_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <span class="kw-2">&amp;mut </span>[T] {
-<a href=#468 id=468 data-nosnippet>468</a>        ops::<a href="../ops/range.rs.html#86-93">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#467">self</a>).<a href="#173">index_mut</a>(<a href="#467">slice</a>)
+<a href=#468 id=468 data-nosnippet>468</a>        ops::<a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#467">self</a>).<a href="#173">index_mut</a>(<a href="#467">slice</a>)
 <a href=#469 id=469 data-nosnippet>469</a>    }
 <a href=#470 id=470 data-nosnippet>470</a>}
 <a href=#471 id=471 data-nosnippet>471</a>
 <a href=#472 id=472 data-nosnippet>472</a><span class="doccomment">/// The methods `index` and `index_mut` panic if the end of the range is out of bounds.
 <a href=#473 id=473 data-nosnippet>473</a></span><span class="attr">#[stable(feature = <span class="string">"slice_get_slice_impls"</span>, since = <span class="string">"1.15.0"</span>)]
 <a href=#474 id=474 data-nosnippet>474</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#475 id=475 data-nosnippet>475</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#286-290">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#475 id=475 data-nosnippet>475</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#285-289">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#476 id=476 data-nosnippet>476</a>    <span class="kw">type </span>Output = [T];
 <a href=#477 id=477 data-nosnippet>477</a>
 <a href=#478 id=478 data-nosnippet>478</a>    <span class="attr">#[inline]
@@ -513,7 +513,7 @@
 <a href=#513 id=513 data-nosnippet>513</a><span class="doccomment">/// The methods `index` and `index_mut` panic if the start of the range is out of bounds.
 <a href=#514 id=514 data-nosnippet>514</a></span><span class="attr">#[stable(feature = <span class="string">"slice_get_slice_impls"</span>, since = <span class="string">"1.15.0"</span>)]
 <a href=#515 id=515 data-nosnippet>515</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#516 id=516 data-nosnippet>516</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#516 id=516 data-nosnippet>516</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#517 id=517 data-nosnippet>517</a>    <span class="kw">type </span>Output = [T];
 <a href=#518 id=518 data-nosnippet>518</a>
 <a href=#519 id=519 data-nosnippet>519</a>    <span class="attr">#[inline]
@@ -567,47 +567,47 @@
 <a href=#567 id=567 data-nosnippet>567</a>
 <a href=#568 id=568 data-nosnippet>568</a><span class="attr">#[stable(feature = <span class="string">"new_range_from_api"</span>, since = <span class="string">"1.96.0"</span>)]
 <a href=#569 id=569 data-nosnippet>569</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#570 id=570 data-nosnippet>570</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#490-494">RangeFrom</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#570 id=570 data-nosnippet>570</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#491-495">RangeFrom</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#571 id=571 data-nosnippet>571</a>    <span class="kw">type </span>Output = [T];
 <a href=#572 id=572 data-nosnippet>572</a>
 <a href=#573 id=573 data-nosnippet>573</a>    <span class="attr">#[inline]
 <a href=#574 id=574 data-nosnippet>574</a>    </span><span class="kw">fn </span>get(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; {
-<a href=#575 id=575 data-nosnippet>575</a>        ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#574">self</a>).<a href="#132">get</a>(<a href="#574">slice</a>)
+<a href=#575 id=575 data-nosnippet>575</a>        ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#574">self</a>).<a href="#132">get</a>(<a href="#574">slice</a>)
 <a href=#576 id=576 data-nosnippet>576</a>    }
 <a href=#577 id=577 data-nosnippet>577</a>
 <a href=#578 id=578 data-nosnippet>578</a>    <span class="attr">#[inline]
 <a href=#579 id=579 data-nosnippet>579</a>    #[rustc_no_writable]
 <a href=#580 id=580 data-nosnippet>580</a>    </span><span class="kw">fn </span>get_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;mut </span>[T]&gt; {
-<a href=#581 id=581 data-nosnippet>581</a>        ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#580">self</a>).<a href="#137">get_mut</a>(<a href="#580">slice</a>)
+<a href=#581 id=581 data-nosnippet>581</a>        ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#580">self</a>).<a href="#137">get_mut</a>(<a href="#580">slice</a>)
 <a href=#582 id=582 data-nosnippet>582</a>    }
 <a href=#583 id=583 data-nosnippet>583</a>
 <a href=#584 id=584 data-nosnippet>584</a>    <span class="attr">#[inline]
 <a href=#585 id=585 data-nosnippet>585</a>    </span><span class="kw">unsafe fn </span>get_unchecked(<span class="self">self</span>, slice: <span class="kw-2">*const </span>[T]) -&gt; <span class="kw-2">*const </span>[T] {
 <a href=#586 id=586 data-nosnippet>586</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked`.
-<a href=#587 id=587 data-nosnippet>587</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#585">self</a>).<a href="#149">get_unchecked</a>(<a href="#585">slice</a>) }
+<a href=#587 id=587 data-nosnippet>587</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#585">self</a>).<a href="#149">get_unchecked</a>(<a href="#585">slice</a>) }
 <a href=#588 id=588 data-nosnippet>588</a>    }
 <a href=#589 id=589 data-nosnippet>589</a>
 <a href=#590 id=590 data-nosnippet>590</a>    <span class="attr">#[inline]
 <a href=#591 id=591 data-nosnippet>591</a>    </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="self">self</span>, slice: <span class="kw-2">*mut </span>[T]) -&gt; <span class="kw-2">*mut </span>[T] {
 <a href=#592 id=592 data-nosnippet>592</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked_mut`.
-<a href=#593 id=593 data-nosnippet>593</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#591">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#591">slice</a>) }
+<a href=#593 id=593 data-nosnippet>593</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#591">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#591">slice</a>) }
 <a href=#594 id=594 data-nosnippet>594</a>    }
 <a href=#595 id=595 data-nosnippet>595</a>
 <a href=#596 id=596 data-nosnippet>596</a>    <span class="attr">#[inline]
 <a href=#597 id=597 data-nosnippet>597</a>    </span><span class="kw">fn </span>index(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="kw-2">&amp;</span>[T] {
-<a href=#598 id=598 data-nosnippet>598</a>        ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#597">self</a>).<a href="#167">index</a>(<a href="#597">slice</a>)
+<a href=#598 id=598 data-nosnippet>598</a>        ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#597">self</a>).<a href="#167">index</a>(<a href="#597">slice</a>)
 <a href=#599 id=599 data-nosnippet>599</a>    }
 <a href=#600 id=600 data-nosnippet>600</a>
 <a href=#601 id=601 data-nosnippet>601</a>    <span class="attr">#[inline]
 <a href=#602 id=602 data-nosnippet>602</a>    #[rustc_no_writable]
 <a href=#603 id=603 data-nosnippet>603</a>    </span><span class="kw">fn </span>index_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <span class="kw-2">&amp;mut </span>[T] {
-<a href=#604 id=604 data-nosnippet>604</a>        ops::<a href="../ops/range.rs.html#202-206">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#603">self</a>).<a href="#173">index_mut</a>(<a href="#603">slice</a>)
+<a href=#604 id=604 data-nosnippet>604</a>        ops::<a href="../ops/range.rs.html#201-205">RangeFrom</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#603">self</a>).<a href="#173">index_mut</a>(<a href="#603">slice</a>)
 <a href=#605 id=605 data-nosnippet>605</a>    }
 <a href=#606 id=606 data-nosnippet>606</a>}
 <a href=#607 id=607 data-nosnippet>607</a>
 <a href=#608 id=608 data-nosnippet>608</a><span class="attr">#[stable(feature = <span class="string">"slice_get_slice_impls"</span>, since = <span class="string">"1.15.0"</span>)]
 <a href=#609 id=609 data-nosnippet>609</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#610 id=610 data-nosnippet>610</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#44">RangeFull</a> {
+<a href=#610 id=610 data-nosnippet>610</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#43">RangeFull</a> {
 <a href=#611 id=611 data-nosnippet>611</a>    <span class="kw">type </span>Output = [T];
 <a href=#612 id=612 data-nosnippet>612</a>
 <a href=#613 id=613 data-nosnippet>613</a>    <span class="attr">#[inline]
@@ -648,30 +648,30 @@
 <a href=#648 id=648 data-nosnippet>648</a>/// - the end of the range is out of bounds.
 <a href=#649 id=649 data-nosnippet>649</a></span><span class="attr">#[stable(feature = <span class="string">"inclusive_range"</span>, since = <span class="string">"1.26.0"</span>)]
 <a href=#650 id=650 data-nosnippet>650</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#651 id=651 data-nosnippet>651</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#651 id=651 data-nosnippet>651</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#652 id=652 data-nosnippet>652</a>    <span class="kw">type </span>Output = [T];
 <a href=#653 id=653 data-nosnippet>653</a>
 <a href=#654 id=654 data-nosnippet>654</a>    <span class="attr">#[inline]
 <a href=#655 id=655 data-nosnippet>655</a>    </span><span class="kw">fn </span>get(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; {
-<a href=#656 id=656 data-nosnippet>656</a>        <span class="kw">if </span><span class="kw-2">*</span><a class="self" href="#655">self</a>.<a href="../ops/range.rs.html#450-452">end</a>() &gt;= <a href="#655">slice</a>.<a href="mod.rs.html#118-120">len</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <a class="self" href="#655">self</a>.<a href="../ops/range.rs.html#476-490">into_slice_range</a>().<a href="#132">get</a>(<a href="#655">slice</a>) }
+<a href=#656 id=656 data-nosnippet>656</a>        <span class="kw">if </span><span class="kw-2">*</span><a class="self" href="#655">self</a>.<a href="../ops/range.rs.html#449-451">end</a>() &gt;= <a href="#655">slice</a>.<a href="mod.rs.html#118-120">len</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <a class="self" href="#655">self</a>.<a href="../ops/range.rs.html#475-489">into_slice_range</a>().<a href="#132">get</a>(<a href="#655">slice</a>) }
 <a href=#657 id=657 data-nosnippet>657</a>    }
 <a href=#658 id=658 data-nosnippet>658</a>
 <a href=#659 id=659 data-nosnippet>659</a>    <span class="attr">#[inline]
 <a href=#660 id=660 data-nosnippet>660</a>    #[rustc_no_writable]
 <a href=#661 id=661 data-nosnippet>661</a>    </span><span class="kw">fn </span>get_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;mut </span>[T]&gt; {
-<a href=#662 id=662 data-nosnippet>662</a>        <span class="kw">if </span><span class="kw-2">*</span><a class="self" href="#661">self</a>.<a href="../ops/range.rs.html#450-452">end</a>() &gt;= <a href="#661">slice</a>.<a href="mod.rs.html#118-120">len</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <a class="self" href="#661">self</a>.<a href="../ops/range.rs.html#476-490">into_slice_range</a>().<a href="#137">get_mut</a>(<a href="#661">slice</a>) }
+<a href=#662 id=662 data-nosnippet>662</a>        <span class="kw">if </span><span class="kw-2">*</span><a class="self" href="#661">self</a>.<a href="../ops/range.rs.html#449-451">end</a>() &gt;= <a href="#661">slice</a>.<a href="mod.rs.html#118-120">len</a>() { <a class="prelude-val" href="../option.rs.html#602">None</a> } <span class="kw">else </span>{ <a class="self" href="#661">self</a>.<a href="../ops/range.rs.html#475-489">into_slice_range</a>().<a href="#137">get_mut</a>(<a href="#661">slice</a>) }
 <a href=#663 id=663 data-nosnippet>663</a>    }
 <a href=#664 id=664 data-nosnippet>664</a>
 <a href=#665 id=665 data-nosnippet>665</a>    <span class="attr">#[inline]
 <a href=#666 id=666 data-nosnippet>666</a>    </span><span class="kw">unsafe fn </span>get_unchecked(<span class="self">self</span>, slice: <span class="kw-2">*const </span>[T]) -&gt; <span class="kw-2">*const </span>[T] {
 <a href=#667 id=667 data-nosnippet>667</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked`.
-<a href=#668 id=668 data-nosnippet>668</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#666">self</a>.<a href="../ops/range.rs.html#476-490">into_slice_range</a>().<a href="#149">get_unchecked</a>(<a href="#666">slice</a>) }
+<a href=#668 id=668 data-nosnippet>668</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#666">self</a>.<a href="../ops/range.rs.html#475-489">into_slice_range</a>().<a href="#149">get_unchecked</a>(<a href="#666">slice</a>) }
 <a href=#669 id=669 data-nosnippet>669</a>    }
 <a href=#670 id=670 data-nosnippet>670</a>
 <a href=#671 id=671 data-nosnippet>671</a>    <span class="attr">#[inline]
 <a href=#672 id=672 data-nosnippet>672</a>    </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="self">self</span>, slice: <span class="kw-2">*mut </span>[T]) -&gt; <span class="kw-2">*mut </span>[T] {
 <a href=#673 id=673 data-nosnippet>673</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked_mut`.
-<a href=#674 id=674 data-nosnippet>674</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#672">self</a>.<a href="../ops/range.rs.html#476-490">into_slice_range</a>().<a href="#161">get_unchecked_mut</a>(<a href="#672">slice</a>) }
+<a href=#674 id=674 data-nosnippet>674</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#672">self</a>.<a href="../ops/range.rs.html#475-489">into_slice_range</a>().<a href="#161">get_unchecked_mut</a>(<a href="#672">slice</a>) }
 <a href=#675 id=675 data-nosnippet>675</a>    }
 <a href=#676 id=676 data-nosnippet>676</a>
 <a href=#677 id=677 data-nosnippet>677</a>    <span class="attr">#[inline]
@@ -708,48 +708,48 @@
 <a href=#708 id=708 data-nosnippet>708</a>
 <a href=#709 id=709 data-nosnippet>709</a><span class="attr">#[stable(feature = <span class="string">"new_range_inclusive_api"</span>, since = <span class="string">"1.95.0"</span>)]
 <a href=#710 id=710 data-nosnippet>710</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#711 id=711 data-nosnippet>711</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#252-259">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#711 id=711 data-nosnippet>711</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#253-260">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#712 id=712 data-nosnippet>712</a>    <span class="kw">type </span>Output = [T];
 <a href=#713 id=713 data-nosnippet>713</a>
 <a href=#714 id=714 data-nosnippet>714</a>    <span class="attr">#[inline]
 <a href=#715 id=715 data-nosnippet>715</a>    </span><span class="kw">fn </span>get(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt; {
-<a href=#716 id=716 data-nosnippet>716</a>        ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#715">self</a>).<a href="#132">get</a>(<a href="#715">slice</a>)
+<a href=#716 id=716 data-nosnippet>716</a>        ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#715">self</a>).<a href="#132">get</a>(<a href="#715">slice</a>)
 <a href=#717 id=717 data-nosnippet>717</a>    }
 <a href=#718 id=718 data-nosnippet>718</a>
 <a href=#719 id=719 data-nosnippet>719</a>    <span class="attr">#[inline]
 <a href=#720 id=720 data-nosnippet>720</a>    #[rustc_no_writable]
 <a href=#721 id=721 data-nosnippet>721</a>    </span><span class="kw">fn </span>get_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;mut </span>[T]&gt; {
-<a href=#722 id=722 data-nosnippet>722</a>        ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#721">self</a>).<a href="#137">get_mut</a>(<a href="#721">slice</a>)
+<a href=#722 id=722 data-nosnippet>722</a>        ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#721">self</a>).<a href="#137">get_mut</a>(<a href="#721">slice</a>)
 <a href=#723 id=723 data-nosnippet>723</a>    }
 <a href=#724 id=724 data-nosnippet>724</a>
 <a href=#725 id=725 data-nosnippet>725</a>    <span class="attr">#[inline]
 <a href=#726 id=726 data-nosnippet>726</a>    </span><span class="kw">unsafe fn </span>get_unchecked(<span class="self">self</span>, slice: <span class="kw-2">*const </span>[T]) -&gt; <span class="kw-2">*const </span>[T] {
 <a href=#727 id=727 data-nosnippet>727</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked`.
-<a href=#728 id=728 data-nosnippet>728</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#726">self</a>).<a href="#149">get_unchecked</a>(<a href="#726">slice</a>) }
+<a href=#728 id=728 data-nosnippet>728</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#726">self</a>).<a href="#149">get_unchecked</a>(<a href="#726">slice</a>) }
 <a href=#729 id=729 data-nosnippet>729</a>    }
 <a href=#730 id=730 data-nosnippet>730</a>
 <a href=#731 id=731 data-nosnippet>731</a>    <span class="attr">#[inline]
 <a href=#732 id=732 data-nosnippet>732</a>    </span><span class="kw">unsafe fn </span>get_unchecked_mut(<span class="self">self</span>, slice: <span class="kw-2">*mut </span>[T]) -&gt; <span class="kw-2">*mut </span>[T] {
 <a href=#733 id=733 data-nosnippet>733</a>        <span class="comment">// SAFETY: the caller has to uphold the safety contract for `get_unchecked_mut`.
-<a href=#734 id=734 data-nosnippet>734</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#732">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#732">slice</a>) }
+<a href=#734 id=734 data-nosnippet>734</a>        </span><span class="kw">unsafe </span>{ ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#732">self</a>).<a href="#161">get_unchecked_mut</a>(<a href="#732">slice</a>) }
 <a href=#735 id=735 data-nosnippet>735</a>    }
 <a href=#736 id=736 data-nosnippet>736</a>
 <a href=#737 id=737 data-nosnippet>737</a>    <span class="attr">#[inline]
 <a href=#738 id=738 data-nosnippet>738</a>    </span><span class="kw">fn </span>index(<span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="kw-2">&amp;</span>[T] {
-<a href=#739 id=739 data-nosnippet>739</a>        ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#738">self</a>).<a href="#167">index</a>(<a href="#738">slice</a>)
+<a href=#739 id=739 data-nosnippet>739</a>        ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#738">self</a>).<a href="#167">index</a>(<a href="#738">slice</a>)
 <a href=#740 id=740 data-nosnippet>740</a>    }
 <a href=#741 id=741 data-nosnippet>741</a>
 <a href=#742 id=742 data-nosnippet>742</a>    <span class="attr">#[inline]
 <a href=#743 id=743 data-nosnippet>743</a>    #[rustc_no_writable]
 <a href=#744 id=744 data-nosnippet>744</a>    </span><span class="kw">fn </span>index_mut(<span class="self">self</span>, slice: <span class="kw-2">&amp;mut </span>[T]) -&gt; <span class="kw-2">&amp;mut </span>[T] {
-<a href=#745 id=745 data-nosnippet>745</a>        ops::<a href="../ops/range.rs.html#362-383">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#744">self</a>).<a href="#173">index_mut</a>(<a href="#744">slice</a>)
+<a href=#745 id=745 data-nosnippet>745</a>        ops::<a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<a class="self" href="#744">self</a>).<a href="#173">index_mut</a>(<a href="#744">slice</a>)
 <a href=#746 id=746 data-nosnippet>746</a>    }
 <a href=#747 id=747 data-nosnippet>747</a>}
 <a href=#748 id=748 data-nosnippet>748</a>
 <a href=#749 id=749 data-nosnippet>749</a><span class="doccomment">/// The methods `index` and `index_mut` panic if the end of the range is out of bounds.
 <a href=#750 id=750 data-nosnippet>750</a></span><span class="attr">#[stable(feature = <span class="string">"inclusive_range"</span>, since = <span class="string">"1.26.0"</span>)]
 <a href=#751 id=751 data-nosnippet>751</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#752 id=752 data-nosnippet>752</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#628-632">RangeToInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#752 id=752 data-nosnippet>752</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>ops::<a href="../ops/range.rs.html#627-631">RangeToInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#753 id=753 data-nosnippet>753</a>    <span class="kw">type </span>Output = [T];
 <a href=#754 id=754 data-nosnippet>754</a>
 <a href=#755 id=755 data-nosnippet>755</a>    <span class="attr">#[inline]
@@ -790,7 +790,7 @@
 <a href=#790 id=790 data-nosnippet>790</a><span class="doccomment">/// The methods `index` and `index_mut` panic if the end of the range is out of bounds.
 <a href=#791 id=791 data-nosnippet>791</a></span><span class="attr">#[stable(feature = <span class="string">"new_range_to_inclusive_api"</span>, since = <span class="string">"1.96.0"</span>)]
 <a href=#792 id=792 data-nosnippet>792</a>#[rustc_const_unstable(feature = <span class="string">"const_index"</span>, issue = <span class="string">"143775"</span>)]
-<a href=#793 id=793 data-nosnippet>793</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#665-669">RangeToInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#793 id=793 data-nosnippet>793</a></span><span class="kw">const unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>range::<a href="../range.rs.html#666-670">RangeToInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#794 id=794 data-nosnippet>794</a>    <span class="kw">type </span>Output = [T];
 <a href=#795 id=795 data-nosnippet>795</a>
 <a href=#796 id=796 data-nosnippet>796</a>    <span class="attr">#[inline]
@@ -893,12 +893,12 @@
 <a href=#893 id=893 data-nosnippet>893</a>#[unstable(feature = <span class="string">"slice_range"</span>, issue = <span class="string">"76393"</span>)]
 <a href=#894 id=894 data-nosnippet>894</a>#[must_use]
 <a href=#895 id=895 data-nosnippet>895</a>#[rustc_const_unstable(feature = <span class="string">"const_range"</span>, issue = <span class="string">"none"</span>)]
-<a href=#896 id=896 data-nosnippet>896</a></span><span class="kw">pub const fn </span><a href="../../../core/slice/fn.range.html">range</a>&lt;R&gt;(range: R, bounds: ops::<a href="../ops/range.rs.html#286-290">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) -&gt; ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;
+<a href=#896 id=896 data-nosnippet>896</a></span><span class="kw">pub const fn </span><a href="../../../core/slice/fn.range.html">range</a>&lt;R&gt;(range: R, bounds: ops::<a href="../ops/range.rs.html#285-289">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) -&gt; ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;
 <a href=#897 id=897 data-nosnippet>897</a><span class="kw">where
-<a href=#898 id=898 data-nosnippet>898</a>    </span>R: [<span class="kw">const</span>] <a href="../ops/range.rs.html#838-966">ops::RangeBounds</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; + [<span class="kw">const</span>] <a href="../marker.rs.html#1064">Destruct</a>,
+<a href=#898 id=898 data-nosnippet>898</a>    </span>R: [<span class="kw">const</span>] <a href="../ops/range.rs.html#837-965">ops::RangeBounds</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; + [<span class="kw">const</span>] <a href="../marker.rs.html#1064">Destruct</a>,
 <a href=#899 id=899 data-nosnippet>899</a>{
 <a href=#900 id=900 data-nosnippet>900</a>    <span class="kw">let </span>len = <a href="#896">bounds</a>.end;
-<a href=#901 id=901 data-nosnippet>901</a>    <a href="#1024-1032">into_slice_range</a>(<a href="#900">len</a>, (<a href="#896">range</a>.<a href="../ops/range.rs.html#853">start_bound</a>().<a href="../ops/range.rs.html#794-800">copied</a>(), <a href="#896">range</a>.<a href="../ops/range.rs.html#869">end_bound</a>().<a href="../ops/range.rs.html#794-800">copied</a>()))
+<a href=#901 id=901 data-nosnippet>901</a>    <a href="#1024-1032">into_slice_range</a>(<a href="#900">len</a>, (<a href="#896">range</a>.<a href="../ops/range.rs.html#852">start_bound</a>().<a href="../ops/range.rs.html#793-799">copied</a>(), <a href="#896">range</a>.<a href="../ops/range.rs.html#868">end_bound</a>().<a href="../ops/range.rs.html#793-799">copied</a>()))
 <a href=#902 id=902 data-nosnippet>902</a>}
 <a href=#903 id=903 data-nosnippet>903</a>
 <a href=#904 id=904 data-nosnippet>904</a><span class="doccomment">/// Performs bounds checking of a range without panicking.
@@ -933,30 +933,30 @@
 <a href=#933 id=933 data-nosnippet>933</a>/// [`Index::index`]: ops::Index::index
 <a href=#934 id=934 data-nosnippet>934</a></span><span class="attr">#[unstable(feature = <span class="string">"slice_range"</span>, issue = <span class="string">"76393"</span>)]
 <a href=#935 id=935 data-nosnippet>935</a>#[must_use]
-<a href=#936 id=936 data-nosnippet>936</a></span><span class="kw">pub fn </span><a href="../../../core/slice/fn.try_range.html">try_range</a>&lt;R&gt;(range: R, bounds: ops::<a href="../ops/range.rs.html#286-290">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;&gt;
+<a href=#936 id=936 data-nosnippet>936</a></span><span class="kw">pub fn </span><a href="../../../core/slice/fn.try_range.html">try_range</a>&lt;R&gt;(range: R, bounds: ops::<a href="../ops/range.rs.html#285-289">RangeTo</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;&gt;
 <a href=#937 id=937 data-nosnippet>937</a><span class="kw">where
-<a href=#938 id=938 data-nosnippet>938</a>    </span>R: <a href="../ops/range.rs.html#838-966">ops::RangeBounds</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
+<a href=#938 id=938 data-nosnippet>938</a>    </span>R: <a href="../ops/range.rs.html#837-965">ops::RangeBounds</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;,
 <a href=#939 id=939 data-nosnippet>939</a>{
 <a href=#940 id=940 data-nosnippet>940</a>    <span class="kw">let </span>len = <a href="#936">bounds</a>.end;
-<a href=#941 id=941 data-nosnippet>941</a>    <a href="#986-1017">try_into_slice_range</a>(<a href="#940">len</a>, (<a href="#936">range</a>.<a href="../ops/range.rs.html#853">start_bound</a>().<a href="../ops/range.rs.html#794-800">copied</a>(), <a href="#936">range</a>.<a href="../ops/range.rs.html#869">end_bound</a>().<a href="../ops/range.rs.html#794-800">copied</a>())).<a href="../result.rs.html#709-718">ok</a>()
+<a href=#941 id=941 data-nosnippet>941</a>    <a href="#986-1017">try_into_slice_range</a>(<a href="#940">len</a>, (<a href="#936">range</a>.<a href="../ops/range.rs.html#852">start_bound</a>().<a href="../ops/range.rs.html#793-799">copied</a>(), <a href="#936">range</a>.<a href="../ops/range.rs.html#868">end_bound</a>().<a href="../ops/range.rs.html#793-799">copied</a>())).<a href="../result.rs.html#709-718">ok</a>()
 <a href=#942 id=942 data-nosnippet>942</a>}
 <a href=#943 id=943 data-nosnippet>943</a>
 <a href=#944 id=944 data-nosnippet>944</a><span class="doccomment">/// Converts a pair of `ops::Bound`s into `ops::Range` without performing any
 <a href=#945 id=945 data-nosnippet>945</a>/// bounds checking or (in debug) overflow checking.
 <a href=#946 id=946 data-nosnippet>946</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>into_range_unchecked(
 <a href=#947 id=947 data-nosnippet>947</a>    len: <a href="../../../core/primitive.usize.html">usize</a>,
-<a href=#948 id=948 data-nosnippet>948</a>    (start, end): (ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
-<a href=#949 id=949 data-nosnippet>949</a>) -&gt; ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
-<a href=#950 id=950 data-nosnippet>950</a>    <span class="kw">use </span><a href="../ops/range.rs.html#710-720">ops::Bound</a>;
+<a href=#948 id=948 data-nosnippet>948</a>    (start, end): (ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
+<a href=#949 id=949 data-nosnippet>949</a>) -&gt; ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#950 id=950 data-nosnippet>950</a>    <span class="kw">use </span><a href="../ops/range.rs.html#709-719">ops::Bound</a>;
 <a href=#951 id=951 data-nosnippet>951</a>    <span class="kw">let </span>start = <span class="kw">match </span><a href="#948">start</a> {
-<a href=#952 id=952 data-nosnippet>952</a>        Bound::<a href="../ops/range.rs.html#713">Included</a>(i) =&gt; <a href="#952">i</a>,
-<a href=#953 id=953 data-nosnippet>953</a>        Bound::<a href="../ops/range.rs.html#716">Excluded</a>(i) =&gt; <a href="#953">i</a> + <span class="number">1</span>,
-<a href=#954 id=954 data-nosnippet>954</a>        Bound::<a href="../ops/range.rs.html#719">Unbounded</a> =&gt; <span class="number">0</span>,
+<a href=#952 id=952 data-nosnippet>952</a>        Bound::<a href="../ops/range.rs.html#712">Included</a>(i) =&gt; <a href="#952">i</a>,
+<a href=#953 id=953 data-nosnippet>953</a>        Bound::<a href="../ops/range.rs.html#715">Excluded</a>(i) =&gt; <a href="#953">i</a> + <span class="number">1</span>,
+<a href=#954 id=954 data-nosnippet>954</a>        Bound::<a href="../ops/range.rs.html#718">Unbounded</a> =&gt; <span class="number">0</span>,
 <a href=#955 id=955 data-nosnippet>955</a>    };
 <a href=#956 id=956 data-nosnippet>956</a>    <span class="kw">let </span>end = <span class="kw">match </span><a href="#948">end</a> {
-<a href=#957 id=957 data-nosnippet>957</a>        Bound::<a href="../ops/range.rs.html#713">Included</a>(i) =&gt; <a href="#957">i</a> + <span class="number">1</span>,
-<a href=#958 id=958 data-nosnippet>958</a>        Bound::<a href="../ops/range.rs.html#716">Excluded</a>(i) =&gt; <a href="#958">i</a>,
-<a href=#959 id=959 data-nosnippet>959</a>        Bound::<a href="../ops/range.rs.html#719">Unbounded</a> =&gt; <a href="#947">len</a>,
+<a href=#957 id=957 data-nosnippet>957</a>        Bound::<a href="../ops/range.rs.html#712">Included</a>(i) =&gt; <a href="#957">i</a> + <span class="number">1</span>,
+<a href=#958 id=958 data-nosnippet>958</a>        Bound::<a href="../ops/range.rs.html#715">Excluded</a>(i) =&gt; <a href="#958">i</a>,
+<a href=#959 id=959 data-nosnippet>959</a>        Bound::<a href="../ops/range.rs.html#718">Unbounded</a> =&gt; <a href="#947">len</a>,
 <a href=#960 id=960 data-nosnippet>960</a>    };
 <a href=#961 id=961 data-nosnippet>961</a>    start..end
 <a href=#962 id=962 data-nosnippet>962</a>}
@@ -985,32 +985,32 @@
 <a href=#985 id=985 data-nosnippet>985</a>#[inline]
 <a href=#986 id=986 data-nosnippet>986</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>try_into_slice_range(
 <a href=#987 id=987 data-nosnippet>987</a>    len: <a href="../../../core/primitive.usize.html">usize</a>,
-<a href=#988 id=988 data-nosnippet>988</a>    (start, end): (ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
-<a href=#989 id=989 data-nosnippet>989</a>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, <a href="#965-968">RangeError</a>&gt; {
+<a href=#988 id=988 data-nosnippet>988</a>    (start, end): (ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
+<a href=#989 id=989 data-nosnippet>989</a>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, <a href="#965-968">RangeError</a>&gt; {
 <a href=#990 id=990 data-nosnippet>990</a>    <span class="kw">let </span>end = <span class="kw">match </span><a href="#988">end</a> {
-<a href=#991 id=991 data-nosnippet>991</a>        ops::Bound::<a href="../ops/range.rs.html#713">Included</a>(end) <span class="kw">if </span><a href="#991">end</a> &gt;= <a href="#987">len</a> =&gt; <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#966">EndPastLen</a> { <a href="#991">end</a> }),
+<a href=#991 id=991 data-nosnippet>991</a>        ops::Bound::<a href="../ops/range.rs.html#712">Included</a>(end) <span class="kw">if </span><a href="#991">end</a> &gt;= <a href="#987">len</a> =&gt; <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#966">EndPastLen</a> { <a href="#991">end</a> }),
 <a href=#992 id=992 data-nosnippet>992</a>        <span class="comment">// Cannot overflow because `end &lt; len` implies `end &lt; usize::MAX`.
-<a href=#993 id=993 data-nosnippet>993</a>        </span>ops::Bound::<a href="../ops/range.rs.html#713">Included</a>(end) =&gt; <a href="#993">end</a> + <span class="number">1</span>,
+<a href=#993 id=993 data-nosnippet>993</a>        </span>ops::Bound::<a href="../ops/range.rs.html#712">Included</a>(end) =&gt; <a href="#993">end</a> + <span class="number">1</span>,
 <a href=#994 id=994 data-nosnippet>994</a>
-<a href=#995 id=995 data-nosnippet>995</a>        ops::Bound::<a href="../ops/range.rs.html#716">Excluded</a>(end) <span class="kw">if </span><a href="#995">end</a> &gt; <a href="#987">len</a> =&gt; <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#966">EndPastLen</a> { <a href="#995">end</a> }),
-<a href=#996 id=996 data-nosnippet>996</a>        ops::Bound::<a href="../ops/range.rs.html#716">Excluded</a>(end) =&gt; <a href="#996">end</a>,
+<a href=#995 id=995 data-nosnippet>995</a>        ops::Bound::<a href="../ops/range.rs.html#715">Excluded</a>(end) <span class="kw">if </span><a href="#995">end</a> &gt; <a href="#987">len</a> =&gt; <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#966">EndPastLen</a> { <a href="#995">end</a> }),
+<a href=#996 id=996 data-nosnippet>996</a>        ops::Bound::<a href="../ops/range.rs.html#715">Excluded</a>(end) =&gt; <a href="#996">end</a>,
 <a href=#997 id=997 data-nosnippet>997</a>
-<a href=#998 id=998 data-nosnippet>998</a>        ops::Bound::<a href="../ops/range.rs.html#719">Unbounded</a> =&gt; <a href="#987">len</a>,
+<a href=#998 id=998 data-nosnippet>998</a>        ops::Bound::<a href="../ops/range.rs.html#718">Unbounded</a> =&gt; <a href="#987">len</a>,
 <a href=#999 id=999 data-nosnippet>999</a>    };
 <a href=#1000 id=1000 data-nosnippet>1000</a>
 <a href=#1001 id=1001 data-nosnippet>1001</a>    <span class="kw">let </span>start = <span class="kw">match </span><a href="#988">start</a> {
-<a href=#1002 id=1002 data-nosnippet>1002</a>        ops::Bound::<a href="../ops/range.rs.html#716">Excluded</a>(start) <span class="kw">if </span><a href="#1002">start</a> &gt;= <a href="#990">end</a> =&gt; {
+<a href=#1002 id=1002 data-nosnippet>1002</a>        ops::Bound::<a href="../ops/range.rs.html#715">Excluded</a>(start) <span class="kw">if </span><a href="#1002">start</a> &gt;= <a href="#990">end</a> =&gt; {
 <a href=#1003 id=1003 data-nosnippet>1003</a>            <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#967">StartPastEnd</a> { <a href="#1002">start</a>, <a href="#990">end</a> });
 <a href=#1004 id=1004 data-nosnippet>1004</a>        }
 <a href=#1005 id=1005 data-nosnippet>1005</a>        <span class="comment">// Cannot overflow because `start &lt; end` implies `start &lt; usize::MAX`.
-<a href=#1006 id=1006 data-nosnippet>1006</a>        </span>ops::Bound::<a href="../ops/range.rs.html#716">Excluded</a>(start) =&gt; <a href="#1006">start</a> + <span class="number">1</span>,
+<a href=#1006 id=1006 data-nosnippet>1006</a>        </span>ops::Bound::<a href="../ops/range.rs.html#715">Excluded</a>(start) =&gt; <a href="#1006">start</a> + <span class="number">1</span>,
 <a href=#1007 id=1007 data-nosnippet>1007</a>
-<a href=#1008 id=1008 data-nosnippet>1008</a>        ops::Bound::<a href="../ops/range.rs.html#713">Included</a>(start) <span class="kw">if </span><a href="#1008">start</a> &gt; <a href="#990">end</a> =&gt; {
+<a href=#1008 id=1008 data-nosnippet>1008</a>        ops::Bound::<a href="../ops/range.rs.html#712">Included</a>(start) <span class="kw">if </span><a href="#1008">start</a> &gt; <a href="#990">end</a> =&gt; {
 <a href=#1009 id=1009 data-nosnippet>1009</a>            <span class="kw">return </span><a class="prelude-val" href="../result.rs.html#567">Err</a>(RangeError::<a href="#967">StartPastEnd</a> { <a href="#1008">start</a>, <a href="#990">end</a> });
 <a href=#1010 id=1010 data-nosnippet>1010</a>        }
-<a href=#1011 id=1011 data-nosnippet>1011</a>        ops::Bound::<a href="../ops/range.rs.html#713">Included</a>(start) =&gt; <a href="#1011">start</a>,
+<a href=#1011 id=1011 data-nosnippet>1011</a>        ops::Bound::<a href="../ops/range.rs.html#712">Included</a>(start) =&gt; <a href="#1011">start</a>,
 <a href=#1012 id=1012 data-nosnippet>1012</a>
-<a href=#1013 id=1013 data-nosnippet>1013</a>        ops::Bound::<a href="../ops/range.rs.html#719">Unbounded</a> =&gt; <span class="number">0</span>,
+<a href=#1013 id=1013 data-nosnippet>1013</a>        ops::Bound::<a href="../ops/range.rs.html#718">Unbounded</a> =&gt; <span class="number">0</span>,
 <a href=#1014 id=1014 data-nosnippet>1014</a>    };
 <a href=#1015 id=1015 data-nosnippet>1015</a>
 <a href=#1016 id=1016 data-nosnippet>1016</a>    <a class="prelude-val" href="../result.rs.html#562">Ok</a>(start..end)
@@ -1023,8 +1023,8 @@
 <a href=#1023 id=1023 data-nosnippet>1023</a>#[rustc_const_unstable(feature = <span class="string">"const_range"</span>, issue = <span class="string">"none"</span>)]
 <a href=#1024 id=1024 data-nosnippet>1024</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>into_slice_range(
 <a href=#1025 id=1025 data-nosnippet>1025</a>    len: <a href="../../../core/primitive.usize.html">usize</a>,
-<a href=#1026 id=1026 data-nosnippet>1026</a>    bounds: (ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
-<a href=#1027 id=1027 data-nosnippet>1027</a>) -&gt; ops::<a href="../ops/range.rs.html#86-93">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#1026 id=1026 data-nosnippet>1026</a>    bounds: (ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;),
+<a href=#1027 id=1027 data-nosnippet>1027</a>) -&gt; ops::<a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
 <a href=#1028 id=1028 data-nosnippet>1028</a>    <span class="kw">match </span><a href="#986-1017">try_into_slice_range</a>(<a href="#1025">len</a>, <a href="#1026">bounds</a>) {
 <a href=#1029 id=1029 data-nosnippet>1029</a>        <a class="prelude-val" href="../result.rs.html#562">Ok</a>(range) =&gt; <a href="#1029">range</a>,
 <a href=#1030 id=1030 data-nosnippet>1030</a>        <a class="prelude-val" href="../result.rs.html#567">Err</a>(e) =&gt; <a href="#1030">e</a>.<a href="#974-979">report</a>(<a href="#1025">len</a>),
@@ -1032,7 +1032,7 @@
 <a href=#1032 id=1032 data-nosnippet>1032</a>}
 <a href=#1033 id=1033 data-nosnippet>1033</a>
 <a href=#1034 id=1034 data-nosnippet>1034</a><span class="attr">#[stable(feature = <span class="string">"slice_index_with_ops_bound_pair"</span>, since = <span class="string">"1.53.0"</span>)]
-<a href=#1035 id=1035 data-nosnippet>1035</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>(ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#710-720">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) {
+<a href=#1035 id=1035 data-nosnippet>1035</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#124-174">SliceIndex</a>&lt;[T]&gt; <span class="kw">for </span>(ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;, ops::<a href="../ops/range.rs.html#709-719">Bound</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt;) {
 <a href=#1036 id=1036 data-nosnippet>1036</a>    <span class="kw">type </span>Output = [T];
 <a href=#1037 id=1037 data-nosnippet>1037</a>
 <a href=#1038 id=1038 data-nosnippet>1038</a>    <span class="attr">#[inline]
