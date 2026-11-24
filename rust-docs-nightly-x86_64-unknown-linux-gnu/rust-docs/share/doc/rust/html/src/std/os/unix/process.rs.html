@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Unix-specific extensions to primitives in the [`std::process`] module.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/os/unix/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (20fe935d5 2026-11-23)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/os/unix/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Unix-specific extensions to primitives in the [`std::process`] module.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! [`std::process`]: crate::process
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span><a href="../../ffi/os_str.rs.html#116-118"><span class="kw">crate</span>::ffi::OsStr</a>;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><a href="../../macros.rs.html#475-477"><span class="kw">crate</span>::macros::rustdoc_skip_body</a>;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::os::unix::io::{<a href="../fd/owned.rs.html#287-305">AsFd</a>, <a href="../fd/raw.rs.html#44-72">AsRawFd</a>, <a href="../fd/owned.rs.html#53-56">BorrowedFd</a>, <a href="../fd/raw.rs.html#77-116">FromRawFd</a>, <a href="../fd/raw.rs.html#121-148">IntoRawFd</a>, <a href="../fd/owned.rs.html#72-74">OwnedFd</a>, <a href="../fd/raw.rs.html#33">RawFd</a>};
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../../path.rs.html#2357-2359"><span class="kw">crate</span>::path::Path</a>;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><a href="../../path.rs.html#2352-2354"><span class="kw">crate</span>::path::Path</a>;
 <a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[cfg(doc)]
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">use </span><span class="kw">crate</span>::process::{<a href="../../process.rs.html#1944">ExitStatus</a>, <a href="../../process.rs.html#2081">ExitStatusError</a>};
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><a href="../../sys/process/unix/common.rs.html#638"><span class="kw">crate</span>::sys::process::ChildPipe</a>;
@@ -245,7 +245,7 @@
 <a href=#245 id=245 data-nosnippet>245</a>    /// # Ok::&lt;_, Box&lt;dyn std::error::Error&gt;&gt;(())
 <a href=#246 id=246 data-nosnippet>246</a>    </span><span class="attr">#[doc = <span class="string">"```"</span>]
 <a href=#247 id=247 data-nosnippet>247</a>    #[unstable(feature = <span class="string">"process_chroot"</span>, issue = <span class="string">"141298"</span>)]
-<a href=#248 id=248 data-nosnippet>248</a>    </span><span class="kw">fn </span>chroot&lt;P: <a href="../../../../std/convert/trait.AsRef.html">AsRef</a>&lt;<a href="../../path.rs.html#2357-2359">Path</a>&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dir: P) -&gt; <span class="kw-2">&amp;mut </span>process::<a href="../../process.rs.html#606-608">Command</a>;
+<a href=#248 id=248 data-nosnippet>248</a>    </span><span class="kw">fn </span>chroot&lt;P: <a href="../../../../std/convert/trait.AsRef.html">AsRef</a>&lt;<a href="../../path.rs.html#2352-2354">Path</a>&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dir: P) -&gt; <span class="kw-2">&amp;mut </span>process::<a href="../../process.rs.html#606-608">Command</a>;
 <a href=#249 id=249 data-nosnippet>249</a>
 <a href=#250 id=250 data-nosnippet>250</a>    <span class="attr">#[unstable(feature = <span class="string">"process_setsid"</span>, issue = <span class="string">"105376"</span>)]
 <a href=#251 id=251 data-nosnippet>251</a>    </span><span class="kw">fn </span>setsid(<span class="kw-2">&amp;mut </span><span class="self">self</span>, setsid: <a href="../../../../std/primitive.bool.html">bool</a>) -&gt; <span class="kw-2">&amp;mut </span>process::<a href="../../process.rs.html#606-608">Command</a>;
@@ -303,7 +303,7 @@
 <a href=#303 id=303 data-nosnippet>303</a>    </span>}
 <a href=#304 id=304 data-nosnippet>304</a>
 <a href=#305 id=305 data-nosnippet>305</a>    <span class="attr">#[rustdoc_skip_body]
-<a href=#306 id=306 data-nosnippet>306</a>    </span><span class="kw">fn </span>chroot&lt;P: <a href="../../../../std/convert/trait.AsRef.html">AsRef</a>&lt;<a href="../../path.rs.html#2357-2359">Path</a>&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dir: P) -&gt; <span class="kw-2">&amp;mut </span>process::<a href="../../process.rs.html#606-608">Command</a> {
+<a href=#306 id=306 data-nosnippet>306</a>    </span><span class="kw">fn </span>chroot&lt;P: <a href="../../../../std/convert/trait.AsRef.html">AsRef</a>&lt;<a href="../../path.rs.html#2352-2354">Path</a>&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dir: P) -&gt; <span class="kw-2">&amp;mut </span>process::<a href="../../process.rs.html#606-608">Command</a> {
 <a href=#307 id=307 data-nosnippet>307</a>        <span class="self">self</span>.as_inner_mut().chroot(dir.as_ref());
 <a href=#308 id=308 data-nosnippet>308</a>        <span class="self">self
 <a href=#309 id=309 data-nosnippet>309</a>    </span>}
@@ -828,4 +828,86 @@
 <a href=#828 id=828 data-nosnippet>828</a></span><span class="kw">pub fn </span><a href="../../../../std/os/unix/process/fn.parent_id.html">parent_id</a>() -&gt; <a href="../../../../std/primitive.u32.html">u32</a> {
 <a href=#829 id=829 data-nosnippet>829</a>    <span class="kw">crate</span>::sys::process::<a href="../../sys/process/unix/common.rs.html#695-697">getppid</a>()
 <a href=#830 id=830 data-nosnippet>830</a>}
+<a href=#831 id=831 data-nosnippet>831</a>
+<a href=#832 id=832 data-nosnippet>832</a><span class="doccomment">/// Returns the real user ID of the current process.
+<a href=#833 id=833 data-nosnippet>833</a>///
+<a href=#834 id=834 data-nosnippet>834</a>/// # Example
+<a href=#835 id=835 data-nosnippet>835</a>///
+<a href=#836 id=836 data-nosnippet>836</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"unix"</span>, doc = <span class="string">"```"</span>)]
+<a href=#837 id=837 data-nosnippet>837</a>#[cfg_attr(not(target_family = <span class="string">"unix"</span>), doc = <span class="string">"```ignore (needs unix)"</span>)]
+<a href=#838 id=838 data-nosnippet>838</a></span><span class="doccomment">/// #![feature(unix_process_user_group_ids)]
+<a href=#839 id=839 data-nosnippet>839</a>/// use std::os::unix::process;
+<a href=#840 id=840 data-nosnippet>840</a>///
+<a href=#841 id=841 data-nosnippet>841</a>/// fn main() {
+<a href=#842 id=842 data-nosnippet>842</a>///     let uid = process::uid();
+<a href=#843 id=843 data-nosnippet>843</a>///     println!("The current process has UID {}", uid);
+<a href=#844 id=844 data-nosnippet>844</a>/// }
+<a href=#845 id=845 data-nosnippet>845</a>/// ```
+<a href=#846 id=846 data-nosnippet>846</a></span><span class="attr">#[must_use]
+<a href=#847 id=847 data-nosnippet>847</a>#[unstable(feature = <span class="string">"unix_process_user_group_ids"</span>, issue = <span class="string">"166252"</span>)]
+<a href=#848 id=848 data-nosnippet>848</a></span><span class="kw">pub fn </span><a href="../../../../std/os/unix/process/fn.uid.html">uid</a>() -&gt; <a href="../../../../std/primitive.u32.html">u32</a> {
+<a href=#849 id=849 data-nosnippet>849</a>    <span class="kw">crate</span>::sys::process::<a href="../../sys/process/unix/common.rs.html#699-701">getuid</a>()
+<a href=#850 id=850 data-nosnippet>850</a>}
+<a href=#851 id=851 data-nosnippet>851</a>
+<a href=#852 id=852 data-nosnippet>852</a><span class="doccomment">/// Returns the effective user ID of the current process.
+<a href=#853 id=853 data-nosnippet>853</a>///
+<a href=#854 id=854 data-nosnippet>854</a>/// # Example
+<a href=#855 id=855 data-nosnippet>855</a>///
+<a href=#856 id=856 data-nosnippet>856</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"unix"</span>, doc = <span class="string">"```"</span>)]
+<a href=#857 id=857 data-nosnippet>857</a>#[cfg_attr(not(target_family = <span class="string">"unix"</span>), doc = <span class="string">"```ignore (needs unix)"</span>)]
+<a href=#858 id=858 data-nosnippet>858</a></span><span class="doccomment">/// #![feature(unix_process_user_group_ids)]
+<a href=#859 id=859 data-nosnippet>859</a>/// use std::os::unix::process;
+<a href=#860 id=860 data-nosnippet>860</a>///
+<a href=#861 id=861 data-nosnippet>861</a>/// fn main() {
+<a href=#862 id=862 data-nosnippet>862</a>///     let euid = process::effective_uid();
+<a href=#863 id=863 data-nosnippet>863</a>///     println!("The current process has effective UID {}", euid);
+<a href=#864 id=864 data-nosnippet>864</a>/// }
+<a href=#865 id=865 data-nosnippet>865</a>/// ```
+<a href=#866 id=866 data-nosnippet>866</a></span><span class="attr">#[must_use]
+<a href=#867 id=867 data-nosnippet>867</a>#[unstable(feature = <span class="string">"unix_process_user_group_ids"</span>, issue = <span class="string">"166252"</span>)]
+<a href=#868 id=868 data-nosnippet>868</a></span><span class="kw">pub fn </span><a href="../../../../std/os/unix/process/fn.effective_uid.html">effective_uid</a>() -&gt; <a href="../../../../std/primitive.u32.html">u32</a> {
+<a href=#869 id=869 data-nosnippet>869</a>    <span class="kw">crate</span>::sys::process::<a href="../../sys/process/unix/common.rs.html#703-705">geteuid</a>()
+<a href=#870 id=870 data-nosnippet>870</a>}
+<a href=#871 id=871 data-nosnippet>871</a>
+<a href=#872 id=872 data-nosnippet>872</a><span class="doccomment">/// Returns the real group ID of the current process.
+<a href=#873 id=873 data-nosnippet>873</a>///
+<a href=#874 id=874 data-nosnippet>874</a>/// # Example
+<a href=#875 id=875 data-nosnippet>875</a>///
+<a href=#876 id=876 data-nosnippet>876</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"unix"</span>, doc = <span class="string">"```"</span>)]
+<a href=#877 id=877 data-nosnippet>877</a>#[cfg_attr(not(target_family = <span class="string">"unix"</span>), doc = <span class="string">"```ignore (needs unix)"</span>)]
+<a href=#878 id=878 data-nosnippet>878</a></span><span class="doccomment">/// #![feature(unix_process_user_group_ids)]
+<a href=#879 id=879 data-nosnippet>879</a>/// use std::os::unix::process;
+<a href=#880 id=880 data-nosnippet>880</a>///
+<a href=#881 id=881 data-nosnippet>881</a>/// fn main() {
+<a href=#882 id=882 data-nosnippet>882</a>/// #     if cfg!(skip_unsupported_miri_tests) { return; }
+<a href=#883 id=883 data-nosnippet>883</a>///     let gid = process::gid();
+<a href=#884 id=884 data-nosnippet>884</a>///     println!("The current process has GID {}", gid);
+<a href=#885 id=885 data-nosnippet>885</a>/// }
+<a href=#886 id=886 data-nosnippet>886</a>/// ```
+<a href=#887 id=887 data-nosnippet>887</a></span><span class="attr">#[must_use]
+<a href=#888 id=888 data-nosnippet>888</a>#[unstable(feature = <span class="string">"unix_process_user_group_ids"</span>, issue = <span class="string">"166252"</span>)]
+<a href=#889 id=889 data-nosnippet>889</a></span><span class="kw">pub fn </span><a href="../../../../std/os/unix/process/fn.gid.html">gid</a>() -&gt; <a href="../../../../std/primitive.u32.html">u32</a> {
+<a href=#890 id=890 data-nosnippet>890</a>    <span class="kw">crate</span>::sys::process::<a href="../../sys/process/unix/common.rs.html#707-709">getgid</a>()
+<a href=#891 id=891 data-nosnippet>891</a>}
+<a href=#892 id=892 data-nosnippet>892</a>
+<a href=#893 id=893 data-nosnippet>893</a><span class="doccomment">/// Returns the effective group ID of the current process.
+<a href=#894 id=894 data-nosnippet>894</a>///
+<a href=#895 id=895 data-nosnippet>895</a>/// # Example
+<a href=#896 id=896 data-nosnippet>896</a>///
+<a href=#897 id=897 data-nosnippet>897</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"unix"</span>, doc = <span class="string">"```"</span>)]
+<a href=#898 id=898 data-nosnippet>898</a>#[cfg_attr(not(target_family = <span class="string">"unix"</span>), doc = <span class="string">"```ignore (needs unix)"</span>)]
+<a href=#899 id=899 data-nosnippet>899</a></span><span class="doccomment">/// #![feature(unix_process_user_group_ids)]
+<a href=#900 id=900 data-nosnippet>900</a>/// use std::os::unix::process;
+<a href=#901 id=901 data-nosnippet>901</a>///
+<a href=#902 id=902 data-nosnippet>902</a>/// fn main() {
+<a href=#903 id=903 data-nosnippet>903</a>/// #     if cfg!(skip_unsupported_miri_tests) { return; }
+<a href=#904 id=904 data-nosnippet>904</a>///     let egid = process::effective_gid();
+<a href=#905 id=905 data-nosnippet>905</a>///     println!("The current process has effective GID {}", egid);
+<a href=#906 id=906 data-nosnippet>906</a>/// }
+<a href=#907 id=907 data-nosnippet>907</a>/// ```
+<a href=#908 id=908 data-nosnippet>908</a></span><span class="attr">#[must_use]
+<a href=#909 id=909 data-nosnippet>909</a>#[unstable(feature = <span class="string">"unix_process_user_group_ids"</span>, issue = <span class="string">"166252"</span>)]
+<a href=#910 id=910 data-nosnippet>910</a></span><span class="kw">pub fn </span><a href="../../../../std/os/unix/process/fn.effective_gid.html">effective_gid</a>() -&gt; <a href="../../../../std/primitive.u32.html">u32</a> {
+<a href=#911 id=911 data-nosnippet>911</a>    <span class="kw">crate</span>::sys::process::<a href="../../sys/process/unix/common.rs.html#711-713">getegid</a>()
+<a href=#912 id=912 data-nosnippet>912</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parent_id"],"trait":["ChildExt","CommandExt","ExitStatusExt"]};
+window.SIDEBAR_ITEMS = {"fn":["effective_gid","effective_uid","gid","parent_id","uid"],"trait":["ChildExt","CommandExt","ExitStatusExt"]};

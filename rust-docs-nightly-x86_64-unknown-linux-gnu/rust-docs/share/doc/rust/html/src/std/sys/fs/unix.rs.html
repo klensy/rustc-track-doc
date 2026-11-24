@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fs/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (137d1d494 2026-11-22)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fs/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(nonstandard_style)]
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sys/fs/unix.rs`."><title>unix.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (20fe935d5 2026-11-23)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sys/fs/</div>unix.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="attr">#![allow(nonstandard_style)]
 <a href=#2 id=2 data-nosnippet>2</a>#![allow(unsafe_op_in_unsafe_fn)]
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a>#[cfg(test)]
@@ -52,7 +52,7 @@
 <a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">use </span><a href="../../os/unix/mod.rs.html#103-128"><span class="kw">crate</span>::os::unix::prelude</a>::<span class="kw-2">*</span>;
 <a href=#53 id=53 data-nosnippet>53</a><span class="attr">#[cfg(target_os = <span class="string">"wasi"</span>)]
 <a href=#54 id=54 data-nosnippet>54</a></span><span class="kw">use </span><span class="kw">crate</span>::os::wasi::prelude::<span class="kw-2">*</span>;
-<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::path::{<a href="../../path.rs.html#2357-2359">Path</a>, <a href="../../path.rs.html#1215-1217">PathBuf</a>};
+<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::path::{<a href="../../path.rs.html#2352-2354">Path</a>, <a href="../../path.rs.html#1215-1217">PathBuf</a>};
 <a href=#56 id=56 data-nosnippet>56</a><span class="kw">use </span><a href="../../../../std/sync/struct.Arc.html"><span class="kw">crate</span>::sync::Arc</a>;
 <a href=#57 id=57 data-nosnippet>57</a><span class="kw">use </span><a href="../fd/unix.rs.html#60"><span class="kw">crate</span>::sys::fd::FileDesc</a>;
 <a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span><a href="common.rs.html#57-63"><span class="kw">crate</span>::sys::fs::common::exists</a>;
@@ -815,7 +815,7 @@
 <a href=#815 id=815 data-nosnippet>815</a>                <span class="comment">// We don't want to expose `fd` or even the underlying file description
 <a href=#816 id=816 data-nosnippet>816</a>                // as the directory stream has state attached to it. So we open a completely
 <a href=#817 id=817 data-nosnippet>817</a>                // new file description based on this one.
-<a href=#818 id=818 data-nosnippet>818</a>                </span><a href="#813">dir_handle</a>.<a href="unix/dir.rs.html#79-81">open_dir</a>(<a href="../../path.rs.html#2357-2359">Path</a>::<a href="../../path.rs.html#2413-2415">new</a>(<span class="string">"."</span>), <span class="kw-2">&amp;</span><a href="#792">options</a>)
+<a href=#818 id=818 data-nosnippet>818</a>                </span><a href="#813">dir_handle</a>.<a href="unix/dir.rs.html#79-81">open_dir</a>(<a href="../../path.rs.html#2352-2354">Path</a>::<a href="../../path.rs.html#2408-2410">new</a>(<span class="string">"."</span>), <span class="kw-2">&amp;</span><a href="#792">options</a>)
 <a href=#819 id=819 data-nosnippet>819</a>            }
 <a href=#820 id=820 data-nosnippet>820</a>        }
 <a href=#821 id=821 data-nosnippet>821</a>    }
@@ -1040,7 +1040,7 @@
 <a href=#1040 id=1040 data-nosnippet>1040</a>
 <a href=#1041 id=1041 data-nosnippet>1041</a><span class="kw">impl </span><a href="#395-402">DirEntry</a> {
 <a href=#1042 id=1042 data-nosnippet>1042</a>    <span class="kw">pub fn </span>path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../path.rs.html#1215-1217">PathBuf</a> {
-<a href=#1043 id=1043 data-nosnippet>1043</a>        <a class="self" href="#1042">self</a>.dir.root.<a href="../../path.rs.html#3079-3081">join</a>(<a class="self" href="#1042">self</a>.<a href="#1110-1112">file_name_os_str</a>())
+<a href=#1043 id=1043 data-nosnippet>1043</a>        <a class="self" href="#1042">self</a>.dir.root.<a href="../../path.rs.html#3075-3077">join</a>(<a class="self" href="#1042">self</a>.<a href="#1110-1112">file_name_os_str</a>())
 <a href=#1044 id=1044 data-nosnippet>1044</a>    }
 <a href=#1045 id=1045 data-nosnippet>1045</a>
 <a href=#1046 id=1046 data-nosnippet>1046</a>    <span class="kw">pub fn </span>file_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../../ffi/os_str.rs.html#94-96">OsString</a> {
@@ -1229,7 +1229,7 @@
 <a href=#1229 id=1229 data-nosnippet>1229</a>}
 <a href=#1230 id=1230 data-nosnippet>1230</a>
 <a href=#1231 id=1231 data-nosnippet>1231</a><span class="kw">impl </span><a href="#92">File</a> {
-<a href=#1232 id=1232 data-nosnippet>1232</a>    <span class="kw">pub fn </span>open(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>, opts: <span class="kw-2">&amp;</span><a href="#423-434">OpenOptions</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="#92">File</a>&gt; {
+<a href=#1232 id=1232 data-nosnippet>1232</a>    <span class="kw">pub fn </span>open(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>, opts: <span class="kw-2">&amp;</span><a href="#423-434">OpenOptions</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="#92">File</a>&gt; {
 <a href=#1233 id=1233 data-nosnippet>1233</a>        <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#1232">path</a>, <span class="kw-2">&amp;</span>|path| <a href="#92">File</a>::<a href="#1236-1247">open_c</a>(<a href="#1233">path</a>, <a href="#1232">opts</a>))
 <a href=#1234 id=1234 data-nosnippet>1234</a>    }
 <a href=#1235 id=1235 data-nosnippet>1235</a>
@@ -1729,7 +1729,7 @@
 <a href=#1729 id=1729 data-nosnippet>1729</a>        <a href="#466-468">DirBuilder</a> { mode: <span class="number">0o777 </span>}
 <a href=#1730 id=1730 data-nosnippet>1730</a>    }
 <a href=#1731 id=1731 data-nosnippet>1731</a>
-<a href=#1732 id=1732 data-nosnippet>1732</a>    <span class="kw">pub fn </span>mkdir(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#1732 id=1732 data-nosnippet>1732</a>    <span class="kw">pub fn </span>mkdir(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#1733 id=1733 data-nosnippet>1733</a>        <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#1732">p</a>, <span class="kw-2">&amp;</span>|p| <a href="../pal/unix/mod.rs.html#244-246">cvt</a>(<span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.mkdir.html">mkdir</a>(<a href="#1733">p</a>.<a href="../../../../std/ffi/struct.CStr.html#method.as_ptr">as_ptr</a>(), <a class="self" href="#1732">self</a>.mode) }).<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|<span class="kw">_</span>| ()))
 <a href=#1734 id=1734 data-nosnippet>1734</a>    }
 <a href=#1735 id=1735 data-nosnippet>1735</a>
@@ -1873,12 +1873,12 @@
 <a href=#1873 id=1873 data-nosnippet>1873</a>    }
 <a href=#1874 id=1874 data-nosnippet>1874</a>}
 <a href=#1875 id=1875 data-nosnippet>1875</a>
-<a href=#1876 id=1876 data-nosnippet>1876</a><span class="kw">pub fn </span>readdir(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="#253-256">ReadDir</a>&gt; {
+<a href=#1876 id=1876 data-nosnippet>1876</a><span class="kw">pub fn </span>readdir(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="#253-256">ReadDir</a>&gt; {
 <a href=#1877 id=1877 data-nosnippet>1877</a>    <span class="kw">let </span>ptr = run_path_with_cstr(path, <span class="kw-2">&amp;</span>|p| <span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(libc::opendir(p.as_ptr())) })<span class="question-mark">?</span>;
 <a href=#1878 id=1878 data-nosnippet>1878</a>    <span class="kw">if </span><a href="#1877">ptr</a>.<a href="../../../../core/primitive.pointer.html#method.is_null">is_null</a>() {
 <a href=#1879 id=1879 data-nosnippet>1879</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Err</a>(<a href="../../../../std/io/struct.Error.html">Error</a>::<a href="../../io/error.rs.html#43-45">last_os_error</a>())
 <a href=#1880 id=1880 data-nosnippet>1880</a>    } <span class="kw">else </span>{
-<a href=#1881 id=1881 data-nosnippet>1881</a>        <span class="kw">let </span>root = <a href="#1876">path</a>.<a href="../../path.rs.html#2529-2531">to_path_buf</a>();
+<a href=#1881 id=1881 data-nosnippet>1881</a>        <span class="kw">let </span>root = <a href="#1876">path</a>.<a href="../../path.rs.html#2524-2526">to_path_buf</a>();
 <a href=#1882 id=1882 data-nosnippet>1882</a>        <span class="kw">let </span>inner = <a href="#248-251">InnerReadDir</a> { dirp: <a href="#264">DirStream</a>(<a href="#1877">ptr</a>), <a href="#1881">root</a> };
 <a href=#1883 id=1883 data-nosnippet>1883</a>        <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(<a href="#253-256">ReadDir</a>::<a href="#259-261">new</a>(<a href="#1882">inner</a>))
 <a href=#1884 id=1884 data-nosnippet>1884</a>    }
@@ -2150,7 +2150,7 @@
 <a href=#2150 id=2150 data-nosnippet>2150</a>    <a href="#1887-1889">unlink</a>(<a href="#2148">old</a>)
 <a href=#2151 id=2151 data-nosnippet>2151</a>}
 <a href=#2152 id=2152 data-nosnippet>2152</a>
-<a href=#2153 id=2153 data-nosnippet>2153</a><span class="kw">fn </span>open_from(from: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;(<span class="kw">crate</span>::fs::<a href="../../fs.rs.html#142-144">File</a>, <span class="kw">crate</span>::fs::<a href="../../fs.rs.html#209">Metadata</a>)&gt; {
+<a href=#2153 id=2153 data-nosnippet>2153</a><span class="kw">fn </span>open_from(from: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;(<span class="kw">crate</span>::fs::<a href="../../fs.rs.html#142-144">File</a>, <span class="kw">crate</span>::fs::<a href="../../fs.rs.html#209">Metadata</a>)&gt; {
 <a href=#2154 id=2154 data-nosnippet>2154</a>    <span class="kw">use </span><a href="../../fs.rs.html#142-144"><span class="kw">crate</span>::fs::File</a>;
 <a href=#2155 id=2155 data-nosnippet>2155</a>    <span class="kw">use </span><a href="common.rs.html#11-14"><span class="kw">crate</span>::sys::fs::common::NOT_FILE_ERROR</a>;
 <a href=#2156 id=2156 data-nosnippet>2156</a>
@@ -2280,7 +2280,7 @@
 <a href=#2280 id=2280 data-nosnippet>2280</a>
 <a href=#2281 id=2281 data-nosnippet>2281</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"espidf"</span>, target_os = <span class="string">"wasi"</span>)))]
 <a href=#2282 id=2282 data-nosnippet>2282</a></span><span class="kw">fn </span>open_to_and_set_permissions(
-<a href=#2283 id=2283 data-nosnippet>2283</a>    to: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>,
+<a href=#2283 id=2283 data-nosnippet>2283</a>    to: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>,
 <a href=#2284 id=2284 data-nosnippet>2284</a>    reader_metadata: <span class="kw-2">&amp;</span><span class="kw">crate</span>::fs::<a href="../../fs.rs.html#209">Metadata</a>,
 <a href=#2285 id=2285 data-nosnippet>2285</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;(<span class="kw">crate</span>::fs::<a href="../../fs.rs.html#142-144">File</a>, <span class="kw">crate</span>::fs::<a href="../../fs.rs.html#209">Metadata</a>)&gt; {
 <a href=#2286 id=2286 data-nosnippet>2286</a>    <span class="kw">use </span><a href="../../fs.rs.html#286"><span class="kw">crate</span>::fs::OpenOptions</a>;
@@ -2355,7 +2355,7 @@
 <a href=#2355 id=2355 data-nosnippet>2355</a></span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::sys) <span class="kw">use </span><a href="#2314">cfm::CachedFileMetadata</a>;
 <a href=#2356 id=2356 data-nosnippet>2356</a>
 <a href=#2357 id=2357 data-nosnippet>2357</a><span class="attr">#[cfg(not(target_vendor = <span class="string">"apple"</span>))]
-<a href=#2358 id=2358 data-nosnippet>2358</a></span><span class="kw">pub fn </span>copy(from: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>, to: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.u64.html">u64</a>&gt; {
+<a href=#2358 id=2358 data-nosnippet>2358</a></span><span class="kw">pub fn </span>copy(from: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>, to: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;<a href="../../../../std/primitive.u64.html">u64</a>&gt; {
 <a href=#2359 id=2359 data-nosnippet>2359</a>    <span class="kw">let </span>(reader, reader_metadata) = open_from(from)<span class="question-mark">?</span>;
 <a href=#2360 id=2360 data-nosnippet>2360</a>    <span class="kw">let </span>(writer, writer_metadata) = open_to_and_set_permissions(to, <span class="kw-2">&amp;</span>reader_metadata)<span class="question-mark">?</span>;
 <a href=#2361 id=2361 data-nosnippet>2361</a>
@@ -2427,7 +2427,7 @@
 <a href=#2427 id=2427 data-nosnippet>2427</a>}
 <a href=#2428 id=2428 data-nosnippet>2428</a>
 <a href=#2429 id=2429 data-nosnippet>2429</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
-<a href=#2430 id=2430 data-nosnippet>2430</a></span><span class="kw">pub fn </span>chown(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>, uid: <a href="../../../../std/primitive.u32.html">u32</a>, gid: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#2430 id=2430 data-nosnippet>2430</a></span><span class="kw">pub fn </span>chown(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>, uid: <a href="../../../../std/primitive.u32.html">u32</a>, gid: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#2431 id=2431 data-nosnippet>2431</a>    <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#2430">path</a>, <span class="kw-2">&amp;</span>|path| {
 <a href=#2432 id=2432 data-nosnippet>2432</a>        <a href="../pal/unix/mod.rs.html#244-246">cvt</a>(<span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.chown.html">chown</a>(<a href="#2431">path</a>.<a href="../../../../std/ffi/struct.CStr.html#method.as_ptr">as_ptr</a>(), <a href="#2430">uid</a> <span class="kw">as </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.uid_t.html">uid_t</a>, <a href="#2430">gid</a> <span class="kw">as </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.gid_t.html">gid_t</a>) })
 <a href=#2433 id=2433 data-nosnippet>2433</a>            .<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|<span class="kw">_</span>| ())
@@ -2441,7 +2441,7 @@
 <a href=#2441 id=2441 data-nosnippet>2441</a>}
 <a href=#2442 id=2442 data-nosnippet>2442</a>
 <a href=#2443 id=2443 data-nosnippet>2443</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
-<a href=#2444 id=2444 data-nosnippet>2444</a></span><span class="kw">pub fn </span>lchown(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>, uid: <a href="../../../../std/primitive.u32.html">u32</a>, gid: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#2444 id=2444 data-nosnippet>2444</a></span><span class="kw">pub fn </span>lchown(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>, uid: <a href="../../../../std/primitive.u32.html">u32</a>, gid: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#2445 id=2445 data-nosnippet>2445</a>    <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#2444">path</a>, <span class="kw-2">&amp;</span>|path| {
 <a href=#2446 id=2446 data-nosnippet>2446</a>        <a href="../pal/unix/mod.rs.html#244-246">cvt</a>(<span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.lchown.html">lchown</a>(<a href="#2445">path</a>.<a href="../../../../std/ffi/struct.CStr.html#method.as_ptr">as_ptr</a>(), <a href="#2444">uid</a> <span class="kw">as </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.uid_t.html">uid_t</a>, <a href="#2444">gid</a> <span class="kw">as </span>libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/type.gid_t.html">gid_t</a>) })
 <a href=#2447 id=2447 data-nosnippet>2447</a>            .<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|<span class="kw">_</span>| ())
@@ -2455,7 +2455,7 @@
 <a href=#2455 id=2455 data-nosnippet>2455</a>}
 <a href=#2456 id=2456 data-nosnippet>2456</a>
 <a href=#2457 id=2457 data-nosnippet>2457</a><span class="attr">#[cfg(not(any(target_os = <span class="string">"fuchsia"</span>, target_os = <span class="string">"vxworks"</span>, target_os = <span class="string">"wasi"</span>)))]
-<a href=#2458 id=2458 data-nosnippet>2458</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#2458 id=2458 data-nosnippet>2458</a></span><span class="kw">pub fn </span>chroot(dir: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#2459 id=2459 data-nosnippet>2459</a>    <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#2458">dir</a>, <span class="kw-2">&amp;</span>|dir| <a href="../pal/unix/mod.rs.html#244-246">cvt</a>(<span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.chroot.html">chroot</a>(<a href="#2459">dir</a>.<a href="../../../../std/ffi/struct.CStr.html#method.as_ptr">as_ptr</a>()) }).<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|<span class="kw">_</span>| ()))
 <a href=#2460 id=2460 data-nosnippet>2460</a>}
 <a href=#2461 id=2461 data-nosnippet>2461</a>
@@ -2466,7 +2466,7 @@
 <a href=#2466 id=2466 data-nosnippet>2466</a>}
 <a href=#2467 id=2467 data-nosnippet>2467</a>
 <a href=#2468 id=2468 data-nosnippet>2468</a><span class="attr">#[cfg(not(target_os = <span class="string">"wasi"</span>))]
-<a href=#2469 id=2469 data-nosnippet>2469</a></span><span class="kw">pub fn </span>mkfifo(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>, mode: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#2469 id=2469 data-nosnippet>2469</a></span><span class="kw">pub fn </span>mkfifo(path: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>, mode: <a href="../../../../std/primitive.u32.html">u32</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#2470 id=2470 data-nosnippet>2470</a>    <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#2469">path</a>, <span class="kw-2">&amp;</span>|path| {
 <a href=#2471 id=2471 data-nosnippet>2471</a>        <a href="../pal/unix/mod.rs.html#244-246">cvt</a>(<span class="kw">unsafe </span>{ libc::<a href="https://docs.rs/libc/0.2.191/libc/unix/fn.mkfifo.html">mkfifo</a>(<a href="#2470">path</a>.<a href="../../../../std/ffi/struct.CStr.html#method.as_ptr">as_ptr</a>(), <a href="#2469">mode</a>.<a href="../../../../std/convert/trait.TryInto.html">try_into</a>().<a href="../../../../std/result/enum.Result.html#method.unwrap">unwrap</a>()) }).<a href="../../../../std/result/enum.Result.html#method.map">map</a>(|<span class="kw">_</span>| ())
 <a href=#2472 id=2472 data-nosnippet>2472</a>    })
@@ -2514,7 +2514,7 @@
 <a href=#2514 id=2514 data-nosnippet>2514</a>    };
 <a href=#2515 id=2515 data-nosnippet>2515</a>    <span class="kw">use </span><a href="../../../../std/ffi/struct.CStr.html"><span class="kw">crate</span>::ffi::CStr</a>;
 <a href=#2516 id=2516 data-nosnippet>2516</a>    <span class="kw">use </span><a href="../../lib.rs.html#639"><span class="kw">crate</span>::io</a>;
-<a href=#2517 id=2517 data-nosnippet>2517</a>    <span class="kw">use </span><span class="kw">crate</span>::path::{<a href="../../path.rs.html#2357-2359">Path</a>, <a href="../../path.rs.html#1215-1217">PathBuf</a>};
+<a href=#2517 id=2517 data-nosnippet>2517</a>    <span class="kw">use </span><span class="kw">crate</span>::path::{<a href="../../path.rs.html#2352-2354">Path</a>, <a href="../../path.rs.html#1215-1217">PathBuf</a>};
 <a href=#2518 id=2518 data-nosnippet>2518</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::helpers::{<a href="../helpers/mod.rs.html#37-43">ignore_notfound</a>, <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>};
 <a href=#2519 id=2519 data-nosnippet>2519</a>    <span class="kw">use </span><span class="kw">crate</span>::sys::{<a href="../pal/unix/mod.rs.html#244-246">cvt</a>, <a href="../pal/unix/mod.rs.html#249-260">cvt_r</a>};
 <a href=#2520 id=2520 data-nosnippet>2520</a>
@@ -2663,7 +2663,7 @@
 <a href=#2663 id=2663 data-nosnippet>2663</a>        }
 <a href=#2664 id=2664 data-nosnippet>2664</a>    }
 <a href=#2665 id=2665 data-nosnippet>2665</a>
-<a href=#2666 id=2666 data-nosnippet>2666</a>    <span class="kw">pub fn </span>remove_dir_all(p: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2357-2359">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
+<a href=#2666 id=2666 data-nosnippet>2666</a>    <span class="kw">pub fn </span>remove_dir_all(p: <span class="kw-2">&amp;</span><a href="../../path.rs.html#2352-2354">Path</a>) -&gt; io::<a href="../../../../std/io/type.Result.html">Result</a>&lt;()&gt; {
 <a href=#2667 id=2667 data-nosnippet>2667</a>        <a href="../helpers/small_c_string.rs.html#17-19">run_path_with_cstr</a>(<a href="#2666">p</a>, <span class="kw-2">&amp;</span><a href="#2651-2664">remove_dir_all_modern</a>)
 <a href=#2668 id=2668 data-nosnippet>2668</a>    }
 <a href=#2669 id=2669 data-nosnippet>2669</a>}
