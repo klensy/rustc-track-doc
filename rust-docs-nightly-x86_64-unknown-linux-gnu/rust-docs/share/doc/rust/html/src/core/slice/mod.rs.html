@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (20fe935d5 2026-11-23)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Slice management and manipulation.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/slice/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (739adecd4 2026-11-24)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/slice/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Slice management and manipulation.
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! For more details see [`std::slice`].
 <a href=#4 id=4 data-nosnippet>4</a>//!
@@ -8,7 +8,7 @@
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span><a href="../clone.rs.html#283"><span class="kw">crate</span>::clone::TrivialClone</a>;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::cmp::Ordering::{<a class="self" href="../cmp.rs.html#421-431">self</a>, <a href="../cmp.rs.html#427">Equal</a>, <a href="../cmp.rs.html#430">Greater</a>, <a href="../cmp.rs.html#424">Less</a>};
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::{<a href="../intrinsics/mod.rs.html#2034">exact_div</a>, <a href="../intrinsics/mod.rs.html#2096">unchecked_sub</a>};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::intrinsics::{<a href="../intrinsics/mod.rs.html#2085">exact_div</a>, <a href="../intrinsics/mod.rs.html#2147">unchecked_sub</a>};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><a href="../marker.rs.html#1064"><span class="kw">crate</span>::marker::Destruct</a>;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../lib.rs.html#279">self</a>, <a href="../mem/maybe_uninit.rs.html#355-358">MaybeUninit</a>, <a href="../mem/mod.rs.html#1596-1662">SizedTypeProperties</a>};
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><a href="../num/nonzero.rs.html#112"><span class="kw">crate</span>::num::NonZero</a>;
@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">pub mod </span><a href="sort/mod.rs.html#1-8">sort</a>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a><span class="kw">mod </span><a href="ascii.rs.html#1-869">ascii</a>;
-<a href=#39 id=39 data-nosnippet>39</a><span class="kw">mod </span><a href="cmp.rs.html#1-401">cmp</a>;
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">mod </span><a href="cmp.rs.html#1-407">cmp</a>;
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span><a href="index.rs.html#1-1071">index</a>;
 <a href=#41 id=41 data-nosnippet>41</a><span class="kw">mod </span><a href="iter.rs.html#1-3199">iter</a>;
 <a href=#42 id=42 data-nosnippet>42</a><span class="kw">mod </span><a href="raw.rs.html#1-350">raw</a>;
@@ -1365,7 +1365,7 @@
 <a href=#1365 id=1365 data-nosnippet>1365</a>            (n: usize = N, len: usize = <span class="self">self</span>.len()) =&gt; n != <span class="number">0 </span>&amp;&amp; len.is_multiple_of(n),
 <a href=#1366 id=1366 data-nosnippet>1366</a>        );
 <a href=#1367 id=1367 data-nosnippet>1367</a>        <span class="comment">// SAFETY: Caller must guarantee that `N` is nonzero and exactly divides the slice length
-<a href=#1368 id=1368 data-nosnippet>1368</a>        </span><span class="kw">let </span>new_len = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2034">exact_div</a>(<a class="self" href="#1360">self</a>.<a href="#118-120">len</a>(), <a href="#1359">N</a>) };
+<a href=#1368 id=1368 data-nosnippet>1368</a>        </span><span class="kw">let </span>new_len = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2085">exact_div</a>(<a class="self" href="#1360">self</a>.<a href="#118-120">len</a>(), <a href="#1359">N</a>) };
 <a href=#1369 id=1369 data-nosnippet>1369</a>        <span class="comment">// SAFETY: We cast a slice of `new_len * N` elements into
 <a href=#1370 id=1370 data-nosnippet>1370</a>        // a slice of `new_len` many `N` elements chunks.
 <a href=#1371 id=1371 data-nosnippet>1371</a>        </span><span class="kw">unsafe </span>{ <a href="raw.rs.html#124-141">from_raw_parts</a>(<a class="self" href="#1360">self</a>.<a href="#750-752">as_ptr</a>().<a href="../ptr/const_ptr.rs.html#48-50">cast</a>(), <a href="#1368">new_len</a>) }
@@ -1527,7 +1527,7 @@
 <a href=#1527 id=1527 data-nosnippet>1527</a>            (n: usize = N, len: usize = <span class="self">self</span>.len()) =&gt; n != <span class="number">0 </span>&amp;&amp; len.is_multiple_of(n)
 <a href=#1528 id=1528 data-nosnippet>1528</a>        );
 <a href=#1529 id=1529 data-nosnippet>1529</a>        <span class="comment">// SAFETY: Caller must guarantee that `N` is nonzero and exactly divides the slice length
-<a href=#1530 id=1530 data-nosnippet>1530</a>        </span><span class="kw">let </span>new_len = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2034">exact_div</a>(<a class="self" href="#1522">self</a>.<a href="#118-120">len</a>(), <a href="#1521">N</a>) };
+<a href=#1530 id=1530 data-nosnippet>1530</a>        </span><span class="kw">let </span>new_len = <span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#2085">exact_div</a>(<a class="self" href="#1522">self</a>.<a href="#118-120">len</a>(), <a href="#1521">N</a>) };
 <a href=#1531 id=1531 data-nosnippet>1531</a>        <span class="comment">// SAFETY: We cast a slice of `new_len * N` elements into
 <a href=#1532 id=1532 data-nosnippet>1532</a>        // a slice of `new_len` many `N` elements chunks.
 <a href=#1533 id=1533 data-nosnippet>1533</a>        </span><span class="kw">unsafe </span>{ <a href="raw.rs.html#179-196">from_raw_parts_mut</a>(<a class="self" href="#1522">self</a>.<a href="#782-784">as_mut_ptr</a>().<a href="../ptr/mut_ptr.rs.html#31-33">cast</a>(), <a href="#1530">new_len</a>) }
@@ -2081,7 +2081,7 @@
 <a href=#2081 id=2081 data-nosnippet>2081</a>        );
 <a href=#2082 id=2082 data-nosnippet>2082</a>
 <a href=#2083 id=2083 data-nosnippet>2083</a>        <span class="comment">// SAFETY: Caller has to check that `0 &lt;= mid &lt;= self.len()`
-<a href=#2084 id=2084 data-nosnippet>2084</a>        </span><span class="kw">unsafe </span>{ (<a href="raw.rs.html#124-141">from_raw_parts</a>(<a href="#2075">ptr</a>, <a href="#2069">mid</a>), <a href="raw.rs.html#124-141">from_raw_parts</a>(<a href="#2075">ptr</a>.<a href="../ptr/const_ptr.rs.html#845-880">add</a>(<a href="#2069">mid</a>), <a href="../intrinsics/mod.rs.html#2096">unchecked_sub</a>(<a href="#2074">len</a>, <a href="#2069">mid</a>))) }
+<a href=#2084 id=2084 data-nosnippet>2084</a>        </span><span class="kw">unsafe </span>{ (<a href="raw.rs.html#124-141">from_raw_parts</a>(<a href="#2075">ptr</a>, <a href="#2069">mid</a>), <a href="raw.rs.html#124-141">from_raw_parts</a>(<a href="#2075">ptr</a>.<a href="../ptr/const_ptr.rs.html#845-880">add</a>(<a href="#2069">mid</a>), <a href="../intrinsics/mod.rs.html#2147">unchecked_sub</a>(<a href="#2074">len</a>, <a href="#2069">mid</a>))) }
 <a href=#2085 id=2085 data-nosnippet>2085</a>    }
 <a href=#2086 id=2086 data-nosnippet>2086</a>
 <a href=#2087 id=2087 data-nosnippet>2087</a>    <span class="doccomment">/// Divides one mutable slice into two at an index, without doing bounds checking.
@@ -2137,7 +2137,7 @@
 <a href=#2137 id=2137 data-nosnippet>2137</a>        </span><span class="kw">unsafe </span>{
 <a href=#2138 id=2138 data-nosnippet>2138</a>            (
 <a href=#2139 id=2139 data-nosnippet>2139</a>                <a href="raw.rs.html#179-196">from_raw_parts_mut</a>(<a href="#2125">ptr</a>, <a href="#2123">mid</a>),
-<a href=#2140 id=2140 data-nosnippet>2140</a>                <a href="raw.rs.html#179-196">from_raw_parts_mut</a>(<a href="#2125">ptr</a>.<a href="../ptr/mut_ptr.rs.html#944-979">add</a>(<a href="#2123">mid</a>), <a href="../intrinsics/mod.rs.html#2096">unchecked_sub</a>(<a href="#2124">len</a>, <a href="#2123">mid</a>)),
+<a href=#2140 id=2140 data-nosnippet>2140</a>                <a href="raw.rs.html#179-196">from_raw_parts_mut</a>(<a href="#2125">ptr</a>.<a href="../ptr/mut_ptr.rs.html#944-979">add</a>(<a href="#2123">mid</a>), <a href="../intrinsics/mod.rs.html#2147">unchecked_sub</a>(<a href="#2124">len</a>, <a href="#2123">mid</a>)),
 <a href=#2141 id=2141 data-nosnippet>2141</a>            )
 <a href=#2142 id=2142 data-nosnippet>2142</a>        }
 <a href=#2143 id=2143 data-nosnippet>2143</a>    }
@@ -2621,7 +2621,7 @@
 <a href=#2621 id=2621 data-nosnippet>2621</a>    <span class="kw">where
 <a href=#2622 id=2622 data-nosnippet>2622</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
 <a href=#2623 id=2623 data-nosnippet>2623</a>    {
-<a href=#2624 id=2624 data-nosnippet>2624</a>        cmp::SliceContains::<a href="cmp.rs.html#346">slice_contains</a>(<a href="#2620">x</a>, <a class="self" href="#2620">self</a>)
+<a href=#2624 id=2624 data-nosnippet>2624</a>        cmp::SliceContains::<a href="cmp.rs.html#352">slice_contains</a>(<a href="#2620">x</a>, <a class="self" href="#2620">self</a>)
 <a href=#2625 id=2625 data-nosnippet>2625</a>    }
 <a href=#2626 id=2626 data-nosnippet>2626</a>
 <a href=#2627 id=2627 data-nosnippet>2627</a>    <span class="doccomment">/// Returns `true` if `needle` is a prefix of the slice or equal to the slice.
@@ -2710,12 +2710,12 @@
 <a href=#2710 id=2710 data-nosnippet>2710</a>    /// ```
 <a href=#2711 id=2711 data-nosnippet>2711</a>    </span><span class="attr">#[must_use = <span class="string">"returns the subslice without modifying the original"</span>]
 <a href=#2712 id=2712 data-nosnippet>2712</a>    #[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#2713 id=2713 data-nosnippet>2713</a>    </span><span class="kw">pub fn </span>strip_prefix&lt;P: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>P) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt;
+<a href=#2713 id=2713 data-nosnippet>2713</a>    </span><span class="kw">pub fn </span>strip_prefix&lt;P: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>P) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt;
 <a href=#2714 id=2714 data-nosnippet>2714</a>    <span class="kw">where
 <a href=#2715 id=2715 data-nosnippet>2715</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
 <a href=#2716 id=2716 data-nosnippet>2716</a>    {
 <a href=#2717 id=2717 data-nosnippet>2717</a>        <span class="comment">// This function will need rewriting if and when SlicePattern becomes more sophisticated.
-<a href=#2718 id=2718 data-nosnippet>2718</a>        </span><span class="kw">let </span>prefix = <a href="#2713">prefix</a>.<a href="#5718">as_slice</a>();
+<a href=#2718 id=2718 data-nosnippet>2718</a>        </span><span class="kw">let </span>prefix = <a href="#2713">prefix</a>.<a href="#5721">as_slice</a>();
 <a href=#2719 id=2719 data-nosnippet>2719</a>        <span class="kw">let </span>n = <a href="#2718">prefix</a>.<a href="#118-120">len</a>();
 <a href=#2720 id=2720 data-nosnippet>2720</a>        <span class="kw">if </span><a href="#2719">n</a> &lt;= <a class="self" href="#2713">self</a>.<a href="#118-120">len</a>() {
 <a href=#2721 id=2721 data-nosnippet>2721</a>            <span class="kw">let </span>(head, tail) = <a class="self" href="#2713">self</a>.<a href="#1983-1988">split_at</a>(<a href="#2719">n</a>);
@@ -2746,12 +2746,12 @@
 <a href=#2746 id=2746 data-nosnippet>2746</a>    /// ```
 <a href=#2747 id=2747 data-nosnippet>2747</a>    </span><span class="attr">#[must_use = <span class="string">"returns the subslice without modifying the original"</span>]
 <a href=#2748 id=2748 data-nosnippet>2748</a>    #[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#2749 id=2749 data-nosnippet>2749</a>    </span><span class="kw">pub fn </span>strip_suffix&lt;P: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw-2">&amp;</span>P) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt;
+<a href=#2749 id=2749 data-nosnippet>2749</a>    </span><span class="kw">pub fn </span>strip_suffix&lt;P: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw-2">&amp;</span>P) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt;
 <a href=#2750 id=2750 data-nosnippet>2750</a>    <span class="kw">where
 <a href=#2751 id=2751 data-nosnippet>2751</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
 <a href=#2752 id=2752 data-nosnippet>2752</a>    {
 <a href=#2753 id=2753 data-nosnippet>2753</a>        <span class="comment">// This function will need rewriting if and when SlicePattern becomes more sophisticated.
-<a href=#2754 id=2754 data-nosnippet>2754</a>        </span><span class="kw">let </span>suffix = <a href="#2749">suffix</a>.<a href="#5718">as_slice</a>();
+<a href=#2754 id=2754 data-nosnippet>2754</a>        </span><span class="kw">let </span>suffix = <a href="#2749">suffix</a>.<a href="#5721">as_slice</a>();
 <a href=#2755 id=2755 data-nosnippet>2755</a>        <span class="kw">let </span>(len, n) = (<a class="self" href="#2749">self</a>.<a href="#118-120">len</a>(), <a href="#2754">suffix</a>.<a href="#118-120">len</a>());
 <a href=#2756 id=2756 data-nosnippet>2756</a>        <span class="kw">if </span><a href="#2755">n</a> &lt;= <a href="#2755">len</a> {
 <a href=#2757 id=2757 data-nosnippet>2757</a>            <span class="kw">let </span>(head, tail) = <a class="self" href="#2749">self</a>.<a href="#1983-1988">split_at</a>(<a href="#2755">len</a> - <a href="#2755">n</a>);
@@ -2789,8 +2789,8 @@
 <a href=#2789 id=2789 data-nosnippet>2789</a>    </span><span class="kw">pub fn </span>strip_circumfix&lt;S, P&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>P, suffix: <span class="kw-2">&amp;</span>S) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span>[T]&gt;
 <a href=#2790 id=2790 data-nosnippet>2790</a>    <span class="kw">where
 <a href=#2791 id=2791 data-nosnippet>2791</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
-<a href=#2792 id=2792 data-nosnippet>2792</a>        S: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
-<a href=#2793 id=2793 data-nosnippet>2793</a>        P: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
+<a href=#2792 id=2792 data-nosnippet>2792</a>        S: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
+<a href=#2793 id=2793 data-nosnippet>2793</a>        P: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>,
 <a href=#2794 id=2794 data-nosnippet>2794</a>    {
 <a href=#2795 id=2795 data-nosnippet>2795</a>        <span class="self">self</span>.strip_prefix(prefix)<span class="question-mark">?</span>.<a href="#2749-2763">strip_suffix</a>(<a href="#2789">suffix</a>)
 <a href=#2796 id=2796 data-nosnippet>2796</a>    }
@@ -2820,12 +2820,12 @@
 <a href=#2820 id=2820 data-nosnippet>2820</a>    /// ```
 <a href=#2821 id=2821 data-nosnippet>2821</a>    </span><span class="attr">#[must_use = <span class="string">"returns the subslice without modifying the original"</span>]
 <a href=#2822 id=2822 data-nosnippet>2822</a>    #[stable(feature = <span class="string">"trim_prefix_suffix"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#2823 id=2823 data-nosnippet>2823</a>    </span><span class="kw">pub fn </span>trim_prefix&lt;P: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>P) -&gt; <span class="kw-2">&amp;</span>[T]
+<a href=#2823 id=2823 data-nosnippet>2823</a>    </span><span class="kw">pub fn </span>trim_prefix&lt;P: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, prefix: <span class="kw-2">&amp;</span>P) -&gt; <span class="kw-2">&amp;</span>[T]
 <a href=#2824 id=2824 data-nosnippet>2824</a>    <span class="kw">where
 <a href=#2825 id=2825 data-nosnippet>2825</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
 <a href=#2826 id=2826 data-nosnippet>2826</a>    {
 <a href=#2827 id=2827 data-nosnippet>2827</a>        <span class="comment">// This function will need rewriting if and when SlicePattern becomes more sophisticated.
-<a href=#2828 id=2828 data-nosnippet>2828</a>        </span><span class="kw">let </span>prefix = <a href="#2823">prefix</a>.<a href="#5718">as_slice</a>();
+<a href=#2828 id=2828 data-nosnippet>2828</a>        </span><span class="kw">let </span>prefix = <a href="#2823">prefix</a>.<a href="#5721">as_slice</a>();
 <a href=#2829 id=2829 data-nosnippet>2829</a>        <span class="kw">let </span>n = <a href="#2828">prefix</a>.<a href="#118-120">len</a>();
 <a href=#2830 id=2830 data-nosnippet>2830</a>        <span class="kw">if </span><a href="#2829">n</a> &lt;= <a class="self" href="#2823">self</a>.<a href="#118-120">len</a>() {
 <a href=#2831 id=2831 data-nosnippet>2831</a>            <span class="kw">let </span>(head, tail) = <a class="self" href="#2823">self</a>.<a href="#1983-1988">split_at</a>(<a href="#2829">n</a>);
@@ -2858,12 +2858,12 @@
 <a href=#2858 id=2858 data-nosnippet>2858</a>    /// ```
 <a href=#2859 id=2859 data-nosnippet>2859</a>    </span><span class="attr">#[must_use = <span class="string">"returns the subslice without modifying the original"</span>]
 <a href=#2860 id=2860 data-nosnippet>2860</a>    #[stable(feature = <span class="string">"trim_prefix_suffix"</span>, since = <span class="string">"1.100.0"</span>)]
-<a href=#2861 id=2861 data-nosnippet>2861</a>    </span><span class="kw">pub fn </span>trim_suffix&lt;P: <a href="#5713-5719">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw-2">&amp;</span>P) -&gt; <span class="kw-2">&amp;</span>[T]
+<a href=#2861 id=2861 data-nosnippet>2861</a>    </span><span class="kw">pub fn </span>trim_suffix&lt;P: <a href="#5716-5722">SlicePattern</a>&lt;Item = T&gt; + <span class="question-mark">?</span><a href="../marker.rs.html#159-161">Sized</a>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw-2">&amp;</span>P) -&gt; <span class="kw-2">&amp;</span>[T]
 <a href=#2862 id=2862 data-nosnippet>2862</a>    <span class="kw">where
 <a href=#2863 id=2863 data-nosnippet>2863</a>        </span>T: <a href="../cmp.rs.html#253-281">PartialEq</a>,
 <a href=#2864 id=2864 data-nosnippet>2864</a>    {
 <a href=#2865 id=2865 data-nosnippet>2865</a>        <span class="comment">// This function will need rewriting if and when SlicePattern becomes more sophisticated.
-<a href=#2866 id=2866 data-nosnippet>2866</a>        </span><span class="kw">let </span>suffix = <a href="#2861">suffix</a>.<a href="#5718">as_slice</a>();
+<a href=#2866 id=2866 data-nosnippet>2866</a>        </span><span class="kw">let </span>suffix = <a href="#2861">suffix</a>.<a href="#5721">as_slice</a>();
 <a href=#2867 id=2867 data-nosnippet>2867</a>        <span class="kw">let </span>(len, n) = (<a class="self" href="#2861">self</a>.<a href="#118-120">len</a>(), <a href="#2866">suffix</a>.<a href="#118-120">len</a>());
 <a href=#2868 id=2868 data-nosnippet>2868</a>        <span class="kw">if </span><a href="#2867">n</a> &lt;= <a href="#2867">len</a> {
 <a href=#2869 id=2869 data-nosnippet>2869</a>            <span class="kw">let </span>(head, tail) = <a class="self" href="#2861">self</a>.<a href="#1983-1988">split_at</a>(<a href="#2867">len</a> - <a href="#2867">n</a>);
@@ -4768,7 +4768,7 @@
 <a href=#4768 id=4768 data-nosnippet>4768</a>        <span class="comment">// This odd number works the best. 32 + 1 extra due to overlapping chunk boundaries.
 <a href=#4769 id=4769 data-nosnippet>4769</a>        </span><span class="kw">const </span>CHUNK_SIZE: <a href="../../../core/primitive.usize.html">usize</a> = <span class="number">33</span>;
 <a href=#4770 id=4770 data-nosnippet>4770</a>        <span class="kw">if </span><a class="self" href="#4764">self</a>.<a href="#118-120">len</a>() &lt; <a href="#4769">CHUNK_SIZE</a> {
-<a href=#4771 id=4771 data-nosnippet>4771</a>            <span class="kw">return </span><a class="self" href="#4764">self</a>.<a href="#1136-1139">windows</a>(<span class="number">2</span>).<a href="../iter/traits/iterator.rs.html#2862-2877">all</a>(|w| <a href="#4771">w</a>[<span class="number">0</span>] &lt;= <a href="#4771">w</a>[<span class="number">1</span>]);
+<a href=#4771 id=4771 data-nosnippet>4771</a>            <span class="kw">return </span><a class="self" href="#4764">self</a>.<a href="#1136-1139">windows</a>(<span class="number">2</span>).<a href="../iter/traits/iterator.rs.html#2848-2863">all</a>(|w| <a href="#4771">w</a>[<span class="number">0</span>] &lt;= <a href="#4771">w</a>[<span class="number">1</span>]);
 <a href=#4772 id=4772 data-nosnippet>4772</a>        }
 <a href=#4773 id=4773 data-nosnippet>4773</a>        <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
 <a href=#4774 id=4774 data-nosnippet>4774</a>        <span class="comment">// Check in chunks for autovectorization.
@@ -4781,7 +4781,7 @@
 <a href=#4781 id=4781 data-nosnippet>4781</a>            // Overlap the next chunk with the last element of our last chunk.
 <a href=#4782 id=4782 data-nosnippet>4782</a>            </span>i += CHUNK_SIZE - <span class="number">1</span>;
 <a href=#4783 id=4783 data-nosnippet>4783</a>        }
-<a href=#4784 id=4784 data-nosnippet>4784</a>        <a class="self" href="#4764">self</a>[i..].<a href="#1136-1139">windows</a>(<span class="number">2</span>).<a href="../iter/traits/iterator.rs.html#2862-2877">all</a>(|w| <a href="#4784">w</a>[<span class="number">0</span>] &lt;= <a href="#4784">w</a>[<span class="number">1</span>])
+<a href=#4784 id=4784 data-nosnippet>4784</a>        <a class="self" href="#4764">self</a>[i..].<a href="#1136-1139">windows</a>(<span class="number">2</span>).<a href="../iter/traits/iterator.rs.html#2848-2863">all</a>(|w| <a href="#4784">w</a>[<span class="number">0</span>] &lt;= <a href="#4784">w</a>[<span class="number">1</span>])
 <a href=#4785 id=4785 data-nosnippet>4785</a>    }
 <a href=#4786 id=4786 data-nosnippet>4786</a>
 <a href=#4787 id=4787 data-nosnippet>4787</a>    <span class="doccomment">/// Checks if the elements of this slice are sorted using the given comparator function.
@@ -4808,7 +4808,7 @@
 <a href=#4808 id=4808 data-nosnippet>4808</a>    <span class="kw">where
 <a href=#4809 id=4809 data-nosnippet>4809</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#4810 id=4810 data-nosnippet>4810</a>    {
-<a href=#4811 id=4811 data-nosnippet>4811</a>        <a class="self" href="#4807">self</a>.<a href="#1675-1680">array_windows</a>().<a href="../iter/traits/iterator.rs.html#2862-2877">all</a>(|[a, b]| <a href="#4807">compare</a>(<a href="#4811">a</a>, <a href="#4811">b</a>))
+<a href=#4811 id=4811 data-nosnippet>4811</a>        <a class="self" href="#4807">self</a>.<a href="#1675-1680">array_windows</a>().<a href="../iter/traits/iterator.rs.html#2848-2863">all</a>(|[a, b]| <a href="#4807">compare</a>(<a href="#4811">a</a>, <a href="#4811">b</a>))
 <a href=#4812 id=4812 data-nosnippet>4812</a>    }
 <a href=#4813 id=4813 data-nosnippet>4813</a>
 <a href=#4814 id=4814 data-nosnippet>4814</a>    <span class="doccomment">/// Checks if the elements of this slice are sorted using the given key extraction function.
@@ -4833,7 +4833,7 @@
 <a href=#4833 id=4833 data-nosnippet>4833</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T) -&gt; K,
 <a href=#4834 id=4834 data-nosnippet>4834</a>        K: <a href="../cmp.rs.html#1459-1585">PartialOrd</a>,
 <a href=#4835 id=4835 data-nosnippet>4835</a>    {
-<a href=#4836 id=4836 data-nosnippet>4836</a>        <a class="self" href="#4831">self</a>.<a href="#1061-1063">iter</a>().<a href="../iter/traits/iterator.rs.html#4173-4180">is_sorted_by_key</a>(<a href="#4831">f</a>)
+<a href=#4836 id=4836 data-nosnippet>4836</a>        <a class="self" href="#4831">self</a>.<a href="#1061-1063">iter</a>().<a href="../iter/traits/iterator.rs.html#4159-4166">is_sorted_by_key</a>(<a href="#4831">f</a>)
 <a href=#4837 id=4837 data-nosnippet>4837</a>    }
 <a href=#4838 id=4838 data-nosnippet>4838</a>
 <a href=#4839 id=4839 data-nosnippet>4839</a>    <span class="doccomment">/// Returns the index of the partition point according to the given predicate
@@ -5182,7 +5182,7 @@
 <a href=#5182 id=5182 data-nosnippet>5182</a>        indices: [I; <a href="#5180">N</a>],
 <a href=#5183 id=5183 data-nosnippet>5183</a>    ) -&gt; [<span class="kw-2">&amp;mut </span>I::Output; <a href="#5180">N</a>]
 <a href=#5184 id=5184 data-nosnippet>5184</a>    <span class="kw">where
-<a href=#5185 id=5185 data-nosnippet>5185</a>        </span>I: <a href="#5808-5819">GetDisjointMutIndex</a> + <a href="index.rs.html#124-174">SliceIndex</a>&lt;<span class="self">Self</span>&gt;,
+<a href=#5185 id=5185 data-nosnippet>5185</a>        </span>I: <a href="#5811-5822">GetDisjointMutIndex</a> + <a href="index.rs.html#124-174">SliceIndex</a>&lt;<span class="self">Self</span>&gt;,
 <a href=#5186 id=5186 data-nosnippet>5186</a>    {
 <a href=#5187 id=5187 data-nosnippet>5187</a>        <span class="comment">// NB: This implementation is written as it is because any variation of
 <a href=#5188 id=5188 data-nosnippet>5188</a>        // `indices.map(|i| self.get_unchecked_mut(i))` would make miri unhappy,
@@ -5247,9 +5247,9 @@
 <a href=#5247 id=5247 data-nosnippet>5247</a>    </span><span class="kw">pub fn </span>get_disjoint_mut&lt;I, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(
 <a href=#5248 id=5248 data-nosnippet>5248</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#5249 id=5249 data-nosnippet>5249</a>        indices: [I; <a href="#5247">N</a>],
-<a href=#5250 id=5250 data-nosnippet>5250</a>    ) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;[<span class="kw-2">&amp;mut </span>I::Output; <a href="#5247">N</a>], <a href="#5783-5788">GetDisjointMutError</a>&gt;
+<a href=#5250 id=5250 data-nosnippet>5250</a>    ) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;[<span class="kw-2">&amp;mut </span>I::Output; <a href="#5247">N</a>], <a href="#5786-5791">GetDisjointMutError</a>&gt;
 <a href=#5251 id=5251 data-nosnippet>5251</a>    <span class="kw">where
-<a href=#5252 id=5252 data-nosnippet>5252</a>        </span>I: <a href="#5808-5819">GetDisjointMutIndex</a> + <a href="index.rs.html#124-174">SliceIndex</a>&lt;<span class="self">Self</span>&gt;,
+<a href=#5252 id=5252 data-nosnippet>5252</a>        </span>I: <a href="#5811-5822">GetDisjointMutIndex</a> + <a href="index.rs.html#124-174">SliceIndex</a>&lt;<span class="self">Self</span>&gt;,
 <a href=#5253 id=5253 data-nosnippet>5253</a>    {
 <a href=#5254 id=5254 data-nosnippet>5254</a>        get_disjoint_check_valid(<span class="kw-2">&amp;</span>indices, <span class="self">self</span>.len())<span class="question-mark">?</span>;
 <a href=#5255 id=5255 data-nosnippet>5255</a>        <span class="comment">// SAFETY: The `get_disjoint_check_valid()` call checked that all indices
@@ -5584,7 +5584,7 @@
 <a href=#5584 id=5584 data-nosnippet>5584</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
 <a href=#5585 id=5585 data-nosnippet>5585</a>    #[inline]
 <a href=#5586 id=5586 data-nosnippet>5586</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#5587 id=5587 data-nosnippet>5587</a>        <a class="self" href="#5586">self</a>.<a href="#3219-3224">sort_unstable_by</a>(<a href="../../../core/primitive.f32.html">f32</a>::<a href="../num/f32.rs.html#1378-1408">total_cmp</a>);
+<a href=#5587 id=5587 data-nosnippet>5587</a>        <a class="self" href="#5586">self</a>.<a href="#3219-3224">sort_unstable_by</a>(<a href="../../../core/primitive.f32.html">f32</a>::<a href="../num/f32.rs.html#1379-1409">total_cmp</a>);
 <a href=#5588 id=5588 data-nosnippet>5588</a>    }
 <a href=#5589 id=5589 data-nosnippet>5589</a>}
 <a href=#5590 id=5590 data-nosnippet>5590</a>
@@ -5612,7 +5612,7 @@
 <a href=#5612 id=5612 data-nosnippet>5612</a>    </span><span class="attr">#[unstable(feature = <span class="string">"sort_floats"</span>, issue = <span class="string">"93396"</span>)]
 <a href=#5613 id=5613 data-nosnippet>5613</a>    #[inline]
 <a href=#5614 id=5614 data-nosnippet>5614</a>    </span><span class="kw">pub fn </span>sort_floats(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#5615 id=5615 data-nosnippet>5615</a>        <a class="self" href="#5614">self</a>.<a href="#3219-3224">sort_unstable_by</a>(<a href="../../../core/primitive.f64.html">f64</a>::<a href="../num/f64.rs.html#1357-1387">total_cmp</a>);
+<a href=#5615 id=5615 data-nosnippet>5615</a>        <a class="self" href="#5614">self</a>.<a href="#3219-3224">sort_unstable_by</a>(<a href="../../../core/primitive.f64.html">f64</a>::<a href="../num/f64.rs.html#1358-1388">total_cmp</a>);
 <a href=#5616 id=5616 data-nosnippet>5616</a>    }
 <a href=#5617 id=5617 data-nosnippet>5617</a>}
 <a href=#5618 id=5618 data-nosnippet>5618</a>
@@ -5668,223 +5668,226 @@
 <a href=#5668 id=5668 data-nosnippet>5668</a>        // But since it can't be relied on we also have an explicit specialization for T: Copy.
 <a href=#5669 id=5669 data-nosnippet>5669</a>        </span><span class="kw">let </span>len = <a class="self" href="#5664">self</a>.<a href="#118-120">len</a>();
 <a href=#5670 id=5670 data-nosnippet>5670</a>        <span class="kw">let </span>src = <span class="kw-2">&amp;</span><a href="#5664">src</a>[..len];
-<a href=#5671 id=5671 data-nosnippet>5671</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..len {
-<a href=#5672 id=5672 data-nosnippet>5672</a>            <span class="self">self</span>[i].clone_from(<span class="kw-2">&amp;</span>src[i]);
-<a href=#5673 id=5673 data-nosnippet>5673</a>        }
-<a href=#5674 id=5674 data-nosnippet>5674</a>    }
-<a href=#5675 id=5675 data-nosnippet>5675</a>}
-<a href=#5676 id=5676 data-nosnippet>5676</a>
-<a href=#5677 id=5677 data-nosnippet>5677</a><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_clone"</span>, issue = <span class="string">"142757"</span>)]
-<a href=#5678 id=5678 data-nosnippet>5678</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="#5652-5656">CloneFromSpec</a>&lt;T&gt; <span class="kw">for </span>[T]
-<a href=#5679 id=5679 data-nosnippet>5679</a><span class="kw">where
-<a href=#5680 id=5680 data-nosnippet>5680</a>    </span>T: [<span class="kw">const</span>] <a href="../clone.rs.html#283">TrivialClone</a> + [<span class="kw">const</span>] <a href="../marker.rs.html#1064">Destruct</a>,
-<a href=#5681 id=5681 data-nosnippet>5681</a>{
-<a href=#5682 id=5682 data-nosnippet>5682</a>    <span class="attr">#[track_caller]
-<a href=#5683 id=5683 data-nosnippet>5683</a>    </span><span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
-<a href=#5684 id=5684 data-nosnippet>5684</a>        <span class="comment">// SAFETY: `T` implements `TrivialClone`.
-<a href=#5685 id=5685 data-nosnippet>5685</a>        </span><span class="kw">unsafe </span>{
-<a href=#5686 id=5686 data-nosnippet>5686</a>            <a href="#5624-5649">copy_from_slice_impl</a>(<a class="self" href="#5683">self</a>, <a href="#5683">src</a>);
-<a href=#5687 id=5687 data-nosnippet>5687</a>        }
-<a href=#5688 id=5688 data-nosnippet>5688</a>    }
-<a href=#5689 id=5689 data-nosnippet>5689</a>}
-<a href=#5690 id=5690 data-nosnippet>5690</a>
-<a href=#5691 id=5691 data-nosnippet>5691</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#5692 id=5692 data-nosnippet>5692</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
-<a href=#5693 id=5693 data-nosnippet>5693</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">&amp;</span>[T] {
-<a href=#5694 id=5694 data-nosnippet>5694</a>    <span class="doccomment">/// Creates an empty slice.
-<a href=#5695 id=5695 data-nosnippet>5695</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#5696 id=5696 data-nosnippet>5696</a>        <span class="kw-2">&amp;</span>[]
-<a href=#5697 id=5697 data-nosnippet>5697</a>    }
-<a href=#5698 id=5698 data-nosnippet>5698</a>}
-<a href=#5699 id=5699 data-nosnippet>5699</a>
-<a href=#5700 id=5700 data-nosnippet>5700</a><span class="attr">#[stable(feature = <span class="string">"mut_slice_default"</span>, since = <span class="string">"1.5.0"</span>)]
-<a href=#5701 id=5701 data-nosnippet>5701</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
-<a href=#5702 id=5702 data-nosnippet>5702</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">&amp;mut </span>[T] {
-<a href=#5703 id=5703 data-nosnippet>5703</a>    <span class="doccomment">/// Creates a mutable empty slice.
-<a href=#5704 id=5704 data-nosnippet>5704</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#5705 id=5705 data-nosnippet>5705</a>        <span class="kw-2">&amp;mut </span>[]
-<a href=#5706 id=5706 data-nosnippet>5706</a>    }
-<a href=#5707 id=5707 data-nosnippet>5707</a>}
-<a href=#5708 id=5708 data-nosnippet>5708</a>
-<a href=#5709 id=5709 data-nosnippet>5709</a><span class="attr">#[unstable(feature = <span class="string">"slice_pattern"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"stopgap trait for slice patterns"</span>)]
-<a href=#5710 id=5710 data-nosnippet>5710</a></span><span class="doccomment">/// Patterns in slices - currently, only used by `strip_prefix` and `strip_suffix`.  At a future
-<a href=#5711 id=5711 data-nosnippet>5711</a>/// point, we hope to generalise `core::str::Pattern` (which at the time of writing is limited to
-<a href=#5712 id=5712 data-nosnippet>5712</a>/// `str`) to slices, and then this trait will be replaced or abolished.
-<a href=#5713 id=5713 data-nosnippet>5713</a></span><span class="kw">pub trait </span><a href="../../../core/slice/trait.SlicePattern.html">SlicePattern</a> {
-<a href=#5714 id=5714 data-nosnippet>5714</a>    <span class="doccomment">/// The element type of the slice being matched on.
-<a href=#5715 id=5715 data-nosnippet>5715</a>    </span><span class="kw">type </span>Item;
-<a href=#5716 id=5716 data-nosnippet>5716</a>
-<a href=#5717 id=5717 data-nosnippet>5717</a>    <span class="doccomment">/// Currently, the consumers of `SlicePattern` need a slice.
-<a href=#5718 id=5718 data-nosnippet>5718</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item];
-<a href=#5719 id=5719 data-nosnippet>5719</a>}
-<a href=#5720 id=5720 data-nosnippet>5720</a>
-<a href=#5721 id=5721 data-nosnippet>5721</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#5722 id=5722 data-nosnippet>5722</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#5713-5719">SlicePattern</a> <span class="kw">for </span>[T] {
-<a href=#5723 id=5723 data-nosnippet>5723</a>    <span class="kw">type </span>Item = T;
-<a href=#5724 id=5724 data-nosnippet>5724</a>
-<a href=#5725 id=5725 data-nosnippet>5725</a>    <span class="attr">#[inline]
-<a href=#5726 id=5726 data-nosnippet>5726</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
-<a href=#5727 id=5727 data-nosnippet>5727</a>        <a class="self" href="#5726">self</a>
-<a href=#5728 id=5728 data-nosnippet>5728</a>    }
-<a href=#5729 id=5729 data-nosnippet>5729</a>}
-<a href=#5730 id=5730 data-nosnippet>5730</a>
-<a href=#5731 id=5731 data-nosnippet>5731</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#5732 id=5732 data-nosnippet>5732</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt; <a href="#5713-5719">SlicePattern</a> <span class="kw">for </span>[T; <a href="#5732">N</a>] {
-<a href=#5733 id=5733 data-nosnippet>5733</a>    <span class="kw">type </span>Item = T;
-<a href=#5734 id=5734 data-nosnippet>5734</a>
-<a href=#5735 id=5735 data-nosnippet>5735</a>    <span class="attr">#[inline]
-<a href=#5736 id=5736 data-nosnippet>5736</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
-<a href=#5737 id=5737 data-nosnippet>5737</a>        <a class="self" href="#5736">self</a>
-<a href=#5738 id=5738 data-nosnippet>5738</a>    }
-<a href=#5739 id=5739 data-nosnippet>5739</a>}
-<a href=#5740 id=5740 data-nosnippet>5740</a>
-<a href=#5741 id=5741 data-nosnippet>5741</a><span class="doccomment">/// This checks every index against each other, and against `len`.
-<a href=#5742 id=5742 data-nosnippet>5742</a>///
-<a href=#5743 id=5743 data-nosnippet>5743</a>/// This will do `binomial(N + 1, 2) = N * (N + 1) / 2 = 0, 1, 3, 6, 10, ..`
-<a href=#5744 id=5744 data-nosnippet>5744</a>/// comparison operations.
-<a href=#5745 id=5745 data-nosnippet>5745</a></span><span class="attr">#[inline]
-<a href=#5746 id=5746 data-nosnippet>5746</a></span><span class="kw">fn </span>get_disjoint_check_valid&lt;I: <a href="#5808-5819">GetDisjointMutIndex</a>, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(
-<a href=#5747 id=5747 data-nosnippet>5747</a>    indices: <span class="kw-2">&amp;</span>[I; <a href="#5746">N</a>],
-<a href=#5748 id=5748 data-nosnippet>5748</a>    len: <a href="../../../core/primitive.usize.html">usize</a>,
-<a href=#5749 id=5749 data-nosnippet>5749</a>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;(), <a href="#5783-5788">GetDisjointMutError</a>&gt; {
-<a href=#5750 id=5750 data-nosnippet>5750</a>    <span class="comment">// NB: The optimizer should inline the loops into a sequence
-<a href=#5751 id=5751 data-nosnippet>5751</a>    // of instructions without additional branching.
-<a href=#5752 id=5752 data-nosnippet>5752</a>    </span><span class="kw">for </span>(i, idx) <span class="kw">in </span>indices.iter().enumerate() {
-<a href=#5753 id=5753 data-nosnippet>5753</a>        <span class="kw">if </span>!idx.is_in_bounds(len) {
-<a href=#5754 id=5754 data-nosnippet>5754</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::IndexOutOfBounds);
-<a href=#5755 id=5755 data-nosnippet>5755</a>        }
-<a href=#5756 id=5756 data-nosnippet>5756</a>        <span class="kw">for </span>idx2 <span class="kw">in </span><span class="kw-2">&amp;</span>indices[..i] {
-<a href=#5757 id=5757 data-nosnippet>5757</a>            <span class="kw">if </span>idx.is_overlapping(idx2) {
-<a href=#5758 id=5758 data-nosnippet>5758</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::OverlappingIndices);
-<a href=#5759 id=5759 data-nosnippet>5759</a>            }
-<a href=#5760 id=5760 data-nosnippet>5760</a>        }
-<a href=#5761 id=5761 data-nosnippet>5761</a>    }
-<a href=#5762 id=5762 data-nosnippet>5762</a>    <a class="prelude-val" href="../result.rs.html#562">Ok</a>(())
-<a href=#5763 id=5763 data-nosnippet>5763</a>}
-<a href=#5764 id=5764 data-nosnippet>5764</a>
-<a href=#5765 id=5765 data-nosnippet>5765</a><span class="doccomment">/// The error type returned by [`get_disjoint_mut`][`slice::get_disjoint_mut`].
-<a href=#5766 id=5766 data-nosnippet>5766</a>///
-<a href=#5767 id=5767 data-nosnippet>5767</a>/// It indicates one of two possible errors:
-<a href=#5768 id=5768 data-nosnippet>5768</a>/// - An index is out-of-bounds.
-<a href=#5769 id=5769 data-nosnippet>5769</a>/// - The same index appeared multiple times in the array
-<a href=#5770 id=5770 data-nosnippet>5770</a>///   (or different but overlapping indices when ranges are provided).
-<a href=#5771 id=5771 data-nosnippet>5771</a>///
-<a href=#5772 id=5772 data-nosnippet>5772</a>/// # Examples
-<a href=#5773 id=5773 data-nosnippet>5773</a>///
-<a href=#5774 id=5774 data-nosnippet>5774</a>/// ```
-<a href=#5775 id=5775 data-nosnippet>5775</a>/// use std::slice::GetDisjointMutError;
+<a href=#5671 id=5671 data-nosnippet>5671</a>        <span class="comment">// FIXME(const_hack): make this a `for idx in 0..self.len()` loop.
+<a href=#5672 id=5672 data-nosnippet>5672</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+<a href=#5673 id=5673 data-nosnippet>5673</a>        <span class="kw">while </span>idx &lt; <span class="self">self</span>.len() {
+<a href=#5674 id=5674 data-nosnippet>5674</a>            <span class="self">self</span>[idx].clone_from(<span class="kw-2">&amp;</span>src[idx]);
+<a href=#5675 id=5675 data-nosnippet>5675</a>            idx += <span class="number">1</span>;
+<a href=#5676 id=5676 data-nosnippet>5676</a>        }
+<a href=#5677 id=5677 data-nosnippet>5677</a>    }
+<a href=#5678 id=5678 data-nosnippet>5678</a>}
+<a href=#5679 id=5679 data-nosnippet>5679</a>
+<a href=#5680 id=5680 data-nosnippet>5680</a><span class="attr">#[rustc_const_unstable(feature = <span class="string">"const_clone"</span>, issue = <span class="string">"142757"</span>)]
+<a href=#5681 id=5681 data-nosnippet>5681</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="#5652-5656">CloneFromSpec</a>&lt;T&gt; <span class="kw">for </span>[T]
+<a href=#5682 id=5682 data-nosnippet>5682</a><span class="kw">where
+<a href=#5683 id=5683 data-nosnippet>5683</a>    </span>T: [<span class="kw">const</span>] <a href="../clone.rs.html#283">TrivialClone</a> + [<span class="kw">const</span>] <a href="../marker.rs.html#1064">Destruct</a>,
+<a href=#5684 id=5684 data-nosnippet>5684</a>{
+<a href=#5685 id=5685 data-nosnippet>5685</a>    <span class="attr">#[track_caller]
+<a href=#5686 id=5686 data-nosnippet>5686</a>    </span><span class="kw">fn </span>spec_clone_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: <span class="kw-2">&amp;</span>[T]) {
+<a href=#5687 id=5687 data-nosnippet>5687</a>        <span class="comment">// SAFETY: `T` implements `TrivialClone`.
+<a href=#5688 id=5688 data-nosnippet>5688</a>        </span><span class="kw">unsafe </span>{
+<a href=#5689 id=5689 data-nosnippet>5689</a>            <a href="#5624-5649">copy_from_slice_impl</a>(<a class="self" href="#5686">self</a>, <a href="#5686">src</a>);
+<a href=#5690 id=5690 data-nosnippet>5690</a>        }
+<a href=#5691 id=5691 data-nosnippet>5691</a>    }
+<a href=#5692 id=5692 data-nosnippet>5692</a>}
+<a href=#5693 id=5693 data-nosnippet>5693</a>
+<a href=#5694 id=5694 data-nosnippet>5694</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
+<a href=#5695 id=5695 data-nosnippet>5695</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
+<a href=#5696 id=5696 data-nosnippet>5696</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">&amp;</span>[T] {
+<a href=#5697 id=5697 data-nosnippet>5697</a>    <span class="doccomment">/// Creates an empty slice.
+<a href=#5698 id=5698 data-nosnippet>5698</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#5699 id=5699 data-nosnippet>5699</a>        <span class="kw-2">&amp;</span>[]
+<a href=#5700 id=5700 data-nosnippet>5700</a>    }
+<a href=#5701 id=5701 data-nosnippet>5701</a>}
+<a href=#5702 id=5702 data-nosnippet>5702</a>
+<a href=#5703 id=5703 data-nosnippet>5703</a><span class="attr">#[stable(feature = <span class="string">"mut_slice_default"</span>, since = <span class="string">"1.5.0"</span>)]
+<a href=#5704 id=5704 data-nosnippet>5704</a>#[rustc_const_unstable(feature = <span class="string">"const_default"</span>, issue = <span class="string">"143894"</span>)]
+<a href=#5705 id=5705 data-nosnippet>5705</a></span><span class="kw">const impl</span>&lt;T&gt; <a href="../default.rs.html#107-140">Default</a> <span class="kw">for </span><span class="kw-2">&amp;mut </span>[T] {
+<a href=#5706 id=5706 data-nosnippet>5706</a>    <span class="doccomment">/// Creates a mutable empty slice.
+<a href=#5707 id=5707 data-nosnippet>5707</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#5708 id=5708 data-nosnippet>5708</a>        <span class="kw-2">&amp;mut </span>[]
+<a href=#5709 id=5709 data-nosnippet>5709</a>    }
+<a href=#5710 id=5710 data-nosnippet>5710</a>}
+<a href=#5711 id=5711 data-nosnippet>5711</a>
+<a href=#5712 id=5712 data-nosnippet>5712</a><span class="attr">#[unstable(feature = <span class="string">"slice_pattern"</span>, issue = <span class="string">"none"</span>, reason = <span class="string">"stopgap trait for slice patterns"</span>)]
+<a href=#5713 id=5713 data-nosnippet>5713</a></span><span class="doccomment">/// Patterns in slices - currently, only used by `strip_prefix` and `strip_suffix`.  At a future
+<a href=#5714 id=5714 data-nosnippet>5714</a>/// point, we hope to generalise `core::str::Pattern` (which at the time of writing is limited to
+<a href=#5715 id=5715 data-nosnippet>5715</a>/// `str`) to slices, and then this trait will be replaced or abolished.
+<a href=#5716 id=5716 data-nosnippet>5716</a></span><span class="kw">pub trait </span><a href="../../../core/slice/trait.SlicePattern.html">SlicePattern</a> {
+<a href=#5717 id=5717 data-nosnippet>5717</a>    <span class="doccomment">/// The element type of the slice being matched on.
+<a href=#5718 id=5718 data-nosnippet>5718</a>    </span><span class="kw">type </span>Item;
+<a href=#5719 id=5719 data-nosnippet>5719</a>
+<a href=#5720 id=5720 data-nosnippet>5720</a>    <span class="doccomment">/// Currently, the consumers of `SlicePattern` need a slice.
+<a href=#5721 id=5721 data-nosnippet>5721</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item];
+<a href=#5722 id=5722 data-nosnippet>5722</a>}
+<a href=#5723 id=5723 data-nosnippet>5723</a>
+<a href=#5724 id=5724 data-nosnippet>5724</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
+<a href=#5725 id=5725 data-nosnippet>5725</a></span><span class="kw">impl</span>&lt;T&gt; <a href="#5716-5722">SlicePattern</a> <span class="kw">for </span>[T] {
+<a href=#5726 id=5726 data-nosnippet>5726</a>    <span class="kw">type </span>Item = T;
+<a href=#5727 id=5727 data-nosnippet>5727</a>
+<a href=#5728 id=5728 data-nosnippet>5728</a>    <span class="attr">#[inline]
+<a href=#5729 id=5729 data-nosnippet>5729</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
+<a href=#5730 id=5730 data-nosnippet>5730</a>        <a class="self" href="#5729">self</a>
+<a href=#5731 id=5731 data-nosnippet>5731</a>    }
+<a href=#5732 id=5732 data-nosnippet>5732</a>}
+<a href=#5733 id=5733 data-nosnippet>5733</a>
+<a href=#5734 id=5734 data-nosnippet>5734</a><span class="attr">#[stable(feature = <span class="string">"slice_strip"</span>, since = <span class="string">"1.51.0"</span>)]
+<a href=#5735 id=5735 data-nosnippet>5735</a></span><span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt; <a href="#5716-5722">SlicePattern</a> <span class="kw">for </span>[T; <a href="#5735">N</a>] {
+<a href=#5736 id=5736 data-nosnippet>5736</a>    <span class="kw">type </span>Item = T;
+<a href=#5737 id=5737 data-nosnippet>5737</a>
+<a href=#5738 id=5738 data-nosnippet>5738</a>    <span class="attr">#[inline]
+<a href=#5739 id=5739 data-nosnippet>5739</a>    </span><span class="kw">fn </span>as_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="self">Self</span>::Item] {
+<a href=#5740 id=5740 data-nosnippet>5740</a>        <a class="self" href="#5739">self</a>
+<a href=#5741 id=5741 data-nosnippet>5741</a>    }
+<a href=#5742 id=5742 data-nosnippet>5742</a>}
+<a href=#5743 id=5743 data-nosnippet>5743</a>
+<a href=#5744 id=5744 data-nosnippet>5744</a><span class="doccomment">/// This checks every index against each other, and against `len`.
+<a href=#5745 id=5745 data-nosnippet>5745</a>///
+<a href=#5746 id=5746 data-nosnippet>5746</a>/// This will do `binomial(N + 1, 2) = N * (N + 1) / 2 = 0, 1, 3, 6, 10, ..`
+<a href=#5747 id=5747 data-nosnippet>5747</a>/// comparison operations.
+<a href=#5748 id=5748 data-nosnippet>5748</a></span><span class="attr">#[inline]
+<a href=#5749 id=5749 data-nosnippet>5749</a></span><span class="kw">fn </span>get_disjoint_check_valid&lt;I: <a href="#5811-5822">GetDisjointMutIndex</a>, <span class="kw">const </span>N: <a href="../../../core/primitive.usize.html">usize</a>&gt;(
+<a href=#5750 id=5750 data-nosnippet>5750</a>    indices: <span class="kw-2">&amp;</span>[I; <a href="#5749">N</a>],
+<a href=#5751 id=5751 data-nosnippet>5751</a>    len: <a href="../../../core/primitive.usize.html">usize</a>,
+<a href=#5752 id=5752 data-nosnippet>5752</a>) -&gt; <a class="prelude-ty" href="../result.rs.html#558-568">Result</a>&lt;(), <a href="#5786-5791">GetDisjointMutError</a>&gt; {
+<a href=#5753 id=5753 data-nosnippet>5753</a>    <span class="comment">// NB: The optimizer should inline the loops into a sequence
+<a href=#5754 id=5754 data-nosnippet>5754</a>    // of instructions without additional branching.
+<a href=#5755 id=5755 data-nosnippet>5755</a>    </span><span class="kw">for </span>(i, idx) <span class="kw">in </span>indices.iter().enumerate() {
+<a href=#5756 id=5756 data-nosnippet>5756</a>        <span class="kw">if </span>!idx.is_in_bounds(len) {
+<a href=#5757 id=5757 data-nosnippet>5757</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::IndexOutOfBounds);
+<a href=#5758 id=5758 data-nosnippet>5758</a>        }
+<a href=#5759 id=5759 data-nosnippet>5759</a>        <span class="kw">for </span>idx2 <span class="kw">in </span><span class="kw-2">&amp;</span>indices[..i] {
+<a href=#5760 id=5760 data-nosnippet>5760</a>            <span class="kw">if </span>idx.is_overlapping(idx2) {
+<a href=#5761 id=5761 data-nosnippet>5761</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(GetDisjointMutError::OverlappingIndices);
+<a href=#5762 id=5762 data-nosnippet>5762</a>            }
+<a href=#5763 id=5763 data-nosnippet>5763</a>        }
+<a href=#5764 id=5764 data-nosnippet>5764</a>    }
+<a href=#5765 id=5765 data-nosnippet>5765</a>    <a class="prelude-val" href="../result.rs.html#562">Ok</a>(())
+<a href=#5766 id=5766 data-nosnippet>5766</a>}
+<a href=#5767 id=5767 data-nosnippet>5767</a>
+<a href=#5768 id=5768 data-nosnippet>5768</a><span class="doccomment">/// The error type returned by [`get_disjoint_mut`][`slice::get_disjoint_mut`].
+<a href=#5769 id=5769 data-nosnippet>5769</a>///
+<a href=#5770 id=5770 data-nosnippet>5770</a>/// It indicates one of two possible errors:
+<a href=#5771 id=5771 data-nosnippet>5771</a>/// - An index is out-of-bounds.
+<a href=#5772 id=5772 data-nosnippet>5772</a>/// - The same index appeared multiple times in the array
+<a href=#5773 id=5773 data-nosnippet>5773</a>///   (or different but overlapping indices when ranges are provided).
+<a href=#5774 id=5774 data-nosnippet>5774</a>///
+<a href=#5775 id=5775 data-nosnippet>5775</a>/// # Examples
 <a href=#5776 id=5776 data-nosnippet>5776</a>///
-<a href=#5777 id=5777 data-nosnippet>5777</a>/// let v = &amp;mut [1, 2, 3];
-<a href=#5778 id=5778 data-nosnippet>5778</a>/// assert_eq!(v.get_disjoint_mut([0, 999]), Err(GetDisjointMutError::IndexOutOfBounds));
-<a href=#5779 id=5779 data-nosnippet>5779</a>/// assert_eq!(v.get_disjoint_mut([1, 1]), Err(GetDisjointMutError::OverlappingIndices));
-<a href=#5780 id=5780 data-nosnippet>5780</a>/// ```
-<a href=#5781 id=5781 data-nosnippet>5781</a></span><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
-<a href=#5782 id=5782 data-nosnippet>5782</a>#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
-<a href=#5783 id=5783 data-nosnippet>5783</a></span><span class="kw">pub enum </span><a href="../../../core/slice/enum.GetDisjointMutError.html">GetDisjointMutError</a> {
-<a href=#5784 id=5784 data-nosnippet>5784</a>    <span class="doccomment">/// An index provided was out-of-bounds for the slice.
-<a href=#5785 id=5785 data-nosnippet>5785</a>    </span>IndexOutOfBounds,
-<a href=#5786 id=5786 data-nosnippet>5786</a>    <span class="doccomment">/// Two indices provided were overlapping.
-<a href=#5787 id=5787 data-nosnippet>5787</a>    </span>OverlappingIndices,
-<a href=#5788 id=5788 data-nosnippet>5788</a>}
-<a href=#5789 id=5789 data-nosnippet>5789</a>
-<a href=#5790 id=5790 data-nosnippet>5790</a><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
-<a href=#5791 id=5791 data-nosnippet>5791</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1254-1280">fmt::Display</a> <span class="kw">for </span><a href="#5783-5788">GetDisjointMutError</a> {
-<a href=#5792 id=5792 data-nosnippet>5792</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
-<a href=#5793 id=5793 data-nosnippet>5793</a>        <span class="kw">let </span>msg = <span class="kw">match </span><a class="self" href="#5792">self</a> {
-<a href=#5794 id=5794 data-nosnippet>5794</a>            GetDisjointMutError::<a href="#5785">IndexOutOfBounds</a> =&gt; <span class="string">"an index is out of bounds"</span>,
-<a href=#5795 id=5795 data-nosnippet>5795</a>            GetDisjointMutError::<a href="#5787">OverlappingIndices</a> =&gt; <span class="string">"there were overlapping indices"</span>,
-<a href=#5796 id=5796 data-nosnippet>5796</a>        };
-<a href=#5797 id=5797 data-nosnippet>5797</a>        fmt::Display::<a href="../fmt/mod.rs.html#1279">fmt</a>(<a href="#5793">msg</a>, <a href="#5792">f</a>)
-<a href=#5798 id=5798 data-nosnippet>5798</a>    }
-<a href=#5799 id=5799 data-nosnippet>5799</a>}
-<a href=#5800 id=5800 data-nosnippet>5800</a>
-<a href=#5801 id=5801 data-nosnippet>5801</a><span class="doccomment">/// A helper trait for `&lt;[T]&gt;::get_disjoint_mut()`.
-<a href=#5802 id=5802 data-nosnippet>5802</a>///
-<a href=#5803 id=5803 data-nosnippet>5803</a>/// # Safety
-<a href=#5804 id=5804 data-nosnippet>5804</a>///
-<a href=#5805 id=5805 data-nosnippet>5805</a>/// If `is_in_bounds()` returns `true` and `is_overlapping()` returns `false`,
-<a href=#5806 id=5806 data-nosnippet>5806</a>/// it must be safe to index the slice with the indices.
-<a href=#5807 id=5807 data-nosnippet>5807</a></span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5808 id=5808 data-nosnippet>5808</a></span><span class="kw">pub impl</span>(<span class="self">self</span>) <span class="kw">unsafe trait </span><a href="../../../core/slice/trait.GetDisjointMutIndex.html">GetDisjointMutIndex</a>: <a href="../clone.rs.html#193-251">Clone</a> {
-<a href=#5809 id=5809 data-nosnippet>5809</a>    <span class="doccomment">/// Returns `true` if `self` is in bounds for `len` slice elements.
-<a href=#5810 id=5810 data-nosnippet>5810</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5811 id=5811 data-nosnippet>5811</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a>;
-<a href=#5812 id=5812 data-nosnippet>5812</a>
-<a href=#5813 id=5813 data-nosnippet>5813</a>    <span class="doccomment">/// Returns `true` if `self` overlaps with `other`.
-<a href=#5814 id=5814 data-nosnippet>5814</a>    ///
-<a href=#5815 id=5815 data-nosnippet>5815</a>    /// Note that we don't consider zero-length ranges to overlap at the beginning or the end,
-<a href=#5816 id=5816 data-nosnippet>5816</a>    /// but do consider them to overlap in the middle.
-<a href=#5817 id=5817 data-nosnippet>5817</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5818 id=5818 data-nosnippet>5818</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a>;
-<a href=#5819 id=5819 data-nosnippet>5819</a>}
-<a href=#5820 id=5820 data-nosnippet>5820</a>
-<a href=#5821 id=5821 data-nosnippet>5821</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5822 id=5822 data-nosnippet>5822</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5823 id=5823 data-nosnippet>5823</a></span><span class="kw">unsafe impl </span><a href="#5808-5819">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../../../core/primitive.usize.html">usize</a> {
-<a href=#5824 id=5824 data-nosnippet>5824</a>    <span class="attr">#[inline]
-<a href=#5825 id=5825 data-nosnippet>5825</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5826 id=5826 data-nosnippet>5826</a>        <span class="kw-2">*</span><a class="self" href="#5825">self</a> &lt; <a href="#5825">len</a>
-<a href=#5827 id=5827 data-nosnippet>5827</a>    }
-<a href=#5828 id=5828 data-nosnippet>5828</a>
-<a href=#5829 id=5829 data-nosnippet>5829</a>    <span class="attr">#[inline]
-<a href=#5830 id=5830 data-nosnippet>5830</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5831 id=5831 data-nosnippet>5831</a>        <span class="kw-2">*</span><a class="self" href="#5830">self</a> == <span class="kw-2">*</span><a href="#5830">other</a>
-<a href=#5832 id=5832 data-nosnippet>5832</a>    }
-<a href=#5833 id=5833 data-nosnippet>5833</a>}
-<a href=#5834 id=5834 data-nosnippet>5834</a>
-<a href=#5835 id=5835 data-nosnippet>5835</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5836 id=5836 data-nosnippet>5836</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5837 id=5837 data-nosnippet>5837</a></span><span class="kw">unsafe impl </span><a href="#5808-5819">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
-<a href=#5838 id=5838 data-nosnippet>5838</a>    <span class="attr">#[inline]
-<a href=#5839 id=5839 data-nosnippet>5839</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5840 id=5840 data-nosnippet>5840</a>        (<a class="self" href="#5839">self</a>.start &lt;= <a class="self" href="#5839">self</a>.end) &amp; (<a class="self" href="#5839">self</a>.end &lt;= <a href="#5839">len</a>)
-<a href=#5841 id=5841 data-nosnippet>5841</a>    }
-<a href=#5842 id=5842 data-nosnippet>5842</a>
-<a href=#5843 id=5843 data-nosnippet>5843</a>    <span class="attr">#[inline]
-<a href=#5844 id=5844 data-nosnippet>5844</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5845 id=5845 data-nosnippet>5845</a>        (<a class="self" href="#5844">self</a>.start &lt; <a href="#5844">other</a>.end) &amp; (<a href="#5844">other</a>.start &lt; <a class="self" href="#5844">self</a>.end)
-<a href=#5846 id=5846 data-nosnippet>5846</a>    }
-<a href=#5847 id=5847 data-nosnippet>5847</a>}
-<a href=#5848 id=5848 data-nosnippet>5848</a>
-<a href=#5849 id=5849 data-nosnippet>5849</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5850 id=5850 data-nosnippet>5850</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5851 id=5851 data-nosnippet>5851</a></span><span class="kw">unsafe impl </span><a href="#5808-5819">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../ops/range.rs.html#361-382">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
-<a href=#5852 id=5852 data-nosnippet>5852</a>    <span class="attr">#[inline]
-<a href=#5853 id=5853 data-nosnippet>5853</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5854 id=5854 data-nosnippet>5854</a>        (<a class="self" href="#5853">self</a>.start &lt;= <a class="self" href="#5853">self</a>.end) &amp; (<a class="self" href="#5853">self</a>.end &lt; <a href="#5853">len</a>)
-<a href=#5855 id=5855 data-nosnippet>5855</a>    }
-<a href=#5856 id=5856 data-nosnippet>5856</a>
-<a href=#5857 id=5857 data-nosnippet>5857</a>    <span class="attr">#[inline]
-<a href=#5858 id=5858 data-nosnippet>5858</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5859 id=5859 data-nosnippet>5859</a>        (<a class="self" href="#5858">self</a>.start &lt;= <a href="#5858">other</a>.end) &amp; (<a href="#5858">other</a>.start &lt;= <a class="self" href="#5858">self</a>.end)
-<a href=#5860 id=5860 data-nosnippet>5860</a>    }
-<a href=#5861 id=5861 data-nosnippet>5861</a>}
-<a href=#5862 id=5862 data-nosnippet>5862</a>
-<a href=#5863 id=5863 data-nosnippet>5863</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5864 id=5864 data-nosnippet>5864</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5865 id=5865 data-nosnippet>5865</a></span><span class="kw">unsafe impl </span><a href="#5808-5819">GetDisjointMutIndex</a> <span class="kw">for </span>range::<a href="../range.rs.html#73-80">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
-<a href=#5866 id=5866 data-nosnippet>5866</a>    <span class="attr">#[inline]
-<a href=#5867 id=5867 data-nosnippet>5867</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5868 id=5868 data-nosnippet>5868</a>        <a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5867">self</a>).<a href="#5811">is_in_bounds</a>(<a href="#5867">len</a>)
-<a href=#5869 id=5869 data-nosnippet>5869</a>    }
-<a href=#5870 id=5870 data-nosnippet>5870</a>
-<a href=#5871 id=5871 data-nosnippet>5871</a>    <span class="attr">#[inline]
-<a href=#5872 id=5872 data-nosnippet>5872</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5873 id=5873 data-nosnippet>5873</a>        <a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5872">self</a>).<a href="#5818">is_overlapping</a>(<span class="kw-2">&amp;</span><a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a href="#5872">other</a>))
-<a href=#5874 id=5874 data-nosnippet>5874</a>    }
-<a href=#5875 id=5875 data-nosnippet>5875</a>}
-<a href=#5876 id=5876 data-nosnippet>5876</a>
-<a href=#5877 id=5877 data-nosnippet>5877</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
-<a href=#5878 id=5878 data-nosnippet>5878</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
-<a href=#5879 id=5879 data-nosnippet>5879</a></span><span class="kw">unsafe impl </span><a href="#5808-5819">GetDisjointMutIndex</a> <span class="kw">for </span>range::<a href="../range.rs.html#253-260">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
-<a href=#5880 id=5880 data-nosnippet>5880</a>    <span class="attr">#[inline]
-<a href=#5881 id=5881 data-nosnippet>5881</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5882 id=5882 data-nosnippet>5882</a>        <a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5881">self</a>).<a href="#5811">is_in_bounds</a>(<a href="#5881">len</a>)
-<a href=#5883 id=5883 data-nosnippet>5883</a>    }
-<a href=#5884 id=5884 data-nosnippet>5884</a>
-<a href=#5885 id=5885 data-nosnippet>5885</a>    <span class="attr">#[inline]
-<a href=#5886 id=5886 data-nosnippet>5886</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
-<a href=#5887 id=5887 data-nosnippet>5887</a>        <a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5886">self</a>).<a href="#5818">is_overlapping</a>(<span class="kw-2">&amp;</span><a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a href="#5886">other</a>))
-<a href=#5888 id=5888 data-nosnippet>5888</a>    }
-<a href=#5889 id=5889 data-nosnippet>5889</a>}
+<a href=#5777 id=5777 data-nosnippet>5777</a>/// ```
+<a href=#5778 id=5778 data-nosnippet>5778</a>/// use std::slice::GetDisjointMutError;
+<a href=#5779 id=5779 data-nosnippet>5779</a>///
+<a href=#5780 id=5780 data-nosnippet>5780</a>/// let v = &amp;mut [1, 2, 3];
+<a href=#5781 id=5781 data-nosnippet>5781</a>/// assert_eq!(v.get_disjoint_mut([0, 999]), Err(GetDisjointMutError::IndexOutOfBounds));
+<a href=#5782 id=5782 data-nosnippet>5782</a>/// assert_eq!(v.get_disjoint_mut([1, 1]), Err(GetDisjointMutError::OverlappingIndices));
+<a href=#5783 id=5783 data-nosnippet>5783</a>/// ```
+<a href=#5784 id=5784 data-nosnippet>5784</a></span><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
+<a href=#5785 id=5785 data-nosnippet>5785</a>#[derive(<a href="../fmt/mod.rs.html#1160-1162">Debug</a>, <a href="../clone.rs.html#289-291">Clone</a>, <a href="../cmp.rs.html#288-290">PartialEq</a>, <a href="../cmp.rs.html#381-383">Eq</a>)]
+<a href=#5786 id=5786 data-nosnippet>5786</a></span><span class="kw">pub enum </span><a href="../../../core/slice/enum.GetDisjointMutError.html">GetDisjointMutError</a> {
+<a href=#5787 id=5787 data-nosnippet>5787</a>    <span class="doccomment">/// An index provided was out-of-bounds for the slice.
+<a href=#5788 id=5788 data-nosnippet>5788</a>    </span>IndexOutOfBounds,
+<a href=#5789 id=5789 data-nosnippet>5789</a>    <span class="doccomment">/// Two indices provided were overlapping.
+<a href=#5790 id=5790 data-nosnippet>5790</a>    </span>OverlappingIndices,
+<a href=#5791 id=5791 data-nosnippet>5791</a>}
+<a href=#5792 id=5792 data-nosnippet>5792</a>
+<a href=#5793 id=5793 data-nosnippet>5793</a><span class="attr">#[stable(feature = <span class="string">"get_many_mut"</span>, since = <span class="string">"1.86.0"</span>)]
+<a href=#5794 id=5794 data-nosnippet>5794</a></span><span class="kw">impl </span><a href="../fmt/mod.rs.html#1254-1280">fmt::Display</a> <span class="kw">for </span><a href="#5786-5791">GetDisjointMutError</a> {
+<a href=#5795 id=5795 data-nosnippet>5795</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::<a href="../fmt/mod.rs.html#628-632">Formatter</a>&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::<a href="../fmt/mod.rs.html#74">Result</a> {
+<a href=#5796 id=5796 data-nosnippet>5796</a>        <span class="kw">let </span>msg = <span class="kw">match </span><a class="self" href="#5795">self</a> {
+<a href=#5797 id=5797 data-nosnippet>5797</a>            GetDisjointMutError::<a href="#5788">IndexOutOfBounds</a> =&gt; <span class="string">"an index is out of bounds"</span>,
+<a href=#5798 id=5798 data-nosnippet>5798</a>            GetDisjointMutError::<a href="#5790">OverlappingIndices</a> =&gt; <span class="string">"there were overlapping indices"</span>,
+<a href=#5799 id=5799 data-nosnippet>5799</a>        };
+<a href=#5800 id=5800 data-nosnippet>5800</a>        fmt::Display::<a href="../fmt/mod.rs.html#1279">fmt</a>(<a href="#5796">msg</a>, <a href="#5795">f</a>)
+<a href=#5801 id=5801 data-nosnippet>5801</a>    }
+<a href=#5802 id=5802 data-nosnippet>5802</a>}
+<a href=#5803 id=5803 data-nosnippet>5803</a>
+<a href=#5804 id=5804 data-nosnippet>5804</a><span class="doccomment">/// A helper trait for `&lt;[T]&gt;::get_disjoint_mut()`.
+<a href=#5805 id=5805 data-nosnippet>5805</a>///
+<a href=#5806 id=5806 data-nosnippet>5806</a>/// # Safety
+<a href=#5807 id=5807 data-nosnippet>5807</a>///
+<a href=#5808 id=5808 data-nosnippet>5808</a>/// If `is_in_bounds()` returns `true` and `is_overlapping()` returns `false`,
+<a href=#5809 id=5809 data-nosnippet>5809</a>/// it must be safe to index the slice with the indices.
+<a href=#5810 id=5810 data-nosnippet>5810</a></span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5811 id=5811 data-nosnippet>5811</a></span><span class="kw">pub impl</span>(<span class="self">self</span>) <span class="kw">unsafe trait </span><a href="../../../core/slice/trait.GetDisjointMutIndex.html">GetDisjointMutIndex</a>: <a href="../clone.rs.html#193-251">Clone</a> {
+<a href=#5812 id=5812 data-nosnippet>5812</a>    <span class="doccomment">/// Returns `true` if `self` is in bounds for `len` slice elements.
+<a href=#5813 id=5813 data-nosnippet>5813</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5814 id=5814 data-nosnippet>5814</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a>;
+<a href=#5815 id=5815 data-nosnippet>5815</a>
+<a href=#5816 id=5816 data-nosnippet>5816</a>    <span class="doccomment">/// Returns `true` if `self` overlaps with `other`.
+<a href=#5817 id=5817 data-nosnippet>5817</a>    ///
+<a href=#5818 id=5818 data-nosnippet>5818</a>    /// Note that we don't consider zero-length ranges to overlap at the beginning or the end,
+<a href=#5819 id=5819 data-nosnippet>5819</a>    /// but do consider them to overlap in the middle.
+<a href=#5820 id=5820 data-nosnippet>5820</a>    </span><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5821 id=5821 data-nosnippet>5821</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a>;
+<a href=#5822 id=5822 data-nosnippet>5822</a>}
+<a href=#5823 id=5823 data-nosnippet>5823</a>
+<a href=#5824 id=5824 data-nosnippet>5824</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5825 id=5825 data-nosnippet>5825</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5826 id=5826 data-nosnippet>5826</a></span><span class="kw">unsafe impl </span><a href="#5811-5822">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../../../core/primitive.usize.html">usize</a> {
+<a href=#5827 id=5827 data-nosnippet>5827</a>    <span class="attr">#[inline]
+<a href=#5828 id=5828 data-nosnippet>5828</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5829 id=5829 data-nosnippet>5829</a>        <span class="kw-2">*</span><a class="self" href="#5828">self</a> &lt; <a href="#5828">len</a>
+<a href=#5830 id=5830 data-nosnippet>5830</a>    }
+<a href=#5831 id=5831 data-nosnippet>5831</a>
+<a href=#5832 id=5832 data-nosnippet>5832</a>    <span class="attr">#[inline]
+<a href=#5833 id=5833 data-nosnippet>5833</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5834 id=5834 data-nosnippet>5834</a>        <span class="kw-2">*</span><a class="self" href="#5833">self</a> == <span class="kw-2">*</span><a href="#5833">other</a>
+<a href=#5835 id=5835 data-nosnippet>5835</a>    }
+<a href=#5836 id=5836 data-nosnippet>5836</a>}
+<a href=#5837 id=5837 data-nosnippet>5837</a>
+<a href=#5838 id=5838 data-nosnippet>5838</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5839 id=5839 data-nosnippet>5839</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5840 id=5840 data-nosnippet>5840</a></span><span class="kw">unsafe impl </span><a href="#5811-5822">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../ops/range.rs.html#85-92">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#5841 id=5841 data-nosnippet>5841</a>    <span class="attr">#[inline]
+<a href=#5842 id=5842 data-nosnippet>5842</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5843 id=5843 data-nosnippet>5843</a>        (<a class="self" href="#5842">self</a>.start &lt;= <a class="self" href="#5842">self</a>.end) &amp; (<a class="self" href="#5842">self</a>.end &lt;= <a href="#5842">len</a>)
+<a href=#5844 id=5844 data-nosnippet>5844</a>    }
+<a href=#5845 id=5845 data-nosnippet>5845</a>
+<a href=#5846 id=5846 data-nosnippet>5846</a>    <span class="attr">#[inline]
+<a href=#5847 id=5847 data-nosnippet>5847</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5848 id=5848 data-nosnippet>5848</a>        (<a class="self" href="#5847">self</a>.start &lt; <a href="#5847">other</a>.end) &amp; (<a href="#5847">other</a>.start &lt; <a class="self" href="#5847">self</a>.end)
+<a href=#5849 id=5849 data-nosnippet>5849</a>    }
+<a href=#5850 id=5850 data-nosnippet>5850</a>}
+<a href=#5851 id=5851 data-nosnippet>5851</a>
+<a href=#5852 id=5852 data-nosnippet>5852</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5853 id=5853 data-nosnippet>5853</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5854 id=5854 data-nosnippet>5854</a></span><span class="kw">unsafe impl </span><a href="#5811-5822">GetDisjointMutIndex</a> <span class="kw">for </span><a href="../ops/range.rs.html#361-382">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#5855 id=5855 data-nosnippet>5855</a>    <span class="attr">#[inline]
+<a href=#5856 id=5856 data-nosnippet>5856</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5857 id=5857 data-nosnippet>5857</a>        (<a class="self" href="#5856">self</a>.start &lt;= <a class="self" href="#5856">self</a>.end) &amp; (<a class="self" href="#5856">self</a>.end &lt; <a href="#5856">len</a>)
+<a href=#5858 id=5858 data-nosnippet>5858</a>    }
+<a href=#5859 id=5859 data-nosnippet>5859</a>
+<a href=#5860 id=5860 data-nosnippet>5860</a>    <span class="attr">#[inline]
+<a href=#5861 id=5861 data-nosnippet>5861</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5862 id=5862 data-nosnippet>5862</a>        (<a class="self" href="#5861">self</a>.start &lt;= <a href="#5861">other</a>.end) &amp; (<a href="#5861">other</a>.start &lt;= <a class="self" href="#5861">self</a>.end)
+<a href=#5863 id=5863 data-nosnippet>5863</a>    }
+<a href=#5864 id=5864 data-nosnippet>5864</a>}
+<a href=#5865 id=5865 data-nosnippet>5865</a>
+<a href=#5866 id=5866 data-nosnippet>5866</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5867 id=5867 data-nosnippet>5867</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5868 id=5868 data-nosnippet>5868</a></span><span class="kw">unsafe impl </span><a href="#5811-5822">GetDisjointMutIndex</a> <span class="kw">for </span>range::<a href="../range.rs.html#73-80">Range</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#5869 id=5869 data-nosnippet>5869</a>    <span class="attr">#[inline]
+<a href=#5870 id=5870 data-nosnippet>5870</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5871 id=5871 data-nosnippet>5871</a>        <a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5870">self</a>).<a href="#5814">is_in_bounds</a>(<a href="#5870">len</a>)
+<a href=#5872 id=5872 data-nosnippet>5872</a>    }
+<a href=#5873 id=5873 data-nosnippet>5873</a>
+<a href=#5874 id=5874 data-nosnippet>5874</a>    <span class="attr">#[inline]
+<a href=#5875 id=5875 data-nosnippet>5875</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5876 id=5876 data-nosnippet>5876</a>        <a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5875">self</a>).<a href="#5821">is_overlapping</a>(<span class="kw-2">&amp;</span><a href="../ops/range.rs.html#85-92">Range</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a href="#5875">other</a>))
+<a href=#5877 id=5877 data-nosnippet>5877</a>    }
+<a href=#5878 id=5878 data-nosnippet>5878</a>}
+<a href=#5879 id=5879 data-nosnippet>5879</a>
+<a href=#5880 id=5880 data-nosnippet>5880</a><span class="attr">#[unstable(feature = <span class="string">"get_disjoint_mut_helpers"</span>, issue = <span class="string">"none"</span>)]
+<a href=#5881 id=5881 data-nosnippet>5881</a></span><span class="comment">// SAFETY: We implement `is_in_bounds()` and `is_overlapping()` correctly.
+<a href=#5882 id=5882 data-nosnippet>5882</a></span><span class="kw">unsafe impl </span><a href="#5811-5822">GetDisjointMutIndex</a> <span class="kw">for </span>range::<a href="../range.rs.html#253-260">RangeInclusive</a>&lt;<a href="../../../core/primitive.usize.html">usize</a>&gt; {
+<a href=#5883 id=5883 data-nosnippet>5883</a>    <span class="attr">#[inline]
+<a href=#5884 id=5884 data-nosnippet>5884</a>    </span><span class="kw">fn </span>is_in_bounds(<span class="kw-2">&amp;</span><span class="self">self</span>, len: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5885 id=5885 data-nosnippet>5885</a>        <a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5884">self</a>).<a href="#5814">is_in_bounds</a>(<a href="#5884">len</a>)
+<a href=#5886 id=5886 data-nosnippet>5886</a>    }
+<a href=#5887 id=5887 data-nosnippet>5887</a>
+<a href=#5888 id=5888 data-nosnippet>5888</a>    <span class="attr">#[inline]
+<a href=#5889 id=5889 data-nosnippet>5889</a>    </span><span class="kw">fn </span>is_overlapping(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <a href="../../../core/primitive.bool.html">bool</a> {
+<a href=#5890 id=5890 data-nosnippet>5890</a>        <a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a class="self" href="#5889">self</a>).<a href="#5821">is_overlapping</a>(<span class="kw-2">&amp;</span><a href="../ops/range.rs.html#361-382">RangeInclusive</a>::<a href="../convert/mod.rs.html#594">from</a>(<span class="kw-2">*</span><a href="#5889">other</a>))
+<a href=#5891 id=5891 data-nosnippet>5891</a>    }
+<a href=#5892 id=5892 data-nosnippet>5892</a>}
 </code></pre></div></section></main></body></html>

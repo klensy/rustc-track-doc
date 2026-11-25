@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (20fe935d5 2026-11-23)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/str/iter.rs`."><title>iter.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (739adecd4 2026-11-24)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/str/</div>iter.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Iterators for `str` methods.
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span><span class="kw">super</span>::pattern::{<a href="pattern.rs.html#409">DoubleEndedSearcher</a>, <a href="pattern.rs.html#103-178">Pattern</a>, <a href="pattern.rs.html#323-386">ReverseSearcher</a>, <a href="pattern.rs.html#224-304">Searcher</a>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::validations::{<a href="validations.rs.html#35-69">next_code_point</a>, <a href="validations.rs.html#78-112">next_code_point_reverse</a>};
@@ -32,7 +32,7 @@
 <a href=#32 id=32 data-nosnippet>32</a>}
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.char.html">char</a>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="attr">#[inline]
@@ -71,7 +71,7 @@
 <a href=#71 id=71 data-nosnippet>71</a>
 <a href=#72 id=72 data-nosnippet>72</a>            <span class="comment">// SAFETY: The amount of bytes exists since we just iterated over them,
 <a href=#73 id=73 data-nosnippet>73</a>            // so advance_by will succeed.
-<a href=#74 id=74 data-nosnippet>74</a>            </span><span class="kw">unsafe </span>{ <a class="self" href="#51">self</a>.iter.<a href="../iter/traits/iterator.rs.html#309-356">advance_by</a>(<a href="#56">bytes_skipped</a>).<a href="../result.rs.html#1643-1653">unwrap_unchecked</a>() };
+<a href=#74 id=74 data-nosnippet>74</a>            </span><span class="kw">unsafe </span>{ <a class="self" href="#51">self</a>.iter.<a href="../iter/traits/iterator.rs.html#310-344">advance_by</a>(<a href="#56">bytes_skipped</a>).<a href="../result.rs.html#1643-1653">unwrap_unchecked</a>() };
 <a href=#75 id=75 data-nosnippet>75</a>
 <a href=#76 id=76 data-nosnippet>76</a>            <span class="comment">// skip trailing continuation bytes
 <a href=#77 id=77 data-nosnippet>77</a>            </span><span class="kw">while </span><span class="self">self</span>.iter.len() &gt; <span class="number">0 </span>{
@@ -120,7 +120,7 @@
 <a href=#120 id=120 data-nosnippet>120</a>}
 <a href=#121 id=121 data-nosnippet>121</a>
 <a href=#122 id=122 data-nosnippet>122</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#124 id=124 data-nosnippet>124</a>    <span class="attr">#[inline]
 <a href=#125 id=125 data-nosnippet>125</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.char.html">char</a>&gt; {
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="comment">// SAFETY: `str` invariant says `self.iter` is a valid UTF-8 string and
@@ -175,7 +175,7 @@
 <a href=#175 id=175 data-nosnippet>175</a>}
 <a href=#176 id=176 data-nosnippet>176</a>
 <a href=#177 id=177 data-nosnippet>177</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#178 id=178 data-nosnippet>178</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#178 id=178 data-nosnippet>178</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">type </span>Item = (<a href="../../../core/primitive.usize.html">usize</a>, <a href="../../../core/primitive.char.html">char</a>);
 <a href=#180 id=180 data-nosnippet>180</a>
 <a href=#181 id=181 data-nosnippet>181</a>    <span class="attr">#[inline]
@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>}
 <a href=#211 id=211 data-nosnippet>211</a>
 <a href=#212 id=212 data-nosnippet>212</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#213 id=213 data-nosnippet>213</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#213 id=213 data-nosnippet>213</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#172-175">CharIndices</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#214 id=214 data-nosnippet>214</a>    <span class="attr">#[inline]
 <a href=#215 id=215 data-nosnippet>215</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;(<a href="../../../core/primitive.usize.html">usize</a>, <a href="../../../core/primitive.char.html">char</a>)&gt; {
 <a href=#216 id=216 data-nosnippet>216</a>        <a class="self" href="#215">self</a>.iter.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>().<a href="../option.rs.html#1160-1168">map</a>(|ch| {
@@ -284,7 +284,7 @@
 <a href=#284 id=284 data-nosnippet>284</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Bytes.html">Bytes</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/copied.rs.html#19-21">Copied</a>&lt;slice::<a href="../slice/iter.rs.html#67-78">Iter</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.u8.html">u8</a>&gt;&gt;);
 <a href=#285 id=285 data-nosnippet>285</a>
 <a href=#286 id=286 data-nosnippet>286</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#287 id=287 data-nosnippet>287</a></span><span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#287 id=287 data-nosnippet>287</a></span><span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#288 id=288 data-nosnippet>288</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.u8.html">u8</a>;
 <a href=#289 id=289 data-nosnippet>289</a>
 <a href=#290 id=290 data-nosnippet>290</a>    <span class="attr">#[inline]
@@ -309,7 +309,7 @@
 <a href=#309 id=309 data-nosnippet>309</a>
 <a href=#310 id=310 data-nosnippet>310</a>    <span class="attr">#[inline]
 <a href=#311 id=311 data-nosnippet>311</a>    </span><span class="kw">fn </span>nth(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>::Item&gt; {
-<a href=#312 id=312 data-nosnippet>312</a>        <a class="self" href="#311">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#400-406">nth</a>(<a href="#311">n</a>)
+<a href=#312 id=312 data-nosnippet>312</a>        <a class="self" href="#311">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#389-392">nth</a>(<a href="#311">n</a>)
 <a href=#313 id=313 data-nosnippet>313</a>    }
 <a href=#314 id=314 data-nosnippet>314</a>
 <a href=#315 id=315 data-nosnippet>315</a>    <span class="attr">#[inline]
@@ -317,7 +317,7 @@
 <a href=#317 id=317 data-nosnippet>317</a>    <span class="kw">where
 <a href=#318 id=318 data-nosnippet>318</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#319 id=319 data-nosnippet>319</a>    {
-<a href=#320 id=320 data-nosnippet>320</a>        <a class="self" href="#316">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2862-2877">all</a>(<a href="#316">f</a>)
+<a href=#320 id=320 data-nosnippet>320</a>        <a class="self" href="#316">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2848-2863">all</a>(<a href="#316">f</a>)
 <a href=#321 id=321 data-nosnippet>321</a>    }
 <a href=#322 id=322 data-nosnippet>322</a>
 <a href=#323 id=323 data-nosnippet>323</a>    <span class="attr">#[inline]
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">where
 <a href=#326 id=326 data-nosnippet>326</a>        </span>F: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#327 id=327 data-nosnippet>327</a>    {
-<a href=#328 id=328 data-nosnippet>328</a>        <a class="self" href="#324">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2920-2933">any</a>(<a href="#324">f</a>)
+<a href=#328 id=328 data-nosnippet>328</a>        <a class="self" href="#324">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2906-2919">any</a>(<a href="#324">f</a>)
 <a href=#329 id=329 data-nosnippet>329</a>    }
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>    <span class="attr">#[inline]
@@ -333,7 +333,7 @@
 <a href=#333 id=333 data-nosnippet>333</a>    <span class="kw">where
 <a href=#334 id=334 data-nosnippet>334</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#335 id=335 data-nosnippet>335</a>    {
-<a href=#336 id=336 data-nosnippet>336</a>        <a class="self" href="#332">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2994-3007">find</a>(<a href="#332">predicate</a>)
+<a href=#336 id=336 data-nosnippet>336</a>        <a class="self" href="#332">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#2980-2993">find</a>(<a href="#332">predicate</a>)
 <a href=#337 id=337 data-nosnippet>337</a>    }
 <a href=#338 id=338 data-nosnippet>338</a>
 <a href=#339 id=339 data-nosnippet>339</a>    <span class="attr">#[inline]
@@ -341,7 +341,7 @@
 <a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">where
 <a href=#342 id=342 data-nosnippet>342</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#343 id=343 data-nosnippet>343</a>    {
-<a href=#344 id=344 data-nosnippet>344</a>        <a class="self" href="#340">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3169-3192">position</a>(<a href="#340">predicate</a>)
+<a href=#344 id=344 data-nosnippet>344</a>        <a class="self" href="#340">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3155-3178">position</a>(<a href="#340">predicate</a>)
 <a href=#345 id=345 data-nosnippet>345</a>    }
 <a href=#346 id=346 data-nosnippet>346</a>
 <a href=#347 id=347 data-nosnippet>347</a>    <span class="attr">#[inline]
@@ -349,19 +349,19 @@
 <a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">where
 <a href=#350 id=350 data-nosnippet>350</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#351 id=351 data-nosnippet>351</a>    {
-<a href=#352 id=352 data-nosnippet>352</a>        <a class="self" href="#348">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3235-3254">rposition</a>(<a href="#348">predicate</a>)
+<a href=#352 id=352 data-nosnippet>352</a>        <a class="self" href="#348">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#3221-3240">rposition</a>(<a href="#348">predicate</a>)
 <a href=#353 id=353 data-nosnippet>353</a>    }
 <a href=#354 id=354 data-nosnippet>354</a>
 <a href=#355 id=355 data-nosnippet>355</a>    <span class="attr">#[inline]
 <a href=#356 id=356 data-nosnippet>356</a>    </span><span class="kw">unsafe fn </span>__iterator_get_unchecked(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a href="../../../core/primitive.u8.html">u8</a> {
 <a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract
 <a href=#358 id=358 data-nosnippet>358</a>        // for `Iterator::__iterator_get_unchecked`.
-<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#356">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#4188-4194">__iterator_get_unchecked</a>(<a href="#356">idx</a>) }
+<a href=#359 id=359 data-nosnippet>359</a>        </span><span class="kw">unsafe </span>{ <a class="self" href="#356">self</a>.<span class="number">0</span>.<a href="../iter/traits/iterator.rs.html#4174-4180">__iterator_get_unchecked</a>(<a href="#356">idx</a>) }
 <a href=#360 id=360 data-nosnippet>360</a>    }
 <a href=#361 id=361 data-nosnippet>361</a>}
 <a href=#362 id=362 data-nosnippet>362</a>
 <a href=#363 id=363 data-nosnippet>363</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#364 id=364 data-nosnippet>364</a></span><span class="kw">impl </span><a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#364 id=364 data-nosnippet>364</a></span><span class="kw">impl </span><a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#284">Bytes</a>&lt;<span class="lifetime">'_</span>&gt; {
 <a href=#365 id=365 data-nosnippet>365</a>    <span class="attr">#[inline]
 <a href=#366 id=366 data-nosnippet>366</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="../../../core/primitive.u8.html">u8</a>&gt; {
 <a href=#367 id=367 data-nosnippet>367</a>        <a class="self" href="#366">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>()
@@ -369,7 +369,7 @@
 <a href=#369 id=369 data-nosnippet>369</a>
 <a href=#370 id=370 data-nosnippet>370</a>    <span class="attr">#[inline]
 <a href=#371 id=371 data-nosnippet>371</a>    </span><span class="kw">fn </span>nth_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <a href="../../../core/primitive.usize.html">usize</a>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="self">Self</span>::Item&gt; {
-<a href=#372 id=372 data-nosnippet>372</a>        <a class="self" href="#371">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#280-286">nth_back</a>(<a href="#371">n</a>)
+<a href=#372 id=372 data-nosnippet>372</a>        <a class="self" href="#371">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#269-272">nth_back</a>(<a href="#371">n</a>)
 <a href=#373 id=373 data-nosnippet>373</a>    }
 <a href=#374 id=374 data-nosnippet>374</a>
 <a href=#375 id=375 data-nosnippet>375</a>    <span class="attr">#[inline]
@@ -377,7 +377,7 @@
 <a href=#377 id=377 data-nosnippet>377</a>    <span class="kw">where
 <a href=#378 id=378 data-nosnippet>378</a>        </span>P: <a href="../ops/function.rs.html#163-167">FnMut</a>(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item) -&gt; <a href="../../../core/primitive.bool.html">bool</a>,
 <a href=#379 id=379 data-nosnippet>379</a>    {
-<a href=#380 id=380 data-nosnippet>380</a>        <a class="self" href="#376">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#456-476">rfind</a>(<a href="#376">predicate</a>)
+<a href=#380 id=380 data-nosnippet>380</a>        <a class="self" href="#376">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#442-462">rfind</a>(<a href="#376">predicate</a>)
 <a href=#381 id=381 data-nosnippet>381</a>    }
 <a href=#382 id=382 data-nosnippet>382</a>}
 <a href=#383 id=383 data-nosnippet>383</a>
@@ -1172,7 +1172,7 @@
 <a href=#1172 id=1172 data-nosnippet>1172</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.Lines.html">Lines</a>&lt;<span class="lifetime">'a</span>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="../iter/adapters/map.rs.html#61-65">Map</a>&lt;<a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, <a href="../../../core/primitive.char.html">char</a>&gt;, <a href="mod.rs.html#3325-3373">LinesMap</a>&gt;);
 <a href=#1173 id=1173 data-nosnippet>1173</a>
 <a href=#1174 id=1174 data-nosnippet>1174</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1175 id=1175 data-nosnippet>1175</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1176 id=1176 data-nosnippet>1176</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1177 id=1177 data-nosnippet>1177</a>
 <a href=#1178 id=1178 data-nosnippet>1178</a>    <span class="attr">#[inline]
@@ -1192,7 +1192,7 @@
 <a href=#1192 id=1192 data-nosnippet>1192</a>}
 <a href=#1193 id=1193 data-nosnippet>1193</a>
 <a href=#1194 id=1194 data-nosnippet>1194</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
-<a href=#1195 id=1195 data-nosnippet>1195</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1195 id=1195 data-nosnippet>1195</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1172">Lines</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1196 id=1196 data-nosnippet>1196</a>    <span class="attr">#[inline]
 <a href=#1197 id=1197 data-nosnippet>1197</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#1198 id=1198 data-nosnippet>1198</a>        <a class="self" href="#1197">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>()
@@ -1239,7 +1239,7 @@
 <a href=#1239 id=1239 data-nosnippet>1239</a>
 <a href=#1240 id=1240 data-nosnippet>1240</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1241 id=1241 data-nosnippet>1241</a>#[allow(deprecated)]
-<a href=#1242 id=1242 data-nosnippet>1242</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1242 id=1242 data-nosnippet>1242</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1243 id=1243 data-nosnippet>1243</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1244 id=1244 data-nosnippet>1244</a>
 <a href=#1245 id=1245 data-nosnippet>1245</a>    <span class="attr">#[inline]
@@ -1255,7 +1255,7 @@
 <a href=#1255 id=1255 data-nosnippet>1255</a>
 <a href=#1256 id=1256 data-nosnippet>1256</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
 <a href=#1257 id=1257 data-nosnippet>1257</a>#[allow(deprecated)]
-<a href=#1258 id=1258 data-nosnippet>1258</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1258 id=1258 data-nosnippet>1258</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1238">LinesAny</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1259 id=1259 data-nosnippet>1259</a>    <span class="attr">#[inline]
 <a href=#1260 id=1260 data-nosnippet>1260</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#1261 id=1261 data-nosnippet>1261</a>        <a class="self" href="#1260">self</a>.<span class="number">0</span>.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>()
@@ -1306,7 +1306,7 @@
 <a href=#1306 id=1306 data-nosnippet>1306</a></span><span class="kw">pub struct </span><a href="../../../core/str/struct.SplitInclusive.html">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt;(<span class="kw">pub</span>(<span class="kw">super</span>) <a href="#617-623">SplitInternal</a>&lt;<span class="lifetime">'a</span>, P&gt;);
 <a href=#1307 id=1307 data-nosnippet>1307</a>
 <a href=#1308 id=1308 data-nosnippet>1308</a><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1309 id=1309 data-nosnippet>1309</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1309 id=1309 data-nosnippet>1309</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1310 id=1310 data-nosnippet>1310</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1311 id=1311 data-nosnippet>1311</a>
 <a href=#1312 id=1312 data-nosnippet>1312</a>    <span class="attr">#[inline]
@@ -1326,7 +1326,7 @@
 <a href=#1326 id=1326 data-nosnippet>1326</a>}
 <a href=#1327 id=1327 data-nosnippet>1327</a>
 <a href=#1328 id=1328 data-nosnippet>1328</a><span class="attr">#[stable(feature = <span class="string">"split_whitespace"</span>, since = <span class="string">"1.1.0"</span>)]
-<a href=#1329 id=1329 data-nosnippet>1329</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1329 id=1329 data-nosnippet>1329</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1278-1280">SplitWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1330 id=1330 data-nosnippet>1330</a>    <span class="attr">#[inline]
 <a href=#1331 id=1331 data-nosnippet>1331</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#1332 id=1332 data-nosnippet>1332</a>        <a class="self" href="#1331">self</a>.inner.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>()
@@ -1362,7 +1362,7 @@
 <a href=#1362 id=1362 data-nosnippet>1362</a>}
 <a href=#1363 id=1363 data-nosnippet>1363</a>
 <a href=#1364 id=1364 data-nosnippet>1364</a><span class="attr">#[stable(feature = <span class="string">"split_ascii_whitespace"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1365 id=1365 data-nosnippet>1365</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1365 id=1365 data-nosnippet>1365</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1366 id=1366 data-nosnippet>1366</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1367 id=1367 data-nosnippet>1367</a>
 <a href=#1368 id=1368 data-nosnippet>1368</a>    <span class="attr">#[inline]
@@ -1382,7 +1382,7 @@
 <a href=#1382 id=1382 data-nosnippet>1382</a>}
 <a href=#1383 id=1383 data-nosnippet>1383</a>
 <a href=#1384 id=1384 data-nosnippet>1384</a><span class="attr">#[stable(feature = <span class="string">"split_ascii_whitespace"</span>, since = <span class="string">"1.34.0"</span>)]
-<a href=#1385 id=1385 data-nosnippet>1385</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1385 id=1385 data-nosnippet>1385</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a> <span class="kw">for </span><a href="#1291-1294">SplitAsciiWhitespace</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1386 id=1386 data-nosnippet>1386</a>    <span class="attr">#[inline]
 <a href=#1387 id=1387 data-nosnippet>1387</a>    </span><span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>&gt; {
 <a href=#1388 id=1388 data-nosnippet>1388</a>        <a class="self" href="#1387">self</a>.inner.<a href="../iter/traits/double_ended.rs.html#97">next_back</a>()
@@ -1425,7 +1425,7 @@
 <a href=#1425 id=1425 data-nosnippet>1425</a>}
 <a href=#1426 id=1426 data-nosnippet>1426</a>
 <a href=#1427 id=1427 data-nosnippet>1427</a><span class="attr">#[stable(feature = <span class="string">"split_inclusive"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#1428 id=1428 data-nosnippet>1428</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
+<a href=#1428 id=1428 data-nosnippet>1428</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt; {
 <a href=#1429 id=1429 data-nosnippet>1429</a>    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><a href="../../../core/primitive.str.html">str</a>;
 <a href=#1430 id=1430 data-nosnippet>1430</a>
 <a href=#1431 id=1431 data-nosnippet>1431</a>    <span class="attr">#[inline]
@@ -1450,7 +1450,7 @@
 <a href=#1450 id=1450 data-nosnippet>1450</a>}
 <a href=#1451 id=1451 data-nosnippet>1451</a>
 <a href=#1452 id=1452 data-nosnippet>1452</a><span class="attr">#[stable(feature = <span class="string">"split_inclusive"</span>, since = <span class="string">"1.51.0"</span>)]
-<a href=#1453 id=1453 data-nosnippet>1453</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="pattern.rs.html#409">DoubleEndedSearcher</a>&lt;<span class="lifetime">'a</span>&gt;&gt;&gt; <a href="../iter/traits/double_ended.rs.html#44-477">DoubleEndedIterator</a>
+<a href=#1453 id=1453 data-nosnippet>1453</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P: <a href="pattern.rs.html#103-178">Pattern</a>&lt;Searcher&lt;<span class="lifetime">'a</span>&gt;: <a href="pattern.rs.html#409">DoubleEndedSearcher</a>&lt;<span class="lifetime">'a</span>&gt;&gt;&gt; <a href="../iter/traits/double_ended.rs.html#44-463">DoubleEndedIterator</a>
 <a href=#1454 id=1454 data-nosnippet>1454</a>    <span class="kw">for </span><a href="#1306">SplitInclusive</a>&lt;<span class="lifetime">'a</span>, P&gt;
 <a href=#1455 id=1455 data-nosnippet>1455</a>{
 <a href=#1456 id=1456 data-nosnippet>1456</a>    <span class="attr">#[inline]
@@ -1506,7 +1506,7 @@
 <a href=#1506 id=1506 data-nosnippet>1506</a>}
 <a href=#1507 id=1507 data-nosnippet>1507</a>
 <a href=#1508 id=1508 data-nosnippet>1508</a><span class="attr">#[stable(feature = <span class="string">"encode_utf16"</span>, since = <span class="string">"1.8.0"</span>)]
-<a href=#1509 id=1509 data-nosnippet>1509</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#1509 id=1509 data-nosnippet>1509</a></span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; <a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a> <span class="kw">for </span><a href="#1496-1499">EncodeUtf16</a>&lt;<span class="lifetime">'a</span>&gt; {
 <a href=#1510 id=1510 data-nosnippet>1510</a>    <span class="kw">type </span>Item = <a href="../../../core/primitive.u16.html">u16</a>;
 <a href=#1511 id=1511 data-nosnippet>1511</a>
 <a href=#1512 id=1512 data-nosnippet>1512</a>    <span class="attr">#[inline]
@@ -1558,7 +1558,7 @@
 <a href=#1558 id=1558 data-nosnippet>1558</a>        //
 <a href=#1559 id=1559 data-nosnippet>1559</a>        // Because we never map to larger values the result is never larger than
 <a href=#1560 id=1560 data-nosnippet>1560</a>        // `self.chars.as_str().len()` so the sum can never overflow
-<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><a class="self" href="#1548">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#515-518">as_bytes</a>().<a href="../slice/mod.rs.html#1061-1063">iter</a>().<a href="../iter/traits/iterator.rs.html#2694-2704">fold</a>(<a href="#1549">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
+<a href=#1561 id=1561 data-nosnippet>1561</a>        </span><a class="self" href="#1548">self</a>.chars.<a href="#156-159">as_str</a>().<a href="mod.rs.html#515-518">as_bytes</a>().<a href="../slice/mod.rs.html#1061-1063">iter</a>().<a href="../iter/traits/iterator.rs.html#2680-2690">fold</a>(<a href="#1549">extra</a>, |acc, <span class="kw-2">&amp;</span>byte| {
 <a href=#1562 id=1562 data-nosnippet>1562</a>            <a href="#1561">acc</a>.<a href="../num/mod.rs.html#1461-1485">wrapping_add</a>({
 <a href=#1563 id=1563 data-nosnippet>1563</a>                <span class="kw">if </span><a href="#1561">byte</a> &lt; <span class="number">0b1000_0000 </span>{
 <a href=#1564 id=1564 data-nosnippet>1564</a>                    <span class="comment">// 0b0xxx_xxxx: ASCII-compatible U+0000 to U+007F
@@ -1605,7 +1605,7 @@
 <a href=#1605 id=1605 data-nosnippet>1605</a>    </span><span class="attr">#[unstable(feature = <span class="string">"std_internals"</span>, issue = <span class="string">"none"</span>)]
 <a href=#1606 id=1606 data-nosnippet>1606</a>    </span><span class="kw">pub fn </span>into_parts(
 <a href=#1607 id=1607 data-nosnippet>1607</a>        <span class="self">self</span>,
-<a href=#1608 id=1608 data-nosnippet>1608</a>    ) -&gt; (<a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4195">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;)
+<a href=#1608 id=1608 data-nosnippet>1608</a>    ) -&gt; (<a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<a href="#30-32">Chars</a>&lt;<span class="lifetime">'a</span>&gt;&gt;, <a class="prelude-ty" href="../option.rs.html#598-607">Option</a>&lt;<span class="kw">impl </span><a href="../iter/traits/iterator.rs.html#42-4181">Iterator</a>&lt;Item = <a href="../../../core/primitive.char.html">char</a>&gt;&gt;)
 <a href=#1609 id=1609 data-nosnippet>1609</a>    {
 <a href=#1610 id=1610 data-nosnippet>1610</a>        <a class="self" href="#1607">self</a>.inner.<a href="../iter/adapters/flatten.rs.html#26-32">into_parts</a>()
 <a href=#1611 id=1611 data-nosnippet>1611</a>    }
