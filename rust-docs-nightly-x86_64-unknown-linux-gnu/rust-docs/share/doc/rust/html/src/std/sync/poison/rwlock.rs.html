@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/rwlock.rs`."><title>rwlock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (739adecd4 2026-11-24)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>rwlock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../../../std/cell/struct.UnsafeCell.html"><span class="kw">crate</span>::cell::UnsafeCell</a>;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/std/src/sync/poison/rwlock.rs`."><title>rwlock.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="std" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6c709eb42 2026-11-25)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files1.102.0.js"></script><script defer src="../../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">std/sync/poison/</div>rwlock.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><a href="../../../../std/cell/struct.UnsafeCell.html"><span class="kw">crate</span>::cell::UnsafeCell</a>;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><a href="../../../../std/fmt/index.html"><span class="kw">crate</span>::fmt</a>;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><a href="../../../../std/marker/struct.PhantomData.html"><span class="kw">crate</span>::marker::PhantomData</a>;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::mem::{<a class="self" href="../../../../std/mem/index.html">self</a>, <a href="../../../../std/mem/struct.ManuallyDrop.html">ManuallyDrop</a>, <a href="../../../../std/mem/fn.forget.html">forget</a>};
@@ -93,7 +93,7 @@
 <a href=#93 id=93 data-nosnippet>93</a>#[cfg_attr(not(test), rustc_diagnostic_item = <span class="string">"RwLock"</span>)]
 <a href=#94 id=94 data-nosnippet>94</a></span><span class="kw">pub struct </span><a href="../../../../std/sync/struct.RwLock.html">RwLock</a>&lt;<span class="attr">#[rustc_assert_variance(invariant)] </span>T: <span class="question-mark">?</span><a href="../../../../std/marker/trait.Sized.html">Sized</a>&gt; {
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="doccomment">/// The inner [`sys::RwLock`] that synchronizes thread access to the protected data.
-<a href=#96 id=96 data-nosnippet>96</a>    </span>inner: sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-16">RwLock</a>,
+<a href=#96 id=96 data-nosnippet>96</a>    </span>inner: sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-18">RwLock</a>,
 <a href=#97 id=97 data-nosnippet>97</a>    <span class="doccomment">/// A flag denoting if this `RwLock` has been poisoned.
 <a href=#98 id=98 data-nosnippet>98</a>    </span>poison: poison::<a href="../poison.rs.html#82-85">Flag</a>,
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="doccomment">/// The lock-protected data.
@@ -136,7 +136,7 @@
 <a href=#136 id=136 data-nosnippet>136</a>    /// covariant over `T`, just like we would have with `&amp;T`.
 <a href=#137 id=137 data-nosnippet>137</a>    </span>data: <a href="../../../../std/ptr/struct.NonNull.html">NonNull</a>&lt;T&gt;,
 <a href=#138 id=138 data-nosnippet>138</a>    <span class="doccomment">/// A reference to the internal [`sys::RwLock`] that we have read-locked.
-<a href=#139 id=139 data-nosnippet>139</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-16">RwLock</a>,
+<a href=#139 id=139 data-nosnippet>139</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-18">RwLock</a>,
 <a href=#140 id=140 data-nosnippet>140</a>}
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a><span class="attr">#[stable(feature = <span class="string">"rust1"</span>, since = <span class="string">"1.0.0"</span>)]
@@ -201,7 +201,7 @@
 <a href=#201 id=201 data-nosnippet>201</a>    /// covariant over `T`, just like we would have with `&amp;T`.
 <a href=#202 id=202 data-nosnippet>202</a>    </span>data: <a href="../../../../std/ptr/struct.NonNull.html">NonNull</a>&lt;T&gt;,
 <a href=#203 id=203 data-nosnippet>203</a>    <span class="doccomment">/// A reference to the internal [`sys::RwLock`] that we have read-locked.
-<a href=#204 id=204 data-nosnippet>204</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-16">RwLock</a>,
+<a href=#204 id=204 data-nosnippet>204</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-18">RwLock</a>,
 <a href=#205 id=205 data-nosnippet>205</a>}
 <a href=#206 id=206 data-nosnippet>206</a>
 <a href=#207 id=207 data-nosnippet>207</a><span class="attr">#[unstable(feature = <span class="string">"mapped_lock_guards"</span>, issue = <span class="string">"117108"</span>)]
@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>    /// enforce the correct invariance over `T`.
 <a href=#238 id=238 data-nosnippet>238</a>    </span>_variance: <a href="../../../../std/marker/struct.PhantomData.html">PhantomData</a>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span><span class="kw-2">mut </span>T&gt;,
 <a href=#239 id=239 data-nosnippet>239</a>    <span class="doccomment">/// A reference to the internal [`sys::RwLock`] that we have write-locked.
-<a href=#240 id=240 data-nosnippet>240</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-16">RwLock</a>,
+<a href=#240 id=240 data-nosnippet>240</a>    </span>inner_lock: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-18">RwLock</a>,
 <a href=#241 id=241 data-nosnippet>241</a>    <span class="doccomment">/// A reference to the original `RwLock`'s poison state.
 <a href=#242 id=242 data-nosnippet>242</a>    </span>poison_flag: <span class="kw-2">&amp;</span><span class="lifetime">'rwlock </span>poison::<a href="../poison.rs.html#82-85">Flag</a>,
 <a href=#243 id=243 data-nosnippet>243</a>    <span class="doccomment">/// The poison guard. See the [`poison`] module for more information.
@@ -268,7 +268,7 @@
 <a href=#268 id=268 data-nosnippet>268</a>    #[rustc_const_stable(feature = <span class="string">"const_locks"</span>, since = <span class="string">"1.63.0"</span>)]
 <a href=#269 id=269 data-nosnippet>269</a>    #[inline]
 <a href=#270 id=270 data-nosnippet>270</a>    </span><span class="kw">pub const fn </span>new(t: T) -&gt; <a href="#94-101">RwLock</a>&lt;T&gt; {
-<a href=#271 id=271 data-nosnippet>271</a>        <a href="#94-101">RwLock</a> { inner: sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-16">RwLock</a>::<a href="../../sys/sync/rwlock/futex.rs.html#82-84">new</a>(), poison: poison::<a href="../poison.rs.html#82-85">Flag</a>::<a href="../poison.rs.html#100-105">new</a>(), data: <a href="../../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>::<a href="../../../../std/cell/struct.UnsafeCell.html#method.new">new</a>(<a href="#270">t</a>) }
+<a href=#271 id=271 data-nosnippet>271</a>        <a href="#94-101">RwLock</a> { inner: sys::<a href="../../sys/sync/rwlock/futex.rs.html#4-18">RwLock</a>::<a href="../../sys/sync/rwlock/futex.rs.html#84-90">new</a>(), poison: poison::<a href="../poison.rs.html#82-85">Flag</a>::<a href="../poison.rs.html#100-105">new</a>(), data: <a href="../../../../std/cell/struct.UnsafeCell.html">UnsafeCell</a>::<a href="../../../../std/cell/struct.UnsafeCell.html#method.new">new</a>(<a href="#270">t</a>) }
 <a href=#272 id=272 data-nosnippet>272</a>    }
 <a href=#273 id=273 data-nosnippet>273</a>
 <a href=#274 id=274 data-nosnippet>274</a>    <span class="doccomment">/// Returns the contained value by cloning it.
@@ -419,7 +419,7 @@
 <a href=#419 id=419 data-nosnippet>419</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#420 id=420 data-nosnippet>420</a>    </span><span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../poison.rs.html#232">LockResult</a>&lt;<a href="#128-140">RwLockReadGuard</a>&lt;<span class="lifetime">'_</span>, T&gt;&gt; {
 <a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">unsafe </span>{
-<a href=#422 id=422 data-nosnippet>422</a>            <a class="self" href="#420">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#94-104">read</a>();
+<a href=#422 id=422 data-nosnippet>422</a>            <a class="self" href="#420">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#100-110">read</a>();
 <a href=#423 id=423 data-nosnippet>423</a>            <a href="#128-140">RwLockReadGuard</a>::<a href="#752-757">new</a>(<a class="self" href="#420">self</a>)
 <a href=#424 id=424 data-nosnippet>424</a>        }
 <a href=#425 id=425 data-nosnippet>425</a>    }
@@ -466,7 +466,7 @@
 <a href=#466 id=466 data-nosnippet>466</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#467 id=467 data-nosnippet>467</a>    </span><span class="kw">pub fn </span>try_read(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../poison.rs.html#240">TryLockResult</a>&lt;<a href="#128-140">RwLockReadGuard</a>&lt;<span class="lifetime">'_</span>, T&gt;&gt; {
 <a href=#468 id=468 data-nosnippet>468</a>        <span class="kw">unsafe </span>{
-<a href=#469 id=469 data-nosnippet>469</a>            <span class="kw">if </span><a class="self" href="#467">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#87-91">try_read</a>() {
+<a href=#469 id=469 data-nosnippet>469</a>            <span class="kw">if </span><a class="self" href="#467">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#93-97">try_read</a>() {
 <a href=#470 id=470 data-nosnippet>470</a>                <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(RwLockReadGuard::new(<span class="self">self</span>)<span class="question-mark">?</span>)
 <a href=#471 id=471 data-nosnippet>471</a>            } <span class="kw">else </span>{
 <a href=#472 id=472 data-nosnippet>472</a>                <a class="prelude-val" href="../../../../std/result/enum.Result.html">Err</a>(TryLockError::<a href="../poison.rs.html#218">WouldBlock</a>)
@@ -512,7 +512,7 @@
 <a href=#512 id=512 data-nosnippet>512</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#513 id=513 data-nosnippet>513</a>    </span><span class="kw">pub fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../poison.rs.html#232">LockResult</a>&lt;<a href="#163-171">RwLockWriteGuard</a>&lt;<span class="lifetime">'_</span>, T&gt;&gt; {
 <a href=#514 id=514 data-nosnippet>514</a>        <span class="kw">unsafe </span>{
-<a href=#515 id=515 data-nosnippet>515</a>            <a class="self" href="#513">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#172-176">write</a>();
+<a href=#515 id=515 data-nosnippet>515</a>            <a class="self" href="#513">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#178-182">write</a>();
 <a href=#516 id=516 data-nosnippet>516</a>            <a href="#163-171">RwLockWriteGuard</a>::<a href="#832-834">new</a>(<a class="self" href="#513">self</a>)
 <a href=#517 id=517 data-nosnippet>517</a>        }
 <a href=#518 id=518 data-nosnippet>518</a>    }
@@ -560,7 +560,7 @@
 <a href=#560 id=560 data-nosnippet>560</a>    #[lint::should_not_be_called_on_const_items]
 <a href=#561 id=561 data-nosnippet>561</a>    </span><span class="kw">pub fn </span>try_write(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <a href="../poison.rs.html#240">TryLockResult</a>&lt;<a href="#163-171">RwLockWriteGuard</a>&lt;<span class="lifetime">'_</span>, T&gt;&gt; {
 <a href=#562 id=562 data-nosnippet>562</a>        <span class="kw">unsafe </span>{
-<a href=#563 id=563 data-nosnippet>563</a>            <span class="kw">if </span><a class="self" href="#561">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#165-169">try_write</a>() {
+<a href=#563 id=563 data-nosnippet>563</a>            <span class="kw">if </span><a class="self" href="#561">self</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#171-175">try_write</a>() {
 <a href=#564 id=564 data-nosnippet>564</a>                <a class="prelude-val" href="../../../../std/result/enum.Result.html">Ok</a>(RwLockWriteGuard::new(<span class="self">self</span>)<span class="question-mark">?</span>)
 <a href=#565 id=565 data-nosnippet>565</a>            } <span class="kw">else </span>{
 <a href=#566 id=566 data-nosnippet>566</a>                <a class="prelude-val" href="../../../../std/result/enum.Result.html">Err</a>(TryLockError::<a href="../poison.rs.html#218">WouldBlock</a>)
@@ -900,7 +900,7 @@
 <a href=#900 id=900 data-nosnippet>900</a>
 <a href=#901 id=901 data-nosnippet>901</a>        <span class="comment">// SAFETY: We take ownership of a write guard, so we must already have the `RwLock` in write
 <a href=#902 id=902 data-nosnippet>902</a>        // mode, satisfying the `downgrade` contract.
-<a href=#903 id=903 data-nosnippet>903</a>        </span><span class="kw">unsafe </span>{ <a href="#896">lock</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#196-206">downgrade</a>() };
+<a href=#903 id=903 data-nosnippet>903</a>        </span><span class="kw">unsafe </span>{ <a href="#896">lock</a>.inner.<a href="../../sys/sync/rwlock/futex.rs.html#202-212">downgrade</a>() };
 <a href=#904 id=904 data-nosnippet>904</a>
 <a href=#905 id=905 data-nosnippet>905</a>        <span class="comment">// SAFETY: We have just successfully called `downgrade`, so we fulfill the safety contract.
 <a href=#906 id=906 data-nosnippet>906</a>        </span><span class="kw">unsafe </span>{ <a href="#128-140">RwLockReadGuard</a>::<a href="#752-757">new</a>(<a href="#896">lock</a>).<a href="../../../../std/result/enum.Result.html#method.unwrap_or_else">unwrap_or_else</a>(<a href="../poison.rs.html#194-198">PoisonError</a>::<a href="../poison.rs.html#312-314">into_inner</a>) }
@@ -1131,7 +1131,7 @@
 <a href=#1131 id=1131 data-nosnippet>1131</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
 <a href=#1132 id=1132 data-nosnippet>1132</a>        <span class="comment">// SAFETY: the conditions of `RwLockReadGuard::new` were satisfied when created.
 <a href=#1133 id=1133 data-nosnippet>1133</a>        </span><span class="kw">unsafe </span>{
-<a href=#1134 id=1134 data-nosnippet>1134</a>            <a class="self" href="#1131">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#110-121">read_unlock</a>();
+<a href=#1134 id=1134 data-nosnippet>1134</a>            <a class="self" href="#1131">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#116-127">read_unlock</a>();
 <a href=#1135 id=1135 data-nosnippet>1135</a>        }
 <a href=#1136 id=1136 data-nosnippet>1136</a>    }
 <a href=#1137 id=1137 data-nosnippet>1137</a>}
@@ -1142,7 +1142,7 @@
 <a href=#1142 id=1142 data-nosnippet>1142</a>        <a class="self" href="#1141">self</a>.lock.poison.<a href="../poison.rs.html#125-129">done</a>(<span class="kw-2">&amp;</span><a class="self" href="#1141">self</a>.poison);
 <a href=#1143 id=1143 data-nosnippet>1143</a>        <span class="comment">// SAFETY: the conditions of `RwLockWriteGuard::new` were satisfied when created.
 <a href=#1144 id=1144 data-nosnippet>1144</a>        </span><span class="kw">unsafe </span>{
-<a href=#1145 id=1145 data-nosnippet>1145</a>            <a class="self" href="#1141">self</a>.lock.inner.<a href="../../sys/sync/rwlock/futex.rs.html#182-190">write_unlock</a>();
+<a href=#1145 id=1145 data-nosnippet>1145</a>            <a class="self" href="#1141">self</a>.lock.inner.<a href="../../sys/sync/rwlock/futex.rs.html#188-196">write_unlock</a>();
 <a href=#1146 id=1146 data-nosnippet>1146</a>        }
 <a href=#1147 id=1147 data-nosnippet>1147</a>    }
 <a href=#1148 id=1148 data-nosnippet>1148</a>}
@@ -1153,7 +1153,7 @@
 <a href=#1153 id=1153 data-nosnippet>1153</a>        <span class="comment">// SAFETY: the conditions of `RwLockReadGuard::new` were satisfied when the original guard
 <a href=#1154 id=1154 data-nosnippet>1154</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
 <a href=#1155 id=1155 data-nosnippet>1155</a>        </span><span class="kw">unsafe </span>{
-<a href=#1156 id=1156 data-nosnippet>1156</a>            <a class="self" href="#1152">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#110-121">read_unlock</a>();
+<a href=#1156 id=1156 data-nosnippet>1156</a>            <a class="self" href="#1152">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#116-127">read_unlock</a>();
 <a href=#1157 id=1157 data-nosnippet>1157</a>        }
 <a href=#1158 id=1158 data-nosnippet>1158</a>    }
 <a href=#1159 id=1159 data-nosnippet>1159</a>}
@@ -1165,7 +1165,7 @@
 <a href=#1165 id=1165 data-nosnippet>1165</a>        <span class="comment">// SAFETY: the conditions of `RwLockWriteGuard::new` were satisfied when the original guard
 <a href=#1166 id=1166 data-nosnippet>1166</a>        // was created, and have been upheld throughout `map` and/or `filter_map`.
 <a href=#1167 id=1167 data-nosnippet>1167</a>        </span><span class="kw">unsafe </span>{
-<a href=#1168 id=1168 data-nosnippet>1168</a>            <a class="self" href="#1163">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#182-190">write_unlock</a>();
+<a href=#1168 id=1168 data-nosnippet>1168</a>            <a class="self" href="#1163">self</a>.inner_lock.<a href="../../sys/sync/rwlock/futex.rs.html#188-196">write_unlock</a>();
 <a href=#1169 id=1169 data-nosnippet>1169</a>        }
 <a href=#1170 id=1170 data-nosnippet>1170</a>    }
 <a href=#1171 id=1171 data-nosnippet>1171</a>}
