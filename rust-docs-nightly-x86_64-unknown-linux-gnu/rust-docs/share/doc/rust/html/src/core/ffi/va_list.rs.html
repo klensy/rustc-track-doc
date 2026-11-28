@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/va_list.rs`."><title>va_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6c709eb42 2026-11-25)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>va_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! C's "variable arguments"
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/core/src/ffi/va_list.rs`."><title>va_list.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (c82ce1563 2026-11-27)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core/ffi/</div>va_list.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! C's "variable arguments"
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! Better known as "varargs".
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -470,90 +470,107 @@
 <a href=#470 id=470 data-nosnippet>470</a>}
 <a href=#471 id=471 data-nosnippet>471</a>
 <a href=#472 id=472 data-nosnippet>472</a><span class="macro">cfg_select!</span> {
-<a href=#473 id=473 data-nosnippet>473</a>    target_arch = <span class="string">"powerpc" </span>=&gt; {
-<a href=#474 id=474 data-nosnippet>474</a>        <span class="attr">#[unstable_feature_bound(powerpc_ppcf128)]
-<a href=#475 id=475 data-nosnippet>475</a>        #[unstable(feature = <span class="string">"powerpc_ppcf128"</span>, issue = <span class="string">"163323"</span>)]
-<a href=#476 id=476 data-nosnippet>476</a>        </span><span class="kw">unsafe impl </span>VaArgSafe <span class="kw">for </span><span class="kw">crate</span>::arch::powerpc::ppcf128 {}
-<a href=#477 id=477 data-nosnippet>477</a>    }
-<a href=#478 id=478 data-nosnippet>478</a>    target_arch = <span class="string">"powerpc64" </span>=&gt; {
-<a href=#479 id=479 data-nosnippet>479</a>        <span class="attr">#[unstable_feature_bound(powerpc_ppcf128)]
-<a href=#480 id=480 data-nosnippet>480</a>        #[unstable(feature = <span class="string">"powerpc_ppcf128"</span>, issue = <span class="string">"163323"</span>)]
-<a href=#481 id=481 data-nosnippet>481</a>        </span><span class="kw">unsafe impl </span>VaArgSafe <span class="kw">for </span><span class="kw">crate</span>::arch::powerpc64::ppcf128 {}
-<a href=#482 id=482 data-nosnippet>482</a>    }
-<a href=#483 id=483 data-nosnippet>483</a>    <span class="kw">_ </span>=&gt; { <span class="comment">/* ppcf128 is not defined */ </span>}
-<a href=#484 id=484 data-nosnippet>484</a>}
-<a href=#485 id=485 data-nosnippet>485</a>
-<a href=#486 id=486 data-nosnippet>486</a><span class="attr">#[unstable(feature = <span class="string">"c_variadic_va_arg_safe"</span>, issue = <span class="string">"162911"</span>, implied_by = <span class="string">"c_variadic"</span>)]
-<a href=#487 id=487 data-nosnippet>487</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#317">VaArgSafe</a> <span class="kw">for </span><span class="kw-2">*mut </span>T {}
-<a href=#488 id=488 data-nosnippet>488</a><span class="attr">#[unstable(feature = <span class="string">"c_variadic_va_arg_safe"</span>, issue = <span class="string">"162911"</span>, implied_by = <span class="string">"c_variadic"</span>)]
-<a href=#489 id=489 data-nosnippet>489</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#317">VaArgSafe</a> <span class="kw">for </span><span class="kw-2">*const </span>T {}
-<a href=#490 id=490 data-nosnippet>490</a>
-<a href=#491 id=491 data-nosnippet>491</a><span class="comment">// Check that relevant `core::ffi` types implement `VaArgSafe`.
-<a href=#492 id=492 data-nosnippet>492</a></span><span class="kw">const _</span>: () = {
-<a href=#493 id=493 data-nosnippet>493</a>    <span class="kw">const fn </span>va_arg_safe_check&lt;T: <a href="#317">VaArgSafe</a>&gt;() {}
-<a href=#494 id=494 data-nosnippet>494</a>
-<a href=#495 id=495 data-nosnippet>495</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#28">c_int</a>&gt;();
-<a href=#496 id=496 data-nosnippet>496</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#29">c_uint</a>&gt;();
-<a href=#497 id=497 data-nosnippet>497</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#31">c_long</a>&gt;();
-<a href=#498 id=498 data-nosnippet>498</a>
-<a href=#499 id=499 data-nosnippet>499</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#32">c_ulong</a>&gt;();
-<a href=#500 id=500 data-nosnippet>500</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#34">c_longlong</a>&gt;();
-<a href=#501 id=501 data-nosnippet>501</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#35">c_ulonglong</a>&gt;();
+<a href=#473 id=473 data-nosnippet>473</a>    any(target_os = <span class="string">"android"</span>, target_env = <span class="string">"ohos"</span>, target_env = <span class="string">"msvc"</span>, target_os = <span class="string">"uefi"</span>) =&gt; {
+<a href=#474 id=474 data-nosnippet>474</a>        <span class="comment">/* x87_f80 is not used as long double */
+<a href=#475 id=475 data-nosnippet>475</a>    </span>}
+<a href=#476 id=476 data-nosnippet>476</a>    target_arch = <span class="string">"x86" </span>=&gt; {
+<a href=#477 id=477 data-nosnippet>477</a>        <span class="attr">#[unstable_feature_bound(x87_f80)]
+<a href=#478 id=478 data-nosnippet>478</a>        #[unstable(feature = <span class="string">"x87_f80"</span>, issue = <span class="string">"163982"</span>)]
+<a href=#479 id=479 data-nosnippet>479</a>        </span><span class="kw">unsafe impl </span>VaArgSafe <span class="kw">for </span><span class="kw">crate</span>::arch::x86::x87_f80 {}
+<a href=#480 id=480 data-nosnippet>480</a>    }
+<a href=#481 id=481 data-nosnippet>481</a>    target_arch = <span class="string">"x86_64" </span>=&gt; {
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="attr">#[unstable_feature_bound(x87_f80)]
+<a href=#483 id=483 data-nosnippet>483</a>        #[unstable(feature = <span class="string">"x87_f80"</span>, issue = <span class="string">"163982"</span>)]
+<a href=#484 id=484 data-nosnippet>484</a>        </span><span class="kw">unsafe impl </span><a href="#317">VaArgSafe</a> <span class="kw">for </span><span class="kw">crate</span>::arch::x86_64::<a href="../stdarch/crates/core_arch/src/x86/mod.rs.html#19">x87_f80</a> {}
+<a href=#485 id=485 data-nosnippet>485</a>    }
+<a href=#486 id=486 data-nosnippet>486</a>    <span class="kw">_ </span>=&gt; { <span class="comment">/* x87_f80 is not defined */ </span>}
+<a href=#487 id=487 data-nosnippet>487</a>}
+<a href=#488 id=488 data-nosnippet>488</a>
+<a href=#489 id=489 data-nosnippet>489</a><span class="macro">cfg_select!</span> {
+<a href=#490 id=490 data-nosnippet>490</a>    target_arch = <span class="string">"powerpc" </span>=&gt; {
+<a href=#491 id=491 data-nosnippet>491</a>        <span class="attr">#[unstable_feature_bound(powerpc_ppcf128)]
+<a href=#492 id=492 data-nosnippet>492</a>        #[unstable(feature = <span class="string">"powerpc_ppcf128"</span>, issue = <span class="string">"163323"</span>)]
+<a href=#493 id=493 data-nosnippet>493</a>        </span><span class="kw">unsafe impl </span>VaArgSafe <span class="kw">for </span><span class="kw">crate</span>::arch::powerpc::ppcf128 {}
+<a href=#494 id=494 data-nosnippet>494</a>    }
+<a href=#495 id=495 data-nosnippet>495</a>    target_arch = <span class="string">"powerpc64" </span>=&gt; {
+<a href=#496 id=496 data-nosnippet>496</a>        <span class="attr">#[unstable_feature_bound(powerpc_ppcf128)]
+<a href=#497 id=497 data-nosnippet>497</a>        #[unstable(feature = <span class="string">"powerpc_ppcf128"</span>, issue = <span class="string">"163323"</span>)]
+<a href=#498 id=498 data-nosnippet>498</a>        </span><span class="kw">unsafe impl </span>VaArgSafe <span class="kw">for </span><span class="kw">crate</span>::arch::powerpc64::ppcf128 {}
+<a href=#499 id=499 data-nosnippet>499</a>    }
+<a href=#500 id=500 data-nosnippet>500</a>    <span class="kw">_ </span>=&gt; { <span class="comment">/* ppcf128 is not defined */ </span>}
+<a href=#501 id=501 data-nosnippet>501</a>}
 <a href=#502 id=502 data-nosnippet>502</a>
-<a href=#503 id=503 data-nosnippet>503</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#38">c_double</a>&gt;();
-<a href=#504 id=504 data-nosnippet>504</a>
-<a href=#505 id=505 data-nosnippet>505</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw-2">*const </span><span class="kw">crate</span>::ffi::<a href="mod.rs.html#51-66">c_void</a>&gt;();
-<a href=#506 id=506 data-nosnippet>506</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw-2">*mut </span><span class="kw">crate</span>::ffi::<a href="mod.rs.html#51-66">c_void</a>&gt;();
+<a href=#503 id=503 data-nosnippet>503</a><span class="attr">#[unstable(feature = <span class="string">"c_variadic_va_arg_safe"</span>, issue = <span class="string">"162911"</span>, implied_by = <span class="string">"c_variadic"</span>)]
+<a href=#504 id=504 data-nosnippet>504</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#317">VaArgSafe</a> <span class="kw">for </span><span class="kw-2">*mut </span>T {}
+<a href=#505 id=505 data-nosnippet>505</a><span class="attr">#[unstable(feature = <span class="string">"c_variadic_va_arg_safe"</span>, issue = <span class="string">"162911"</span>, implied_by = <span class="string">"c_variadic"</span>)]
+<a href=#506 id=506 data-nosnippet>506</a></span><span class="kw">unsafe impl</span>&lt;T&gt; <a href="#317">VaArgSafe</a> <span class="kw">for </span><span class="kw-2">*const </span>T {}
 <a href=#507 id=507 data-nosnippet>507</a>
-<a href=#508 id=508 data-nosnippet>508</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw-2">*const </span><span class="kw">crate</span>::ffi::<a href="primitives.rs.html#21">c_char</a>&gt;();
-<a href=#509 id=509 data-nosnippet>509</a>    <a href="#493">va_arg_safe_check</a>::&lt;<span class="kw-2">*mut </span><span class="kw">crate</span>::ffi::<a href="primitives.rs.html#21">c_char</a>&gt;();
-<a href=#510 id=510 data-nosnippet>510</a>};
+<a href=#508 id=508 data-nosnippet>508</a><span class="comment">// Check that relevant `core::ffi` types implement `VaArgSafe`.
+<a href=#509 id=509 data-nosnippet>509</a></span><span class="kw">const _</span>: () = {
+<a href=#510 id=510 data-nosnippet>510</a>    <span class="kw">const fn </span>va_arg_safe_check&lt;T: <a href="#317">VaArgSafe</a>&gt;() {}
 <a href=#511 id=511 data-nosnippet>511</a>
-<a href=#512 id=512 data-nosnippet>512</a><span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; <a href="#226-229">VaList</a>&lt;<span class="lifetime">'f</span>&gt; {
-<a href=#513 id=513 data-nosnippet>513</a>    <span class="doccomment">/// Read the next argument from the variable argument list.
-<a href=#514 id=514 data-nosnippet>514</a>    ///
-<a href=#515 id=515 data-nosnippet>515</a>    /// Only types that implement [`VaArgSafe`] can be read from a variable argument list.
-<a href=#516 id=516 data-nosnippet>516</a>    ///
-<a href=#517 id=517 data-nosnippet>517</a>    /// # Safety
-<a href=#518 id=518 data-nosnippet>518</a>    ///
-<a href=#519 id=519 data-nosnippet>519</a>    /// This function is safe to call only if all of the following conditions are satisfied:
-<a href=#520 id=520 data-nosnippet>520</a>    ///
-<a href=#521 id=521 data-nosnippet>521</a>    /// - There is another c-variadic argument to read.
-<a href=#522 id=522 data-nosnippet>522</a>    /// - The actual type of the argument `U` is compatible with `T` (as defined below).
-<a href=#523 id=523 data-nosnippet>523</a>    /// - If `U` and `T` are both integer types, then the value passed by the caller must be
-<a href=#524 id=524 data-nosnippet>524</a>    /// representable in both types.
-<a href=#525 id=525 data-nosnippet>525</a>    /// - If `T` is not [`Copy`], then it must not have already been read using `next_arg`
-<a href=#526 id=526 data-nosnippet>526</a>    /// on a [`clone`][VaList::clone]d copy of this `VaList`.
-<a href=#527 id=527 data-nosnippet>527</a>    /// (Currently, all types implementing [`VaArgSafe`] also implement [`Copy`],
-<a href=#528 id=528 data-nosnippet>528</a>    /// but this may change in the future.)
-<a href=#529 id=529 data-nosnippet>529</a>    ///
-<a href=#530 id=530 data-nosnippet>530</a>    /// Types `T` and `U` are compatible when:
+<a href=#512 id=512 data-nosnippet>512</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#28">c_int</a>&gt;();
+<a href=#513 id=513 data-nosnippet>513</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#29">c_uint</a>&gt;();
+<a href=#514 id=514 data-nosnippet>514</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#31">c_long</a>&gt;();
+<a href=#515 id=515 data-nosnippet>515</a>
+<a href=#516 id=516 data-nosnippet>516</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#32">c_ulong</a>&gt;();
+<a href=#517 id=517 data-nosnippet>517</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#34">c_longlong</a>&gt;();
+<a href=#518 id=518 data-nosnippet>518</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#35">c_ulonglong</a>&gt;();
+<a href=#519 id=519 data-nosnippet>519</a>
+<a href=#520 id=520 data-nosnippet>520</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw">crate</span>::ffi::<a href="primitives.rs.html#38">c_double</a>&gt;();
+<a href=#521 id=521 data-nosnippet>521</a>
+<a href=#522 id=522 data-nosnippet>522</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw-2">*const </span><span class="kw">crate</span>::ffi::<a href="mod.rs.html#51-66">c_void</a>&gt;();
+<a href=#523 id=523 data-nosnippet>523</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw-2">*mut </span><span class="kw">crate</span>::ffi::<a href="mod.rs.html#51-66">c_void</a>&gt;();
+<a href=#524 id=524 data-nosnippet>524</a>
+<a href=#525 id=525 data-nosnippet>525</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw-2">*const </span><span class="kw">crate</span>::ffi::<a href="primitives.rs.html#21">c_char</a>&gt;();
+<a href=#526 id=526 data-nosnippet>526</a>    <a href="#510">va_arg_safe_check</a>::&lt;<span class="kw-2">*mut </span><span class="kw">crate</span>::ffi::<a href="primitives.rs.html#21">c_char</a>&gt;();
+<a href=#527 id=527 data-nosnippet>527</a>};
+<a href=#528 id=528 data-nosnippet>528</a>
+<a href=#529 id=529 data-nosnippet>529</a><span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; <a href="#226-229">VaList</a>&lt;<span class="lifetime">'f</span>&gt; {
+<a href=#530 id=530 data-nosnippet>530</a>    <span class="doccomment">/// Read the next argument from the variable argument list.
 <a href=#531 id=531 data-nosnippet>531</a>    ///
-<a href=#532 id=532 data-nosnippet>532</a>    /// - `T` and `U` are the same type.
-<a href=#533 id=533 data-nosnippet>533</a>    /// - `T` and `U` are integer types of the same size.
-<a href=#534 id=534 data-nosnippet>534</a>    /// - `T` and `U` are both pointers, and their target types are compatible.
-<a href=#535 id=535 data-nosnippet>535</a>    /// - `T` is a pointer to [`c_void`] and `U` is a pointer to [`i8`] or [`u8`], or vice versa.
-<a href=#536 id=536 data-nosnippet>536</a>    ///
-<a href=#537 id=537 data-nosnippet>537</a>    /// [`c_void`]: core::ffi::c_void
-<a href=#538 id=538 data-nosnippet>538</a>    </span><span class="attr">#[inline] </span><span class="comment">// Avoid codegen when not used to help backends that don't support VaList.
-<a href=#539 id=539 data-nosnippet>539</a>    </span><span class="attr">#[stable(feature = <span class="string">"c_variadic"</span>, since = <span class="string">"1.99.0"</span>)]
-<a href=#540 id=540 data-nosnippet>540</a>    #[rustc_const_unstable(feature = <span class="string">"const_c_variadic"</span>, issue = <span class="string">"151787"</span>)]
-<a href=#541 id=541 data-nosnippet>541</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
-<a href=#542 id=542 data-nosnippet>542</a>    </span><span class="kw">pub const unsafe fn </span>next_arg&lt;T: <a href="#317">VaArgSafe</a>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; T {
-<a href=#543 id=543 data-nosnippet>543</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `va_arg`.
-<a href=#544 id=544 data-nosnippet>544</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#3375">va_arg</a>(<a class="self" href="#542">self</a>) }
-<a href=#545 id=545 data-nosnippet>545</a>    }
-<a href=#546 id=546 data-nosnippet>546</a>}
-<a href=#547 id=547 data-nosnippet>547</a>
-<a href=#548 id=548 data-nosnippet>548</a><span class="comment">// Checks (via an assert in `compiler/rustc_ty_utils/src/abi.rs`) that the C ABI for the current
-<a href=#549 id=549 data-nosnippet>549</a>// target correctly implements `rustc_pass_indirectly_in_non_rustic_abis`.
-<a href=#550 id=550 data-nosnippet>550</a></span><span class="kw">const _</span>: () = {
-<a href=#551 id=551 data-nosnippet>551</a>    <span class="attr">#[repr(C)]
-<a href=#552 id=552 data-nosnippet>552</a>    #[rustc_pass_indirectly_in_non_rustic_abis]
-<a href=#553 id=553 data-nosnippet>553</a>    </span><span class="kw">struct </span>Type(<a href="../../../core/primitive.usize.html">usize</a>);
-<a href=#554 id=554 data-nosnippet>554</a>
-<a href=#555 id=555 data-nosnippet>555</a>    <span class="kw">const extern </span><span class="string">"C" </span><span class="kw">fn </span>c(<span class="kw">_</span>: <a href="#553">Type</a>) {}
-<a href=#556 id=556 data-nosnippet>556</a>
-<a href=#557 id=557 data-nosnippet>557</a>    <a href="#555">c</a>(<a href="#553">Type</a>(<span class="number">0</span>))
-<a href=#558 id=558 data-nosnippet>558</a>};
+<a href=#532 id=532 data-nosnippet>532</a>    /// Only types that implement [`VaArgSafe`] can be read from a variable argument list.
+<a href=#533 id=533 data-nosnippet>533</a>    ///
+<a href=#534 id=534 data-nosnippet>534</a>    /// # Safety
+<a href=#535 id=535 data-nosnippet>535</a>    ///
+<a href=#536 id=536 data-nosnippet>536</a>    /// This function is safe to call only if all of the following conditions are satisfied:
+<a href=#537 id=537 data-nosnippet>537</a>    ///
+<a href=#538 id=538 data-nosnippet>538</a>    /// - There is another c-variadic argument to read.
+<a href=#539 id=539 data-nosnippet>539</a>    /// - The actual type of the argument `U` is compatible with `T` (as defined below).
+<a href=#540 id=540 data-nosnippet>540</a>    /// - If `U` and `T` are both integer types, then the value passed by the caller must be
+<a href=#541 id=541 data-nosnippet>541</a>    /// representable in both types.
+<a href=#542 id=542 data-nosnippet>542</a>    /// - If `T` is not [`Copy`], then it must not have already been read using `next_arg`
+<a href=#543 id=543 data-nosnippet>543</a>    /// on a [`clone`][VaList::clone]d copy of this `VaList`.
+<a href=#544 id=544 data-nosnippet>544</a>    /// (Currently, all types implementing [`VaArgSafe`] also implement [`Copy`],
+<a href=#545 id=545 data-nosnippet>545</a>    /// but this may change in the future.)
+<a href=#546 id=546 data-nosnippet>546</a>    ///
+<a href=#547 id=547 data-nosnippet>547</a>    /// Types `T` and `U` are compatible when:
+<a href=#548 id=548 data-nosnippet>548</a>    ///
+<a href=#549 id=549 data-nosnippet>549</a>    /// - `T` and `U` are the same type.
+<a href=#550 id=550 data-nosnippet>550</a>    /// - `T` and `U` are integer types of the same size.
+<a href=#551 id=551 data-nosnippet>551</a>    /// - `T` and `U` are both pointers, and their target types are compatible.
+<a href=#552 id=552 data-nosnippet>552</a>    /// - `T` is a pointer to [`c_void`] and `U` is a pointer to [`i8`] or [`u8`], or vice versa.
+<a href=#553 id=553 data-nosnippet>553</a>    ///
+<a href=#554 id=554 data-nosnippet>554</a>    /// [`c_void`]: core::ffi::c_void
+<a href=#555 id=555 data-nosnippet>555</a>    </span><span class="attr">#[inline] </span><span class="comment">// Avoid codegen when not used to help backends that don't support VaList.
+<a href=#556 id=556 data-nosnippet>556</a>    </span><span class="attr">#[stable(feature = <span class="string">"c_variadic"</span>, since = <span class="string">"1.99.0"</span>)]
+<a href=#557 id=557 data-nosnippet>557</a>    #[rustc_const_unstable(feature = <span class="string">"const_c_variadic"</span>, issue = <span class="string">"151787"</span>)]
+<a href=#558 id=558 data-nosnippet>558</a>    #[cfg_attr(miri, track_caller)] </span><span class="comment">// even without panics, this helps for Miri backtraces
+<a href=#559 id=559 data-nosnippet>559</a>    </span><span class="kw">pub const unsafe fn </span>next_arg&lt;T: <a href="#317">VaArgSafe</a>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; T {
+<a href=#560 id=560 data-nosnippet>560</a>        <span class="comment">// SAFETY: the caller must uphold the safety contract for `va_arg`.
+<a href=#561 id=561 data-nosnippet>561</a>        </span><span class="kw">unsafe </span>{ <a href="../intrinsics/mod.rs.html#3375">va_arg</a>(<a class="self" href="#559">self</a>) }
+<a href=#562 id=562 data-nosnippet>562</a>    }
+<a href=#563 id=563 data-nosnippet>563</a>}
+<a href=#564 id=564 data-nosnippet>564</a>
+<a href=#565 id=565 data-nosnippet>565</a><span class="comment">// Checks (via an assert in `compiler/rustc_ty_utils/src/abi.rs`) that the C ABI for the current
+<a href=#566 id=566 data-nosnippet>566</a>// target correctly implements `rustc_pass_indirectly_in_non_rustic_abis`.
+<a href=#567 id=567 data-nosnippet>567</a></span><span class="kw">const _</span>: () = {
+<a href=#568 id=568 data-nosnippet>568</a>    <span class="attr">#[repr(C)]
+<a href=#569 id=569 data-nosnippet>569</a>    #[rustc_pass_indirectly_in_non_rustic_abis]
+<a href=#570 id=570 data-nosnippet>570</a>    </span><span class="kw">struct </span>Type(<a href="../../../core/primitive.usize.html">usize</a>);
+<a href=#571 id=571 data-nosnippet>571</a>
+<a href=#572 id=572 data-nosnippet>572</a>    <span class="kw">const extern </span><span class="string">"C" </span><span class="kw">fn </span>c(<span class="kw">_</span>: <a href="#570">Type</a>) {}
+<a href=#573 id=573 data-nosnippet>573</a>
+<a href=#574 id=574 data-nosnippet>574</a>    <a href="#572">c</a>(<a href="#570">Type</a>(<span class="number">0</span>))
+<a href=#575 id=575 data-nosnippet>575</a>};
 </code></pre></div></section></main></body></html>

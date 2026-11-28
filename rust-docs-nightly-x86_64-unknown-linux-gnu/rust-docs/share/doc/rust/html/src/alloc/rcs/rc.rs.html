@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rcs/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (6c709eb42 2026-11-25)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/rcs/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `library/alloc/src/rcs/rc.rs`."><title>rc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1e18a8e7.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="alloc" data-themes="" data-resource-suffix="1.102.0" data-rustdoc-version="1.102.0-nightly (c82ce1563 2026-11-27)" data-channel="nightly" data-search-js="search-085293d4.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-9b351432.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files1.102.0.js"></script><script defer src="../../../static.files/main-419f3a3f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-101b5a15.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">alloc/rcs/</div>rc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Single-threaded reference-counting pointers. 'Rc' stands for 'Reference
 <a href=#2 id=2 data-nosnippet>2</a>//! Counted'.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! The type [`Rc&lt;T&gt;`][`Rc`] provides shared ownership of a value of type `T`,
@@ -275,7 +275,7 @@
 <a href=#275 id=275 data-nosnippet>275</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#276 id=276 data-nosnippet>276</a></span><span class="kw">use </span><a href="../string.rs.html#357-359"><span class="kw">crate</span>::string::String</a>;
 <a href=#277 id=277 data-nosnippet>277</a><span class="attr">#[cfg(not(no_global_oom_handling))]
-<a href=#278 id=278 data-nosnippet>278</a></span><span class="kw">use </span><a href="../vec/mod.rs.html#448-451"><span class="kw">crate</span>::vec::Vec</a>;
+<a href=#278 id=278 data-nosnippet>278</a></span><span class="kw">use </span><a href="../vec/mod.rs.html#449-452"><span class="kw">crate</span>::vec::Vec</a>;
 <a href=#279 id=279 data-nosnippet>279</a>
 <a href=#280 id=280 data-nosnippet>280</a><span class="comment">// This is repr(C) to future-proof against possible field-reordering, which
 <a href=#281 id=281 data-nosnippet>281</a>// would interfere with otherwise safe [into|from]_raw() of transmutable
@@ -435,7 +435,7 @@
 <a href=#435 id=435 data-nosnippet>435</a>        // the allocation while the strong destructor is running, even
 <a href=#436 id=436 data-nosnippet>436</a>        // if the weak pointer is stored inside the strong one.
 <a href=#437 id=437 data-nosnippet>437</a>        </span><span class="kw">unsafe </span>{
-<a href=#438 id=438 data-nosnippet>438</a>            <span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1630-1637">into_non_null</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#286-290">RcInner</a> {
+<a href=#438 id=438 data-nosnippet>438</a>            <span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1620-1627">into_non_null</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#368-376">new</a>(<a href="#286-290">RcInner</a> {
 <a href=#439 id=439 data-nosnippet>439</a>                strong: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">1</span>),
 <a href=#440 id=440 data-nosnippet>440</a>                weak: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">1</span>),
 <a href=#441 id=441 data-nosnippet>441</a>                <a href="#432">value</a>,
@@ -583,7 +583,7 @@
 <a href=#583 id=583 data-nosnippet>583</a>        // the allocation while the strong destructor is running, even
 <a href=#584 id=584 data-nosnippet>584</a>        // if the weak pointer is stored inside the strong one.
 <a href=#585 id=585 data-nosnippet>585</a>        </span><span class="kw">unsafe </span>{
-<a href=#586 id=586 data-nosnippet>586</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1630-1637">into_non_null</a>(Box::try_new(RcInner {
+<a href=#586 id=586 data-nosnippet>586</a>            <a class="prelude-val" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html#variant.Ok">Ok</a>(<span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1620-1627">into_non_null</a>(Box::try_new(RcInner {
 <a href=#587 id=587 data-nosnippet>587</a>                strong: Cell::new(<span class="number">1</span>),
 <a href=#588 id=588 data-nosnippet>588</a>                weak: Cell::new(<span class="number">1</span>),
 <a href=#589 id=589 data-nosnippet>589</a>                value,
@@ -804,7 +804,7 @@
 <a href=#804 id=804 data-nosnippet>804</a>    {
 <a href=#805 id=805 data-nosnippet>805</a>        <span class="comment">// Construct the inner in the "uninitialized" state with a single
 <a href=#806 id=806 data-nosnippet>806</a>        // weak reference.
-<a href=#807 id=807 data-nosnippet>807</a>        </span><span class="kw">let </span>(uninit_ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1877-1881">into_non_null_with_allocator</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#533-538">new_in</a>(
+<a href=#807 id=807 data-nosnippet>807</a>        </span><span class="kw">let </span>(uninit_ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1867-1871">into_non_null_with_allocator</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#533-538">new_in</a>(
 <a href=#808 id=808 data-nosnippet>808</a>            <a href="#286-290">RcInner</a> {
 <a href=#809 id=809 data-nosnippet>809</a>                strong: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">0</span>),
 <a href=#810 id=810 data-nosnippet>810</a>                weak: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">1</span>),
@@ -863,7 +863,7 @@
 <a href=#863 id=863 data-nosnippet>863</a>        // pointers, which ensures that the weak destructor never frees
 <a href=#864 id=864 data-nosnippet>864</a>        // the allocation while the strong destructor is running, even
 <a href=#865 id=865 data-nosnippet>865</a>        // if the weak pointer is stored inside the strong one.
-<a href=#866 id=866 data-nosnippet>866</a>        </span><span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1877-1881">into_non_null_with_allocator</a>(Box::try_new_in(
+<a href=#866 id=866 data-nosnippet>866</a>        </span><span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1867-1871">into_non_null_with_allocator</a>(Box::try_new_in(
 <a href=#867 id=867 data-nosnippet>867</a>            RcInner { strong: Cell::new(<span class="number">1</span>), weak: Cell::new(<span class="number">1</span>), value },
 <a href=#868 id=868 data-nosnippet>868</a>            alloc,
 <a href=#869 id=869 data-nosnippet>869</a>        )<span class="question-mark">?</span>);
@@ -2453,7 +2453,7 @@
 <a href=#2453 id=2453 data-nosnippet>2453</a>        <span class="kw">let </span>value_size = <a href="https://doc.rust-lang.org/nightly/core/mem/fn.size_of_val.html">size_of_val</a>(<span class="kw-2">&amp;*</span><a href="#2452">src</a>);
 <a href=#2454 id=2454 data-nosnippet>2454</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
 <a href=#2455 id=2455 data-nosnippet>2455</a>        </span><span class="kw">unsafe </span>{
-<a href=#2456 id=2456 data-nosnippet>2456</a>            <span class="kw">let </span>ptr = <span class="self">Self</span>::<a href="#2439-2449">allocate_for_ptr_in</a>(<span class="kw-2">&amp;*</span><a href="#2452">src</a>, <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#2023-2025">allocator</a>(<span class="kw-2">&amp;</span><a href="#2452">src</a>));
+<a href=#2456 id=2456 data-nosnippet>2456</a>            <span class="kw">let </span>ptr = <span class="self">Self</span>::<a href="#2439-2449">allocate_for_ptr_in</a>(<span class="kw-2">&amp;*</span><a href="#2452">src</a>, <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#2013-2015">allocator</a>(<span class="kw-2">&amp;</span><a href="#2452">src</a>));
 <a href=#2457 id=2457 data-nosnippet>2457</a>
 <a href=#2458 id=2458 data-nosnippet>2458</a>            <span class="comment">// Copy value as bytes
 <a href=#2459 id=2459 data-nosnippet>2459</a>            </span>ptr::<a href="https://doc.rust-lang.org/nightly/core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(
@@ -2463,8 +2463,8 @@
 <a href=#2463 id=2463 data-nosnippet>2463</a>            );
 <a href=#2464 id=2464 data-nosnippet>2464</a>
 <a href=#2465 id=2465 data-nosnippet>2465</a>            <span class="comment">// Free the allocation without dropping its contents
-<a href=#2466 id=2466 data-nosnippet>2466</a>            </span><span class="kw">let </span>(bptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1814-1825">into_raw_with_allocator</a>(<a href="#2452">src</a>);
-<a href=#2467 id=2467 data-nosnippet>2467</a>            <span class="kw">let </span>src = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1698-1701">from_raw_in</a>(<a href="#2466">bptr</a> <span class="kw">as </span><span class="kw-2">*mut </span>mem::<a href="https://doc.rust-lang.org/nightly/core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>&lt;T&gt;, <span class="kw-2">&amp;</span><a href="#2466">alloc</a>);
+<a href=#2466 id=2466 data-nosnippet>2466</a>            </span><span class="kw">let </span>(bptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1804-1815">into_raw_with_allocator</a>(<a href="#2452">src</a>);
+<a href=#2467 id=2467 data-nosnippet>2467</a>            <span class="kw">let </span>src = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1688-1691">from_raw_in</a>(<a href="#2466">bptr</a> <span class="kw">as </span><span class="kw-2">*mut </span>mem::<a href="https://doc.rust-lang.org/nightly/core/mem/manually_drop/struct.ManuallyDrop.html">ManuallyDrop</a>&lt;T&gt;, <span class="kw-2">&amp;</span><a href="#2466">alloc</a>);
 <a href=#2468 id=2468 data-nosnippet>2468</a>            <a href="https://doc.rust-lang.org/nightly/core/mem/fn.drop.html">drop</a>(<a href="#2467">src</a>);
 <a href=#2469 id=2469 data-nosnippet>2469</a>
 <a href=#2470 id=2470 data-nosnippet>2470</a>            <span class="self">Self</span>::<a href="#398-401">from_ptr_in</a>(<a href="#2456">ptr</a>, <a href="#2466">alloc</a>)
@@ -2715,7 +2715,7 @@
 <a href=#2715 id=2715 data-nosnippet>2715</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
 <a href=#2716 id=2716 data-nosnippet>2716</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
 <a href=#2717 id=2717 data-nosnippet>2717</a>        </span><span class="kw">unsafe </span>{
-<a href=#2718 id=2718 data-nosnippet>2718</a>            <span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1630-1637">into_non_null</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1344-1350">write</a>(
+<a href=#2718 id=2718 data-nosnippet>2718</a>            <span class="self">Self</span>::<a href="#365-368">from_inner</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1620-1627">into_non_null</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1334-1340">write</a>(
 <a href=#2719 id=2719 data-nosnippet>2719</a>                <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#396-403">new_uninit</a>(),
 <a href=#2720 id=2720 data-nosnippet>2720</a>                <a href="#286-290">RcInner</a> { strong: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">1</span>), weak: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">1</span>), value: T::<a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">default</a>() },
 <a href=#2721 id=2721 data-nosnippet>2721</a>            )))
@@ -3165,7 +3165,7 @@
 <a href=#3165 id=3165 data-nosnippet>3165</a>
 <a href=#3166 id=3166 data-nosnippet>3166</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#3167 id=3167 data-nosnippet>3167</a>#[stable(feature = <span class="string">"shared_from_slice"</span>, since = <span class="string">"1.21.0"</span>)]
-<a href=#3168 id=3168 data-nosnippet>3168</a></span><span class="kw">impl</span>&lt;T, A: <a href="../../../alloc/alloc/trait.AllocatorNightly.html">AllocatorNightly</a>&gt; <a href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html">From</a>&lt;<a href="../vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;&gt; <span class="kw">for </span><a href="#325-335">Rc</a>&lt;[T], A&gt; {
+<a href=#3168 id=3168 data-nosnippet>3168</a></span><span class="kw">impl</span>&lt;T, A: <a href="../../../alloc/alloc/trait.AllocatorNightly.html">AllocatorNightly</a>&gt; <a href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html">From</a>&lt;<a href="../vec/mod.rs.html#449-452">Vec</a>&lt;T, A&gt;&gt; <span class="kw">for </span><a href="#325-335">Rc</a>&lt;[T], A&gt; {
 <a href=#3169 id=3169 data-nosnippet>3169</a>    <span class="doccomment">/// Allocates a reference-counted slice and moves `v`'s items into it.
 <a href=#3170 id=3170 data-nosnippet>3170</a>    ///
 <a href=#3171 id=3171 data-nosnippet>3171</a>    /// # Example
@@ -3177,17 +3177,17 @@
 <a href=#3177 id=3177 data-nosnippet>3177</a>    /// assert_eq!(&amp;[1, 2, 3], &amp;shared[..]);
 <a href=#3178 id=3178 data-nosnippet>3178</a>    /// ```
 <a href=#3179 id=3179 data-nosnippet>3179</a>    </span><span class="attr">#[inline]
-<a href=#3180 id=3180 data-nosnippet>3180</a>    </span><span class="kw">fn </span>from(v: <a href="../vec/mod.rs.html#448-451">Vec</a>&lt;T, A&gt;) -&gt; <a href="#325-335">Rc</a>&lt;[T], A&gt; {
+<a href=#3180 id=3180 data-nosnippet>3180</a>    </span><span class="kw">fn </span>from(v: <a href="../vec/mod.rs.html#449-452">Vec</a>&lt;T, A&gt;) -&gt; <a href="#325-335">Rc</a>&lt;[T], A&gt; {
 <a href=#3181 id=3181 data-nosnippet>3181</a>        <span class="comment">// ignore-tidy-undocumented-unsafe
 <a href=#3182 id=3182 data-nosnippet>3182</a>        </span><span class="kw">unsafe </span>{
-<a href=#3183 id=3183 data-nosnippet>3183</a>            <span class="kw">let </span>(vec_ptr, len, cap, alloc) = <a href="#3180">v</a>.<a href="../vec/mod.rs.html#1278-1286">into_raw_parts_with_allocator</a>();
+<a href=#3183 id=3183 data-nosnippet>3183</a>            <span class="kw">let </span>(vec_ptr, len, cap, alloc) = <a href="#3180">v</a>.<a href="../vec/mod.rs.html#1279-1287">into_raw_parts_with_allocator</a>();
 <a href=#3184 id=3184 data-nosnippet>3184</a>
 <a href=#3185 id=3185 data-nosnippet>3185</a>            <span class="kw">let </span>rc_ptr = <span class="self">Self</span>::<a href="#2559-2568">allocate_for_slice_in</a>(<a href="#3183">len</a>, <span class="kw-2">&amp;</span><a href="#3183">alloc</a>);
 <a href=#3186 id=3186 data-nosnippet>3186</a>            ptr::<a href="https://doc.rust-lang.org/nightly/core/ptr/fn.copy_nonoverlapping.html">copy_nonoverlapping</a>(<a href="#3183">vec_ptr</a>, (<span class="kw-2">&amp;</span><span class="kw">raw </span><span class="kw-2">mut </span>(<span class="kw-2">*</span><a href="#3185">rc_ptr</a>).value) <span class="kw">as </span><span class="kw-2">*mut </span>T, <a href="#3183">len</a>);
 <a href=#3187 id=3187 data-nosnippet>3187</a>
 <a href=#3188 id=3188 data-nosnippet>3188</a>            <span class="comment">// Create a `Vec&lt;T, &amp;A&gt;` with length 0, to deallocate the buffer
 <a href=#3189 id=3189 data-nosnippet>3189</a>            // without dropping its contents or the allocator
-<a href=#3190 id=3190 data-nosnippet>3190</a>            </span><span class="kw">let _ </span>= <a href="../vec/mod.rs.html#448-451">Vec</a>::<a href="../vec/mod.rs.html#1133-1146">from_raw_parts_in</a>(<a href="#3183">vec_ptr</a>, <span class="number">0</span>, <a href="#3183">cap</a>, <span class="kw-2">&amp;</span><a href="#3183">alloc</a>);
+<a href=#3190 id=3190 data-nosnippet>3190</a>            </span><span class="kw">let _ </span>= <a href="../vec/mod.rs.html#449-452">Vec</a>::<a href="../vec/mod.rs.html#1134-1147">from_raw_parts_in</a>(<a href="#3183">vec_ptr</a>, <span class="number">0</span>, <a href="#3183">cap</a>, <span class="kw-2">&amp;</span><a href="#3183">alloc</a>);
 <a href=#3191 id=3191 data-nosnippet>3191</a>
 <a href=#3192 id=3192 data-nosnippet>3192</a>            <span class="self">Self</span>::<a href="#398-401">from_ptr_in</a>(<a href="#3185">rc_ptr</a>, <a href="#3183">alloc</a>)
 <a href=#3193 id=3193 data-nosnippet>3193</a>        }
@@ -3310,7 +3310,7 @@
 <a href=#3310 id=3310 data-nosnippet>3310</a><span class="attr">#[cfg(not(no_global_oom_handling))]
 <a href=#3311 id=3311 data-nosnippet>3311</a></span><span class="kw">impl</span>&lt;T, I: <a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html">Iterator</a>&lt;Item = T&gt;&gt; <a href="#3306-3308">ToRcSlice</a>&lt;T&gt; <span class="kw">for </span>I {
 <a href=#3312 id=3312 data-nosnippet>3312</a>    default <span class="kw">fn </span>to_rc_slice(<span class="self">self</span>) -&gt; <a href="#325-335">Rc</a>&lt;[T]&gt; {
-<a href=#3313 id=3313 data-nosnippet>3313</a>        <a class="self" href="#3312">self</a>.<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>::&lt;<a href="../vec/mod.rs.html#448-451">Vec</a>&lt;T&gt;&gt;().<a href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html#tymethod.into">into</a>()
+<a href=#3313 id=3313 data-nosnippet>3313</a>        <a class="self" href="#3312">self</a>.<a href="https://doc.rust-lang.org/nightly/core/iter/traits/iterator/trait.Iterator.html#method.collect">collect</a>::&lt;<a href="../vec/mod.rs.html#449-452">Vec</a>&lt;T&gt;&gt;().<a href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html#tymethod.into">into</a>()
 <a href=#3314 id=3314 data-nosnippet>3314</a>    }
 <a href=#3315 id=3315 data-nosnippet>3315</a>}
 <a href=#3316 id=3316 data-nosnippet>3316</a>
@@ -4401,7 +4401,7 @@
 <a href=#4401 id=4401 data-nosnippet>4401</a>    </span><span class="comment">// #[unstable(feature = "allocator_api", issue = "163177")]
 <a href=#4402 id=4402 data-nosnippet>4402</a>    </span><span class="attr">#[must_use]
 <a href=#4403 id=4403 data-nosnippet>4403</a>    </span><span class="kw">pub fn </span>new_in(value: T, alloc: A) -&gt; <span class="self">Self </span>{
-<a href=#4404 id=4404 data-nosnippet>4404</a>        <span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1877-1881">into_non_null_with_allocator</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#533-538">new_in</a>(
+<a href=#4404 id=4404 data-nosnippet>4404</a>        <span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1867-1871">into_non_null_with_allocator</a>(<a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#533-538">new_in</a>(
 <a href=#4405 id=4405 data-nosnippet>4405</a>            <a href="#286-290">RcInner</a> {
 <a href=#4406 id=4406 data-nosnippet>4406</a>                strong: <a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html">Cell</a>::<a href="https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.new">new</a>(<span class="number">0</span>),
 <a href=#4407 id=4407 data-nosnippet>4407</a>                <span class="comment">// keep one weak reference so if all the weak pointers that are created are dropped
@@ -4419,7 +4419,7 @@
 <a href=#4419 id=4419 data-nosnippet>4419</a>    </span><span class="attr">#[unstable(feature = <span class="string">"unique_rc_arc"</span>, issue = <span class="string">"112566"</span>)]
 <a href=#4420 id=4420 data-nosnippet>4420</a>    </span><span class="comment">// #[unstable(feature = "allocator_api", issue = "163177")]
 <a href=#4421 id=4421 data-nosnippet>4421</a>    </span><span class="kw">pub fn </span>try_new_in(value: T, alloc: A) -&gt; <a class="prelude-ty" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html">Result</a>&lt;<span class="self">Self</span>, <a href="../../../alloc/alloc/struct.AllocError.html">AllocError</a>&gt; {
-<a href=#4422 id=4422 data-nosnippet>4422</a>        <span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1877-1881">into_non_null_with_allocator</a>(Box::try_new_in(
+<a href=#4422 id=4422 data-nosnippet>4422</a>        <span class="kw">let </span>(ptr, alloc) = <a href="../boxed.rs.html#308-311">Box</a>::<a href="../boxed.rs.html#1867-1871">into_non_null_with_allocator</a>(Box::try_new_in(
 <a href=#4423 id=4423 data-nosnippet>4423</a>            RcInner {
 <a href=#4424 id=4424 data-nosnippet>4424</a>                strong: Cell::new(<span class="number">0</span>),
 <a href=#4425 id=4425 data-nosnippet>4425</a>                <span class="comment">// keep one weak reference so if all the weak pointers that are created are dropped
